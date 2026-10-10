@@ -476,8 +476,13 @@ class Decider:
         ):
             return self._failure(request, request_id, "error", "backend_error", SAFE_MESSAGES["backend_error"],
                                  t_start, state_handle, work)
+        feats = getattr(result, "features", None) or {}
+        ties = {qid: (feats.get(qid) or {}).get("sym") for qid in questions}  # sym-fork rows (heads.symmetric)
         for qid, q in questions.items():
             option_ids = [o for o, _ in canonical_options(q)]
+            sym = ties.get(qid)
+            if sym is not None and sorted(sym.get("content_order") or []) == sorted(option_ids):
+                option_ids = list(sym["content_order"])  # softmax sums in content order: free of the id order
             q_logits = logits[qid]
             if not isinstance(q_logits, dict) or set(q_logits) != set(option_ids):  # every supplied option
                 return self._failure(request, request_id, "error", "backend_error", SAFE_MESSAGES["backend_error"],
@@ -500,7 +505,7 @@ class Decider:
             temps[qid] = temp
             entropy[qid] = -sum(p * math.log(p) for p in served[qid].values() if p > 0)
 
-        answers = {qid: wire_answer(q, served[qid]) for qid, q in questions.items()}
+        answers = {qid: wire_answer(q, served[qid], ties.get(qid)) for qid, q in questions.items()}
         rules_diag = None
         if self.readout_rules:
             from .readout_rules import apply_rules

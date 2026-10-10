@@ -44,7 +44,7 @@ from decide.prompt import TEMPLATES, Template
 from decide.untrusted import ControlTokenError
 
 from .layout import EncodeFn, LayoutRow, build_row
-from .symmetric import row_input_tokens
+from .symmetric import SYM_LAYOUTS, SYM_VERSION, row_input_tokens, sym_tie_info
 from .model import DecisionModel
 
 
@@ -108,6 +108,7 @@ class DecisionModelBackend:
             "encoder": enc() if callable(enc) else {"kind": "unidentified"},
             "prompt_template": _template_identity(self.template),
             "layout": self.layout,
+            **({"sym_version": SYM_VERSION} if self.layout in SYM_LAYOUTS else {}),  # the sym row renderer's version
             "checkpoint": self.checkpoint,
             "adapter_version": versions.ADAPTER_VERSION,
         }
@@ -147,7 +148,8 @@ class DecisionModelBackend:
         g16diag: dict[str, dict[str, Any]] = {}
         extra_calls = 0  # G4-over-E origin recomputes (g16_certify_k): reported, so the adapter's call cap sees them
         features = {r.qid: {"evidence_tokens": r.evidence_len, "n_options": r.n_options,
-                            "evidence_span": r.meta.get("evidence")} for r in rows}
+                            "evidence_span": r.meta.get("evidence"),
+                            **({"sym": sym_tie_info(r)} if sym_tie_info(r) is not None else {})} for r in rows}
         try:
             if self._one_pass():
                 # all questions of the request in one pass, reading the shared schema + state prefix once

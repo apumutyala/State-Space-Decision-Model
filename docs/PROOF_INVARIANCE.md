@@ -1,8 +1,18 @@
 # Reorder and relabel invariance by construction (`sym-fork` layout)
 
 Code: `heads/symmetric.py` (row builder), `heads/features.py` (e from the fork), `heads/heads.py` `FinalStateFork`.
-Tests: `tests/test_sym_invariance.py`. Branch `stack/qwen35/sym-invariant`, cut from `stack/qwen35/jev1-4b`.
-The default behaviour is unchanged: you opt in with `"layout": "sym-fork"` in the cell config.
+Tests: `tests/test_sym_invariance.py`, `tests/test_sym_perturb_eval.py`. Branch `stack/qwen35/sym-invariant`, cut
+from `stack/qwen35/jev1-4b`. The default behaviour is unchanged: you opt in with `"layout": "sym-fork"` in the cell
+config.
+
+Layouts (renderer version `sym-fork-v2`):
+- `sym-fork` is the default. Each option continuation is `" " + description` plus the user-turn terminator: Qwen
+  `<|im_end|>` (one token), or the RWKV7-G1 `"\n\n"`. The head reads the fork feature at that terminator.
+- `sym-fork-chat` appends the full answer turn instead (+10 tokens per option on Qwen).
+- `sym-fork-ids` is the ablation that also renders the id.
+
+Formats: the Qwen H2O-shim chat turn, the RWKV7-G1 vendor format (`jrt-rwkv-g1-*` templates, `g1_pieces`), and any
+plain template.
 
 ## Statement
 
@@ -49,7 +59,7 @@ Under A1 the two sides are bit-identical, not merely within 1e-6.
 - **A2, descriptions carry the content.** An option with no description (or an empty one) is rendered by its id. Its
   id IS its content, and `meta["id_as_content"]` lists it. Relabeling such an option is not a symmetry of the task, so
   that part of the claim does not cover it. Reorder invariance still holds for it. The 231 public JevBench items have
-  0 such options (849 options). D19's API-Bank name-only catalogs would have them.
+  0 such options (628 choice options). D19's API-Bank name-only catalogs would have them.
 - **A3, symmetric head.** It must have no positional encoding over options, use per-option shared parameters, and
   aggregate across options only through symmetric pooling. `clef_control` (a TransformerEncoder over options, no
   positional encoding) is also equivariant. `qend_axes` reads `e`, which is equivariant. A head that indexes options
@@ -61,6 +71,31 @@ Under A1 the two sides are bit-identical, not merely within 1e-6.
   invariant. Across rows, the shared-prefix eval path and `row_batch` group rows by request. A different
   co-batched request can change float rounding under A1-violating kernels only.
 
+
+## Decisions: ties, duplicates, empty descriptions
+
+The distribution statement above covers probabilities. A single answer id (`choice`) also needs a tie rule that uses
+neither the position nor the id string. `decide.schema.wire_answer(tie=...)` provides one for sym rows; the default
+path is unchanged (smallest id).
+
+- **Different contents, exactly tied.** The winner is the content with the smallest content hash (sha256 of its
+  continuation tokens). It is never the smallest id or the first index.
+- **Exact duplicates (equal content).** By step 1 they get exactly equal probability, so the mass is split equally.
+  The decision is the `tie_set`: every id that carries the winning content. `choice` names the set's smallest id and
+  `tie_set` lists the whole set.
+- **Theorem (no single-id rule exists).** Let options a ≠ b have equal content. The relabel σ that swaps their ids
+  and fixes everything else leaves the model input unchanged, because the ids never enter the model. Any
+  relabel-invariant single-id rule would then have to pick both a and σ(a) = b, a contradiction. So the decision is
+  invariant only as a set. Tested in `test_duplicate_options_form_a_tie_set_invariant_as_a_set`.
+- **Wire rounding.** At 4 digits, near-ties become exact ties on the wire, and jevkit's frozen `argmax_label` then
+  breaks them by smallest id: a relabel leak at the wire. Sym answers are therefore written with 12 digits
+  (`SYM_WIRE_DIGITS`).
+- **Softmax order.** The adapter's softmax over a sym row runs in content order (`content_order`), so the sum order
+  cannot depend on the ids.
+- **Empty descriptions.** Such an option is rendered by its id, which then is its content (A2, `id_as_content`).
+  Reorder invariance still holds exactly. Relabeling such an option changes its content, so the claim does not cover
+  it. Tested in `test_empty_descriptions_reorder_invariant_and_flagged_as_id_content`.
+
 ## Where it fails (by design or out of scope)
 
 - **Score questions.** The level order is the question (ordinal). Levels are never permuted (`option_order` refuses),
@@ -69,11 +104,13 @@ Under A1 the two sides are bit-identical, not merely within 1e-6.
   `canonical_options` fixes the order.
 - **Text that names ids.** If the instructions or the state mention ids ("pick B if …"), relabeling the criteria
   alone changes the meaning. That is not a symmetry, so the claim is not about it.
-- **Duplicate descriptions.** Two options with equal descriptions get equal probability. That is correct, but the
-  model cannot separate them.
+- **Exact duplicates.** The decision is a set (see above). A scorer that needs one id among duplicates (jevkit's
+  `argmax_label`, smallest id) can count a relabel "flip" on such items. `jobs.sym_eval.perturb_eval` lists them under
+  `duplicate_tie_items`. The 231 public items have none (628 choice options, all distinct texts; checked on CPU).
 - **`sym-fork-ids` (ablation).** It renders `"<id>: <desc>"`. It is reorder-equivariant but not relabel-invariant:
   the tests measure a 1.3e-3 shift.
-- **Cross-question order (D19 joint head).** That is a separate axis. See the port notes.
+- **Cross-question order (D19 joint head).** That is a separate axis. See `docs/D19_SYM_PORT_PLAN.md`, the port
+  plan (doc only; the RWKV branches are untouched).
 
 ## Leak map: where order and ids reach the scores today
 
@@ -86,67 +123,73 @@ Under A1 the two sides are bit-identical, not merely within 1e-6.
 | 5 | Lexical prior keyed by id | none | `lexical_vectors` = frozen-embedding mean over the schema span `"<CODE>. <id>: <desc>"`, so it carries the id and the position code. `lex_scale·cos(lex, q_end)` adds a per-id prior. |
 | 6 | Joint ordering | n/a (one question per prompt) | Record mixer = a bidirectional recurrence over FIELDS in schema (sorted question-id) order. Within a field the options are pooled symmetrically (mean/max), so it is invariant in options and order-dependent in questions. |
 | 7 | Padding / chunking | `cont_chunk` chunks the axis in sorted-id order (4b0fb1d), and `MIN_CONT_WIDTH` right-pads. Exact in math, but batch composition follows ids (float level). | `row_options` record chunks, same float caveat. |
-| 8 | Training data | Gold position is kept as listed (chi² p ≥ 0.13). A position prior is learnable through rows 1–2. | v3b is shuffled for MMLU only. |
+| 8 | Ties and wire | `wire_answer` breaks ties by smallest id. 4-digit rounding makes near-ties exact ties, which jevkit then breaks by smallest id. | same |
+| 9 | Training data | Gold position is kept as listed (chi² p ≥ 0.13). A position prior is learnable through rows 1–2. | v3b is shuffled for MMLU only. |
 
-`sym-fork` removes rows 1–4 and 7 for the Qwen line. Row 5 never entered it, and row 8 becomes unlearnable (A4).
+`sym-fork` removes rows 1–4, 7 and 8 for the Qwen line. Row 5 never entered it, and row 9 becomes unlearnable (A4).
 
-## Porting to D19 (`stack/rwkv7/d19-v3b-joint`)
+## Eval path for the guarantee (G1) and the independent cross-check
 
-- **Rows.** `build_row_sym` is template-generic. A v3w-family port needs a `pieces` renderer in the RWKV7-G1 chat
-  format (`User: … Assistant: <think></think>` with the prefill), whole-string tokenized through the encoder's
-  `token_bytes`, as `_Tok` already supports. Expect about 40 lines of code.
-- **Lexical prior.** Point `lexical_vectors` at `option_seqs` (the description only) for sym rows instead of the
-  schema span. That is a one-line branch, and the prior becomes id-free.
-- **Joint mixer.** It is option-invariant already. For question-order invariance, replace the schema-order
-  bidirectional scan with a DeepSets field mixer (`c_i = ρ(Σ_{j≠i} φ(x_j) + φ_p(payload))`). That keeps the
-  exclusive-context and zero-init properties and is a drop-in for `_scan`. Optional: the reorder/relabel claim
-  concerns options.
-- **Record grouping.** `record_key` uses the shared prefix. Sym prefixes are per question (no schema of all fields),
-  so set `meta["record"]` from the request, as training already does.
-- **Fork backend.** `_state_fork` / `fork_features_rows` take multi-token continuations as they are. RWKV-7 has no
-  KV, so a state copy costs O(1) in T, and the cost below is lower on RWKV than on Qwen.
+- **jevkit eval path.** `jobs/sym_eval/perturb_eval.py` loads any checkpoint the way the screen does (`load_child`,
+  untempered arm). `--layout` scores it under another layout, e.g. the JEV1-4B checkpoint under g1v2 for its
+  baseline. It runs jevkit perturb operators 4–6 through `SystemOneAdapter` and writes the files
+  `jevkit perturb score` reads, plus `perturb_report.json`. That report holds `g1_pass`, the per-operator flip
+  report, `duplicate_tie_items`, and the row-identity check (every perturbation must yield the same ids and
+  continuations).
+- **CPU tests.** sym-fork gives 0 flips with max |Δp| = 0, and every row is identical. The `ordered` layout moves
+  under `key_relabel`. `jevkit perturb score` reproduces the report.
+- **Independent harness.** This is the evidence lane's `tests/guarantees/test_reorder_invariance.py`
+  (claude/ev-guarantee-proofs @f7170cb). The plug is `SSDM_INV_HEAD=jobs.sym_eval.inv_adapter:sym_fork_score`, which
+  runs the full served path on a tiny Qwen3.5 hybrid.
+  - sym-fork passes at tol 0: all 11 tests, including all K! orders for small K and the relabel+reorder checks.
+  - `inv_adapter:ordered_score` fails relabel: 7 flips, max |Δp| 2.0e-3.
 
 ## Cost note (JevBench Speed / Cost axes)
 
 jevkit Cost = USD per 1,000 decisions, computed from the `usage.input_tokens` each answer reports times the declared
-price (meter.py). `DecisionModelBackend` reported `len(row.ids)`, the prefix only. On this branch the sym layouts
-report prefix + every continuation (`row_input_tokens`), because the option texts are fed to the model. Counting the
-prefix alone would show a 6 % cut that is an accounting artifact. Other layouts keep the old count. The g1v2 fork
-also feeds K one-token labels it does not report (+0.6 %).
+price (meter.py). `DecisionModelBackend` reported `len(row.ids)`, the prefix only. The sym layouts report prefix +
+every continuation (`row_input_tokens`), because the option texts are fed to the model. Counting the prefix alone
+would show a cut that is an accounting artifact. Other layouts keep the old count. The g1v2 fork also feeds K
+one-token labels it does not report (+0.6 %).
 
-These numbers come from the real Qwen3.5-4B tokenizer over the 231 public items (CPU, this branch):
+These numbers come from the real Qwen3.5-4B tokenizer over the 231 public items (CPU, this branch; asserted in
+`test_sym_fork_is_cost_neutral_on_the_public_jevbench_items`):
 
-| per decision | JEV1-4B g1v2 shim | sym-fork | sym-fork, 1-token tail (`<|im_end|>` only, not built) |
+| per decision | JEV1-4B g1v2 shim | **sym-fork** (`<|im_end|>` tail, default) | sym-fork-chat (full answer turn) |
 |---|---|---|---|
-| input tokens, mean / median / p95 | 653.6 / 157 / 2,647 | 687.4 / 208 / 2,680 (prefix 614.9 + continuations 72.5) | ≈ 650.6 |
-| change | — | **+5.2 %** | −0.5 % |
-| K-axis change (−30·log10 ratio) | — | **−0.66 pt** | +0.07 pt |
+| input tokens, mean | 653.6 | **650.6** (prefix 614.9 + continuations 35.7) | 687.4 |
+| change | — | **−0.5 %** | +5.2 % |
+| K-axis change (−30·log10 ratio) | — | **+0.07 pt** | −0.66 pt |
 
-The per-option chat tail (`<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\nAnswer:`) is 11 tokens, about
-40 per decision. It is the whole cost overhead. A tail-lite variant reads the head at the `<|im_end|>` token and would
-be cost-neutral. It is a separate, priced option.
+Latency (Speed axis). Both layouts make two backbone calls per decision: one prefix pass plus one batched call over
+the K continuations (cache fork). sym-fork's prefix is 39 tokens shorter. Its continuation call grows from K×2 tokens
+to K×~12 tokens, still one call. The estimate is ±3 ms raw, below 0.2 S-points after jevkit's adjustment
+(s′ = 2s + 0.15). It needs one GPU measurement.
 
-Latency (Speed axis). Both layouts already make two backbone calls per decision: one prefix pass plus one batched call
-over the K continuations (cache fork). sym-fork's prefix is 40 tokens shorter. Its continuation call grows from K×2
-tokens to K×~22 tokens (mean 73, max 187), still one call. On the timed tiers (mean 134 → 172 fed tokens: prefix 106
-plus continuations 66), a 4B prefill at this size is dominated by per-call overhead. The estimate is +0 to +5 ms
-raw. After jevkit's adjustment (s′ = 2s + 0.15) that is ≤ 0.3 S-points, and it needs one GPU measurement.
+**Training-clock re-price.** `scripts/sym_reprice_jev1.py 24` on a systematic 1-in-24 sample of bschema-draw-jev1
+(4,000 items, all kept by `keep_item` under both layouts; K mean 4.78, max 16; real tokenizer):
 
-Training cost rises with K. A jev1 row with K = 77 feeds 77 × ~22 = ~1,700 continuation tokens instead of 154, and
-the K cache copies (~0.7 GB each at T 1,020, cf3929b) are unchanged. Re-price the clock with the step-10 rate check
-(exit 26) before committing the 270-minute budget. The `keep_item` cap for sym continuations is 128 tokens
-(`SYM_MAX_CONT`).
+| per row | g1v2 | sym-fork |
+|---|---|---|
+| tokens the backbone runs (prefix + continuation calls right-padded per 64-continuation chunk) | 368.1 | 362.7 |
+| tokens fed, no padding | 363.3 | 352.1 |
+
+- The factor is 0.985: the options move from the prefix into the continuations, which is about token-neutral.
+- Projected step time: 10.92 × 0.985 = 10.76 s/step, so ceil(1,121 × 10.76 × 1.3 / 60) = 262 min.
+- `max_minutes` stays 270, the measured g1v2 budget. The factor comes from a token model, not a measurement; the
+  in-job step-10 rate check (exit 26) re-measures it.
+- The draft cell `jobs/m2_first_cell/m2_first_cell_rwkv7_jev1_q35_4b_sym.json` (`sym_reprice_note`) records this.
+  It has no job_params yet.
 
 ## Proposed pre-registered cell (A-PREREG-JEV1-4B-SYM; write it to PREREG.md before the result)
 
 - **Arm.** `jev1_q35_4b` exactly: Qwen3.5-4B, shim template, LoRA r64, fork head, Clef loss, bschema-draw-jev1,
-  1,121 steps, seed 0. Change ONLY `layout: g1v2 → sym-fork`. Re-price the clock from the step-10 rate.
+  1,121 steps, seed 0. Change ONLY `layout: g1v2 → sym-fork`. The clock stays 270 (re-price factor 0.985).
 - **Comparator.** The JEV1-4B native arm. Use the same jevkit public items and the same paired stratified resamples
   (`screen.paired_vs`).
-- **G1, guarantee (must hold).** jevkit `perturb` operators 4–6 (`option_reverse`, `option_shuffle`, `key_relabel`)
-  on every applicable item must give flip rate = 0 and max |Δp| ≤ 1e-3 (bf16 jitter, A1). Report the
-  deterministic-kernel run with the bit-identical row check.
-- **G2, non-inferiority.** Paired ΔI 95 % CI lower bound > −2.0, and ΔComposite point estimate ≥ −0.7 (the priced
-  +5.2 % tokens).
-- **Keep if G1 ∧ G2. Claim "better" only if** the paired ΔComposite CI is > 0. Also report operators 1–3 and 7–8
-  against JEV1-4B.
+- **G1, guarantee (must hold).** `jobs.sym_eval.perturb_eval` runs jevkit perturb operators 4–6. It must give 0 flips,
+  max |Δp| ≤ 1e-3 (bf16 jitter, A1), `rows_all_identical`, and no `duplicate_tie_items` among the flips.
+- **G2, non-inferiority.** Paired ΔI 95 % CI lower bound > −2.0, and ΔComposite point estimate ≥ −0.3 (the token
+  cost is now neutral).
+- **Keep if G1 ∧ G2. Claim "better" only if** the paired ΔComposite CI is > 0. Also report operators 1–3 and 7–8,
+  and the JEV1-4B flip baseline (`--layout g1v2`).

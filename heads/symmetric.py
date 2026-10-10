@@ -24,7 +24,11 @@ NOT relabel-invariant (tests/test_sym_invariance.py shows both).
 
 Formats: a shim template (``jrt-h2o-shim:<family>``) gets the Qwen chat turn of the H2O shim with a symmetric user turn
 (``SHIM_SYM_SYSTEM``) tokenized whole-string by the shim spec (special tokens honoured, request text that encodes to a
-control token refused); any other template gets ``head + body`` / ``" <option>" + tail`` with the row encoder.
+control token refused); a G1 template (``jrt-rwkv-g1-*``) gets the RWKV7-G1 vendor format (``g1_pieces``, the row
+encoder's whole-string tokens, id 0 refused); any other template gets ``head + body`` / ``" <option>" + tail``.
+Continuations: ``sym-fork`` (default) ends each option with the user-turn terminator (Qwen ``<|im_end|>``: ONE token;
+G1 "\\n\\n") and the head reads that position, which makes the layout cost-neutral against the g1v2 shim prompt on
+JevBench (docs/PROOF_INVARIANCE.md); ``sym-fork-chat`` appends the full answer turn instead (+10 tokens per option).
 """
 
 from __future__ import annotations
@@ -32,12 +36,16 @@ from __future__ import annotations
 import json
 from typing import Any, Callable, Sequence
 
-SYM_LAYOUT = "sym-fork"
-SYM_IDS_LAYOUT = "sym-fork-ids"
-SYM_LAYOUTS = (SYM_LAYOUT, SYM_IDS_LAYOUT)
-SYM_VERSION = "sym-fork-v1"
-#: train.run_cell.keep_item: longest continuation (option text + the ~12-token chat tail) a sym row may carry
+SYM_LAYOUT = "sym-fork"  # lean continuation: " <option>" + the turn terminator (<|im_end|> / G1 "\n\n")
+SYM_CHAT_LAYOUT = "sym-fork-chat"  # the full answer turn after each option (+10 tokens per option on Qwen)
+SYM_IDS_LAYOUT = "sym-fork-ids"  # ablation: "<id>: <option>" (lean tail)
+SYM_LAYOUTS = (SYM_LAYOUT, SYM_CHAT_LAYOUT, SYM_IDS_LAYOUT)
+SYM_VERSION = "sym-fork-v2"  # v2: lean (turn-terminated) continuation is the sym-fork default; G1 format
+#: train.run_cell.keep_item: longest continuation (option text + its tail) a sym row may carry
 SYM_MAX_CONT = 128
+G1_SYM_SYSTEM = ("Read the state, then the question, then ONE candidate answer. Candidates are shown one at a time and "
+                 "their order means nothing; judge this candidate on its own.")
+G1_TURN_END = "\n\n"  # the RWKV7-G1 turn separator (vendor format: no blank line inside a turn)
 
 SHIM_SYM_SYSTEM = ("You are a decision engine. You read a record and one question about it, then ONE candidate answer. "
                    "Candidates are shown one at a time and their order means nothing; judge this candidate on its own.")
@@ -90,13 +98,34 @@ def _body(state_text: str, instr: str, n: int, open_: str) -> tuple[str, tuple, 
     return text, (s0, s0 + len(state_text)), (i0, i1), (s0 + len(state_text), len(text))
 
 
-def shim_pieces(state_text: str, q: dict[str, Any], n: int) -> _Pieces:
+def shim_pieces(state_text: str, q: dict[str, Any], n: int, chat_tail: bool = False) -> _Pieces:
+    """Qwen chat turn. Lean (default): each option ends the user turn with ``<|im_end|>`` (ONE token) and the head
+    reads that position; ``chat_tail``: + "\\n" + the assistant turn with the empty think block + "Answer:"."""
     head = CHATML["system"].replace("{content}", SHIM_SYM_SYSTEM) + CHATML["user_open"]
     body, st, ins, fld = _body(state_text, _instr_text(q), n, "")
     off = len(head)
-    tail = CHATML["user_close"] + CHATML["generation"] + PREFILL
+    tail = (CHATML["user_close"] + CHATML["generation"] + PREFILL) if chat_tail else "<|im_end|>"
     return _Pieces(head + body, (st[0] + off, st[1] + off), (ins[0] + off, ins[1] + off),
                    (fld[0] + off, fld[1] + off), lambda o: " " + o.rstrip() + tail)
+
+
+def is_g1_template(tpl: Any) -> bool:
+    """The RWKV7-G1 chat format (``System: ...\\n\\nUser: `` head; the jrt-rwkv-g1-* templates)."""
+    return str(getattr(tpl, "id", "")).startswith("jrt-rwkv-g1") and str(getattr(tpl, "head", "")).startswith("System:")
+
+
+def g1_pieces(state_text: str, q: dict[str, Any], n: int, chat_tail: bool = False) -> _Pieces:
+    """RWKV7-G1 vendor format (as decide.prompt.render_g1v2): ``System: <sys>\\n\\nUser: <body>``; every request text
+    run of blank lines collapsed (no "\\n\\n" inside a turn, ``g1_clean``). Lean: each option ends the user turn with
+    the turn separator "\\n\\n"; ``chat_tail``: + "Assistant: <think></think>\\nANSWER:" (the v2 tail)."""
+    from decide.prompt import G1V2_TEMPLATE, g1_clean
+
+    head = G1V2_TEMPLATE.head.format(system=G1_SYM_SYSTEM)
+    body, st, ins, fld = _body(g1_clean(state_text), g1_clean(_instr_text(q)), n, "")
+    off = len(head)
+    tail = G1V2_TEMPLATE.tail if chat_tail else G1_TURN_END
+    return _Pieces(head + body, (st[0] + off, st[1] + off), (ins[0] + off, ins[1] + off),
+                   (fld[0] + off, fld[1] + off), lambda o: " " + g1_clean(o).rstrip() + tail)
 
 
 def template_pieces(tpl: Any, state_text: str, q: dict[str, Any], n: int) -> _Pieces:
@@ -165,16 +194,21 @@ def build_row_sym(request: dict[str, Any], qid: str, encode: Any, tpl: Any, layo
     if layout not in SYM_LAYOUTS:
         raise ValueError(f"layout must be one of {SYM_LAYOUTS}")
     with_id = layout == SYM_IDS_LAYOUT
+    chat_tail = layout == SYM_CHAT_LAYOUT
     q = request["questions"][qid]
     opts = canonical_options(q)
     n = len(opts)
     spec = None
+    g1 = is_g1_template(tpl)
     if is_shim_template(tpl):
         from decide.shim_format import spec_for_template
 
         spec = spec_for_template(tpl.id)
         st_text = spec.state_text(request["state"])
-        pieces = shim_pieces(st_text, q, n)
+        pieces = shim_pieces(st_text, q, n, chat_tail)
+    elif g1:
+        st_text = _state_text(request["state"])
+        pieces = g1_pieces(st_text, q, n, chat_tail)
     else:
         st_text = _state_text(request["state"])
         pieces = template_pieces(tpl, st_text, q, n)
@@ -188,10 +222,12 @@ def build_row_sym(request: dict[str, Any], qid: str, encode: Any, tpl: Any, layo
     cont_texts = [pieces.cont(t) for t in texts]
     conts_c = [tok.ids(c) for c in cont_texts]
     if spec is not None:  # control-token refusal, as the shim row: the skeleton's control count only
-        want_p = tok.n_control(tok.ids(shim_pieces("x", {"instructions": "x"}, n).prefix))
-        want_c = tok.n_control(tok.ids(shim_pieces("x", {"instructions": "x"}, n).cont("x")))
+        skel = shim_pieces("x", {"instructions": "x"}, n, chat_tail)
+        want_p, want_c = tok.n_control(tok.ids(skel.prefix)), tok.n_control(tok.ids(skel.cont("x")))
         if tok.n_control(ids) != want_p or any(tok.n_control(c) != want_c for c in conts_c):
             raise ControlTokenError("request text encodes to a control token; refused")
+    if g1 and (0 in ids or any(0 in c for c in conts_c)):  # as the g1v2 rows: id 0 is <|endoftext|>
+        raise ControlTokenError("request text encoded to the control id 0 (<|endoftext|>); refused")
     # content-canonical axis for choice (a function of the multiset of option texts); noul / score keep their order
     canon = sorted(range(n), key=lambda k: (conts_c[k], k)) if q["type"] == "choice" else list(range(n))
     perm = list(range(n)) if option_order is None else list(option_order)
@@ -228,6 +264,33 @@ def build_row_sym(request: dict[str, Any], qid: str, encode: Any, tpl: Any, layo
               "catalog_chars": None, "id_agnostic": not with_id,
               "id_as_content": [opts[k][0] for k in axis if as_content[k]]},
     )
+
+
+#: wire digits for sym answers: 4-digit rounding (decide.schema.WIRE_ROUND) turns near-ties between DIFFERENT options
+#: into exact ties that a reader breaks by the smallest id (jevkit.answers.argmax_label): a relabel leak at the wire
+SYM_WIRE_DIGITS = 12
+
+
+def content_key(cont: Sequence[int]) -> str:
+    """Content hash of one option (sha256 of its continuation token ids): the tie order for DIFFERENT options."""
+    import hashlib
+
+    return hashlib.sha256(json.dumps(list(cont)).encode()).hexdigest()
+
+
+def sym_tie_info(row: Any) -> dict[str, Any] | None:
+    """For a sym row: the option ids in content order (the order every option-axis reduction uses, so softmax sums are
+    order-free), each option's content hash, and the groups of exact duplicates (equal continuations: equal content,
+    hence equal probability; a single-id decision among them is impossible under relabel invariance). None otherwise."""
+    if getattr(row, "layout", None) not in SYM_LAYOUTS:
+        return None
+    keys = {o: content_key(c) for o, c in zip(row.option_ids, row.continuations)}
+    groups: dict[str, list[str]] = {}
+    for o, k in keys.items():
+        groups.setdefault(k, []).append(o)
+    return {"content_order": sorted(row.option_ids, key=lambda o: (row.continuations[row.option_ids.index(o)], keys[o])),
+            "content_key": keys, "dup_groups": sorted(sorted(g) for g in groups.values() if len(g) > 1),
+            "digits": SYM_WIRE_DIGITS}
 
 
 def row_input_tokens(row: Any) -> int:

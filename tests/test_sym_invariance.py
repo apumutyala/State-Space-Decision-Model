@@ -261,7 +261,8 @@ def test_shim_sym_rows_invariant_and_the_g1v2_shim_rows_are_not():
         assert [m[o] for o in a.option_ids] == b.option_ids
         text = spec.tok.decode(a.ids + sum(a.continuations, []))
         assert not any(o in text for o in req["questions"]["q"]["criteria"])
-        assert text.count("<|im_start|>") == 2 + len(a.continuations)  # system, user + one assistant turn per option
+        assert text.count("<|im_start|>") == 2  # system, user; each option closes the user turn (lean tail)
+        assert text.count("<|im_end|>") == 1 + len(a.continuations)
         g0 = build_row(req, "q", None, template=tpl, layout="g1v2")
         g1 = build_row(new, "q", None, template=tpl, layout="g1v2")
         g1v2_changed += g0.ids != g1.ids
@@ -304,6 +305,84 @@ def test_model_level_qwen_shim_g1v2_fails_reorder_and_sym_fork_passes():
     assert worst_sym <= TOL, worst_sym
     assert worst_g1v2 > 1e3 * TOL, worst_g1v2
     del model, bb, lm
+
+
+@needs_tok
+def test_shim_lean_continuation_is_the_option_plus_one_im_end_token():
+    """sym-fork (default) continuation = tokens of " <desc>" + <|im_end|>; sym-fork-chat adds the 10-token answer turn;
+    the reported input tokens are prefix + every continuation."""
+    from decide.shim_format import bind_template
+    from heads.layout import resolve_template
+    from heads.symmetric import SYM_CHAT_LAYOUT
+
+    spec = bind_template(TPL, _tokdir())
+    tpl = resolve_template(TPL)
+    im_end = spec.ids("<|im_end|>")
+    assert len(im_end) == 1
+    req = make_request(random.Random(8), 5)
+    lean = build_row(req, "q", None, template=tpl, layout=SYM_LAYOUT)
+    chat = build_row(req, "q", None, template=tpl, layout=SYM_CHAT_LAYOUT)
+    crit = req["questions"]["q"]["criteria"]
+    for oid, cont in zip(lean.option_ids, lean.continuations):
+        assert cont == spec.ids(" " + crit[oid]) + im_end
+    assert lean.ids == chat.ids
+    by_id = dict(zip(chat.option_ids, chat.continuations))
+    for oid, cont in zip(lean.option_ids, lean.continuations):
+        assert len(by_id[oid]) == len(cont) + 10
+    assert row_input_tokens(lean) == len(lean.ids) + sum(len(spec.ids(" " + d)) + 1 for d in crit.values())
+    assert row_input_tokens(chat) == row_input_tokens(lean) + 10 * len(crit)
+
+
+@needs_tok
+def test_sym_fork_is_cost_neutral_on_the_public_jevbench_items():
+    """Mean reported input tokens over the 231 public items: sym-fork <= the JEV1-4B g1v2 shim prompt (measured
+    650.6 vs 653.6); sym-fork-chat is the +5.2 % variant."""
+    from decide.shim_format import bind_template
+    from heads.layout import resolve_template
+    from heads.symmetric import SYM_CHAT_LAYOUT
+
+    try:
+        from jevkit.items import load_public
+
+        items = load_public()
+    except Exception:  # noqa: BLE001 - pinned public items not on this machine
+        pytest.skip("JevBench public items")
+    bind_template(TPL, _tokdir())
+    tpl = resolve_template(TPL)
+    tot = {"g1v2": 0, SYM_LAYOUT: 0, SYM_CHAT_LAYOUT: 0}
+    for it in items:
+        req = {"model": "x", "state": it.state, "questions": {"q": it.question}}
+        for lay in tot:
+            tot[lay] += row_input_tokens(build_row(req, "q", None, template=tpl, layout=lay))
+    mean = {k: v / len(items) for k, v in tot.items()}
+    assert mean[SYM_LAYOUT] <= mean["g1v2"], mean
+    assert abs(mean[SYM_LAYOUT] - 650.6) < 1.0 and abs(mean["g1v2"] - 653.6) < 1.0, mean
+    assert mean[SYM_CHAT_LAYOUT] > 1.04 * mean["g1v2"], mean
+
+
+def test_g1_format_rows_and_end_to_end_invariance_on_tiny_rwkv7():
+    """The RWKV7-G1 vendor format (jrt-rwkv-g1-v2 head; lean "\\n\\n" turn end): no blank line inside the user turn,
+    no id, and reorder + relabel invariance end to end on a tiny RWKV-7 (cache fork) for sym-fork and sym-fork-chat."""
+    from heads.layout import resolve_template
+    from heads.symmetric import SYM_CHAT_LAYOUT
+
+    tpl = resolve_template("jrt-rwkv-g1-v2")
+    rng = random.Random(17)
+    req = make_request(rng, 4)
+    req["state"] = "line one\n\n\nline two"
+    r = build_row(req, "q", ENC, template=tpl, layout=SYM_LAYOUT)
+    pre = bytes(x - 4 for x in r.ids).decode()
+    assert pre.startswith("System: ") and "\n\n" not in pre[pre.index("User: "):]
+    for c in r.continuations:
+        t = bytes(x - 4 for x in c).decode()
+        assert t.endswith("\n\n") and "\n\n" not in t[:-2]
+    model = tiny_model("rwkv7", "cache")
+    for lay in (SYM_LAYOUT, SYM_CHAT_LAYOUT):
+        for t in range(3):
+            req = make_request(rng, rng.randrange(2, 7))
+            p0 = probs(model, req, lay, tpl)
+            new, m = transform(req, rng, relabel=True, reorder=True)
+            assert mapped_diff(p0, probs(model, new, lay, tpl), m) <= TOL
 
 
 @needs_tok
