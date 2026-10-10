@@ -26,3 +26,4 @@ receipts/2026-10-08-D-m2-cpu8-validation/*.xml -text whitespace=cr-at-eol
 receipts/2026-10-08-D-m2-cpu8-validation/*.log -text whitespace=cr-at-eol
 receipts/2026-10-08-D-m2-cpu8-validation/README.md text eol=lf
 receipts/2026-10-08-D-m2-cpu8-validation/SHA256SUMS.txt text eol=lf
+TARGETS.tsv text eol=lf
