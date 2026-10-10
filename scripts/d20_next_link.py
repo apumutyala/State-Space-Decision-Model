@@ -447,15 +447,16 @@ def main(argv=None) -> int:
         say(f"WARNING: the global clock is spent ({rep['train_clock_used_min']} of {rep['global_clock_min']} min): link {k} "
             "trains 0 steps" + (" and only screens" if k == OF else "; consider going straight to the final link"))
     path = ROOT / rel
-    orig = path.read_text(encoding="utf-8")
+    orig_bytes = path.read_bytes()  # bytes in, bytes out: no CRLF translation on Windows (lint / launch refuse CRs)
+    orig = orig_bytes.decode("utf-8")
     text = fill(orig, k_prev, src)
     validate_params(text, k)
-    path.write_text(text, encoding="utf-8")
+    path.write_bytes(text.encode("utf-8"))
     try:
         run_lint(rel)
     finally:
         if a.dry:
-            path.write_text(orig, encoding="utf-8")
+            path.write_bytes(orig_bytes)
     say(f"{rel}: chain.from = {{job {src['job']}, artifact {src['artifact']}, artifact_sha256 {src['artifact_sha256']}, "
         f"manifest_sha256 {src['manifest_sha256']}, url_env {URL_ENV}}}")
     launch_cmd = [sys.executable, "-X", "utf8", "-m", "jobs.common.launch", "m2_first_cell", "--mode",
