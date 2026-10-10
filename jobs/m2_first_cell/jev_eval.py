@@ -78,19 +78,22 @@ def run_items(decider, items, out_dir: Path, warmup: int = WARMUP) -> dict[str, 
     ad = SystemOneAdapter(BilledDecider(decider), kind="decider", model_name="ssdm-m2")
     out_dir.mkdir(parents=True, exist_ok=True)
     preds = out_dir / "preds.jsonl"
-    done = _done(preds)
+    preds_pert = out_dir / "preds_pert.jsonl"  # B-PREREG-FLIP: perturbed ids ("<base>~<op>~<seed>") only
+    done = _done(preds) | _done(preds_pert)
     todo = [it for it in items if it.id not in done]
     t0 = time.time()
     for it in items[:warmup]:
         ad.answer_item(it)
     st: dict[str, int] = {}
-    with open(preds, "a", encoding="utf-8", newline="\n") as fh:
+    with open(preds, "a", encoding="utf-8", newline="\n") as fh, \
+            open(preds_pert, "a", encoding="utf-8", newline="\n") as fp:
         for it in todo:
             rec = ad.answer_item(it)
             rec["tier"] = it.tier
             st[rec["status"]] = st.get(rec["status"], 0) + 1
-            fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
-            fh.flush()
+            f = fp if "~" in it.id else fh
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            f.flush()
     return {"items": len(todo), "resumed_from": len(done), "status": st, "wall_s": round(time.time() - t0, 1)}
 
 
@@ -100,6 +103,18 @@ def score(a) -> int:
     from jobs.m2_first_cell.fulldev_eval import load_child, load_parent
 
     items = load_public()
+    if a.items_file:  # B-PREREG-FLIP: the pinned perturbed rows, answered after the public items
+        from jevkit.items import Item
+
+        base = {it.id for it in items}
+        for line in Path(a.items_file).read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                d = json.loads(line)
+                meta = d.pop("perturbation")
+                if meta["base_id"] not in base or "~" not in d["id"]:
+                    print(f"identity: perturbed row {d.get('id')!r} not from a public item", file=sys.stderr)
+                    return 10
+                items.append(Item.from_dict(d))
     if a.limit:
         items = items[: a.limit]
     out = Path(a.out_dir) / a.arm
@@ -122,7 +137,7 @@ def score(a) -> int:
         res["max_memory_allocated_gib"] = round(torch.cuda.max_memory_allocated() / 2**30, 2)
     (out / "run.json").write_text(json.dumps(res, indent=1), encoding="utf-8")
     print(json.dumps(res), flush=True)
-    return 0 if len(_done(out / "preds.jsonl")) >= len(items) else 9
+    return 0 if len(_done(out / "preds.jsonl") | _done(out / "preds_pert.jsonl")) >= len(items) else 9
 
 
 # ------------------------------------------------------------------------------------------------ CPU: report
@@ -252,6 +267,7 @@ def main(argv=None) -> int:
     s.add_argument("--device", default="cuda")
     s.add_argument("--out-dir", required=True)
     s.add_argument("--limit", type=int, default=0, help="CPU tests only: the first N items")
+    s.add_argument("--items-file", default=None, help="B-PREREG-FLIP: jevkit perturb make rows (-> preds_pert.jsonl)")
     r = sub.add_parser("report")
     r.add_argument("--params", required=True)
     r.add_argument("--out-dir", required=True)

@@ -308,6 +308,7 @@ if [ "$EVAL_ONLY" = jevbench ]; then  # ------ eval-only: a SAVED checkpoint + i
     *) fail 5 "checkpoint rc=$r: $(tail -1 "$WORK/logs/checkpoint.log")" ;; esac
   CKPT=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$WORK/out/checkpoint.json") || fail 5 "checkpoint.json"
   NJ=$(python -c "import json; print(sum(f['n'] for f in json.load(open('jevkit/data/jevbench_public_pin.json'))['files'].values()))") || fail 5 "jevkit pin"
+  NJ0=$NJ
   for ARMNAME in child parent; do
     PH=jev_$ARMNAME
     if [ "$ARMNAME" = child ]; then
@@ -316,8 +317,18 @@ if [ "$EVAL_ONLY" = jevbench ]; then  # ------ eval-only: a SAVED checkpoint + i
     else
       ARGS=(--cell-config "$CELL")
     fi
-    say "phase $PH ($ARMNAME arm, $NJ public JevBench items, one request at a time; live rate guard)"
-    python -m jobs.common.rate_guard run --results "$WORK/out/jevbench/$ARMNAME/preds.jsonl" --total "$NJ" --exclude-startup \
+    # B-PREREG-FLIP: params "flip_items" {arm: {path (under $DATA), sha256}} adds that arm's pinned perturbed rows
+    FI=$(python -c "import json,sys; f=(json.load(open(sys.argv[1])).get('flip_items') or {}).get(sys.argv[2]); print(f'{f[\"path\"]} {f[\"sha256\"]}' if f else '')" "$PARAMS" "$ARMNAME") \
+      || fail 5 "job_params flip_items"
+    NJ=$NJ0
+    if [ -n "$FI" ]; then
+      set -- $FI
+      [ "$(sha256sum "$DATA/$1" | cut -d' ' -f1)" = "$2" ] || fail 10 "flip items $1 sha256 != pin"
+      ARGS+=(--items-file "$DATA/$1")
+      NJ=$(( NJ0 + $(grep -c . "$DATA/$1") ))
+    fi
+    say "phase $PH ($ARMNAME arm, $NJ JevBench items (public + pinned perturbations), one request at a time; live rate guard)"
+    python -m jobs.common.rate_guard run --results "$WORK/out/jevbench/$ARMNAME/preds*.jsonl" --total "$NJ" --exclude-startup \
       --check-after-min 5 --cap-min "$(cap $PH)" --report "$WORK/out/rate-$PH.json" -- \
       timeout --kill-after=30s $(cap $PH)m python -X utf8 -m jobs.m2_first_cell.jev_eval score --arm "$ARMNAME" "${ARGS[@]}" \
       --model-dir "$SNAP" --out-dir "$WORK/out/jevbench" > "$WORK/logs/$PH.log" 2>&1; r=$?
