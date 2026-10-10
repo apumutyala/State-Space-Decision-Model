@@ -172,7 +172,8 @@ if ev != "none":
     try:
         checkpoint_block(p)
         if ev == "ragtruth_rephrase":
-            checkpoint_block(p, "checkpoint_d19")
+            for arm in p["arms"].values():
+                checkpoint_block(p, arm["block"])
     except CheckpointError as e:
         sys.exit(f"mode {mode}: {e}")
 st = p.get("stage", "gates")
@@ -328,10 +329,11 @@ case $r in 0) ;; 124|137) fail 7 "guard timeout" ;; 30|31|32) fail $r "guard not
 if [ "$EVAL_ONLY" = ragtruth_rephrase ]; then  # -- eval-only: D13 then D19 on the RAGTruth TRAIN items, RT1 (+ original)
   # each arm: checkpoint_loader --block (every byte pinned), then ONE model load scoring every wording of the arm
   # (rate guard: a slow load stops with 15 before any item is scored); D13's original wording = job-3zmj2's pinned rows
-  for ARMNAME in d13 d19; do
+  RR_ARMS=$(python -I -c 'import json,sys; print(" ".join(json.load(open(sys.argv[1]))["arms"]))' "$PARAMS") || fail 5 "job_params arms"
+  for ARMNAME in $RR_ARMS; do
     read -r BLOCK ACELL ATRAIN AWORDS <<< "$(python -I -c 'import json,sys; a=json.load(open(sys.argv[1]))["arms"][sys.argv[2]]; print(a["block"], a["cell_config"], a["train_dir"], ",".join(a["wordings"]))' "$PARAMS" "$ARMNAME")" \
       || fail 5 "job_params arms.$ARMNAME"
-    PHC=checkpoint; [ "$ARMNAME" = d19 ] && PHC=checkpoint_d19
+    PHC=$BLOCK
     CKCELL=$WORK/ckpt-$ARMNAME
     say "phase $PHC ($ARMNAME: params block $BLOCK, cell config $ACELL, into $CKCELL); free bytes: $(diskfree "$OUT" "$CK" "$WORK")"
     timeout --kill-after=30s $(cap $PHC)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS" --block "$BLOCK" \
@@ -358,7 +360,7 @@ if [ "$EVAL_ONLY" = ragtruth_rephrase ]; then  # -- eval-only: D13 then D19 on t
   done
   say "phase report"
   timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.ragtruth_rephrase report --out-dir "$WORK/out/ragtruth_rephrase" \
-    --params "$PARAMS" --items "$RT_ITEMS" --selection "$RT_SEL" --d13-original "$DATA/ragtruth/d13-original-3zmj2.results.jsonl" \
+    --params "$PARAMS" --items "$RT_ITEMS" --selection "$RT_SEL" \
     --manifest "$DATA/$D19_TRAIN/bschema-draw-v3b.manifest.jsonl.gz" --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$DECISION" \
     > "$WORK/logs/report.log" 2>&1; r=$?
   gate "report" $r

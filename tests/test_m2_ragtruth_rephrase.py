@@ -112,6 +112,16 @@ def test_params_schedule_and_estimate():
     assert est["ok"], est
 
 
+def test_d19_params_schedule_and_estimate():
+    p = json.loads((ROOT / "jobs/m2_first_cell/job_params_ragtruth_rephrase_d19.json").read_text(encoding="utf-8"))
+    assert sum(p["phase_caps_minutes"].values()) + p["reserve_minutes"] == p["max_duration_minutes"] == 62
+    assert list(p["arms"]) == ["d19"] and p["arms"]["d19"]["block"] == "checkpoint"
+    assert p["checkpoint"]["ckpt_sha256"].startswith("31062f48") and p["mode"] == "ragtruth_rephrase_d19"
+    assert (ROOT / p["cell_config"]).read_bytes() == (
+        ROOT / "jobs/m2_first_cell/m2_first_cell_rwkv7_fulldev_eval_d19_v3w_s1of2.json").read_bytes()
+    assert M.estimate(p)["ok"]
+
+
 def test_indraw_file_identity():
     rec = json.loads((ROOT / M.INDRAW_FILE).read_text(encoding="utf-8"))
     assert rec["n"] == len(rec["ids"]) == 175 and rec["n_items"] == 300

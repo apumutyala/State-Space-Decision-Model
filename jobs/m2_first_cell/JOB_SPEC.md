@@ -283,6 +283,15 @@ D19 load 21.75 min, 3.4 min per 300-item wording): expected 46.8 min + build; ca
 score_d13 14 / checkpoint_d19 4 / score_d19 39 / report 3 + reserve 7 = 79; quoted hold $4.98, worst case
 (60 + 2 x 79) x 0.0495 = $10.79 (cap $15). CKPT_URL = art-cr9a2, CKPT_URL_D19 = art-p3gpi at submit.
 
+### Mode `ragtruth_rephrase_d19`: the D19 arm alone (after job-862xw)
+
+job-862xw (both arms) stopped at score_d13 with exit 10: D13's cell pins attack_clean templates_sha256 930863...,
+this lineage's attack guard v2 (1e647e00) hashes 5e2d6e..., so D13 cannot load here. D19 runs alone on this lineage
+(original + rt1; block `checkpoint` = art-p3gpi best2800; cell config = D19's training cell; train dir
+bschema-draw-v3b); D13 (rt1) runs on `claude/ev-ragtruth-rephrase-d13` (from a1bfa2b, job-3zmj2's lineage). The
+runner's ragtruth_rephrase branch loops over params `arms`. Caps setup 7 / guard 2 / checkpoint 4 / score_d19 39 /
+report 3 + reserve 7 = 62; quoted hold $3.91, worst case (60 + 2 x 62) x 0.0495 = $9.11 (cap $15).
+
 ## Mode `devcal_d19_v3w`: D19's per-question probabilities on its own cohort-dev pool (temperature fit)
 
 B-PREREG-D19-TEMP (state PREREG.md, addendum 1). art-p3gpi keeps D19's dev cards as aggregates only, and D19 drew the
