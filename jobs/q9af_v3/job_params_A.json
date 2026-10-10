@@ -209,16 +209,6 @@
     "src": "tokenizers/Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a/tokenizer_config.json",
     "dest": "tokenizers/Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a/tokenizer_config.json",
     "pin": "jobs/q9af_v3/data_A.sha256"
-   },
-   {
-    "src": "tokenizers/Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a/tokenizer.json",
-    "dest": "tokenizers/Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a/tokenizer.json",
-    "pin": "jobs/q9af_v3/data_A.sha256"
-   },
-   {
-    "src": "tokenizers/Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a/tokenizer_config.json",
-    "dest": "tokenizers/Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a/tokenizer_config.json",
-    "pin": "jobs/q9af_v3/data_A.sha256"
    }
   ],
   "manifest_files": [
