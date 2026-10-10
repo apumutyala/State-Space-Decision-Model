@@ -164,20 +164,28 @@ def ids_sha256(ids: Iterable[str]) -> str:
     return hashlib.sha256("\n".join(sorted(ids)).encode("utf-8")).hexdigest()
 
 
-def split_calibration(cal: Sequence[Scored], seed: int = 0,
-                      fit_frac: float = 0.5) -> tuple[list[Scored], list[Scored], dict]:
+def split_calibration(cal: Sequence[Scored], seed: int = 0, fit_frac: float = 0.5,
+                      cluster_of: Callable[[Scored], str] | None = None) -> tuple[list[Scored], list[Scored], dict]:
     """Deterministic, answer-independent split of the calibration decisions into a FIT half (conformal q_hat) and a
-    disjoint LTT half (act / abstain rule). Membership is a function of (seed, id) only."""
+    disjoint LTT half (act / abstain rule). Membership is a function of (seed, id) only, or of (seed, cluster) when
+    ``cluster_of`` is given. Use a cluster key (e.g. the row / source case of a multi-decision row) whenever
+    decisions share an input: a per-decision split puts correlated decisions of one row on both sides, so q_hat is
+    no longer independent of the LTT half (docs/guarantees/CONFORMAL.md, discrepancy D1). Default: per id (unchanged)."""
     ids = [r.id for r in cal]
     if len(set(ids)) != len(ids):
         raise ValueError("calibration ids must be unique")
     fit, ltt = [], []
     for r in cal:
-        u = int(hashlib.sha256(f"{seed}|conformal-ltt|{r.id}".encode()).hexdigest()[:12], 16) / float(16 ** 12)
+        key = r.id if cluster_of is None else str(cluster_of(r))
+        u = int(hashlib.sha256(f"{seed}|conformal-ltt|{key}".encode()).hexdigest()[:12], 16) / float(16 ** 12)
         (fit if u < fit_frac else ltt).append(r)
-    rec = {"rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half", "seed": seed,
+    rule = "id" if cluster_of is None else "cluster"
+    rec = {"rule": f"sha256(seed|conformal-ltt|{rule}) < fit_frac -> fit half, else ltt half", "seed": seed,
            "fit_frac": fit_frac, "n_fit": len(fit), "n_ltt": len(ltt),
            "fit_ids_sha256": ids_sha256(r.id for r in fit), "ltt_ids_sha256": ids_sha256(r.id for r in ltt)}
+    if cluster_of is not None:
+        rec["n_fit_clusters"] = len({str(cluster_of(r)) for r in fit})
+        rec["n_ltt_clusters"] = len({str(cluster_of(r)) for r in ltt})
     return fit, ltt, rec
 
 
@@ -327,9 +335,10 @@ GUARANTEE = ("split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable
 
 def conformal_report(cal: Sequence[Scored], test: Sequence[Scored], alpha: float = 0.1, epsilon: float = 0.05,
                      delta: float = 0.05, mondrian: bool = True, method: str = "bonferroni", split_seed: int = 0,
-                     fit_frac: float = 0.5) -> dict:
-    """``cal`` is split into disjoint FIT / LTT halves (``split_calibration``); ``test`` is held out from both."""
-    fit_half, ltt_half, split = split_calibration(cal, split_seed, fit_frac)
+                     fit_frac: float = 0.5, cluster_of: Callable[[Scored], str] | None = None) -> dict:
+    """``cal`` is split into disjoint FIT / LTT halves (``split_calibration``, by cluster when ``cluster_of`` is
+    given); ``test`` is held out from both."""
+    fit_half, ltt_half, split = split_calibration(cal, split_seed, fit_frac, cluster_of)
     overlap = {r.id for r in test} & {r.id for r in cal}
     if overlap:
         raise ValueError(f"test decisions overlap the calibration decisions ({len(overlap)} ids)")

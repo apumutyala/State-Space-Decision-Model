@@ -1,0 +1,212 @@
+"""Injection-robust conformal sets (docs/guarantees/INJECTION_ROBUST_CONFORMAL.md), checked on synthetic G16 boxes.
+
+Each decision has trusted-only logit intervals [lo_k, hi_k] (G16: b_k -/+ c||a_k||_1) and a clean logit inside the
+box; the gold label is drawn from softmax(clean logits), so the clean model is calibrated. At test time an adversary
+controls the untrusted text, i.e. may put the observed logits ANYWHERE in the box, and picks the point that excludes
+the gold label from the set if one exists (it knows the gold label and q_hat: the strongest adversary).
+
+Checks, averaged over many seeds (the guarantee is marginal over calibration and test draws):
+* matched robust set  C_lo = {y : s_lo(y) <= Q(s_lo(cal))}           coverage >= 1 - alpha, and <= 1 - alpha + 1/(n+1)
+* jevkit robust set   C_rob = {y : s_lo(y) <= Q(clean scores(cal))}   coverage >= 1 - alpha (dominance)
+* pessimistic matched C_hi = {y : s_hi(y) <= Q(s_hi(cal))}            coverage >= 1 - alpha
+* set inclusion, every point: C_lo subset C_rob subset C_lo|hi-cal (the theorem's ordering)
+* naive set calibrated on clean point scores, evaluated on attacked point scores: FAILS under the same adversary
+* mismatched pessimistic test score with clean calibration (s_hi vs clean): FAILS (wrong bound)
+All sets except the naive one are functions of the intervals only; the adversary's choice cannot change them.
+"""
+from __future__ import annotations
+
+import itertools
+import math
+import random
+
+from jevkit.guarantees import (Scored, conformal_qhat, fit_conformal, injection_robust_report, prediction_set,
+                               robust_min_score, robust_set, softmax)
+
+ALPHA = 0.1
+K = 4
+N_CAL = 150
+N_TEST = 100
+SEEDS = 100
+
+
+def s_lo(iv: dict, y: str) -> float:
+    """Smallest nonconformity 1 - p_y over the box (y at hi, others at lo). Same as jevkit robust_min_score."""
+    return robust_min_score(iv, y)
+
+
+def s_hi(iv: dict, y: str) -> float:
+    """Largest nonconformity over the box (y at lo, others at hi)."""
+    z = {k: (v[0] if k == y else v[1]) for k, v in iv.items()}
+    return 1.0 - softmax(z)[y]
+
+
+def draw(rng: random.Random) -> dict:
+    labels = [f"opt_{i}" for i in range(K)]
+    b = {k: rng.gauss(0.0, 1.5) for k in labels}
+    w = {k: rng.uniform(0.0, 1.5) for k in labels}  # c * ||a_k||_1
+    iv = {k: (b[k] - w[k], b[k] + w[k]) for k in labels}
+    clean = {k: rng.uniform(iv[k][0], iv[k][1]) for k in labels}  # benign untrusted text: some point in the box
+    p = softmax(clean)
+    u, acc, y = rng.random(), 0.0, labels[-1]
+    for k in labels:
+        acc += p[k]
+        if u <= acc:
+            y = k
+            break
+    return {"iv": iv, "clean": clean, "y": y}
+
+
+CORNERS = list(itertools.product((0, 1), repeat=K))
+
+
+def adversary(iv: dict, y: str, set_fn) -> dict:
+    """Any point in the box; 1 - p_y is monotone in each coordinate, so the corners contain the worst case for
+    excluding y. Returns observed logits that exclude y from set_fn(iv, logits) if any corner does, else the
+    y-at-lo / others-at-hi corner."""
+    keys = list(iv)
+    worst = {k: (iv[k][0] if k == y else iv[k][1]) for k in keys}
+    if y not in set_fn(iv, worst):
+        return worst
+    for c in CORNERS:
+        z = {k: iv[k][bit] for k, bit in zip(keys, c)}
+        if y not in set_fn(iv, z):
+            return z
+    return worst
+
+
+def run_seed(seed: int) -> dict:
+    rng = random.Random(f"inj|{seed}")
+    cal = [draw(rng) for _ in range(N_CAL)]
+    test = [draw(rng) for _ in range(N_TEST)]
+    q_clean = conformal_qhat([1.0 - softmax(r["clean"])[r["y"]] for r in cal], ALPHA)
+    q_lo = conformal_qhat([s_lo(r["iv"], r["y"]) for r in cal], ALPHA)
+    q_hi = conformal_qhat([s_hi(r["iv"], r["y"]) for r in cal], ALPHA)
+    # jevkit's own fit on the clean scores must give the same q_hat
+    fit = fit_conformal([Scored(f"c{i}", "choice", softmax(r["clean"]), r["y"]) for i, r in enumerate(cal)],
+                        ALPHA, mondrian=False)
+    assert fit["qhat"]["all"] == q_clean
+
+    sets = {
+        "matched_lo": lambda iv, z: {y for y in iv if s_lo(iv, y) <= q_lo},
+        "jevkit_clean_cal": lambda iv, z: set(robust_set(iv, q_clean)),
+        "lo_test_hi_cal": lambda iv, z: {y for y in iv if s_lo(iv, y) <= q_hi},
+        "matched_hi": lambda iv, z: {y for y in iv if s_hi(iv, y) <= q_hi},
+        "WRONG_hi_test_clean_cal": lambda iv, z: {y for y in iv if s_hi(iv, y) <= q_clean},
+        "naive_point": lambda iv, z: set(prediction_set(softmax(z), q_clean)),
+    }
+    cov = {k: 0 for k in sets}
+    size = {k: 0 for k in sets}
+    clean_cov = clean_size = 0
+    for r in test:
+        iv, y = r["iv"], r["y"]
+        clean_set = prediction_set(softmax(r["clean"]), q_clean)
+        clean_cov += y in clean_set
+        clean_size += len(clean_set)
+        got = {}
+        z_rand = {k: rng.uniform(a, b) for k, (a, b) in iv.items()}
+        for name, fn in sets.items():
+            if name == "naive_point":
+                z = adversary(iv, y, fn)
+                assert all(iv[k][0] <= v <= iv[k][1] for k, v in z.items())
+                s = fn(iv, z)
+            else:  # interval-only sets: the adversary's point is irrelevant, bit for bit
+                s = fn(iv, None)
+                assert s == fn(iv, r["clean"]) == fn(iv, z_rand) == fn(iv, adversary(iv, y, sets["naive_point"]))
+            got[name] = s
+            cov[name] += y in s
+            size[name] += len(s)
+        assert got["matched_lo"] <= got["jevkit_clean_cal"] <= got["lo_test_hi_cal"]
+        assert set(prediction_set(softmax(r["clean"]), q_clean)) <= got["jevkit_clean_cal"]
+    out = {f"cov_{k}": v / N_TEST for k, v in cov.items()}
+    out.update({f"size_{k}": v / N_TEST for k, v in size.items()})
+    out["cov_clean_no_attack"] = clean_cov / N_TEST
+    out["size_clean_no_attack"] = clean_size / N_TEST
+    return out
+
+
+def _mean(rows: list[dict], key: str) -> float:
+    return sum(r[key] for r in rows) / len(rows)
+
+
+_ROWS: list[dict] | None = None
+
+
+def rows() -> list[dict]:
+    global _ROWS
+    if _ROWS is None:
+        _ROWS = [run_seed(s) for s in range(SEEDS)]
+    return _ROWS
+
+
+# per-seed coverage sd is about 0.04 here, so the mean over 100 seeds has SE about 0.004; slack = 3 SE
+SLACK = 0.012
+TARGET = 1 - ALPHA
+
+
+def test_robust_sets_cover_under_worst_case_injection():
+    r = rows()
+    for name in ("matched_lo", "jevkit_clean_cal", "lo_test_hi_cal", "matched_hi"):
+        assert _mean(r, f"cov_{name}") >= TARGET - SLACK, (name, _mean(r, f"cov_{name}"))
+    # matched calibration is exact split conformal on a continuous score: no over-coverage beyond 1/(n+1)
+    assert _mean(r, "cov_matched_lo") <= TARGET + 1 / (N_CAL + 1) + SLACK
+    assert _mean(r, "cov_matched_hi") <= TARGET + 1 / (N_CAL + 1) + SLACK
+
+
+def test_clean_conformal_is_valid_without_attack():
+    assert _mean(rows(), "cov_clean_no_attack") >= TARGET - SLACK
+
+
+def test_naive_point_set_fails_under_the_same_adversary():
+    c = _mean(rows(), "cov_naive_point")
+    assert c < TARGET - 0.10, c
+
+
+def test_wrong_bound_fails():
+    # pessimistic test score against clean calibration: s_hi >= clean score, so the threshold is too small
+    c = _mean(rows(), "cov_WRONG_hi_test_clean_cal")
+    assert c < TARGET - 0.05, c
+
+
+def test_matched_calibration_is_tightest_valid_choice_with_lo_test_score():
+    r = rows()
+    a, b, c = (_mean(r, f"size_{k}") for k in ("matched_lo", "jevkit_clean_cal", "lo_test_hi_cal"))
+    assert a <= b <= c
+    assert a < b  # strictly smaller on average here: the jevkit (clean-calibrated) set over-covers
+
+
+def test_jevkit_report_agrees_and_flags_out_of_box_attacks():
+    rng = random.Random("report")
+    cal = [draw(rng) for _ in range(200)]
+    test = [draw(rng) for _ in range(50)]
+    cal_s = [Scored(f"c{i}", "choice", softmax(r["clean"]), r["y"]) for i, r in enumerate(cal)]
+    rows_in = [{"id": f"t{i}", "type": "choice", "label": r["y"], "intervals": {k: list(v) for k, v in r["iv"].items()},
+                "clean_logits": r["clean"],
+                "attacked_logits": [{k: (v[0] if k == r["y"] else v[1]) for k, v in r["iv"].items()}]}
+               for i, r in enumerate(test)]
+    rep = injection_robust_report(cal_s, rows_in, alpha=ALPHA, mondrian=False)
+    assert rep["clean_logits_outside_box"] == 0 and rep["attacked_logits_outside_box"] == 0
+    assert rep["clean_set_not_subset_of_robust"] == 0 and rep["act_set_attack_success"] == 0
+    # a logit outside its box means wrong trust labels: the report must refuse to claim attack success 0
+    rows_in[0]["attacked_logits"] = [{k: v[1] + 5.0 for k, v in rows_in[0]["intervals"].items()}]
+    rep2 = injection_robust_report(cal_s, rows_in, alpha=ALPHA, mondrian=False)
+    assert rep2["attacked_logits_outside_box"] == 1 and rep2["act_set_attack_success"] is None
+
+
+def test_qhat_rank_matches_theorem():
+    for n in (1, 5, 9, 10, 19, 99, 150):
+        for a in (0.05, 0.1, 0.2):
+            xs = [i / n for i in range(n)]
+            k = math.ceil((n + 1) * (1 - a))
+            want = math.inf if k > n else sorted(xs)[k - 1]
+            assert conformal_qhat(xs, a) == want
+
+
+def test_print_summary(capsys):
+    r = rows()
+    keys = sorted(r[0])
+    with capsys.disabled():
+        print("\n[injection-conformal] means over %d seeds (alpha=%.2f, n_cal=%d, n_test=%d, K=%d)"
+              % (SEEDS, ALPHA, N_CAL, N_TEST, K))
+        for k in keys:
+            print(f"  {k:32s} {_mean(r, k):.4f}")
