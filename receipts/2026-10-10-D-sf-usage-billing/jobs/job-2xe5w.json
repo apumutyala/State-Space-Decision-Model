@@ -1,0 +1,43 @@
+{
+ "object": "job",
+ "job_id": "job-2xe5w",
+ "status": "succeeded",
+ "label": "full8: all 8 attention layers -> GDN (Q9-AF), rule be9eed8+A1 @53b4cf7 (max_duration 720: org ceiling)",
+ "chip": {
+  "count": 1,
+  "model": "h100"
+ },
+ "max_restarts": 1,
+ "submitted_at": "2026-10-07T02:25:06.779693+00:00",
+ "finished_at": "2026-10-07T11:36:16.956340+00:00",
+ "attempt_history": [
+  {
+   "attempt": 1,
+   "end_cause": "process_exit",
+   "end_reason": null,
+   "ended_at": "2026-10-07T11:36:16.956340+00:00",
+   "outcome": "completed",
+   "started_at": "2026-10-07T02:44:06.660078+00:00"
+  }
+ ],
+ "receipt": {
+  "attempts": [
+   {
+    "attempt": 1,
+    "billed_seconds": 31930,
+    "charged_usd_micros": 26341700,
+    "gpu_count": 1,
+    "rate_usd_micros_per_gpu_minute": 49498
+   }
+  ],
+  "billed_attempts": 1,
+  "billed_seconds": 31930,
+  "charged_usd_micros": 26341700,
+  "image_digest": "sha256:96a1c7044f7b91959f228c95d5aaf1ed863e07ac5ecae581c86504b025351dee"
+ },
+ "_capture": {
+  "command": "autor --workspace default job get job-2xe5w --json",
+  "captured_at_utc": "2026-10-10T05:04:46Z",
+  "fields": "subset (artifact download links, logs, results and preflight omitted)"
+ }
+}

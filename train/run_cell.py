@@ -322,22 +322,29 @@ def _items_chunk(records: list, cfg: dict, enc, guard, max_t: int, max_k: int | 
 
 
 def _doc_overlap_train_ids(cfg: dict, recs: dict, tr_ids: list, ident):
-    """Doc-overlap guard (``train.doc_overlap_guard``, job exit 34) on a cell WITHOUT ``train_set``: the training rows
-    taken from ``--records`` must carry no Index eval document text, unless the cell pins ``doc_clean`` for exactly
-    those rows (they then leave the training ids). With ``train_set`` the same gate runs inside ``train_set.draw``.
+    """Doc-overlap guard (``train.doc_overlap_guard``, job exit 34) on a cell WITHOUT ``train_set``: the WHOLE
+    ``--records`` file must carry no Index eval document text, unless the cell pins ``doc_clean`` (the file's
+    ``python -m train.doc_overlap_guard clean-spec`` spec) for exactly its failing rows; they then leave the training
+    ids. With ``train_set`` the same gate runs inside ``train_set.draw``.
     Raises ``train.train_set.DocOverlapRefusal`` (a ValueError)."""
     from train.attack_guard import ids_sha256
     from train.doc_overlap_guard import DocOverlapError, check_pinned, scan
     from train.train_set import DocOverlapRefusal, doc_clean_pin
 
-    seen: set = set()
-    keys = [k for k in tr_ids if not (k in seen or seen.add(k))]
+    keys = sorted(recs)  # the WHOLE records file: the pin is the file's clean-spec, independent of the split
+
+    def source_of(k, r, req):
+        src = r.get("source") or (req.get("ssdm") or {}).get("source")
+        if not src:
+            parts = str(r.get("id") or k).split(":")
+            src = parts[1] if len(parts) > 2 and parts[0] == "m2" else None
+        return src
 
     def rows():  # storage key as id (unique even for multislot rows); state/questions from the request
         for k in keys:
             r = recs[k]
             req = r.get("request") if isinstance(r.get("request"), dict) else r
-            yield {"id": str(k), "source": r.get("source") or (req.get("ssdm") or {}).get("source"),
+            yield {"id": str(k), "source": source_of(k, r, req),
                    "state": req.get("state") if "state" in req else req,  # unknown shape: every leaf counts
                    "questions": req.get("questions") if "state" in req else None}
 
@@ -346,7 +353,7 @@ def _doc_overlap_train_ids(cfg: dict, recs: dict, tr_ids: list, ident):
     except DocOverlapError as e:
         raise DocOverlapRefusal(f"doc-overlap guard cannot run: {e}") from e
     if rep["n_records"] != len(keys):
-        raise DocOverlapRefusal(f"doc-overlap guard read {rep['n_records']} of {len(keys)} training rows")
+        raise DocOverlapRefusal(f"doc-overlap guard read {rep['n_records']} of {len(keys)} records")
     ok, why = check_pinned(rep, doc_clean_pin(cfg))
     if not ok:
         raise DocOverlapRefusal(f"doc-overlap guard: {why} (per source {rep['per_source_fail']})")
@@ -375,6 +382,8 @@ def load_cell_data(cfg: dict, records_path: str, train_dir: str | None = None, c
     if not cfg.get("train_set"):
         tr_ids, ev_ids, ident = (cohort_split(sorted(recs), cfg, recs) if protected
                                else _development_split(recs, cfg))
+        # both gates scan the WHOLE records file and compare with their whole-file pins, so their order cannot change
+        # either pin; each then removes its pinned rows from the training ids
         tr_ids, aident = attack_guard_records(cfg, recs, tr_ids)
         # a clean file keeps its historical identity; pinned exclusions are recorded
         ident = {**ident, "attack_guard": aident} if aident["n_excluded"] else ident
@@ -800,7 +809,18 @@ def _main(argv=None, ctx: dict | None = None):
     ap.add_argument("--device", default="cuda", help="cuda (paid runs); cpu only for the tiny-model dry run")
     ap.add_argument("--teacher-dir", default=None, help="KD cells (config 'teacher'): the pinned teacher export "
                     "(train.teacher.load_teacher); refused for a cell without a teacher block")
+    ap.add_argument("--chain-link", type=int, default=0, help="train.chain: this job is link K of --chain-of (0 = not "
+                    "chained); links >= 2 must resume link K-1's installed checkpoint")
+    ap.add_argument("--chain-of", type=int, default=0)
+    ap.add_argument("--train-deadline", type=float, default=None, help="train.chain: unix time the training loop "
+                    "stops by (the job's deadline); an intermediate link then saves and ends as 'link_end'")
     a = ap.parse_args(argv)
+    chain = None
+    if a.chain_link or a.chain_of:
+        if not (a.chain_of >= 2 and 1 <= a.chain_link <= a.chain_of):
+            print(f"config: --chain-link {a.chain_link} --chain-of {a.chain_of}", flush=True)
+            return EXIT["config"]
+        chain = {"link": a.chain_link, "of": a.chain_of}
 
     import torch
 
@@ -1028,7 +1048,23 @@ def _main(argv=None, ctx: dict | None = None):
         reset_peak()
         tr = make_trainer(cfg["max_steps"], a.ckpt_dir)
         keep = bool(cfg.get("pair"))  # paired cells write units-step*.json for train.g16_card.capability_cost
-        resumed = tr.resume()
+        if chain is None:
+            resumed = tr.resume()
+        else:  # train.chain: config hash + lineage of the carried checkpoint, and the link order, gate the resume
+            from train.chain import chain_id, resume_check
+
+            try:
+                resumed = tr.resume()
+                why = resume_check(chain, cell, cfg, resumed)
+            except ValueError as e:
+                why = str(e)
+            if why:
+                print(f"chain lineage: {why}", flush=True)
+                return EXIT["lineage"]
+            if resumed:  # the cards of earlier links (the step-0 card), so the final verdict sees the whole run
+                tr.cards = list(cell.get("train_cards") or [])
+            chain = {**chain, "chain_id": chain_id(cfg)}
+            cell["chain"] = chain
         dev_out = out / "dev_cards"
         n_events = len(tr.collapse_events)
 
@@ -1068,12 +1104,17 @@ def _main(argv=None, ctx: dict | None = None):
         # the max_minutes budget is cumulative over attempts: a restart resumes with what the checkpointed steps used
         used_before = train_seconds_used(cell, resumed)
         t_end = t_start + 60 * cfg["max_minutes"] - used_before
+        # train.chain: the loop also stops at the job's deadline (an intermediate link exports and the next continues)
+        t_stop = t_end if a.train_deadline is None else min(t_end, a.train_deadline)
         cell["train_clock_resume"] = {"resumed": resumed, "step": tr.step, "used_s_before": used_before,
-                                      "left_s": max(0.0, t_end - t_start)}
+                                      "left_s": max(0.0, t_end - t_start),
+                                      **({"chain": chain, "link_left_s": max(0.0, t_stop - t_start)} if chain else {})}
+        if chain:
+            cell["train_cards"] = tr.cards
         save()
         step0 = tr.step
         logf = open(out / "train_log.jsonl", "a")
-        while tr.step < cfg["max_steps"] and time.time() < t_end:
+        while tr.step < cfg["max_steps"] and time.time() < t_stop:
             with fla_strict():
                 loss = tr.train_step()
             if tr.step - step0 == CHECK_AFTER_STEPS:  # measured stop condition 2: the real data mix's step time
@@ -1081,7 +1122,9 @@ def _main(argv=None, ctx: dict | None = None):
                 chk = too_slow(el / CHECK_AFTER_STEPS, (t_end - time.time()) / 60,
                                max(0, steps_needed(cfg["pass_rule"], cfg.get("min_steps")) - tr.step))
                 cell["train_rate_check"] = chk
-                if tr.cfg.lr_schedule == "cosine":  # horizon = min(max_steps, clock-projected final step); fixed once
+                # horizon = min(max_steps, clock-projected final step over the WHOLE max_minutes clock); fixed once,
+                # stored in the checkpoint (a resumed attempt or chain link keeps it, and its record)
+                if tr.cfg.lr_schedule == "cosine" and not tr.horizon_fixed:
                     tr.set_horizon(tr.step + int(chk["affordable_steps"]))
                     cell["lr_horizon"] = {"step": tr.horizon, "fixed_at_step": tr.step}
                 save()
@@ -1103,6 +1146,8 @@ def _main(argv=None, ctx: dict | None = None):
             if tr.step % cfg["ckpt_every"] == 0:
                 tr.save()
                 cell["train_clock"] = {"step": tr.step, "used_s": used_before + time.time() - t_start}
+                if chain:
+                    cell["train_cards"] = tr.cards
                 save()
                 _checkpoint_post()
             if tr.step % cfg["eval_every"] == 0:
@@ -1118,16 +1163,37 @@ def _main(argv=None, ctx: dict | None = None):
                 print(f"collapse_event {json.dumps(tr.collapse_events[-1], default=str)}", flush=True)
             if tr.stopped:  # collapse guard: max events reached -> stop; scoring uses the best checkpoint
                 break
-        if not tr.cards or tr.cards[-1]["step"] != tr.step:
+        link_end = False
+        if chain:
+            from train.chain import stop_reason
+
+            link_end = stop_reason(time.time(), t_end, a.train_deadline, tr.step, cfg["max_steps"], tr.stopped,
+                                   chain) == "link_end"
+        # an intermediate link writes no end-of-run card: the run is not over (an uninterrupted run has none here)
+        if not link_end and (not tr.cards or tr.cards[-1]["step"] != tr.step):
             # paired cells (cfg["pair"]) keep per-item units for train.g16_card.capability_cost
             tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(
                 tr.model, eval_items, tr.step, a.out, keep_units=keep))
             tr.cards[-1].pop("units", None)
         tr.save()
         cell["train_clock"] = {"step": tr.step, "used_s": used_before + time.time() - t_start}
+        if link_end:  # the next link resumes this checkpoint (train.chain export / install)
+            cell["train_cards"] = tr.cards
+            cell["train"] = {"stopped": "link_end", "steps": tr.step, "resumed": resumed, "T_max": t_max, **chain}
+            if tr.anti_collapse_on():
+                cell["dev_cards"], cell["collapse_events"], cell["best"] = tr.dev_cards, tr.collapse_events, tr.best
+            save()
+            _checkpoint_post()
+            print(f"chain link {chain['link']} of {chain['of']} ends at step {tr.step}", flush=True)
+            return 0
         _checkpoint_post()
         cell["train"] = {"steps": tr.step, "resumed": resumed, "T_max": t_max, "cards": tr.cards,
                          "lineage": tr.lineage, "verdict": pass_rule(tr.history, tr.cards, peak(), cfg["pass_rule"])}
+        if chain:  # the final link (or one whose global clock / max_steps ran out): did the job deadline cut the run?
+            cell["train_cards"] = tr.cards
+            cut = (a.train_deadline is not None and time.time() >= a.train_deadline and time.time() < t_end
+                   and tr.step < cfg["max_steps"] and not tr.stopped)
+            cell["train"]["chain"] = {**chain, "cut_by_job_deadline": cut}
         if tr.anti_collapse_on():
             cell["train"]["anti_collapse"] = tr.anti_collapse_state()
             cell["dev_cards"], cell["collapse_events"], cell["best"] = tr.dev_cards, tr.collapse_events, tr.best

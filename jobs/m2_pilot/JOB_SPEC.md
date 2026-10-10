@@ -130,7 +130,7 @@ Every response is served through `decide.Decider(calibration=FeatureTemperature)
 fitted temperature. `revision_id` = `<backend>+T:<temperature id>`.
 
 Schedule 173 + reserve 7 = 180 min. **Worst case** (20 build + 2 × 180) × $0.0495 = **$18.81**, under the
-**$20 hard cap**; `set_workspace_cap(MTD + 20)` applies when the job runs alone.
+**$24 hard cap** (re-authorised 2026-10-09 ($20 → $24)); `set_workspace_cap(MTD + 24)` applies when the job runs alone.
 
 **Eval volume** (RWKV7 tokenizer, measured on the cohort; `jobs/m2_parent_arm/score_parent.VOLUME_TOKENS`):
 - **Child arm:** 59.2 M tokens (G12 9.3 M, G13 49.9 M). G13's Index term is now the FULL DEV slice (issue #36):
@@ -173,7 +173,7 @@ Every stop below exits and lands in the receipt:
 5. **The usual spend steps:**
    - a `spend` issue with this estimate and these stop conditions, acknowledged by the other agent;
    - a LEDGER planned row;
-   - `validate_job` against the $20 cap;
+   - `validate_job` against the $24 cap;
    - the SF credit-expiry check (promo expires 2026-10-27T06:53Z).
 
 ## Cohort v3 retention cost (G13 child arm)
@@ -194,3 +194,13 @@ per arm:
   - re-caching the parent arm;
   - passing `pool_dirs={"m2-150k": <dir>}` to `Cohort.load_role_records`;
   - the v3 training-draw guard, which is already enforced in `baselines.clef_teacher`.
+
+## Re-pricing 2026-10-09: H100 batch $0.0495 -> $0.063/min
+
+SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now bill $0.063 per GPU-minute (Mon-Thu and weekends; Fridays $0.05628) and the preflight quotes max_duration x $0.063. Evidence and history: `jobs/common/rates.py`. The dollar figures above this section are at the old $0.0495/min and stay as written (receipts and past decisions used them); the numbers below are the current ones (`python -m jobs.common.costs`). Where a hard cap was raised, it was raised by the same ratio as the rate (x 0.063/0.0495 = x 14/11, rounded up to the cent), so the cap still buys the same minutes.
+
+| Params | Worst case (build + 2 attempts) | Hard cap | Expected | One attempt (quoted max_cost) |
+|---|---|---|---|---|
+| `job_params.json` | $23.94 (was $18.81) | $24.00 (re-authorised 2026-10-09 ($20 → $24)) | – | $11.34 (was $8.91) |
+
+`jobs/m2_pilot/job_params.json`: worst case $23.94 exceeded the $20 line at the new rate; the line was re-authorised 2026-10-09 ($20 → $24) by the coordinator (agreed by A and B), so the hard cap is $24.00, the lint passes without a waiver and the launcher no longer needs `--allow-waived`.

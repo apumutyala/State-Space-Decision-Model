@@ -1,0 +1,24 @@
+{
+ "schema": "sf-usage-billing-capture/v1",
+ "workspace": "default",
+ "captures": [
+  {
+   "file": "usage.json",
+   "command": "autor --workspace default usage --json",
+   "captured_at_utc": "2026-10-10T04:13:28Z",
+   "sha256": "2f450c5cca7c14b5a0db4659b27503c809643533a98aa92591def2fcdfeeeb8d",
+   "month": "2026-10",
+   "total_usd": 530.028114
+  },
+  {
+   "file": "billing.json",
+   "command": "autor --workspace default billing --json",
+   "captured_at_utc": "2026-10-10T04:33:39Z",
+   "sha256": "d287e0bd181085380f3896d0804436a8521c8ebf831c5712655847a594382705",
+   "month": "2026-10",
+   "org_mtd_usd": 531.132647,
+   "credit_grants_total_usd": 785.0
+  }
+ ],
+ "note": "Captured for PR #241: the fixed $525 envelope is retired (operator lifted the cap; credit topped up 2026-10-09 with $250 + $10). jobs.common.costs reads spend from usage.json and granted credit from billing.json."
+}

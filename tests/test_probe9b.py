@@ -32,11 +32,11 @@ RUNNER = (ROOT / "jobs/probe9b/probe_job.sh").read_text(encoding="utf-8")
 def test_cost_line_costs_convention_and_hard_cap():
     w = costs.worst_case_usd(P)
     assert costs.attempts(P) == 2  # max_restarts 0, but >= 1 platform retry assumed
-    assert w == round((P["build_timeout_minutes"] + 2 * P["max_duration_minutes"]) * P["batch_usd_per_min"], 2) == 28.21
+    assert w == round((P["build_timeout_minutes"] + 2 * P["max_duration_minutes"]) * P["batch_usd_per_min"], 2) == 35.91
     assert w <= P["hard_cap_usd"] == 40.0
-    assert costs.single_attempt_usd(P) == 13.37
-    assert costs.expected_usd(P) == round(sum(P["expected_minutes"].values()) * 0.0495, 2) == 6.58
-    for s in ("$28.21", "$13.37", "$6.58", "MTD + 40"):
+    assert costs.single_attempt_usd(P) == 17.01  # $0.063/min from 2026-10-08 (was 13.37 / 6.58 at $0.0495)
+    assert costs.expected_usd(P) == round(sum(P["expected_minutes"].values()) * 0.063, 2) == 8.38
+    for s in ("$35.91", "$17.01", "$8.38", "MTD + 40"):
         assert s in SPEC, s
 
 

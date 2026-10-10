@@ -197,6 +197,12 @@ def arm_template(arm_identity: dict) -> str | None:
 
 
 # ------------------------------------------------------------------------------------------------ CPU: pricing
+def _quote_usd_per_min() -> float:
+    from jobs.common.rates import QUOTE_USD_PER_MIN
+
+    return QUOTE_USD_PER_MIN
+
+
 def estimate(params: dict) -> dict[str, Any]:
     fixed = float(params.get("screen_fixed_minutes", DEFAULT_FIXED_MIN))
     minutes = fixed + D1_PROXY_CHILD_MIN
@@ -204,7 +210,7 @@ def estimate(params: dict) -> dict[str, Any]:
     usd = params["batch_usd_per_min"]
     return {"rows": PROXY, "child_minutes_d1_rate": D1_PROXY_CHILD_MIN, "fixed_minutes": fixed,
             "minutes": round(minutes, 1), "cap": cap, "ok": minutes <= 0.95 * cap,
-            "usd_batch": round(minutes * usd, 2), "usd_quoted": round(minutes * 0.063, 2),
+            "usd_batch": round(minutes * usd, 2), "usd_quoted": round(minutes * _quote_usd_per_min(), 2),
             "source": "D1 job-c7pq2 per-row total_wall_ms on the proxy rows (untempered arm, trained cap; the v1 "
                       "readout: other readouts' prompt lengths differ)"}
 
@@ -425,9 +431,21 @@ def build_report(rows: list[dict], prox: dict, child: dict, parent: dict, ref: d
         "rule": f"DROP if child - reference < -{DROP_MARGIN} Index points on the proxy (point), else PROMOTE to the "
                 "full subset + full DEV; every arm under the same readout; a screen, never a promotion",
         "verdict": verdict(vr["diff"]["point"]),
+        "warnings": collapse_warnings(rows, child, parent, ref),
         "cost": {"elapsed_min": elapsed_min, "runtime_usd": round(elapsed_min * usd, 2), "usd_per_min": usd,
                  "build_minutes_not_included": True},
         "measured": True}
+
+
+def collapse_warnings(rows: list[dict], child: dict, parent: dict, ref: dict) -> dict:
+    """NON-GATING per-family label-collapse warnings (``jobs.common.label_collapse``) on the proxy rows: the child's
+    at the top level, the parent's and the reference's beside it for comparison. Never changes the verdict."""
+    from jobs.common.label_collapse import safe_detect
+
+    out = safe_detect(rows, child)
+    out["parent"] = safe_detect(rows, parent)
+    out["reference"] = safe_detect(rows, ref)
+    return out
 
 
 def _count(xs) -> dict:

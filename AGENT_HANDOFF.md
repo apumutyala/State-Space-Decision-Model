@@ -86,7 +86,7 @@ Avoid: `decide/schema.py`, `decide/untrusted.py`, `harness/manifests/`, `safety_
 
 ## 5. Stage by stage (same table as `HANDOFF.md` §5)
 
-Costs from `jobs/*/JOB_SPEC.md`, `jobs/DECISION_TREE.md`, `jobs/common/costs.py`, `train/M2_RUN_SPEC.md` at $2.97/h ($0.0495/min); worst case = (build + 2 attempts × max_duration) × rate.
+Costs from `jobs/*/JOB_SPEC.md`, `jobs/DECISION_TREE.md`, `jobs/common/costs.py`, `train/M2_RUN_SPEC.md` at $2.97/h ($0.0495/min) (superseded 2026-10-08: batch now $3.78/h = $0.063/min; job_params, costs.py and DECISION_TREE re-priced 2026-10-09, see `jobs/common/rates.py`); worst case = (build + 2 attempts × max_duration) × rate.
 
 | Stage | Falsifiable hypothesis | Pre-registered decision rule | Cost | Status | Key files |
 |---|---|---|---|---|---|

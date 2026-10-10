@@ -397,7 +397,7 @@ the budget. That worst case is conservative: a resumed attempt does not repeat f
 attempt costs only the remaining work. Branch A now leaves $120.80 of System 1 for m2. A1's full-MMLU arms add
 5.5 projected minutes (+$0.30 expected, +$0.50 worst case).
 
-**Hard cap: `set_workspace_cap(MTD + 85)`.** MTD is $16.11 (2026-10-07: LEDGER's $14.49 plus job-tvuat $1.62 from its get_job receipt). Then re-run `validate_job` and require
+**Hard cap: `set_workspace_cap(MTD + 108.19)`** (re-priced 2026-10-09 at $0.063/min; was MTD + 85). MTD: read it live (`autor usage --json`) or from the newest usage receipt `costs.SPENT_USD` loads (it was $16.11 on 2026-10-07). Then re-run `validate_job` and require
 scope = workspace cap and `verdict: pass`.
 
 ## `submit_job` fields (do not submit until #87 is approved and independently reviewed)
@@ -575,3 +575,11 @@ cosine: 1 - cos went 0.0053 -> 0.0055.
 layer 23's single-layer stage 2 did. This is an information-only estimate: single-swap numbers do not compose
 exactly, and the rule is unchanged by it. It is the main risk to the `q9af-backbone` verdict and should be weighed
 before the spend. A rejected layer is not retried; see the rule section.
+
+## Re-pricing 2026-10-09: H100 batch $0.0495 -> $0.063/min
+
+SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now bill $0.063 per GPU-minute (Mon-Thu and weekends; Fridays $0.05628) and the preflight quotes max_duration x $0.063. Evidence and history: `jobs/common/rates.py`. The dollar figures above this section are at the old $0.0495/min and stay as written (receipts and past decisions used them); the numbers below are the current ones (`python -m jobs.common.costs`). Where a hard cap was raised, it was raised by the same ratio as the rate (x 0.063/0.0495 = x 14/11, rounded up to the cent), so the cap still buys the same minutes.
+
+| Params | Worst case (build + 2 attempts) | Hard cap | Expected | One attempt (quoted max_cost) |
+|---|---|---|---|---|
+| `job_params.json` | $107.73 (was $84.65) | $108.19 (was $85.00) | $35.47 (was $27.87) | $51.98 (was $40.84) |

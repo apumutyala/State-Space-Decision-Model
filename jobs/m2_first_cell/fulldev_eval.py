@@ -435,7 +435,7 @@ def _sha(p: Path) -> str:
 
 
 def report(a) -> dict:
-    from jobs.common.costs import quoted_max_cost_usd, worst_case_usd
+    from jobs.common.costs import QUOTE_USD_PER_MIN, quoted_max_cost_usd, worst_case_usd
 
     d = Path(a.out_dir)
     params = json.loads(Path(a.params).read_text(encoding="utf-8"))
@@ -488,6 +488,7 @@ def report(a) -> dict:
         if tm.is_file():
             ent["timing"] = json.loads(tm.read_text(encoding="utf-8"))
         out["arms"][arm] = ent
+    out["warnings"] = collapse_warnings(d, arms, keep)
     if "parent" in arms:  # paired child - parent on identical rows (frozen bootstrap.compare)
         cmp = (_harness("compare", "--candidate", str(d / "child.results.jsonl"),
                         "--baseline", str(d / "parent.results.jsonl"), *ed) if keep is None
@@ -496,8 +497,8 @@ def report(a) -> dict:
         out["child_minus_parent"] = cmp.get("diff", cmp)
     usd = params["batch_usd_per_min"]
     out["cost"] = {"elapsed_min": a.elapsed_min, "runtime_usd_batch": round(a.elapsed_min * usd, 2),
-                   "usd_per_min_batch": usd, "runtime_usd_quoted": round(a.elapsed_min * 0.063, 2),
-                   "usd_per_min_quoted": 0.063, "build_minutes_not_included": True,
+                   "usd_per_min_batch": usd, "runtime_usd_quoted": round(a.elapsed_min * QUOTE_USD_PER_MIN, 2),
+                   "usd_per_min_quoted": QUOTE_USD_PER_MIN, "build_minutes_not_included": True,
                    "worst_case_usd": worst_case_usd(params), "quoted_max_cost_usd": quoted_max_cost_usd(params),
                    "hard_cap_usd": params["hard_cap_usd"]}
     out["checkpoint"] = {k: v for k, v in (params.get("checkpoint") or {}).items() if not k.startswith("_")}
@@ -510,6 +511,26 @@ def report(a) -> dict:
                                    "pairs with the comparators' 32k-substituted files), 'excl_overlength51' = the same "
                                    "minus the 51 comparator over-length rows")
     out["verdict"] = "measured"
+    return out
+
+
+def collapse_warnings(d: Path, arms: list[str], keep: set[str] | None) -> dict:
+    """NON-GATING per-family label-collapse warnings (``jobs.common.label_collapse``) on the selected DEV rows: the
+    child's at the top level, every other arm's beside it. Never changes a score or the verdict."""
+    from jobs.common.label_collapse import safe_detect
+
+    try:
+        from harness import cli
+
+        rows = [r for r in cli.load_slice("dev", EDITION) if keep is None or r["_evaluation"]["run_id"] in keep]
+        res = {arm: {r["run_id"]: r for r in (json.loads(x) for x in (d / f"{arm}.results.jsonl").read_text(
+            encoding="utf-8").splitlines() if x.strip())} for arm in arms}
+    except Exception as e:  # noqa: BLE001 - a warning never breaks the report
+        return {"label_collapse": [], "label_collapse_count": None, "error": f"{type(e).__name__}: {e}", "gating": False}
+    out = safe_detect(rows, res["child"])
+    for arm in arms:
+        if arm != "child":
+            out[arm] = safe_detect(rows, res[arm])
     return out
 
 

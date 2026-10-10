@@ -1,5 +1,7 @@
 # m2 first paid-run spec (NOT launched)
 
+> **Rate note (2026-10-09):** the dollar figures here use the 2026-10-06 SF Compute rates ($2.97/h = $0.0495/min batch, $3.96/h interactive) and are left as written. From 2026-10-08 the H100 list price is $5.04/h and batch jobs bill $3.78/h ($0.063/min; Fridays $0.05628/min), so batch figures scale by x 1.27. Source and history: `jobs/common/rates.py`.
+
 Status: spec only. Nothing here has run on paid hardware. All $ and memory figures come from
 `python -m train.estimate` (`train/estimates/m2_estimates.json`). They are formula estimates
 built on assumed MFU and a few unverified dimensions (flagged per backbone in `heads/backbone.py`),

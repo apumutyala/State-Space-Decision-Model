@@ -1,0 +1,43 @@
+{
+ "object": "job",
+ "job_id": "job-tkfaj",
+ "status": "succeeded",
+ "label": "rwkv7 stage A v2: state-fork readout + steer smoke @8a97036",
+ "chip": {
+  "count": 1,
+  "model": "h100"
+ },
+ "max_restarts": 0,
+ "submitted_at": "2026-10-06T17:55:51.790842+00:00",
+ "finished_at": "2026-10-06T18:50:32.742710+00:00",
+ "attempt_history": [
+  {
+   "attempt": 1,
+   "end_cause": "process_exit",
+   "end_reason": null,
+   "ended_at": "2026-10-06T18:50:32.742710+00:00",
+   "outcome": "completed",
+   "started_at": "2026-10-06T18:14:25.410495+00:00"
+  }
+ ],
+ "receipt": {
+  "attempts": [
+   {
+    "attempt": 1,
+    "billed_seconds": 2167,
+    "charged_usd_micros": 1787500,
+    "gpu_count": 1,
+    "rate_usd_micros_per_gpu_minute": 49492
+   }
+  ],
+  "billed_attempts": 1,
+  "billed_seconds": 2167,
+  "charged_usd_micros": 1787500,
+  "image_digest": "sha256:41aafb3a202d4fdfbe2255ead783c7aaa714ffeb5f37029d026f61be8bc76236"
+ },
+ "_capture": {
+  "command": "autor --workspace default job get job-tkfaj --json",
+  "captured_at_utc": "2026-10-10T05:04:56Z",
+  "fields": "subset (artifact download links, logs, results and preflight omitted)"
+ }
+}

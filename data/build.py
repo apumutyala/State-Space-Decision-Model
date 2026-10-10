@@ -116,14 +116,18 @@ def build_sample(n_target: int = 20000, out: str | None = None, receipt: str | N
                  seed: int = config.SEED, fingerprint: Fingerprint | None = None, sources: dict | None = None,
                  log=print, allow_test_fingerprint: bool = False, exclusion: Exclusion | None = None,
                  guard=None, keep_records: bool = True, dedup_factchange: bool = False,
-                 manifest_dir: str | None = None) -> dict:
+                 manifest_dir: str | None = None, jevbench_fingerprint: bool = True) -> dict:
     """``allow_test_fingerprint`` is for unit tests with synthetic fingerprints only; a receipt build refuses it.
 
     Additive options, all off by default so the PR #16 20k build is byte-identical: ``exclusion`` skips held-out
     cohort records (id / content / source item) before the guard; ``guard`` (a ``train.guard.SplitGuard`` with
     the Index content index) is a sixth item-tier matcher, logged as ``item_content_index``;
     ``keep_records=False`` streams records to disk without holding them; ``dedup_factchange`` skips a fact-change
-    pair whose variant content already occurs; ``manifest_dir`` writes the manifest and the content map there."""
+    pair whose variant content already occurs; ``manifest_dir`` writes the manifest and the content map there.
+    ``jevbench_fingerprint`` (default on): the JevBench public items' fingerprint (``train.jevbench_guard``, pinned,
+    eval-only) runs beside the Index fingerprint; its five matchers are extra item-tier matchers ``jevbench_*`` (a
+    hit drops the record) and extra context-tier matchers on the whole payload (logged). A build without a JevBench
+    hit is unchanged apart from ``summary.jevbench_fingerprint``."""
     t0 = time.time()
     fp = fingerprint or Fingerprint.load(config.FINGERPRINT)
     if not allow_test_fingerprint:
@@ -131,6 +135,11 @@ def build_sample(n_target: int = 20000, out: str | None = None, receipt: str | N
     elif receipt:
         raise ValueError("a receipt build needs the production fingerprint")
     dlog = DedupLog(fp.meta)
+    jb_fp = None
+    if jevbench_fingerprint:
+        from train import jevbench_guard as JG
+
+        jb_fp = JG.load()[1]  # fail closed: a missing / drifted JevBench pin stops the build
     shares = sources or SHARES
     if abs(sum(shares.values()) - 1.0) > 1e-9:
         raise ValueError(f"shares sum to {sum(shares.values())}, not 1")
@@ -170,6 +179,11 @@ def build_sample(n_target: int = 20000, out: str | None = None, receipt: str | N
         I.assert_no_heldout(rec["state"], rec["questions"], rec["id"])
         held_out_checked += 1
         item, full = fp.check(rec["_probe"], {}), fp.check(rec["state"], rec["questions"])
+        if jb_fp is not None:
+            from train.jevbench_guard import fingerprint_item_hits
+
+            item = {**item, **fingerprint_item_hits(jb_fp, rec["_probe"], {})}
+            full = {**full, **fingerprint_item_hits(jb_fp, rec["state"], rec["questions"])}
         attack = record_hits(rec)  # eval attack templates (safety test material): the record is dropped
         if attack:
             item = {**item, "eval_attack_template": sorted(attack)}
@@ -349,6 +363,14 @@ def build_sample(n_target: int = 20000, out: str | None = None, receipt: str | N
         summary["cohort_exclusion"] = {"cohort": exclusion.identity,
                                        "skipped_by_bucket": {k: dict(v) for k, v in sorted(excluded.items())},
                                        "skipped_total": dict(sum(excluded.values(), collections.Counter()))}
+    if jb_fp is not None:
+        from train import jevbench_guard as JG
+
+        tot_ = dlog.to_json()["totals"]
+        summary["jevbench_fingerprint"] = {**JG.identity(),
+                                           "item_hits": {k: v for k, v in tot_.items() if k.startswith("item_jevbench_")},
+                                           "context_hits": {k: v for k, v in tot_.items()
+                                                            if k.startswith("context_jevbench_")}}
     if guard is not None:
         summary["content_index_guard_fired"] = dlog.to_json()["totals"].get("item_content_index", 0)
     if need_content:

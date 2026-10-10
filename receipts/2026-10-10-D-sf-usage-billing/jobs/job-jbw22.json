@@ -1,0 +1,43 @@
+{
+ "object": "job",
+ "job_id": "job-jbw22",
+ "status": "failed",
+ "label": "m1 H100 hardware qualification @6e39d9b",
+ "chip": {
+  "count": 1,
+  "model": "h100"
+ },
+ "max_restarts": 0,
+ "submitted_at": "2026-10-06T14:56:41.333124+00:00",
+ "finished_at": "2026-10-06T15:24:34.583914+00:00",
+ "attempt_history": [
+  {
+   "attempt": 1,
+   "end_cause": "process_exit",
+   "end_reason": null,
+   "ended_at": "2026-10-06T15:24:34.583914+00:00",
+   "outcome": "completed",
+   "started_at": "2026-10-06T15:23:11.445261+00:00"
+  }
+ ],
+ "receipt": {
+  "attempts": [
+   {
+    "attempt": 1,
+    "billed_seconds": 83,
+    "charged_usd_micros": 68200,
+    "gpu_count": 1,
+    "rate_usd_micros_per_gpu_minute": 49301
+   }
+  ],
+  "billed_attempts": 1,
+  "billed_seconds": 83,
+  "charged_usd_micros": 68200,
+  "image_digest": "sha256:55c8ba30226790db7e3212cb66a2646eb320877b3da4cb6a73a22f2afd914f43"
+ },
+ "_capture": {
+  "command": "autor --workspace default job get job-jbw22 --json",
+  "captured_at_utc": "2026-10-10T05:03:56Z",
+  "fields": "subset (artifact download links, logs, results and preflight omitted)"
+ }
+}

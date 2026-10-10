@@ -1,5 +1,7 @@
 # A — Adversarial review of the partner plan (`plans/partner/`)
 
+> **Rate note (2026-10-09):** the dollar figures here use the 2026-10-06 SF Compute rates ($2.97/h = $0.0495/min batch, $3.96/h interactive) and are left as written. From 2026-10-08 the H100 list price is $5.04/h and batch jobs bill $3.78/h ($0.063/min; Fridays $0.05628/min), so batch figures scale by x 1.27. Source and history: `jobs/common/rates.py`.
+
 Date: 2026-10-06. Reviewer stance: adversarial but fair; every verdict carries a confidence level and the evidence that would change it. Inputs: `plans/partner/{PLAN,SF525_PILOT,ASTRA_REVIEW,EVIDENCE}.md` read in full; judged against `reviews/01–04`; `plans/claude/PLAN.md` skimmed only to locate differences (the claude plan has its own reviewer). Web checks performed today are listed in §6.
 
 Confidence scale: **High** = primary source or arithmetic; **Medium** = consistent with the evidence base but depends on an unmeasured quantity; **Low** = my estimate.

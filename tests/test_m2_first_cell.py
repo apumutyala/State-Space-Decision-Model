@@ -33,9 +33,11 @@ def test_cell_config_is_the_specified_cell():
         "act_ckpt": True, "row_batch": 8, "row_tokens": 8192, "rwkv7_wkv": "chunked_lean", "t_ladder": [512, 1024, 2048]}
     assert CELL["row_batch"] == CELL["batch_size"] * CELL["grad_accum"]  # 8 rows per optimiser step (grouped by row_tokens per call)
     assert f"{PARAMS['phase_caps_minutes']['cell']}-min cell phase" in CELL["max_minutes_note"]
-    from heads.rwkv7_wkv import GPU_VERIFIED
+    # flipped by commit 7781cb7 after the fla gate's GPU ADOPT (SF job-9bs8w, perf_step_gate v2: fast_fla 3.88 vs
+    # 5.65 s/step, LoRA-grad cos 0.998, zero fallbacks; receipt in heads/rwkv7_wkv.py); only plain "fla" is verified
+    from heads.rwkv7_wkv import FLA, GPU_VERIFIED, GPU_VERIFIED_NAMES
 
-    assert GPU_VERIFIED is False
+    assert GPU_VERIFIED is True and GPU_VERIFIED_NAMES == frozenset({FLA})
     assert CELL["min_steps"] * CELL["grad_accum"] * CELL["batch_size"] >= 4800
     assert CELL["n_train_records"] * 0.9 >= CELL["max_steps"] * CELL["grad_accum"] * 0.9  # < 1 epoch at max_steps
 
@@ -43,13 +45,13 @@ def test_cell_config_is_the_specified_cell():
 def test_cost_worst_case_and_expected():
     from jobs.common.costs import cap_ok, expected_usd, schedule_ok, worst_case_usd
 
-    assert worst_case_usd(PARAMS) == round((60 + 2 * 637) * 0.0495, 2) == 66.03
+    assert worst_case_usd(PARAMS) == round((60 + 2 * 637) * 0.063, 2) == 84.04  # 66.03 at the pre-2026-10-08 $0.0495
     assert PARAMS["build_timeout_minutes"] >= 60  # launch lint L-09
     assert PARAMS["phase_caps_minutes"]["parent_index"] == 65
-    assert cap_ok(PARAMS) and PARAMS["hard_cap_usd"] == 70.0 and schedule_ok(PARAMS)
+    assert cap_ok(PARAMS) and PARAMS["hard_cap_usd"] == 89.1 and schedule_ok(PARAMS)
     assert CELL["max_minutes"] == 190  # pre-registered
-    assert expected_usd(PARAMS) == round(sum(PARAMS["expected_minutes"].values()) * 0.0495, 2)
-    assert 20 <= expected_usd(PARAMS) <= 30
+    assert expected_usd(PARAMS) == round(sum(PARAMS["expected_minutes"].values()) * 0.063, 2)
+    assert 25 <= expected_usd(PARAMS) <= 38  # 20-30 at $0.0495, x 14/11
     assert sum(PARAMS["phase_caps_minutes"].values()) + PARAMS["reserve_minutes"] == PARAMS["max_duration_minutes"]
     # training wall clock fits its phase with the non-training work (load, smoke, ladder, two cards, checkpoints)
     assert CELL["max_minutes"] + 40 <= PARAMS["phase_caps_minutes"]["cell"]
@@ -363,15 +365,23 @@ def test_runner_orders_guards_before_training_and_prices_every_eval_first():
     # review fix 1: the parent arm (live rate guard) and the measured re-price run BEFORE any training spend
     assert i("jobs.m2_parent_arm.score_parent --parent") < i("-m jobs.m2_first_cell.reprice") < train < i("-m train.m2_gates")
     assert "export_phase heldout" in JOB  # review fix 3
-    assert '--report "$ARM/rate-parent-$STAGE.json"' in JOB  # rate reports survive a restart (reprice reads them)
-    assert JOB.count("rate_guard run-weighted") == 2  # parent stages (loop) + child evals
+    assert '--report "$ARM/rate-parent-$PSTAGE.json"' in JOB  # rate reports survive a restart (reprice reads them)
+    # every scoring command runs under the live rate guard (the same continued command line): parent stages (loop),
+    # mode fulldev_eval (7420814), stage screen (2b9fd92) and the child evals; the parent arm precedes training
+    assert JOB.count("rate_guard run-weighted") == 4
+    for cmd in ("-m jobs.m2_parent_arm.score_parent --parent", "-m jobs.m2_first_cell.fulldev_eval score",
+                "-m jobs.m2_first_cell.screen score", "-m train.m2_gates --cell"):
+        at = i(cmd)
+        wrapped = JOB[JOB.rindex("rate_guard run-weighted", 0, at):at].splitlines()[:-1]
+        assert len(wrapped) <= 3 and all(ln.rstrip().endswith("\\") for ln in wrapped), cmd
+    assert i("rate_guard run-weighted --progress \"$WORK/logs/parent-$PSTAGE.progress.jsonl\"") < train
     assert "jobs/common/finalize.py" in JOB and not re.search(r"touch [^\n]*DONE", JOB)
     assert not re.search(r"timeout \d+m", JOB)  # every cap comes from job_params
     assert "--final" not in JOB and "SSDM_UNSEAL_TEST" not in JOB and "--slice test" not in JOB
     assert "case $r in 0|40|43|44|45)" in JOB  # PR #102: 40 / 43 / 44 / 45 are measured, not promotable
     assert "--stage g12+index" in JOB and "VALIDATOR=jobs.m2_first_cell.summarize:valid_result" in JOB
     for ph in PARAMS["phase_caps_minutes"]:
-        assert f"cap {ph}" in JOB or f"cap \"$3\"" in JOB or f"cap parent_$STAGE" in JOB, ph
+        assert f"cap {ph}" in JOB or f"cap \"$3\"" in JOB or f"cap parent_$PSTAGE" in JOB, ph
 
 
 @pytest.mark.parametrize("var", ["TOK_S", "CALL_S"])
@@ -404,9 +414,11 @@ def test_first_cell_dry_run_end_to_end(tmp_path):
     if missing_inputs():
         pytest.skip(f"local private inputs absent: {missing_inputs()}")
     env = {**os.environ, "PYTHONUTF8": "1"}
+    # 3600 s: the doc-overlap guard (PR #235) scans the whole 150k set in the heldout phase and again in the cell's
+    # draw (~12 min each on this laptop); measured 2,364 s on agent-main 7c13435 vs 1,416 s before it (f1d8b2d)
     r = subprocess.run([sys.executable, "-X", "utf8", str(ROOT / "scripts/m2_first_cell_dryrun.py"), "--out",
                         str(tmp_path / "dry"), "--role-n", "12", "--index-n", "24"], cwd=ROOT, env=env,
-                       capture_output=True, text=True, timeout=1500)
+                       capture_output=True, text=True, timeout=3600)
     rec = json.loads((tmp_path / "dry" / "receipt.json").read_text(encoding="utf-8"))
     assert r.returncode == 0 and rec["all_ok"] and rec["result_valid"], r.stdout[-3000:]
     res = rec["result"]
@@ -416,7 +428,11 @@ def test_first_cell_dry_run_end_to_end(tmp_path):
     ag = ts["attack_guard"]
     assert ag["n_excluded"] == 8_049 and ag["drawn_hits"] == 0 and ag["per_set"]["d1a_steer"] == 8_049
     assert res["training"]["steps"] == 6
-    assert ts["n_pool"] == 149_997 - ts["cohort_v3_excluded"]["n"] - ag["n_excluded"] == 111_795 - 8_049
+    # ... - the pinned doc_clean spec (train.doc_overlap_guard: 152 rows over the set, af096960 index; those not already
+    # removed above leave the pool)
+    dg = ts["doc_overlap_guard"]
+    assert dg["n_excluded"] == 152 and dg["drawn_fails"] == 0
+    assert ts["n_pool"] == 149_997 - ts["cohort_v3_excluded"]["n"] - ag["n_excluded"] - dg["n_pool_removed"]         == 111_795 - 8_049 - dg["n_pool_removed"] == 111_795 - 8_049 - DOC_POOL_REMOVED
     assert ts["cohort_v3_excluded"]["drawn_overlap"] == 0
     assert res["index_dev_subset"]["rows"] >= 24 and res["steer_hijack_d1a"]["complete"]
     assert set(res["index_dev_subset"]["child_minus_parent"]["areas"]) == set(res["index_dev_subset"]["child"]["areas"])
@@ -540,7 +556,8 @@ def test_registered_for_the_launch_lint():
 
     assert costs.PARAMS["m2_first_cell"] == "jobs/m2_first_cell/job_params.json"
     tree = (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
-    assert "`jobs/m2_first_cell/` | $66.03 | $70 |" in tree
+    # derived from the params (re-priced 2026-10-09 at jobs/common/rates.py; was "$66.03 | $70" at $0.0495/min)
+    assert f"`jobs/m2_first_cell/` | ${costs.worst_case_usd(PARAMS):.2f} | ${PARAMS['hard_cap_usd']:.2f} |" in tree
     assert f"{costs.worst_case_usd(PARAMS):.2f}" in (ROOT / "jobs/m2_first_cell/JOB_SPEC.md").read_text(encoding="utf-8")
 
 
@@ -581,6 +598,12 @@ def test_pending_partial_underpowered_are_valid_measured_results():
     assert 'in MEASURED_EVAL_EXITS' in src and '"verdict": "measured"' in src
 
 
+DOC_POOL_REMOVED = 99  # 103,746 - 103,647 in the dry run (doc fails outside D1-B, cohort v3 and attack_clean)
+DOC_INDEX_KEY16 = json.loads((ROOT / "data/manifests/doc_overlap/index-pin.json").read_text(encoding="utf-8"))["key"][:16]
+DOC_INDEX_FILES = ("df.npy", "ent.npy", "fl.npy", "h.npy", "meta.json", "pcnt.npy", "post.npy", "pstart.npy",
+                   "u_allow.npy", "u_den.npy", "u_field.npy", "u_row.npy")
+
+
 def test_launch_blocks_and_data_pins():
     p = PARAMS
     assert p["submit"]["command"] == "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh"
@@ -591,11 +614,15 @@ def test_launch_blocks_and_data_pins():
                      "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz",
                      "m2-150k/sample-150000-seed20261006.content.jsonl.gz", "suite-0.2/selected-rows.jsonl.gz",
                      "suite-0.2/added-rows.jsonl.gz", "suite-0.2/excluded-questions.json",
-                     "parent_arm_seed/arm.json", "parent_arm_seed/units-g12.json", "parent_arm_seed/units-index.json"}
+                     "parent_arm_seed/arm.json", "parent_arm_seed/units-g12.json", "parent_arm_seed/units-index.json"} | {
+        f"m2/doc-overlap/{DOC_INDEX_KEY16}/{n}" for n in DOC_INDEX_FILES}
     from jobs.common.launch import data_pin, pins
 
     files = {"jobs/m2_first_cell/job_params.json": ((ROOT / "jobs/m2_first_cell/job_params.json").read_bytes(), 0)}
     for d in p["context"]["data"]:  # every shipped file has a pin: a line under its context path, or a job_params key
+        if "pin_sha256" in d:  # the doc-overlap eval-hash index (hashes only): literal sha of the shipped bytes
+            assert d["dest"].startswith(f"m2/doc-overlap/{DOC_INDEX_KEY16}/") and len(d["pin_sha256"]) == 64, d
+            continue
         if "pin_json" in d:  # the L-34 parent arm seed: pinned by job_params parent_arm_seed
             assert d["pin_json"][0] == "jobs/m2_first_cell/job_params.json" and len(data_pin(files, d)) == 64, d
             continue
@@ -794,7 +821,7 @@ def test_arm_seed_pin_is_the_uhxb5_export():
     assert pin["units_sha256"] == {"g12": "c16c24db65124b78af782305a55d2092b8b4163459a9501714b314e4897ef395",
                                    "index": "f450d000912f5e479eee9943a57ebdb145660396d1fda73fd21c3d7140e57001"}
     assert "--src \"$DATA/parent_arm_seed\"" in JOB and "jobs.m2_first_cell.arm_seed seed" in JOB
-    assert JOB.index("arm_seed seed") < JOB.index("for STAGE in g12 index")
+    assert JOB.index("arm_seed seed") < JOB.index("for PSTAGE in g12 index")
 
 
 def test_arm_seed_is_atomic_a_failed_check_never_becomes_the_cache(tmp_path, monkeypatch):

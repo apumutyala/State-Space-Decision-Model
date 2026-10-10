@@ -180,7 +180,7 @@ Three measurements then replace the assumption:
 
 How the jobs fit together:
 - The subset job is the canary. The full job `depends_on` its `result.s1_ok == true and result.ok == true`.
-- Chained, the workspace cap is MTD + `costs.concurrent_cap_usd(["clef_index_subset", "clef_index_full"])` = MTD + $34.
+- Chained, the workspace cap is MTD + `costs.concurrent_cap_usd(["clef_index_subset", "clef_index_full"])` = MTD + $43 (re-priced 2026-10-09 at $0.063/min; was MTD + $34).
 - At 5.39x, these three jobs ($38.91 worst) no longer fit inside the $75 joint-gate line together with qual and B.
   The coordinator authorised them as a separate line (`costs.CLEF27B_INDEX_JOBS`), which is still counted in the
   envelope.
@@ -491,3 +491,16 @@ The same U+2028 hazard is removed from `train/cohort.py` and `train/guard.py` (t
   duplicate and incomplete files, composite exits 3 and 4, and `drop_truncated_tail`.
 - `tests/clef/test_clef_job_sh.py` executes `run_job.sh` end to end on CPU. The stand-in subset includes the GPQA
   U+2028 row and a native-arm row, and a fault-injected truncated decide file must end in exit 17.
+
+## Re-pricing 2026-10-09: H100 batch $0.0495 -> $0.063/min
+
+SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now bill $0.063 per GPU-minute (Mon-Thu and weekends; Fridays $0.05628) and the preflight quotes max_duration x $0.063. Evidence and history: `jobs/common/rates.py`. The dollar figures above this section are at the old $0.0495/min and stay as written (receipts and past decisions used them); the numbers below are the current ones (`python -m jobs.common.costs`). Where a hard cap was raised, it was raised by the same ratio as the rate (x 0.063/0.0495 = x 14/11, rounded up to the cent), so the cap still buys the same minutes.
+
+| Params | Worst case (build + 2 attempts) | Hard cap | Expected | One attempt (quoted max_cost) |
+|---|---|---|---|---|
+| `job_params_index_full.json` | $29.86 (was $23.46) | $30.55 (was $24.00) | $10.52 (was $8.27) | $13.04 (was $10.25) |
+| `job_params_index_full_reference.json` | $49.90 (was $39.20) | $50.91 (was $40.00) | $17.58 (was $13.81) | $23.06 (was $18.12) |
+| `job_params_index_subset.json` | $12.98 (was $10.20) | $13.37 (was $10.50) | $4.28 (was $3.37) | $4.60 (was $3.61) |
+| `job_params_overlength_flash.json` | $6.68 (was $5.25) | $7.64 (was $6.00) | $1.89 (was $1.49) | $1.45 (was $1.14) |
+| `job_params_teacher_clef.json` | $45.49 (was $35.74) | $45.82 (was $36.00) | $16.82 (was $13.22) | $20.85 (was $16.38) |
+| `job_params_teacher_clef_flash.json` | $14.87 (was $11.68) | $15.28 (was $12.00) | $4.54 (was $3.56) | $5.54 (was $4.36) |

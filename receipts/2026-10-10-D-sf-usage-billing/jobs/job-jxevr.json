@@ -1,0 +1,43 @@
+{
+ "object": "job",
+ "job_id": "job-jxevr",
+ "status": "failed",
+ "label": "clef_baseline/index_full @ ctx a9ff853f632a (Clef 27B, full DEV 12,104 rows + 51 rows @32k) @598cdba",
+ "chip": {
+  "count": 1,
+  "model": "h100"
+ },
+ "max_restarts": 0,
+ "submitted_at": "2026-10-08T09:24:35.078786+00:00",
+ "finished_at": "2026-10-08T09:59:43.953122+00:00",
+ "attempt_history": [
+  {
+   "attempt": 1,
+   "end_cause": "process_exit",
+   "end_reason": null,
+   "ended_at": "2026-10-08T09:59:43.953122+00:00",
+   "outcome": "completed",
+   "started_at": "2026-10-08T09:49:52.916629+00:00"
+  }
+ ],
+ "receipt": {
+  "attempts": [
+   {
+    "attempt": 1,
+    "billed_seconds": 591,
+    "charged_usd_micros": 620200,
+    "gpu_count": 1,
+    "rate_usd_micros_per_gpu_minute": 62964
+   }
+  ],
+  "billed_attempts": 1,
+  "billed_seconds": 591,
+  "charged_usd_micros": 620200,
+  "image_digest": "sha256:be4eb473bbe703a1c7a182efed52d065dba0fbe3497f7c5d43bd43b319c08b4c"
+ },
+ "_capture": {
+  "command": "autor --workspace default job get job-jxevr --json",
+  "captured_at_utc": "2026-10-10T05:05:39Z",
+  "fields": "subset (artifact download links, logs, results and preflight omitted)"
+ }
+}
