@@ -68,6 +68,16 @@ def test_option_order_shuffled_uniformly():
     assert min(pos.values()) > 0.15 * sum(pos.values())
 
 
+def test_pool_serialisation_keeps_option_order():
+    # the shim letters options in criteria order: the build must not re-sort keys (sorted ids = gold at its id rank)
+    r = next(x for x in (J._access_policy(i) for i in range(50)) if x["questions"]["q"]["type"] == "choice")
+    line = json.dumps(r, ensure_ascii=False, separators=(",", ":"))
+    assert list(json.loads(line)["questions"]["q"]["criteria"]) == list(r["questions"]["q"]["criteria"])
+    import inspect
+    from scripts import jev1_build
+    assert "sort_keys" not in inspect.getsource(jev1_build.cmd_gen)
+
+
 def test_no_item_text_in_aug():
     # harness.heldout reads non-content keys as tags: aug may carry key NAMES only, never source text
     for i in range(20):

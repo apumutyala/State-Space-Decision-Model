@@ -109,7 +109,9 @@ def cmd_gen(a) -> int:
             if r["id"] in ids:
                 raise SystemExit(f"duplicate id {r['id']}")
             ids.add(r["id"])
-            line = canonical(r)
+            # insertion order, never key-sorted: the shim letters options in the request's criteria order, so the
+            # seeded per-row option shuffle must survive serialisation (sorted keys put the gold at its id's rank)
+            line = json.dumps(r, ensure_ascii=False, separators=(",", ":"))
             fo.write(line + "\n")
             h.update((line + "\n").encode())
             c[r["aug"]["jev1"]["family8"]] += 1
