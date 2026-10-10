@@ -1,0 +1,261 @@
+{
+ "_comment": "Mode devcal_d19_v3w (B-PREREG-D19-TEMP, state PREREG addendum 1): per-question probabilities of D19 (job-fi5xf art-p3gpi, BEST step 2800 export sha 31062f48, the checkpoint the 48.61 screen and the full-DEV shards score) on its own train-side held-out cohort-dev pool, so ONE temperature T is fitted on CPU (jobs.m2_first_cell.devcal_eval fit) before any DEV / JevBench row is scored with it. Why this set: art-p3gpi stores dev cards as aggregates only, and D19 drew the WHOLE bschema-draw-v3b pool (cell.json n_drawn = n_pool = 253,046, drawn_ids a7306015...), so no v3b row is outside its training draw. Rows = the 804 m2-dev-cohort-v2 dev items D19 built (cell.json dev_card_sample n_pool 804, cohort-excluded from training) + the 200-row dev-card sample again on its own (identity: must reproduce card-step0002800 NLL 0.3376 / acc 0.890 within 0.01). The job refuses (exit 10) unless the rebuilt pool's size, dev-card ids + sha and per-source counts equal cell.json and no pool id / record is a training id. Scored through train.evalcard.run_card(keep_units=True) on the checkpoint loaded exactly as fulldev_eval.load_child (cell's native template jrt-rwkv-g1-v3w / g1v2 = the v3w readout of the screen). No Index DEV / proxy600 / JevBench row, no cohort calibration / retention role. Expected: setup 10 + guard 2 + checkpoint 5 + devcal 28 (21.6 load + lineage as job-fi5xf's screen fixed + 804-row card 3.5-4 min (cell.json train cards: 237 s / 208 s) + 200-row card ~1.2 min (68 s)) = 45 min + build 15; devcal cap 50 (1.8x). max_duration 85: quoted hold $5.36, expected ~$3.0.",
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo; checked on the PR that pins them"
+   }
+  ],
+  "image": "jobs/rwkv7/Dockerfile"
+ },
+ "job": "m2-first-cell-devcal-d19-v3w",
+ "status": "D19 (job-fi5xf art-p3gpi best step 2800): per-question probs on its 804-item cohort-dev pool for the B-PREREG-D19-TEMP temperature fit; no training, no Index rows",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 85,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 15.0,
+ "phase_caps_minutes": {
+  "setup": 12,
+  "guard": 3,
+  "checkpoint": 7,
+  "devcal": 50
+ },
+ "reserve_minutes": 7,
+ "expected_minutes": {
+  "build": 15,
+  "setup": 10,
+  "guard": 2,
+  "checkpoint": 5,
+  "devcal": 28
+ },
+ "evals_fixed_minutes": {
+  "parent": 5,
+  "child": 33
+ },
+ "measured_rates_reference": {
+  "TOK_S": 3757,
+  "CALL_S": 0.117,
+  "source": "job-tkfaj probe.json (the runner requires them; fulldev pricing uses the rows below)"
+ },
+ "parent": "rwkv7",
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_devcal_d19_v3w.json",
+ "train_set_pointer": "data/manifests/bschema-draw-v3b.pointer.json",
+ "cohort": "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "guard_pin": "jobs/m2_pilot/guard_pin.json",
+ "guard_content_index_sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+ "checkpoint": {
+  "_note": "job-fi5xf (D19 d19_v3w_v3b_joint, stack/rwkv7/d19-v3b-joint @84e8113, 3,111 steps, best_ckpt), artifact art-p3gpi (sha below, 1,222,348,800 B; downloaded + hashed locally 2026-10-10). member = the BEST checkpoint's inference export (train.ckpt_export --best: trainable-step0002800.safetensors, bf16 LoRA, sidecar source_ckpt ckpt-step0002800.pt sha 8cdfef6b... = exactly the checkpoint the proxy600 screen scored (out/screen/identity-child.json checkpoint), 48.61 [44.10, 53.08] under v3w; cell.json best step 2800); select best = latest.json's best pointer must name it with this sha (latest.json's path is the last step, 3111). cell.json = the run's out/cell.json (config == m2_first_cell_rwkv7_d19_v3w_v3b_joint.json). url_env: CKPT_URL = the get_artifact art-p3gpi URL, filled into submit.json env at submit time only.",
+  "artifact": "art-p3gpi",
+  "job": "job-fi5xf",
+  "artifact_sha256": "b898dbc495dea1637e06b78694bbd724bacbc5b1cdcc318ef698612d03404622",
+  "member": "./ckpt/trainable-step0002800.safetensors",
+  "ckpt_sha256": "31062f4850713672a5ae7a8bb472455fda699e35b7176a6fc0d331e17b96d215",
+  "sidecar_sha256": "6d1f1adf5485eef16731f7998149860df7fa96ca8f20f836521fedd6776e1669",
+  "latest_json_sha256": "14d830fe30caae224d3559627b7b2da973f76a0f70090ab901d34fad0b7da77b",
+  "cell_json_sha256": "52905cc97265343da5125cc481ae0d542c1599baf7bdbd6e2240e1f7fffa223a",
+  "select": "best",
+  "url_env": "CKPT_URL"
+ },
+ "devcal_expect_step": 2800,
+ "reference_results_sha256": {
+  "_note": "unused by this mode",
+  "rwkv7_stock_tkfaj": null,
+  "clef_flash": null
+ },
+ "mission": "m2-first-cell",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement only (per-question probabilities for the pre-registered temperature fit; T is fitted on CPU at landing: python -I -m jobs.m2_first_cell.devcal_eval fit)",
+ "runner": "jobs/m2_first_cell/first_cell_job.sh",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py, PR #93): identical to the JOB_SPEC submit block (tests/test_launch.py checks field by field). TOK_S / CALL_S = the job-tkfaj probe's measured rates (the runner exits 4 without them).",
+  "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh devcal_d19_v3w",
+  "env": {
+   "TOK_S": "3757",
+   "CALL_S": "0.117",
+   "CKPT_URL": "<CKPT_URL>"
+  },
+  "key": "m2-first-cell-devcal-d19-v3w-fi5xf-best2800-20261010a",
+  "clock_lock": true,
+  "label": "devcal_d19_v3w: D19 (job-fi5xf art-p3gpi, best step 2800) per-question probs on its 804 cohort-dev items (B-PREREG-D19-TEMP T fit), no training, no Index rows",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/M2_FIRST_CELL_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "as fulldev_eval_d19_v3w_s1of2's context (D19's lineage data: records, DEV rows (setup verifies their sha; none is scored), bschema-draw-v3b, suite-0.2, the doc-overlap index, the pinned cell.json); the checkpoint comes from $CKPT_URL, every byte checked",
+  "dockerfile": "jobs/rwkv7/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/rwkv7/rwkv7_job.sh",
+   "jobs/m2_first_cell/first_cell_job.sh"
+  ],
+  "data": [
+   {
+    "src": "m2/build/sample-20000-seed20261006/records.jsonl.gz",
+    "dest": "m2/records.jsonl.gz",
+    "pin": "jobs/rwkv7/records.sha256"
+   },
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw-v3b/records.jsonl.gz",
+    "dest": "m2/build/bschema-draw-v3b/records.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw-v3b/bschema-draw-v3b.manifest.jsonl.gz",
+    "dest": "m2/build/bschema-draw-v3b/bschema-draw-v3b.manifest.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw-v3b/bschema-draw-v3b.content.jsonl.gz",
+    "dest": "m2/build/bschema-draw-v3b/bschema-draw-v3b.content.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "suite-0.2/selected-rows.jsonl.gz",
+    "dest": "suite-0.2/selected-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "suite-0.2/added-rows.jsonl.gz",
+    "dest": "suite-0.2/added-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "suite-0.2/excluded-questions.json",
+    "dest": "suite-0.2/excluded-questions.json",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/df.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/df.npy",
+    "pin_sha256": "ee411d5c067934e5f6bd3e2919ca98ce1fbc48830140f478f06b1f47f96bbe55"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/ent.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/ent.npy",
+    "pin_sha256": "02c60e18c646c91ebce8e26423ca8e75bf06e48584fd810f3ee8224a8f9989d3"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/fl.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/fl.npy",
+    "pin_sha256": "ba2f466ab74e51e04f3a9111017e31089b951691b72a405d0e80ebc9e23c5044"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/h.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/h.npy",
+    "pin_sha256": "ff1a0b35f1888b666f79029639618d0241046c9c235e23bc7402fc7fd55ef040"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/meta.json",
+    "dest": "m2/doc-overlap/0eaf89305948075a/meta.json",
+    "pin_sha256": "51bce25703df08ceae16785ade19294b70b97a458d488b8296343310b3732651"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/pcnt.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/pcnt.npy",
+    "pin_sha256": "c1eeccb3e574db7da3a8d1c3ac8f28311389282071df14606fdf94be2f68d752"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/post.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/post.npy",
+    "pin_sha256": "2da265e7ce19d5733cecb9bc53f2ab520d955f2061959beed87ab53a73cb761a"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/pstart.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/pstart.npy",
+    "pin_sha256": "f5b2fc433ed465334c087219e5323500303488aa85f5edef6fb2a48b132f5549"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_allow.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_allow.npy",
+    "pin_sha256": "09f4da80c85152221cd854f64168ef28cd98e6b9b445101ae7cf27b9f0da49e0"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_den.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_den.npy",
+    "pin_sha256": "03cc2ef0b3c39d8c395b7cf5e9c8b554cfb520b22111dd425d5ca353b71458ad"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_field.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_field.npy",
+    "pin_sha256": "294bb8ec9c9ca13a56e0fcd1f87043ca6514b279c35bf5aeab6f1ed72402fbf0"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_row.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_row.npy",
+    "pin_sha256": "806b6699f847e039018840b9cb5da57e94086addcd44416d02fedbc7a06848f0"
+   },
+   {
+    "src": "m2/checkpoints/job-fi5xf/cell.json",
+    "dest": "checkpoint/cell.json",
+    "pin_json": [
+     "jobs/m2_first_cell/job_params_devcal_d19_v3w.json",
+     "checkpoint",
+     "cell_json_sha256"
+    ]
+   }
+  ],
+  "manifest_files": [
+   "jobs/m2_first_cell/first_cell_job.sh",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7.json",
+   "jobs/m2_pilot/guard_pin.json",
+   "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+   "jobs/rwkv7/snapshot.sha256",
+   "data/manifests/bschema-draw-v3b.pointer.json",
+   "jobs/m2_first_cell/data_d19_bschema_v3b.sha256",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_d19_v3w_v3b_joint.json",
+   "jobs/common/dev_proxy600.json",
+   "jobs/common/dev_subset_m1.json",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_devcal_d19_v3w.json",
+   "jobs/m2_first_cell/job_params_devcal_d19_v3w.json",
+   "jobs/m2_first_cell/devcal_eval.py"
+  ],
+  "doc_overlap_index_note": "train.doc_overlap_guard's pinned eval hash index (hashes only, no eval text; 285 MB), shipped to /data/m2/doc-overlap/0eaf89305948075a/ where the guard looks with SSDM_DATA=/data. The 11 .npy pin_sha256s aggregate (EvalIndex.ARRAYS order) to data/manifests/doc_overlap/index-pin.json index_sha256 af096960...; meta.json carries the same index_sha256 and the pin's key 0eaf8930... (doc_overlap_guard 85b5af1 policy, allowlist 556296cc...). Without it the heldout phase and run_cell fail closed (exit 34)."
+ },
+ "cohort_note": "the cohort dev role only (run_cell's eval items); no calibration / retention role; T is fitted on CPU",
+ "mode": "devcal_d19_v3w",
+ "train_dir": "m2/build/bschema-draw-v3b"
+}
