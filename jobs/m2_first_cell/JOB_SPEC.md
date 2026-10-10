@@ -538,3 +538,5 @@ screen (cross-readout vs d1_v3w and the Clef-flash / Clef 27B units), tokens per
 
 Schedule: setup 20 + guard 5 + heldout 10 + cell 215 + screen 45 + report 5 + reserve 7 = 307 min; quoted hold
 $19.34; **worst case** (60 + 2 x 307) x $0.063 = **$42.46** (jobs/common/rates.py rate; hard cap $45).
+
+**r2 (job-v6qm3 stopped at exit 26).** The jev1 mix measured 10.92 s/step at the step-10 rate check (979 affordable < 1,111 needed in 180 min). Clock = ceil(1,121 x 10.92 x 1.3 / 60) = 266 -> 270 min; cell cap 305; max_duration 397 min; quoted hold $25.01; **worst case** (60 + 2 x 397) x $0.063 = **$53.80** (hard cap $60). Everything else unchanged (1,121 fixed steps, LR horizon 753, the same data and arms).

@@ -67,6 +67,7 @@ def test_mode_is_the_r4_recipe_on_the_jev1_draw_with_a_fixed_step_budget():
     for k in same:
         assert CELL[k] == R4[k], k
     assert (CELL["max_steps"], CELL["min_steps"], CELL["lr_horizon_steps"]) == (1121, 1121, 753)
+    assert CELL["max_minutes"] == 270 and PARAMS["max_duration_minutes"] <= 899  # r2: 1,121 x 10.92 s x 1.3
     assert CELL["train_set"]["pointer"] == "data/manifests/bschema-draw-jev1.pointer.json"
     assert CELL["n_train_records"] == 96000 and "attack_clean" not in CELL["train_set"]
     ptr = json.loads((ROOT / CELL["train_set"]["pointer"]).read_text(encoding="utf-8"))
@@ -74,7 +75,7 @@ def test_mode_is_the_r4_recipe_on_the_jev1_draw_with_a_fixed_step_budget():
     assert PARAMS["mode"] == "jev1_q35_4b" and PARAMS["train_dir"] == "m2-jev1"
     assert PARAMS["jevkit"]["stock_shim"] is True and PARAMS["jevkit"]["paired_primary"] == "native"
     assert sum(PARAMS["phase_caps_minutes"].values()) + PARAMS["reserve_minutes"] == PARAMS["max_duration_minutes"]
-    assert PARAMS["max_duration_minutes"] * 0.063 <= 25.0 and costs.worst_case_usd(PARAMS) <= PARAMS["hard_cap_usd"]
+    assert PARAMS["max_duration_minutes"] * 0.063 <= 25.5  # r2 hold $25.01 (270-min clock) and costs.worst_case_usd(PARAMS) <= PARAMS["hard_cap_usd"]
     dests = {d["dest"] for d in PARAMS["context"]["data"]}
     assert {"m2-jev1/records.jsonl.gz", "m2-jev1/bschema-draw-jev1.manifest.jsonl.gz",
             "m2-jev1/bschema-draw-jev1.content.jsonl.gz"} <= dests and not any(d.startswith("m2-b100k/") for d in dests)

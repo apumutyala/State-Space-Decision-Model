@@ -1,5 +1,5 @@
 {
- "_comment": "Mode jev1_q35_4b (A-PREREG-JEV1-4B): the size-cliff 4B r4 params (stage screen, parent_arm none, the shim readout, proxy600 screen cross-readout vs d1_v3w + the Clef-flash / Clef 27B proxy units) on the jev1 draw (train_dir m2-jev1, pinned by data_jev1.sha256), plus the PRIMARY measurement: jevkit on the 231 public JevBench items for the trained cell (native) AND stock Qwen3.5-4B + the H2O shim (jevkit.stock_shim: the same loaded model with every LoRA off, the shim's prompt / label log-probs / T 0.8 / yes-no floor), paired (same items, same bootstrap draws B 1,000 seed 16): delta I, C, Capability and Composite A (screen.paired_vs; success iff delta Composite A > 0 with its CI excluding 0). Schedule: setup 20 + guard 5 + heldout 10 + cell 215 + screen 45 + report 5 + reserve 7 = 307. Quoted hold 307 x $0.063 = $19.34; worst case (60 + 2 x 307) x 0.063 = $42.46 (jobs/common/rates.py BATCH_USD_PER_MIN 0.063; hard cap $45).",
+ "_comment": "Mode jev1_q35_4b (A-PREREG-JEV1-4B): the size-cliff 4B r4 params (stage screen, parent_arm none, the shim readout, proxy600 screen cross-readout vs d1_v3w + the Clef-flash / Clef 27B proxy units) on the jev1 draw (train_dir m2-jev1, pinned by data_jev1.sha256), plus the PRIMARY measurement: jevkit on the 231 public JevBench items for the trained cell (native) AND stock Qwen3.5-4B + the H2O shim (jevkit.stock_shim: the same loaded model with every LoRA off, the shim's prompt / label log-probs / T 0.8 / yes-no floor), paired (same items, same bootstrap draws B 1,000 seed 16): delta I, C, Capability and Composite A (screen.paired_vs; success iff delta Composite A > 0 with its CI excluding 0). Schedule: setup 20 + guard 5 + heldout 10 + cell 215 + screen 45 + report 5 + reserve 7 = 307. Quoted hold 307 x $0.063 = $19.34; worst case (60 + 2 x 307) x 0.063 = $42.46 (jobs/common/rates.py BATCH_USD_PER_MIN 0.063; hard cap $45). r2 (job-v6qm3 exit 26 at 10.92 s/step measured): clock 270, cell cap 305, max_duration 397, quoted hold 397 x $0.063 = $25.01, worst case (60 + 2 x 397) x 0.063 = $53.80 (hard cap $60).",
  "test_env": {
   "transformers": "5.17.0",
   "with": [
@@ -26,7 +26,7 @@
  "status": "A-PREREG-JEV1-4B: stock Qwen3.5-4B + the size-cliff 4B recipe on bschema-draw-jev1, 1,121 steps",
  "chip": "h100",
  "chip_count": 1,
- "max_duration_minutes": 307,
+ "max_duration_minutes": 397,
  "build_timeout_minutes": 60,
  "max_restarts": 0,
  "assumed_restart_floor": 1,
@@ -34,12 +34,12 @@
  "resume": "checkpoint",
  "hf_cache": true,
  "batch_usd_per_min": 0.063,
- "hard_cap_usd": 45.0,
+ "hard_cap_usd": 60.0,
  "phase_caps_minutes": {
   "setup": 20,
   "guard": 5,
   "heldout": 10,
-  "cell": 215,
+  "cell": 305,
   "screen": 45,
   "report": 5
  },
@@ -49,7 +49,7 @@
   "setup": 10,
   "guard": 3,
   "heldout": 5,
-  "cell": 160,
+  "cell": 245,
   "screen": 25,
   "report": 3
  },
@@ -88,9 +88,9 @@
    "TOK_S": "22144",
    "CALL_S": "0.0595"
   },
-  "key": "m2-first-cell-jev1-q35-4b",
+  "key": "m2-first-cell-jev1-q35-4b-r2",
   "clock_lock": true,
-  "label": "A-PREREG-JEV1-4B jev1_q35_4b: stock Qwen/Qwen3.5-4B + size-cliff 4B recipe (H2O shim, LoRA r64) on bschema-draw-jev1 (96,000), 1,121 steps [jevkit paired vs stock + shim; proxy600]",
+  "label": "A-PREREG-JEV1-4B jev1_q35_4b: stock Qwen/Qwen3.5-4B + size-cliff 4B recipe (H2O shim, LoRA r64) on bschema-draw-jev1 (96,000), 1,121 steps, r2 clock 270 [jevkit paired vs stock + shim; proxy600]",
   "checks": {
    "success": {
     "check": {

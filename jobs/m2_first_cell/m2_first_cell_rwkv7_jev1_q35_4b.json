@@ -22,7 +22,7 @@
  "n_eval_records": 0,
  "min_train_items": 5000,
  "max_steps": 1121,
- "max_minutes": 180,
+ "max_minutes": 270,
  "min_steps": 1121,
  "ckpt_every": 400,
  "eval_every": 100000,
@@ -94,5 +94,5 @@
  ],
  "cont_chunk_peak_frac": 0.85,
  "lr_horizon_steps": 753,
- "budget_note": "A-PREREG-JEV1-4B: 1,121 optimiser steps (= the size-cliff 4B / 2B), the 4B r4's LR horizon 753; clock 180 min = 1,121 x 7.40 s/step (job-27anq: 8,300 s / 1,121 steps) x 1.3. Cell cap = 180 + tokenize 10 + load / smoke / probe / ladder 15 + checkpoints 10 = 215."
+ "budget_note": "A-PREREG-JEV1-4B: 1,121 optimiser steps (= the size-cliff 4B / 2B), the 4B r4's LR horizon 753. Clock 270 min (r2): the jev1 data mix MEASURED 10.92 s/step at job-v6qm3's step-10 rate check (exit 26: 979 affordable < 1,111 needed in 180 min; jev1 rows carry more options than r4's DI rows), so ceil(1,121 x 10.92 x 1.3 / 60) = 266 -> 270. Cell cap = 270 + tokenize 10 + load / smoke / probe / ladder 15 + checkpoints 10 = 305. Everything else is r1's (job-v6qm3: guards, ladder T_max 2,048, cont_chunk 64 all passed)."
 }
