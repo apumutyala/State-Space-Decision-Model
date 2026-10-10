@@ -1,0 +1,335 @@
+{
+ "rule": "Brief (agent-b, 2026-10-10): a JevBench-family draw of ~50-150k rows balanced across the 8 families, from public TRAIN splits or deterministic generators only; no rate or count taken from JevBench items or any eval row. Per-family target T = 96,000 / 8 = 12,000 rows (the brief's range midpoint, split evenly over the 8 families). Within a family, sub-source shares come from data.jev1.PLAN (fixed before any gate ran: roughly one third public-train / two thirds synthetic where a public train source exists, capped by availability); label rates are the natural train-split rates for public rows and the generator's own rule outcomes for synthetic rows (reported, never tuned toward any eval rate). Question-type mix per family follows the source's natural answer type; score items were added where an ordinal answer is natural (requirement counts, reimbursed share, priority levels). Option presentation order is a seeded per-row shuffle. A family short of T after the gates is reported short, never topped up from another family.",
+ "target_rows_per_family": 12000,
+ "plan": {
+  "routing": {
+   "massive": 3900,
+   "ticket": 4400,
+   "model": 4400
+  },
+  "adequacy": {
+   "score": 3200,
+   "noul": 2600,
+   "pref": 3000,
+   "audit": 5600
+  },
+  "policy": {
+   "aegis": 7600,
+   "access": 5100
+  },
+  "intent": {
+   "massive": 3800,
+   "banking": 6400,
+   "clinc": 6800
+  },
+  "severity": {
+   "synth": 10200,
+   "sst": 3100
+  },
+  "enum": {
+   "massive": 3700,
+   "notice": 10800
+  },
+  "long_policy": {
+   "n": 12700
+  },
+  "state_tracking": {
+   "woz": 8400,
+   "events": 9600
+  }
+ },
+ "seed": 20261010,
+ "families": {
+  "routing": {
+   "rows": 12000,
+   "sources": {
+    "jev1synth": 8370,
+    "massive": 3630
+   },
+   "licenses": {
+    "jev1synth: own generator (repo)": 8370,
+    "massive: CC-BY-4.0": 3630
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.4771,
+     "true": 0.5229
+    }
+   },
+   "types": {
+    "noul": 2821,
+    "choice": 9179
+   }
+  },
+  "adequacy": {
+   "rows": 12000,
+   "sources": {
+    "helpsteer2": 4827,
+    "hs2pref": 1795,
+    "jev1synth": 5378
+   },
+   "licenses": {
+    "helpsteer2: CC-BY-4.0": 4827,
+    "hs2pref: CC-BY-4.0": 1795,
+    "jev1synth: own generator (repo)": 5378
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.3794,
+     "true": 0.6206
+    },
+    "score": {
+     "0": 0.2995,
+     "1": 0.2086,
+     "2": 0.102,
+     "3": 0.1283,
+     "4": 0.2617
+    }
+   },
+   "types": {
+    "noul": 4689,
+    "score": 4070,
+    "choice": 3241
+   }
+  },
+  "policy": {
+   "rows": 12000,
+   "sources": {
+    "aegis2": 7118,
+    "jev1synth": 4882
+   },
+   "licenses": {
+    "aegis2: CC-BY-4.0": 7118,
+    "jev1synth: own generator (repo)": 4882
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.5441,
+     "true": 0.4559
+    }
+   },
+   "types": {
+    "noul": 10817,
+    "choice": 1183
+   }
+  },
+  "intent": {
+   "rows": 12000,
+   "sources": {
+    "banking77": 4059,
+    "clinc150": 4471,
+    "massive": 3470
+   },
+   "licenses": {
+    "banking77: CC-BY-4.0": 4059,
+    "clinc150: CC-BY-3.0": 4471,
+    "massive: CC-BY-4.0": 3470
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.4895,
+     "true": 0.5105
+    }
+   },
+   "types": {
+    "choice": 9622,
+    "noul": 2378
+   }
+  },
+  "severity": {
+   "rows": 12000,
+   "sources": {
+    "jev1synth": 9829,
+    "sst5": 2171
+   },
+   "licenses": {
+    "jev1synth: own generator (repo)": 9829,
+    "sst5: unspecified on HF; SST research release": 2171
+   },
+   "label_rates": {
+    "score": {
+     "0": 0.1362,
+     "1": 0.3028,
+     "2": 0.2826,
+     "3": 0.2284,
+     "4": 0.05
+    }
+   },
+   "types": {
+    "score": 12000
+   }
+  },
+  "enum": {
+   "rows": 12000,
+   "sources": {
+    "jev1synth": 9796,
+    "massive": 2204
+   },
+   "licenses": {
+    "jev1synth: own generator (repo)": 9796,
+    "massive: CC-BY-4.0": 2204
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.5181,
+     "true": 0.4819
+    },
+    "score": {
+     "0": 0.2551,
+     "1": 0.2727,
+     "2": 0.2487,
+     "3": 0.2235
+    }
+   },
+   "types": {
+    "noul": 1378,
+    "choice": 9830,
+    "score": 792
+   }
+  },
+  "long_policy": {
+   "rows": 12000,
+   "sources": {
+    "jev1synth": 12000
+   },
+   "licenses": {
+    "jev1synth: own generator (repo)": 12000
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.6616,
+     "true": 0.3384
+    },
+    "score": {
+     "0": 0.1828,
+     "1": 0.4424,
+     "2": 0.2909,
+     "3": 0.0838
+    }
+   },
+   "types": {
+    "noul": 4627,
+    "choice": 6383,
+    "score": 990
+   }
+  },
+  "state_tracking": {
+   "rows": 12000,
+   "sources": {
+    "jev1synth": 9189,
+    "multiwoz22": 2811
+   },
+   "licenses": {
+    "jev1synth: own generator (repo)": 9189,
+    "multiwoz22: MIT (budzianowski/multiwoz LICENSE; HF card apache-2.0)": 2811
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.476,
+     "true": 0.524
+    },
+    "score": {
+     "0": 0.19,
+     "1": 0.4196,
+     "2": 0.1879,
+     "3": 0.2025
+    }
+   },
+   "types": {
+    "choice": 8185,
+    "noul": 3336,
+    "score": 479
+   }
+  }
+ },
+ "public_sources": {
+  "massive": {
+   "file": "dl-2026-10-10/massive/amazon-massive-dataset-1.0.tar.gz (1.0/data/en-US.jsonl)",
+   "split": "partition == train",
+   "license": "CC-BY-4.0",
+   "pools": "sha256('jev1-part|massive:<id>') % 3: 0 routing, 1 intent, 2 enum (no utterance in two families)"
+  },
+  "helpsteer2": {
+   "file": "dl-2026-10-10/helpsteer2/train.jsonl.gz",
+   "split": "train",
+   "license": "CC-BY-4.0",
+   "note": "one row per prompt; noul bar drops the 0-4 midpoint 2 (not decisive)"
+  },
+  "hs2pref": {
+   "file": "dl-2026-10-10/helpsteer2/preference.jsonl.gz",
+   "split": "split == train",
+   "license": "CC-BY-4.0",
+   "note": "preference_strength 0 (ties) dropped; prompts not reused"
+  },
+  "aegis2": {
+   "file": "dl-2026-10-10/aegis2/train.json",
+   "split": "train",
+   "license": "CC-BY-4.0",
+   "note": "REDACTED prompts skipped; prompt labels are human; response labels human or llm_jury (recorded per row as aug.jev1.label_source)"
+  },
+  "banking77": {
+   "file": "banking77/train.csv",
+   "split": "train",
+   "license": "CC-BY-4.0"
+  },
+  "clinc150": {
+   "file": "clinc150/data_full.json",
+   "split": "train + oos_train",
+   "license": "CC-BY-3.0"
+  },
+  "sst5": {
+   "file": "sst5/train.jsonl",
+   "split": "train",
+   "license": "unspecified on HF (research)"
+  },
+  "multiwoz22": {
+   "file": "dl-2026-10-10/multiwoz22/dialogues_001..017.json",
+   "split": "train folder",
+   "license": "MIT (repo LICENSE)",
+   "repo_head": "fe0c8e65cfcd8462bd33c86e35f21addc84ca82b"
+  }
+ },
+ "not_used": {
+  "RouterBench": "never a train source (embeds other benchmarks' items; data/SOURCES.md)",
+  "SGD": "display-only Index row (test in the guard); MultiWOZ used instead",
+  "WildGuardMix": "gated (terms acceptance); not accepted",
+  "BeaverTails": "CC-BY-NC-4.0; Aegis 2.0 (CC-BY-4.0) covers the family",
+  "UltraFeedback / Skywork / PRM800K": "not needed: HelpSteer2 fills adequacy",
+  "Few-NERD / CoNLL": "parquet-only / restrictive licence; MASSIVE slots used",
+  "HWU64": "overlaps MASSIVE (same base corpus)"
+ },
+ "generators": {
+  "jev1_ticket_routing": {
+   "name": "jev1_ticket_routing",
+   "task_family": "rule_list_ticket_routing"
+  },
+  "jev1_model_routing": {
+   "name": "jev1_model_routing",
+   "task_family": "constraint_model_routing"
+  },
+  "jev1_agent_audit": {
+   "name": "jev1_agent_audit",
+   "task_family": "agent_action_rubric_audit"
+  },
+  "jev1_access_policy": {
+   "name": "jev1_access_policy",
+   "task_family": "access_policy_yes_no"
+  },
+  "jev1_severity": {
+   "name": "jev1_severity",
+   "task_family": "incident_severity_rubric"
+  },
+  "jev1_notice_enum": {
+   "name": "jev1_notice_enum",
+   "task_family": "notice_enum_extraction"
+  },
+  "jev1_long_policy": {
+   "name": "jev1_long_policy",
+   "task_family": "long_policy_rule_engine"
+  },
+  "jev1_event_state": {
+   "name": "jev1_event_state",
+   "task_family": "business_event_log_state"
+  }
+ }
+}
