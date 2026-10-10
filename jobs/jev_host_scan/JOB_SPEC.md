@@ -42,3 +42,19 @@ whose caps no longer fit the scan phase is skipped. Phases: setup 10, scan 220, 
 **$26.73** (hard cap $27). Expected ~104 min, ~$5.15.
 
 **Verdict.** None (measurement only). Exit codes: see `scan_job.sh`.
+
+## Mode parity (`job_params_parity.json`, `candidates_parity.json`): the KIT PARITY gate
+
+Pre-registered as EV-PREREG-KIT-PARITY (state PREREG.md). Three published JevBench v1.6.1 open-weights rows, each through
+its own documented readout, on the same 231 public items, against the public-231 result their authors published for the
+same pinned weights (tolerance 3 top-1 items, the H2O anchor rule; `decision.json` `reference_checks`):
+
+| candidate (pinned revision) | readout | published public-231 |
+|---|---|---|
+| torchcast-ai/torchcast-decision-12b @ 49107b55 | `torchcast_shim` + `torchcast_shim_double_bos` (third_party/torchcast_shim, vendored unmodified; only the vLLM call replaced) | 203 (48/70/85), per-item results in its v1.0.0 repo |
+| Mapika/decider-12b @ 8ac1efa7 (v2) | decider-ai 1.8.0 `Decider.system_one`, eager (wheel pinned by sha256, `--no-deps`) | 198 (48/71/79) |
+| Mapika/decider-12b @ 09e9e338 (v1) | same | 200 (48/71/81) |
+
+The board cells themselves (P300 open + 1,200 sealed) cannot be reproduced from the 231 public items (H2O: local I 77.6
+vs board 60.0, but 205/231 = its card). **Cost.** Hold 120 min x $0.063 = $7.56. Worst case (costs.worst_case_usd):
+**$14.85** (hard cap $15). Expected ~60 min, ~$3.

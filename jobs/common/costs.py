@@ -46,6 +46,7 @@ PARAMS.update({f"m2_first_cell_{f.stem[len('job_params_'):]}": f"jobs/m2_first_c
                for f in sorted((ROOT / "jobs/m2_first_cell").glob("job_params_*.json"))})
 #: JevBench host scan (jevkit, 231 public items, several small candidate hosts serially on one H100)
 PARAMS["jev_host_scan"] = "jobs/jev_host_scan/job_params.json"
+PARAMS["jev_host_scan_parity"] = "jobs/jev_host_scan/job_params_parity.json"  # KIT PARITY (EV-PREREG-KIT-PARITY)
 #: committed elsewhere in the envelope (worst-case ceilings from their specs), not built here. Clef baseline (JOB_SPEC):
 #: A ran as job-sgihj ($1.40, in SPENT_USD); C (27B, job A shape) is superseded for the Index by clef_index_subset +
 #: clef_index_full (PARAMS); B (Clef-flash GCG, $29.70 one-attempt ceiling) is still planned.
