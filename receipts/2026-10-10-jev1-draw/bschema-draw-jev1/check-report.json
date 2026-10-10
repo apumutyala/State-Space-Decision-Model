@@ -1,0 +1,271 @@
+{
+ "n_pool": 112550,
+ "n_kept": 100871,
+ "checked_uncompressed_sha256": "3bb3468a86b6ee291e74b49125fdb110fa2fa364be754ed858851d53bddfe6f8",
+ "reasons": {
+  "routing": {
+   "kept": 12192,
+   "index_fingerprint": 424,
+   "jevbench_fingerprint": 3
+  },
+  "adequacy": {
+   "kept": 12471,
+   "index_fingerprint": 1189,
+   "attack_template": 7,
+   "checker:index_item_text": 48,
+   "checker:dup_content": 9
+  },
+  "policy": {
+   "kept": 12550,
+   "index_fingerprint": 149,
+   "checker:index_item_text": 1
+  },
+  "intent": {
+   "kept": 12712,
+   "index_fingerprint": 1497,
+   "checker:dup_content": 1,
+   "checker:cohort_id_or_item": 2781,
+   "checker:index_item_text": 8,
+   "checker:dup_text_other_item": 1
+  },
+  "severity": {
+   "kept": 12470,
+   "index_fingerprint": 2,
+   "checker:cohort_id_or_item": 828
+  },
+  "enum": {
+   "kept": 13241,
+   "index_fingerprint": 62
+  },
+  "long_policy": {
+   "kept": 12700
+  },
+  "state_tracking": {
+   "index_fingerprint": 4630,
+   "kept": 12535,
+   "checker:index_item_text": 25,
+   "checker:dup_text_other_item": 3,
+   "checker:dup_content": 11
+  }
+ },
+ "index_fingerprint": {
+  "identity": {
+   "version": "ssdm-dedup-v3",
+   "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+   "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+   "rows": 155390
+  },
+  "hits_by_family_matcher": {
+   "routing": {
+    "exact": 18,
+    "minhash": 37,
+    "edit": 112,
+    "contain": 309
+   },
+   "adequacy": {
+    "exact": 479,
+    "minhash": 745,
+    "edit": 373,
+    "contain": 434,
+    "ngram13": 94
+   },
+   "policy": {
+    "minhash": 80,
+    "edit": 74,
+    "contain": 24,
+    "exact": 54
+   },
+   "intent": {
+    "edit": 1289,
+    "exact": 73,
+    "minhash": 395,
+    "contain": 180,
+    "ngram13": 27
+   },
+   "severity": {
+    "contain": 2
+   },
+   "enum": {
+    "edit": 53,
+    "contain": 11,
+    "minhash": 11,
+    "exact": 4
+   },
+   "state_tracking": {
+    "exact": 1216,
+    "minhash": 1907,
+    "edit": 2380,
+    "contain": 3784,
+    "ngram13": 1
+   }
+  }
+ },
+ "jevbench_fingerprint": {
+  "identity": {
+   "enabled": true,
+   "index_sha256": "0fe994c40dfc70fa3a0cd711fa88abb7f439cb8f2546ecffd53e5ca232d3934b",
+   "fingerprint_arrays_sha256": "211da3f1d3c68fbfc48fc3dbdd72cfd0c6dcf723f47e4628a7f6f5f506c2c55c",
+   "exact_segments_sha256": "f9b94122d36e8b730cc18dc122d4fe65ff789a42072ca86ecebee207fdb5049d",
+   "pin_sha256": "e317bbb6aa541f5b9c26e038359036dc9d3f7039b410060fafa3bfe1bf2db49f",
+   "source_commit": "b6b8fff7e345b98c060ad26c13308860ddc67004"
+  },
+  "hits_by_matcher": {
+   "jevbench_edit": 3,
+   "jevbench_minhash": 1,
+   "jevbench_contain": 1
+  },
+  "examples": [
+   {
+    "id": "m2:massive:3397~view:jev1-route-yn",
+    "matchers": [
+     "jevbench_edit"
+    ]
+   },
+   {
+    "id": "m2:massive:3502~view:jev1-route",
+    "matchers": [
+     "jevbench_contain",
+     "jevbench_edit",
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:massive:3660~view:jev1-route",
+    "matchers": [
+     "jevbench_edit"
+    ]
+   }
+  ]
+ },
+ "attack_guard": {
+  "examples": [
+   {
+    "id": "m2:helpsteer2:4338~view:jev1-score-coherence",
+    "hits": [
+     "d1b_steer:soft_framing"
+    ]
+   },
+   {
+    "id": "m2:helpsteer2:4963~view:jev1-score-coherence",
+    "hits": [
+     "d1b_steer:soft_framing"
+    ]
+   },
+   {
+    "id": "m2:helpsteer2:4540~view:jev1-bar-helpfulness",
+    "hits": [
+     "d1b_steer:soft_framing"
+    ]
+   },
+   {
+    "id": "m2:hs2pref:1064~view:jev1-pref",
+    "hits": [
+     "d1b_steer:soft_framing"
+    ]
+   },
+   {
+    "id": "m2:hs2pref:1716~view:jev1-pref",
+    "hits": [
+     "d1b_steer:soft_framing"
+    ]
+   },
+   {
+    "id": "m2:hs2pref:5690~view:jev1-pref",
+    "hits": [
+     "d1b_steer:soft_framing"
+    ]
+   },
+   {
+    "id": "m2:hs2pref:8312~view:jev1-pref",
+    "hits": [
+     "d1b_steer:soft_framing"
+    ]
+   }
+  ]
+ },
+ "checker": {
+  "guard_identity": "{'manifests': {'harness/manifests/dev-manifest.jsonl.gz': '26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a', 'harness/manifests/test-manifest.jsonl.gz': '8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a'}, 'n_ids': 47249, 'n_hashes': 48415, 'note': '', 'content_index': {'path': 'C:\\\\Users\\\\apumu\\\\research\\\\CHLabs\\\\ssdm-data\\\\m2\\\\index-content-hashes-v1.txt.gz', 'sha256': '7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d', 'n': 24150}, 'pin': {'sha256': '7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d', 'n_hashes': 24150, 'n_rows': 24265, 'builder': 'train.guard.build_content_index (harness dev + test manifests, local 0.2.1 suite through the kit)'}}",
+  "hit_examples": [
+   [
+    "m2:helpsteer2:17421~view:jev1-score-helpfulness",
+    "state/ai_response",
+    "Step 3: Set up the server-side. In order for our web application to work, the server-side code (i.e. the code that runs "
+   ],
+   [
+    "m2:helpsteer2:2995~view:jev1-score-helpfulness",
+    "state/ai_response",
+    "Here is a sample demand letter for a deposit in the amount of $500 that has been withheld to date:\n \n\n [Date]\n \n\n [Name "
+   ],
+   [
+    "m2:helpsteer2:11577~view:jev1-score-correctness",
+    "state/ai_response",
+    "Of course, I'd be happy to help! Here's a fun Valentine's poem that explains how phase locked loops work:\n\nOn this day o"
+   ],
+   [
+    "m2:helpsteer2:4841~view:jev1-score-coherence",
+    "state/user_request/[]/text",
+    "Within the duration of one year, a rabbit population first multiplies itself by a factor a and on the last day of the ye"
+   ],
+   [
+    "m2:helpsteer2:7051~view:jev1-score-coherence",
+    "state/ai_response",
+    "I'm sorry to hear about your experience. It sounds like you may have been triggered by your friend's negative energy, wh"
+   ],
+   [
+    "m2:helpsteer2:4799~view:jev1-score-correctness",
+    "state/user_request/[]/text",
+    "You're welcome. Let me know if you have any other questions."
+   ],
+   [
+    "m2:helpsteer2:2931~view:jev1-score-correctness",
+    "state/user_request/[]/text",
+    "Here are some more possibilities. You could try contacting them by email, or sending a physical letter through the mail."
+   ],
+   [
+    "m2:helpsteer2:10078~view:jev1-score-helpfulness",
+    "state/ai_response",
+    "I'm sorry, I'm not sure what you mean by \"deadlock avoidance\" and \"deadlock prevention mechanisms.\" Could you provide mo"
+   ],
+   [
+    "m2:helpsteer2:13489~view:jev1-score-correctness",
+    "state/ai_response",
+    "Sure, I'd be happy to help you with that! Here are some subniches related to customs brokerage that you may want to cons"
+   ],
+   [
+    "m2:helpsteer2:14609~view:jev1-score-helpfulness",
+    "state/ai_response",
+    "Dear All,\n\nI am reaching out to provide an update on the cats we rescued. First and foremost, we want to ensure that the"
+   ]
+  ],
+  "exclusion_identity": {
+   "v2": {
+    "cohort": "m2-dev-cohort-v2",
+    "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+    "n": {
+     "dev": 835,
+     "calibration": 1000,
+     "retention": 1670,
+     "steer_dev": 1800,
+     "steer_gate": 1000
+    }
+   },
+   "v3": {
+    "cohort": "m2-dev-cohort-v3",
+    "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+    "n": {
+     "dev": 835,
+     "calibration": 1000,
+     "retention": 39872,
+     "steer_dev": 1800,
+     "steer_gate": 1000
+    }
+   },
+   "heldout_150k_dropped": [
+    "m2:mmlu_aux:21118",
+    "m2:mmlu_aux:39640",
+    "m2:mmlu_aux:39643"
+   ]
+  }
+ },
+ "seconds": 599
+}

@@ -92,3 +92,16 @@ Display-only rows (MMLU, ARC-E/C, SimpleBench, RouterBench, SGD) are in the guar
   - WinoGrande's HF card states none (its GitHub LICENSE is Apache-2.0).
   - They are fine for research, but need a `decision-needed` call before any commercial release.
 - Benchmarks with no train split (GPQA, MuSR, SATA, CRUXEval, CLadder, HLE, BBH, BRIGHT, FinEntity, BFCL, BPoMP, POP909, PhishNChips) depend on proxy formats, synthetic generators or teachers. That is where m2 attribution should expect gaps.
+
+## 5. JevBench-family draw sources (bschema-draw-jev1, 2026-10-10; `data/jev1.py`)
+
+| Source | Family | Split used | License | Notes |
+|---|---|---|---|---|
+| MASSIVE 1.0 en-US (`amazon-massive-dataset-1.0.tar.gz`) | routing (scenario), intent, enum (slots) | `partition == train` | CC-BY-4.0 | utterances hash-partitioned so none appears in two families |
+| HelpSteer2 (`nvidia/HelpSteer2` train + preference split=train) | adequacy | train | CC-BY-4.0 | one row per prompt; preference ties dropped |
+| Aegis 2.0 / Nemotron Content Safety v2 (`train.json`) | policy yes/no | train | CC-BY-4.0 | REDACTED prompts skipped; response labels partly `llm_jury` (recorded per row) |
+| MultiWOZ 2.2 (`budzianowski/multiwoz` data/MultiWOZ_2.2/train, HEAD fe0c8e65) | state tracking | train | MIT (repo LICENSE) | many turns hit the Index fingerprint and are dropped |
+| BANKING77, CLINC150, SST-5 (already on disk) | intent, severity (ordinal) | train (+ oos_train) | see §1 / §2 | |
+| Synthetic generators (`data/jev1.py` GEN_SPECS) | routing, adequacy, policy, severity, enum, long policy, state tracking | n/a | own | rule-derived gold; deterministic |
+
+Not used: RouterBench (never a train source), SGD (display-only Index row), WildGuardMix (gated terms), BeaverTails (NC), HWU64 (overlaps MASSIVE).
