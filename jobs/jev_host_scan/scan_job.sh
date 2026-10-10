@@ -85,6 +85,12 @@ python -I /opt/ssdm/m1/jobs/common/fla_guard.py --out "$WORK/out/fla_guard.json"
 python -X utf8 -m jevkit items > "$WORK/out/items-verify.json" 2> "$WORK/logs/items.log" || fail 10 "public items sha256"
 NITEMS=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['items']['n'])" "$CODE/jobs/jev_host_scan/candidates.json") \
   || fail 5 "candidates"
+# B-PREREG-FLIP: the pinned perturbed items (jevkit perturb make --public --seeds 0), run after the public items
+PERT=/data/$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['perturbed_items']['path'])" "$CODE/jobs/jev_host_scan/candidates.json") \
+  || fail 5 "candidates perturbed_items"
+PERT_SHA=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['perturbed_items']['sha256'])" "$CODE/jobs/jev_host_scan/candidates.json")
+[ "$(sha256sum "$PERT" | cut -d' ' -f1)" = "$PERT_SHA" ] || fail 10 "perturbed items sha256 != pin ($PERT)"
+NITEMS=$(( NITEMS + $(grep -c . "$PERT") ))
 CAP_SCAN=$(cap scan) && CAP_SUM=$(cap summarize) && SCORE_MIN=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['score_cap_minutes'])" "$PARAMS") \
   || fail 5 "job_params"
 python -X utf8 -m jobs.jev_host_scan.host_scan plan > "$WORK/out/plan.txt" || fail 5 "plan"
@@ -129,9 +135,9 @@ EOF
   fi
   say "candidate $ID: run $NARMS arm(s) x $NITEMS items, serial, rate-guarded (cap ${CAP}m)"
   TR=$(date +%s)
-  python -m jobs.common.rate_guard run --results "$D/*/preds.jsonl" --total $(( NARMS * NITEMS )) --exclude-startup \
+  python -m jobs.common.rate_guard run --results "$D/*/preds*.jsonl" --total $(( NARMS * NITEMS )) --exclude-startup \
     --cap-min "$CAP" --check-after-min 3 --report "$D/rate.json" -- \
-    python -X utf8 -m jobs.jev_host_scan.host_scan run --cand "$ID" --model-dir "$SNAP" --out "$D" \
+    python -X utf8 -m jobs.jev_host_scan.host_scan run --cand "$ID" --model-dir "$SNAP" --out "$D" --items-file "$PERT" \
     > "$WORK/logs/run-$ID.log" 2>&1 < /dev/null; r=$?
   RUN_S=$(( $(date +%s) - TR ))
   python -X utf8 -m jobs.jev_host_scan.host_scan price --cand "$ID" --out "$D/price.json" < /dev/null || true
@@ -140,6 +146,9 @@ EOF
     A=$(dirname "$P")
     timeout "${SCORE_MIN}m" python -X utf8 -m jevkit score --public --pred "$P" --price "$D/price.json" \
       --out "$A/report.json" > "$A/score.log" 2>&1 < /dev/null || say "score failed: $A ($(tail -1 "$A/score.log"))"
+    [ -s "$A/preds_pert.jsonl" ] && { timeout "${SCORE_MIN}m" python -X utf8 -m jevkit perturb score --public --perturbed "$PERT" \
+      --pred "$P" --pred-perturbed "$A/preds_pert.jsonl" --out "$A/flip.json" > "$A/flip.log" 2>&1 < /dev/null \
+      || say "flip score failed: $A ($(tail -1 "$A/flip.log"))"; }
   done
   case $r in 0) ST=done ;; 15) ST=rate_stopped ;; 124) ST=cap_timeout ;; 3) ST=load_failed ;; 4) ST=arm_failed ;; *) ST=failed ;; esac
   status "$D" "$ST" "{\"run_rc\": $r, \"download_s\": $DL_S, \"run_s\": $RUN_S, \"snapshot\": \"$SNAP\"}"

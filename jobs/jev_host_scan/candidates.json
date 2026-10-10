@@ -1,5 +1,5 @@
 {
- "_comment": "jobs/jev_host_scan candidates in run order (priority; the coordinator's final list, 2026-10-09): the parity anchor H2O-Lightning-4B v1.1, its base Qwen3.5-4B, Qwen3.5-2B, the decision model d1-3B, stock LFM2.5-2.6B, gemma-4-E4B-it, Nemotron-3-Nano-4B, attention-free RWKV7 G1i 2.9B, and last the old reference RWKV7-G1k-13.3B. Each: pinned HF revision (snapshot_pin = sha256 of every allowed file), readout arms, declared price class, run cap (rate-guarded) and download cap. Official repos only: there is no small official Qwen3.8 (the Qwen3.8-*-Distill repos are community SFTs) and no Qwen3.6 below 27B; Qwen3.5-9B and Qwen3.6-35B-A3B are dropped (their reference prices put the Cost axis at or below the gate).",
+ "_comment": "B-PREREG-FLIP (claude/ev-flip-hs): the two Qwen3.5-4B-family systems under H2O's shim readout, each on the 231 public items + their 1,593 jevkit perturbations (seed 0, sha256 655d028a...79d7, /data/jevbench-perturb/seed0-655d028a/pert_public_seed0.jsonl). Caps = measured job-zbtbj rates (H2O 75 s / 231, Qwen shim arm ~45 s / 231) x 7.9 items x ~1.7. Original list: claude/jev-host-scan.",
  "items": {
   "pin": "jevkit/data/jevbench_public_pin.json",
   "n": 231
@@ -62,8 +62,8 @@
     }
    ],
    "price_class": "qwen35_4b",
-   "cap_min": 12,
-   "download_cap_min": 8,
+   "cap_min": 18,
+   "download_cap_min": 6,
    "group": "parity_anchor",
    "snapshot_pin": "jobs/jev_host_scan/snapshots/h2o-lightning-4b.sha256",
    "allow_patterns": [
@@ -93,21 +93,13 @@
    "loader": "hf",
    "arms": [
     {
-     "arm": "m0",
-     "readout": "m0"
-    },
-    {
-     "arm": "v3w",
-     "readout": "v3w"
-    },
-    {
      "arm": "h2o_shim",
      "readout": "h2o_shim"
     }
    ],
    "price_class": "qwen35_4b",
-   "cap_min": 15,
-   "download_cap_min": 8,
+   "cap_min": 12,
+   "download_cap_min": 6,
    "group": "qwen",
    "snapshot_pin": "jobs/jev_host_scan/snapshots/qwen3.5-4b.sha256",
    "allow_patterns": [
@@ -124,261 +116,11 @@
    ],
    "backbone_id": "qwen3.5-4b",
    "note": "H2O-Lightning's base; h2o_shim arm = the base under H2O's exact readout (isolates the fine-tune)"
-  },
-  {
-   "id": "qwen3.5-2b",
-   "repo": "Qwen/Qwen3.5-2B",
-   "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
-   "released": "2026-02-28",
-   "params_b": 2.3,
-   "safetensors_bytes": 4548221488,
-   "license": "apache-2.0",
-   "loader": "hf",
-   "arms": [
-    {
-     "arm": "m0",
-     "readout": "m0"
-    },
-    {
-     "arm": "v3w",
-     "readout": "v3w"
-    }
-   ],
-   "price_class": "ref_0p02",
-   "cap_min": 12,
-   "download_cap_min": 6,
-   "group": "qwen",
-   "snapshot_pin": "jobs/jev_host_scan/snapshots/qwen3.5-2b.sha256",
-   "allow_patterns": [
-    "*.safetensors",
-    "*.safetensors.index.json",
-    "config.json",
-    "generation_config.json",
-    "tokenizer.json",
-    "tokenizer_config.json",
-    "chat_template.jinja",
-    "special_tokens_map.json",
-    "vocab.json",
-    "merges.txt"
-   ],
-   "backbone_id": "qwen3.5-2b"
-  },
-  {
-   "id": "d1-3b",
-   "repo": "LiquidAI/d1-3B",
-   "revision": "051bcc464b01b9f92942b364d9586b0ef5912432",
-   "released": "2026-10-05",
-   "params_b": 3.1,
-   "safetensors_bytes": 6247065504,
-   "license": "lfm1.0 (LFM Open License v1.0)",
-   "loader": "d1",
-   "arms": [
-    {
-     "arm": "d1",
-     "readout": "d1"
-    }
-   ],
-   "price_class": "d1_list",
-   "cap_min": 12,
-   "download_cap_min": 8,
-   "group": "anchor_decision_model",
-   "snapshot_pin": "jobs/jev_host_scan/snapshots/d1-3b.sha256",
-   "allow_patterns": [
-    "model.safetensors",
-    "config.json",
-    "tokenizer.json",
-    "tokenizer_config.json",
-    "chat_template.jinja",
-    "processor_config.json",
-    "modeling_d1.py",
-    "lfm2_vl.py",
-    "hybrid.py",
-    "runner.py",
-    "prompt.py",
-    "api.py"
-   ],
-   "note": "Liquid AI decision fine-tune of LFM2.5-VL-3B; its documented readout model.system_one(state, questions) (one pass, option-token softmax) through its own code, vendored unmodified (third_party/d1_3b), no trust_remote_code"
-  },
-  {
-   "id": "lfm2.5-2.6b",
-   "repo": "LiquidAI/LFM2.5-2.6B",
-   "revision": "654f9463ce32b05d0429d76fe1f580b27d4c1ac0",
-   "released": "2026-07-28",
-   "params_b": 2.6,
-   "safetensors_bytes": 5394427456,
-   "license": "lfm1.0 (LFM Open License v1.0)",
-   "loader": "hf",
-   "arms": [
-    {
-     "arm": "v3w",
-     "readout": "v3w"
-    }
-   ],
-   "price_class": "le4b",
-   "cap_min": 12,
-   "download_cap_min": 8,
-   "group": "new_small",
-   "snapshot_pin": "jobs/jev_host_scan/snapshots/lfm2.5-2.6b.sha256",
-   "allow_patterns": [
-    "*.safetensors",
-    "*.safetensors.index.json",
-    "config.json",
-    "generation_config.json",
-    "tokenizer.json",
-    "tokenizer_config.json",
-    "chat_template.jinja",
-    "special_tokens_map.json",
-    "vocab.json",
-    "merges.txt"
-   ],
-   "backbone_id": "lfm2.5-2.6b",
-   "note": "stock base reading (hybrid short-conv + attention)"
-  },
-  {
-   "id": "gemma-4-e4b-it",
-   "repo": "google/gemma-4-E4B-it",
-   "revision": "ee0ef6023621cff504d758262d4e04895a5af4a2",
-   "released": "2026-03-02",
-   "params_b": 4.0,
-   "safetensors_bytes": 15992595884,
-   "license": "apache-2.0",
-   "loader": "hf",
-   "arms": [
-    {
-     "arm": "v3w",
-     "readout": "v3w"
-    }
-   ],
-   "price_class": "ref_0p02",
-   "cap_min": 12,
-   "download_cap_min": 8,
-   "group": "new_small",
-   "snapshot_pin": "jobs/jev_host_scan/snapshots/gemma-4-e4b-it.sha256",
-   "allow_patterns": [
-    "*.safetensors",
-    "*.safetensors.index.json",
-    "config.json",
-    "generation_config.json",
-    "tokenizer.json",
-    "tokenizer_config.json",
-    "chat_template.jinja",
-    "special_tokens_map.json",
-    "vocab.json",
-    "merges.txt"
-   ],
-   "backbone_id": "gemma-4-e4b-it",
-   "note": "effective 4B (multimodal checkpoint, text path)"
-  },
-  {
-   "id": "nemotron-3-nano-4b",
-   "repo": "nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16",
-   "revision": "dfaf35de3e30f1867dd8dbc38a7fc9fb52d3914f",
-   "released": "2026-03-07",
-   "params_b": 4.0,
-   "safetensors_bytes": 7947142640,
-   "license": "nvidia-nemotron-open-model-license",
-   "loader": "hf",
-   "arms": [
-    {
-     "arm": "v3w",
-     "readout": "v3w"
-    }
-   ],
-   "price_class": "le4b",
-   "cap_min": 12,
-   "download_cap_min": 8,
-   "group": "new_small",
-   "snapshot_pin": "jobs/jev_host_scan/snapshots/nemotron-3-nano-4b.sha256",
-   "allow_patterns": [
-    "*.safetensors",
-    "*.safetensors.index.json",
-    "config.json",
-    "generation_config.json",
-    "tokenizer.json",
-    "tokenizer_config.json",
-    "chat_template.jinja",
-    "special_tokens_map.json",
-    "vocab.json",
-    "merges.txt"
-   ],
-   "backbone_id": "nemotron-3-nano-4b",
-   "note": "bf16 checkpoint; hybrid Mamba2 + attention (nemotron_h, native transformers 5.17 class; the repo's remote code is not used)"
-  },
-  {
-   "id": "rwkv7-g1i-2.9b",
-   "repo": "RWKV/RWKV7-2.9B-20260805",
-   "revision": "aae64511841dd32f5235f6bcc7a931c6ef806e6c",
-   "released": "2026-08-06",
-   "params_b": 2.9,
-   "safetensors_bytes": 5896236664,
-   "license": "apache-2.0",
-   "loader": "rwkv7_hf",
-   "arms": [
-    {
-     "arm": "v3w",
-     "readout": "v3w"
-    }
-   ],
-   "price_class": "le4b",
-   "cap_min": 15,
-   "download_cap_min": 6,
-   "group": "attention_free",
-   "snapshot_pin": "jobs/jev_host_scan/snapshots/rwkv7-g1i-2.9b.sha256",
-   "allow_patterns": [
-    "*.safetensors",
-    "*.safetensors.index.json",
-    "config.json",
-    "generation_config.json",
-    "tokenizer.json",
-    "tokenizer_config.json",
-    "chat_template.jinja",
-    "special_tokens_map.json",
-    "vocab.json",
-    "merges.txt",
-    "modeling_rwkv7.py",
-    "configuration_rwkv7.py",
-    "tokenization_rwkv7.py"
-   ],
-   "backbone_id": "rwkv7-g1i-2.9b",
-   "note": "G1i (metadata profile g1i, ctx 16384); ships no modeling code: loaded with the vendored G1k code (same 1062 weight names, byte-identical tokenizer.json), wkv 'chunked' instead of the config's 'eager' (same recurrence, the G1k release default)"
-  },
-  {
-   "id": "rwkv7-g1k-13.3b",
-   "repo": "RWKV/RWKV7-G1k-13.3B-20260930",
-   "revision": "ce3630b854cedbd673569f4600c6cf744bca9dba",
-   "released": "2026-09-30",
-   "params_b": 13.3,
-   "safetensors_bytes": 26540800536,
-   "license": "apache-2.0",
-   "loader": "rwkv7_hf",
-   "arms": [
-    {
-     "arm": "v3w",
-     "readout": "v3w"
-    }
-   ],
-   "price_class": "le13b",
-   "cap_min": 22,
-   "download_cap_min": 12,
-   "group": "attention_free_reference",
-   "snapshot_pin": "jobs/jev_host_scan/snapshots/rwkv7-g1k-13.3b.sha256",
-   "allow_patterns": [
-    "*.safetensors",
-    "*.safetensors.index.json",
-    "config.json",
-    "generation_config.json",
-    "tokenizer.json",
-    "tokenizer_config.json",
-    "chat_template.jinja",
-    "special_tokens_map.json",
-    "vocab.json",
-    "merges.txt",
-    "modeling_rwkv7.py",
-    "configuration_rwkv7.py",
-    "tokenization_rwkv7.py"
-   ],
-   "backbone_id": "rwkv7-g1k-13.3b",
-   "note": "our previous work's base (stock v3w); lowest priority"
   }
- ]
+ ],
+ "perturbed_items": {
+  "path": "jevbench-perturb/seed0-655d028a/pert_public_seed0.jsonl",
+  "n": 1593,
+  "sha256": "655d028a633959db74e2046b585beaae9dff48c0c6f77417bfdd02a147ad79d7"
+ }
 }

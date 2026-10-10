@@ -291,29 +291,50 @@ def run_arm(adapter, items, out_dir: Path, warmup: int = WARMUP) -> dict:
 
     out_dir.mkdir(parents=True, exist_ok=True)
     preds = out_dir / "preds.jsonl"
-    done = _done_ids(preds)
+    # B-PREREG-FLIP: perturbed items (ids "<base>~<op>~<seed>") go to preds_pert.jsonl, so preds.jsonl stays the
+    # 231 public items that `jevkit score --public` reads, unchanged
+    preds_pert = out_dir / "preds_pert.jsonl"
+    done = _done_ids(preds) | _done_ids(preds_pert)
     todo = [it for it in items if it.id not in done]
     t0 = _t.time()
     for it in items[:warmup]:
         adapter.answer_item(it)
     st = {"ok": 0, "error": 0, "unsupported": 0, "exhausted": 0}
-    with open(preds, "a", encoding="utf-8", newline="\n") as fh:
+    with open(preds, "a", encoding="utf-8", newline="\n") as fh, \
+            open(preds_pert, "a", encoding="utf-8", newline="\n") as fp:
         for it in todo:
             rec = adapter.answer_item(it)
             rec["tier"] = it.tier
             st[rec["status"]] = st.get(rec["status"], 0) + 1
-            fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
-            fh.flush()
+            f = fp if "~" in it.id else fh
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            f.flush()
     return {"items": len(todo), "resumed_from": len(done), "status": st, "wall_s": round(_t.time() - t0, 1)}
 
 
-def cmd_run(a) -> int:
-    from jevkit.items import load_public
+def load_items(items_file: str | None):
+    """The 231 public items, then (B-PREREG-FLIP) the perturbed rows of ``items_file`` in file order."""
+    from jevkit.items import Item, load_public
 
+    items = load_public()
+    if items_file:
+        base = {it.id for it in items}
+        for line in Path(items_file).read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            d = json.loads(line)
+            meta = d.pop("perturbation")
+            if meta["base_id"] not in base or "~" not in d["id"]:
+                raise ValueError(f"perturbed row {d.get('id')!r} does not derive from a public item")
+            items.append(Item.from_dict(d))
+    return items
+
+
+def cmd_run(a) -> int:
     c = candidate(a.cand)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    items = load_public()
+    items = load_items(a.items_file)
     if a.limit:
         items = items[: a.limit]
     meta: dict[str, Any] = {"candidate": c, "device": a.device, "items": len(items), "arms": {}}
@@ -475,6 +496,8 @@ def main(argv=None) -> int:
     r.add_argument("--device", default="cuda")
     r.add_argument("--limit", type=int, default=0, help="CPU tests only: the first N items")
     r.add_argument("--tokenizers-root", default=None, help="CPU tests only: v3w tokenizers root")
+    r.add_argument("--items-file", default=None, help="B-PREREG-FLIP: jevkit perturb make output, run after the "
+                                                      "public items (predictions -> <arm>/preds_pert.jsonl)")
     p = sub.add_parser("price")
     p.add_argument("--cand", required=True)
     p.add_argument("--out", required=True)
