@@ -101,6 +101,12 @@ def test_invalid_excluded_from_calibration_but_type_still_counts():
     assert r["calibration"]["parts"]["noul"]["n"] == 0
 
 
+def test_speed_equals_80_minus_10log_p50_minus_10log_p95():
+    for p50, p95 in ((0.15, 0.29), (0.4, 0.53), (0.35, 2.0), (1.0, 1.0)):
+        s = SC.speed(p50, p95, adjusted=True)["score"]
+        assert s == pytest.approx(80 - 10 * math.log10(p50) - 10 * math.log10(p95), abs=1e-12)
+
+
 def test_speed_cost_capability():
     assert SC.speed_f(0.1) == 100.0
     assert SC.speed(0.1, 0.1, self_hosted=False)["score"] == 100.0

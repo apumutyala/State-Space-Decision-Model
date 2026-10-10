@@ -4,11 +4,18 @@
     and seeded neutral relabelings; the per-id distribution must be identical. Reports flips and max |dp|. A backend
     that is invariant BY CONSTRUCTION shows max |dp| == 0 here; this check is the measured side of that proof.
 
-(b) Split conformal + Learn-then-Test - ``fit_conformal`` (score s = 1 - p_y, Mondrian per decision type when asked),
-    ``prediction_set``, ``evaluate_sets`` (coverage, set size, singleton / empty rate) and ``ltt_select``: act iff
-    |C| = 1 and p_max >= lambda, lambda chosen by Bonferroni (or fixed-sequence) testing over a data-independent grid
-    so that P(error rate on acted decisions > epsilon) <= delta (binomial test on the acted calibration decisions, which
-    are i.i.d. from the acted distribution given their count). Plain coverage does not bound the acted-on error; LTT does.
+(b) Split conformal + Learn-then-Test on TWO DISJOINT calibration halves - ``split_calibration`` cuts the
+    calibration decisions deterministically by sha256(seed | id) into a FIT half and an LTT half (both id sets are
+    recorded by sha256). ``fit_conformal`` (score s = 1 - p_y, Mondrian per decision type when asked) fits q_hat on the
+    FIT half only; ``prediction_set`` / ``evaluate_sets`` report coverage, set size, singleton / empty rate.
+    ``ltt_select`` then chooses the act-or-abstain rule (act iff |C| = 1 and p_max >= lambda) by Bonferroni (or
+    fixed-sequence) testing over a data-independent lambda grid on the LTT half only, and refuses an LTT set that
+    shares an id with the fit half. Guarantee: conditional on the fit half (so q_hat and the act rule are fixed),
+    the LTT-half decisions are i.i.d. and independent of q_hat, and the acted ones are i.i.d. from the acted
+    distribution given their count, so P(error rate on acted decisions > epsilon) <= delta; split-conformal coverage
+    >= 1 - alpha holds marginally over the fit half. Reusing the fit data for LTT would make q_hat, hence the act set,
+    depend on the very decisions the binomial test treats as fresh, and void the bound. Plain coverage does not bound
+    the acted-on error; LTT does.
 
 (c) Injection-robust coverage - ``robust_set``: given per-option trusted-only logit intervals [lo, hi] (G16:
     logit_k in [b_k - c||a_k||_1, b_k + c||a_k||_1]), the most favourable score for y puts logit_y at hi and every
@@ -23,6 +30,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import itertools
 import math
 import random
@@ -152,12 +160,40 @@ def _group(r: Scored, mondrian: bool) -> str:
     return r.type if mondrian else "all"
 
 
+def ids_sha256(ids: Iterable[str]) -> str:
+    return hashlib.sha256("\n".join(sorted(ids)).encode("utf-8")).hexdigest()
+
+
+def split_calibration(cal: Sequence[Scored], seed: int = 0,
+                      fit_frac: float = 0.5) -> tuple[list[Scored], list[Scored], dict]:
+    """Deterministic, answer-independent split of the calibration decisions into a FIT half (conformal q_hat) and a
+    disjoint LTT half (act / abstain rule). Membership is a function of (seed, id) only."""
+    ids = [r.id for r in cal]
+    if len(set(ids)) != len(ids):
+        raise ValueError("calibration ids must be unique")
+    fit, ltt = [], []
+    for r in cal:
+        u = int(hashlib.sha256(f"{seed}|conformal-ltt|{r.id}".encode()).hexdigest()[:12], 16) / float(16 ** 12)
+        (fit if u < fit_frac else ltt).append(r)
+    rec = {"rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half", "seed": seed,
+           "fit_frac": fit_frac, "n_fit": len(fit), "n_ltt": len(ltt),
+           "fit_ids_sha256": ids_sha256(r.id for r in fit), "ltt_ids_sha256": ids_sha256(r.id for r in ltt)}
+    return fit, ltt, rec
+
+
 def fit_conformal(cal: Sequence[Scored], alpha: float, mondrian: bool = True) -> dict:
+    """q_hat per group from these decisions. ``_ids`` (never serialised: ``public_fit``) lets ``ltt_select`` refuse
+    to reuse them."""
     groups: dict[str, list[float]] = {}
     for r in cal:
         groups.setdefault(_group(r, mondrian), []).append(1.0 - r.probs[r.label])
     return {"alpha": alpha, "mondrian": mondrian, "qhat": {g: conformal_qhat(s, alpha) for g, s in groups.items()},
-            "n": {g: len(s) for g, s in groups.items()}}
+            "n": {g: len(s) for g, s in groups.items()}, "ids_sha256": ids_sha256(r.id for r in cal),
+            "_ids": frozenset(r.id for r in cal)}
+
+
+def public_fit(fit: dict) -> dict:
+    return {k: v for k, v in fit.items() if not k.startswith("_")}
 
 
 def _qhat_for(fit: dict, r: Scored) -> float:
@@ -244,6 +280,10 @@ def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
     """
     if method not in ("bonferroni", "fixed_sequence"):
         raise ValueError("method must be bonferroni or fixed_sequence")
+    reused = fit.get("_ids", frozenset()) & {r.id for r in cal}
+    if reused:
+        raise ValueError(f"LTT data overlaps the conformal fit data ({len(reused)} ids): the bound needs disjoint "
+                         "halves (split_calibration)")
     level = delta / len(lambdas) if method == "bonferroni" else delta
     valid: list[dict] = []
     for lam in sorted(lambdas, reverse=True):
@@ -257,6 +297,7 @@ def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
         elif method == "fixed_sequence":
             break
     base = {"epsilon": epsilon, "delta": delta, "method": method, "test_level": level, "n_cal": len(cal),
+            "ltt_ids_sha256": ids_sha256(r.id for r in cal), "fit_ids_sha256": fit.get("ids_sha256"),
             "grid": [min(lambdas), max(lambdas), len(lambdas)]}
     if not valid:
         return {**base, "lambda": None, "n_valid_lambdas": 0, "note": "no lambda certified: abstain on everything"}
@@ -278,11 +319,24 @@ def selective_eval(test: Sequence[Scored], fit: dict, lam: float | None) -> dict
             "acted_error": (sum(y != r.label for r, y in acted) / len(acted)) if acted else None, "n_act": len(acted)}
 
 
+GUARANTEE = ("split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). "
+             "LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is "
+             "<= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the "
+             "test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.")
+
+
 def conformal_report(cal: Sequence[Scored], test: Sequence[Scored], alpha: float = 0.1, epsilon: float = 0.05,
-                     delta: float = 0.05, mondrian: bool = True, method: str = "bonferroni") -> dict:
-    fit = fit_conformal(cal, alpha, mondrian)
-    ltt = ltt_select(cal, fit, epsilon, delta, method=method)
-    return {"fit": fit, "sets": evaluate_sets(test, fit), "ltt": ltt, "selective": selective_eval(test, fit, ltt["lambda"])}
+                     delta: float = 0.05, mondrian: bool = True, method: str = "bonferroni", split_seed: int = 0,
+                     fit_frac: float = 0.5) -> dict:
+    """``cal`` is split into disjoint FIT / LTT halves (``split_calibration``); ``test`` is held out from both."""
+    fit_half, ltt_half, split = split_calibration(cal, split_seed, fit_frac)
+    overlap = {r.id for r in test} & {r.id for r in cal}
+    if overlap:
+        raise ValueError(f"test decisions overlap the calibration decisions ({len(overlap)} ids)")
+    fit = fit_conformal(fit_half, alpha, mondrian)
+    ltt = ltt_select(ltt_half, fit, epsilon, delta, method=method)
+    return {"guarantee": GUARANTEE, "calibration_split": split, "fit": public_fit(fit),
+            "sets": evaluate_sets(test, fit), "ltt": ltt, "selective": selective_eval(test, fit, ltt["lambda"])}
 
 
 # =============================================================================================== (c) injection-robust
@@ -344,6 +398,7 @@ def injection_robust_report(cal: Sequence[Scored], test: Sequence[dict], alpha: 
             att_checked += 1
             att_out += not _inside(att, iv)
     return {"alpha": alpha, "target_coverage": 1 - alpha, "qhat": fit["qhat"], "n": n,
+            "calibration_ids_sha256": fit["ids_sha256"],
             "coverage": cov / n if n else None, "mean_set_size": size / n if n else None,
             "act_rate": single / n if n else None, "abstention_rate": 1 - single / n if n else None,
             "independence_rate": indep / n if n else None,

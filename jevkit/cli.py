@@ -165,8 +165,11 @@ def cmd_guarantees(a: argparse.Namespace) -> int:
         cal_ids, _ = _split(items, a.cal_frac, a.seed)
         cal = [r for r in sc if r.id in cal_ids]
         test = [r for r in sc if r.id not in cal_ids]
-        rep = guarantees.conformal_report(cal, test, a.alpha, a.epsilon, a.delta, mondrian=not a.pooled, method=a.ltt)
-        rep["split"] = {"cal_frac": a.cal_frac, "seed": a.seed, "n_cal": len(cal), "n_test": len(test)}
+        # three disjoint, answer-independent sets: test (held out), and calibration cut again into FIT / LTT halves
+        rep = guarantees.conformal_report(cal, test, a.alpha, a.epsilon, a.delta, mondrian=not a.pooled, method=a.ltt,
+                                          split_seed=a.seed, fit_frac=a.fit_frac)
+        rep["split"] = {"cal_frac": a.cal_frac, "seed": a.seed, "n_cal": len(cal), "n_test": len(test),
+                        "test_ids_sha256": guarantees.ids_sha256(r.id for r in test)}
     else:
         cal_items = IT.load_items(a.cal_items, tier=a.tier)
         cal = guarantees.scored_from_answers(cal_items, systemone.preds_to_answers(_read_jsonl(a.cal_pred)))
@@ -241,7 +244,9 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("mode", choices=("conformal", "injection"))
     _add_items(g)
     g.add_argument("--pred")
-    g.add_argument("--cal-frac", type=float, default=0.5)
+    g.add_argument("--cal-frac", type=float, default=0.5, help="share of items in calibration (rest = test)")
+    g.add_argument("--fit-frac", type=float, default=0.5,
+                   help="share of the calibration decisions that fit q_hat; the disjoint rest runs LTT")
     g.add_argument("--seed", type=int, default=0)
     g.add_argument("--alpha", type=float, default=0.1)
     g.add_argument("--epsilon", type=float, default=0.05)

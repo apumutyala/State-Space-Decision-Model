@@ -13,7 +13,7 @@ through one `/v1/systemone` path. Everything runs on CPU, and the tests use smal
 | `board.py` | recomputes every published v1.6.1 row from its own published sub-fields and diffs the results |
 | `systemone.py` | `SystemOneAdapter` over a `decide.Decider`, a Decision Index kit engine, or a request callable; Decision Index row ↔ item conversion; kit `results.jsonl` → predictions |
 | `perturb.py` | 8 deterministic perturbation operators and the flip-rate / probability-shift battery |
-| `guarantees.py` | (a) reorder/relabel invariance, (b) split conformal sets with Learn-then-Test abstention, (c) injection-robust sets from trusted-only logit intervals |
+| `guarantees.py` | (a) reorder/relabel invariance, (b) split conformal sets plus Learn-then-Test abstention on two DISJOINT calibration halves, (c) injection-robust sets from trusted-only logit intervals |
 | `meter.py` | serial latency (p50/p95, raw and adjusted), tokens per decision, and $/1k under a declared `PriceSource` |
 | `cli.py` | `python -m jevkit score / perturb / guarantees / board / items / fetch` |
 
@@ -55,6 +55,9 @@ Intelligence on only 23/140 rows, so the site appears to compute its views from 
   tiers and records that it did.
 - An **invalid score answer gets nMAE = 1** (the maximum). jade's per-tier score CCs of about −160 to −355 are
   consistent with this.
+- **Speed** is S = 80 − 10·log10(p50) − 10·log10(p95), with p in seconds (the adjusted values for self-hosted
+  rows). That is the same as the mean of f(p) = 100 − 20·log10(p / 0.1) over p50 and p95. The self-hosted adjustment
+  is p' = 2p + 0.15 s; API rows are unadjusted.
 - **Cost is clipped to [0, 100].** verdict-small's raw value of 101.87 is published as 100. Speed is clipped the
   same way. No published row exercises the Speed clip.
 - One row is **provider-confidence-only** (fastino): each part is 100(1 − 2·top-label ECE). `board.py` handles it.
@@ -90,6 +93,7 @@ python -m jevkit score --public --pred preds.jsonl --price "kind=list_tariff,in=
 python -m jevkit perturb make --public --out pert.jsonl --seeds 0
 python -m jevkit perturb score --public --perturbed pert.jsonl --pred base.jsonl --pred-perturbed pp.jsonl
 python -m jevkit guarantees conformal --public --pred preds.jsonl --alpha 0.1 --epsilon 0.05 --delta 0.05
+#   items -> test / calibration (--cal-frac); calibration -> FIT half (q_hat) / disjoint LTT half (--fit-frac); see below
 python -m jevkit board --api api_v161.json
 ```
 
@@ -97,21 +101,57 @@ Predictions are JSONL, one line per item: `{"id", "answer": <SystemOne answer>, 
 "usage": {"input_tokens", "output_tokens"}}`. `SystemOneAdapter.answer_item` writes exactly this format. Raw
 `{answers: {item_id: answer}}` lines are also accepted.
 
-## Public items are EVAL-ONLY (doc-overlap guard plan)
+## Conformal + LTT guarantee
+
+`guarantees conformal` splits the items deterministically (sha256 of seed and id, never of an answer) into a test
+set and a calibration set. It then splits the calibration decisions again, the same way, into two **disjoint**
+halves:
+
+- the **FIT half** fits the conformal threshold q_hat;
+- the **LTT half** runs Learn-then-Test, choosing the act-or-abstain rule (act iff |C| = 1 and p_max ≥ λ).
+
+The report records all three id sets by sha256, and `ltt_select` refuses LTT data that overlaps the fit data.
+
+The guarantee has two parts:
+
+1. **Coverage:** P(y ∈ C(x)) ≥ 1 − α, marginally, with q_hat taken from the FIT half.
+2. **Acted-on error:** with probability ≥ 1 − δ over the LTT half, the error rate on acted decisions is ≤ ε.
+
+The second part holds because q_hat and the act rule are fixed before the binomial test sees the LTT half. That half
+is i.i.d. and independent of q_hat, so the acted decisions are i.i.d. given their count. Reusing the fit data would
+void this bound. Both parts need exchangeability with deployment data; neither survives distribution shift.
+
+## Public items are EVAL-ONLY (enforced)
 
 The pinned items are github.com/fstandhartinger/jevbench @ `b6b8fff7e345b98c060ad26c13308860ddc67004` (MIT):
 original 72 (standard tier), easy 48, and hard 111. Their sha256 values match the upstream `datasets/manifest.json`.
 They live outside git under `ssdm-data/jevbench/<commit>/`. Never train, tune, calibrate or select on them.
 
-This PR does not regenerate the doc-overlap index. The plan for the guard's next rebuild:
+The training-data gates enforce this through `train/jevbench_guard.py`, which keeps a **separate JevBench index,
+fingerprint and pin**. The Index eval index, its pin, and every pinned `doc_clean` spec stay byte-identical.
 
-1. Add `jevkit.items.overlap_guard_rows(load_public())` to `train.doc_overlap_guard.iter_eval_rows`, using split
-   `JEVBENCH`, run_id `jevbench:<id>`, and family `jevbench_<family>`. The rows already have the shape `eval_units`
-   cuts (tested).
-2. Add the three pinned files to `eval_source_files()`, so the index key changes and the pin is rebuilt.
-3. Pin the result in `data/manifests/doc_overlap/index-pin.json`. The id + sha256 list (no text) is
-   `jevkit/data/jevbench_public_fingerprints.json` (manifest sha256 `6eed4143…beaa`). A test checks it against
-   the pinned bytes.
+- **What gets indexed:** every document unit of the 231 items (one per top-level state key, plus all instructions
+  and all criteria / option descriptions), built with `doc_overlap_guard.build_index` under its own RULE.
+- **Doc-overlap gate.** `train.doc_overlap_guard.scan` (used by `train_set.draw`, `run_cell`, `heldout_gate`,
+  `clef_teacher.select` and the CLI) runs the JevBench index beside the Index eval index in the same streaming pass.
+  - It applies the 13-gram R / E / U rule, with this draw's boilerplate and template exclusions.
+  - It also fails a row whose normalised segment (≥ 12 chars) exactly equals a JevBench segment. This catches
+    short items the 13-grams cannot reach.
+  - Every JevBench fail counts toward the scan's `n_fail`. A scan with no JevBench fail reports exactly what the
+    Index-only scan did, plus a `jevbench` block.
+  - `clean_spec` records the JevBench index / fingerprint sha, and `check_pinned` refuses a spec made against a
+    different one.
+- **Builder fingerprint.** `data.build.build_sample` runs the JevBench `data.dedup.Fingerprint` (FP v3: exact,
+  ngram13, minhash, edit, contain) beside the Index fingerprint, as extra matchers named `jevbench_*`.
+  - An item-tier hit drops the record.
+  - Context-tier hits are logged.
+- **Pin and shipping.** The pin is `data/manifests/doc_overlap/jevbench/pin.json`: doc index sha256 `0fe994c4…934b`
+  and fingerprint arrays sha256 `e2066060…3759`.
+  - The arrays are hashes only, about 3.3 MB, and are committed next to the pin. Every job box gets them with the
+    code archive, with no context.data entry.
+  - Load fails closed on any drift.
+  - `python -X utf8 -m train.jevbench_guard verify` rebuilds from the pinned files and reproduces both shas.
+- The id + sha256 list (no text) is `jevkit/data/jevbench_public_fingerprints.json`.
 
 ## GPU parity run (next; not run here)
 

@@ -1,0 +1,31 @@
+{
+ "rule_id": "jevbench_guard/v1: JevBench public items (pinned) as an eval-only doc-overlap source + fingerprint",
+ "source": {
+  "repo": "github.com/fstandhartinger/jevbench",
+  "commit": "b6b8fff7e345b98c060ad26c13308860ddc67004",
+  "files": {
+   "original.jsonl": "5c2414edb3006b8bfcb70fda433f0f9ca015759433849f8d3104328a1f7c4180",
+   "easy.jsonl": "231df3c2c8e88a1a8c137ebe85de96ba70fabd330849098ac7b3c52c70b7172b",
+   "hard.jsonl": "89e9e6becb33ed88c1de7d42dcc87531b2fb64cfaef4e1986faf7c37b3f80ebb"
+  }
+ },
+ "split": "JEVBENCH",
+ "catalog_id": -77,
+ "doc_index": {
+  "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+  "index_sha256": "0fe994c40dfc70fa3a0cd711fa88abb7f439cb8f2546ecffd53e5ca232d3934b",
+  "n_eval_rows": 231,
+  "n_units": 783,
+  "n_grams": 53718,
+  "n_postings": 56244
+ },
+ "fingerprint": {
+  "version": "ssdm-dedup-v3",
+  "arrays_sha256": "e2066060b5d0e0416bd36e5593526c708aac6325b76201b698d6a92ec7cc3759",
+  "rows": 231,
+  "segments_indexed": 4028,
+  "ngram13_indexed": 53718,
+  "minhash_segments": 3919,
+  "short_items": 2977
+ }
+}
