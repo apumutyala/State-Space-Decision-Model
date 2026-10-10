@@ -57,7 +57,7 @@ largest T that stays under 76 GB.
 | report | 2 | `scripts/decide_rwkv7.py readout` -> `readout-measured` | 9 |
 
 Schedule 142 + reserve 8 = 150. Worst case (30 + 2 x 150) x 0.0495 = **$16.34**; expected ~$4.70; hard cap
-`set_workspace_cap(MTD + 20)` when A runs alone.
+`set_workspace_cap(MTD + 25.46)` when A runs alone (was MTD + 20 before the 2026-10-09 re-pricing).
 
 ## Stage B: LoRA m2 pilot cell (`JOB=lora`, `jobs/rwkv7/job_params_lora.json`, `jobs/rwkv7/pilot_cell.json`)
 
@@ -81,9 +81,9 @@ Schedule 142 + reserve 8 = 150. Worst case (30 + 2 x 150) x 0.0495 = **$16.34**;
 Schedule 172 + reserve 8 = 180. Worst case (30 + 2 x 180) x 0.0495 = **$19.30**; expected ~$7.72.
 
 **Workspace cap when B is chained.** The cap is workspace-wide and B is submitted (with `depends_on`) while A is still
-queued or running, so at submit time it must cover A's remaining worst case plus B's: `set_workspace_cap(MTD + 36)`
-(`costs.concurrent_cap_usd(["rwkv7_readout", "rwkv7_lora"])` = ceil(16.34 + 19.30)). MTD + 20 is right only if B is
-submitted after A has ended. With the probe also live (qual pass branch), add its $28.21.
+queued or running, so at submit time it must cover A's remaining worst case plus B's: `set_workspace_cap(MTD + 46)` (36 before the 2026-10-09 re-pricing)
+(`costs.concurrent_cap_usd(["rwkv7_readout", "rwkv7_lora"])` = ceil(20.79 + 24.57); was ceil(16.34 + 19.30)). MTD + 25.46 is right only if B is
+submitted after A has ended. With the probe also live (qual pass branch), add its $35.91 (was $28.21).
 
 ## `submit_job` fields (one build context for both stages, so `depends_on` needs no `allow_different_context`)
 
@@ -168,3 +168,16 @@ Nothing is fitted on any rows. Outputs: `index/<variant>/{results.jsonl, score.j
 watches all results files (total 8 x rows). Index cap = 21 min (job-zhyvg v2, measured) x 8 x 1.3 = 218 -> 220.
 Schedule 20 + 220 + 32 + reserve 10 = 282. Worst case (60 + 2 x 282) x 0.0495 = **$30.89**; expected ~$10.74;
 hard cap $31.
+
+## Re-pricing 2026-10-09: H100 batch $0.0495 -> $0.063/min
+
+SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now bill $0.063 per GPU-minute (Mon-Thu and weekends; Fridays $0.05628) and the preflight quotes max_duration x $0.063. Evidence and history: `jobs/common/rates.py`. The dollar figures above this section are at the old $0.0495/min and stay as written (receipts and past decisions used them); the numbers below are the current ones (`python -m jobs.common.costs`). Where a hard cap was raised, it was raised by the same ratio as the rate (x 0.063/0.0495 = x 14/11, rounded up to the cent), so the cap still buys the same minutes.
+
+| Params | Worst case (build + 2 attempts) | Hard cap | Expected | One attempt (quoted max_cost) |
+|---|---|---|---|---|
+| `job_params_lora.json` | $24.57 (was $19.30) | $25.46 (was $20.00) | $9.83 (was $7.72) | $11.34 (was $8.91) |
+| `job_params_readout.json` | $20.79 (was $16.34) | $25.46 (was $20.00) | $5.99 (was $4.70) | $9.45 (was $7.43) |
+| `job_params_readout_g1v2.json` | $18.27 (was $14.36) | $19.10 (was $15.00) | $3.40 (was $2.67) | $7.25 (was $5.69) |
+| `job_params_readout_g1v3.json` | $39.31 (was $30.89) | $39.46 (was $31.00) | $13.67 (was $10.74) | $17.77 (was $13.96) |
+
+Workspace cap for A + B chained at $0.063/min: `set_workspace_cap(MTD + 46)` (was MTD + 36); B alone MTD + 25.

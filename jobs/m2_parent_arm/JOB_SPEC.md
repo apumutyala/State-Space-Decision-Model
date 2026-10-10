@@ -75,7 +75,7 @@ and price it with the same `estimate`.
   - the full-8 converted checkpoint;
   - its sha256 pinned in `jobs/m2_pilot/m2_pilot_cell_q9af.json` (currently `null`, so the job exits 10);
   - preferably also `base_config_sha256`.
-- The usual spend steps: a `spend` issue, a LEDGER row, `validate_job` against $20, and the credit-expiry check.
+- The usual spend steps: a `spend` issue, a LEDGER row, `validate_job` against $24 (re-authorised 2026-10-09 ($20 → $24)), and the credit-expiry check.
 - Margins: `train.promotion.MARGINS` (Codex #36 contract, comments 6028537932 + 6028610849; status in `MARGINS`).
   This job produces no verdict; it only caches the parent's units.
 
@@ -100,4 +100,14 @@ record with at least one usable item. `arm_decision_fields` calls `decide` only 
 - **Upper bound (the `VOLUME_TOKENS` convention):** prompt tokens of every question row, with no K/T filter. This reproduces v2's 5,724,231 exactly. For v3 it is 158.9 M (RWKV7: 704.9 min, $34.89) and 162.1 M (Q9: 122.0 min, $6.04). Records whose rows are all filtered out are never forwarded, so this bound over-counts.
 - **On RWKV7, calls dominate:** 64k × 0.117 s ≈ 124 min, against ≈ 101 min of prefill. Packing tails across records would cut this. That is not done here.
 - **Caps:** the 90-minute g13 phase above cannot hold RWKV7's 226 minutes. G13 with v3 needs its own job or phase, with caps re-sized from these numbers; Q9's 80 minutes fits only without the steer and Index terms.
-- **Cost authority:** cost is pre-authorised (coordinator, cohort v3 task). The $20 hard cap of this draft still applies until its params are re-priced.
+- **Cost authority:** cost is pre-authorised (coordinator, cohort v3 task). Its params were re-priced 2026-10-09 at $0.063/min and the hard cap re-authorised ($20 → $24).
+
+## Re-pricing 2026-10-09: H100 batch $0.0495 -> $0.063/min
+
+SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now bill $0.063 per GPU-minute (Mon-Thu and weekends; Fridays $0.05628) and the preflight quotes max_duration x $0.063. Evidence and history: `jobs/common/rates.py`. The dollar figures above this section are at the old $0.0495/min and stay as written (receipts and past decisions used them); the numbers below are the current ones (`python -m jobs.common.costs`). Where a hard cap was raised, it was raised by the same ratio as the rate (x 0.063/0.0495 = x 14/11, rounded up to the cent), so the cap still buys the same minutes.
+
+| Params | Worst case (build + 2 attempts) | Hard cap | Expected | One attempt (quoted max_cost) |
+|---|---|---|---|---|
+| `job_params.json` | $23.94 (was $18.81) | $24.00 (re-authorised 2026-10-09 ($20 → $24)) | – | $11.34 (was $8.91) |
+
+`jobs/m2_parent_arm/job_params.json`: worst case $23.94 exceeded the $20 line at the new rate; the line was re-authorised 2026-10-09 ($20 → $24) by the coordinator (agreed by A and B), so the hard cap is $24.00, the lint passes without a waiver and the launcher no longer needs `--allow-waived`.

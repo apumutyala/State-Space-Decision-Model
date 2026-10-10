@@ -76,10 +76,10 @@ def test_exact_workload_cost_and_caps_have_no_fixed_dollar_ceiling():
     for phase, cap in p["phase_caps_minutes"].items():
         assert cap == 5 * math.ceil(p["cap_multipliers"][phase] * p["expected_minutes"][phase] / 5)
     assert lint.schedule_total(p) == p["max_duration_minutes"] == 710
-    assert costs.worst_case_usd(p) == p["hard_cap_usd"] == 73.26
+    assert costs.worst_case_usd(p) == p["hard_cap_usd"] == 93.24  # 73.26 at the pre-2026-10-08 $0.0495/min
     assert round(60 * 0.01 + 2 * 710 * 0.0495, 2) == 70.89
-    assert costs.expected_usd(p) == 26.54
-    assert costs.concurrent_cap_usd(["rwkv7_code_label_h100"]) == 74
+    assert costs.expected_usd(p) == 33.78
+    assert costs.concurrent_cap_usd(["rwkv7_code_label_h100"]) == 94
     assert p["hard_cap_usd"] < p["approved_track_allocation_usd"] == 250
     assert costs.PARAMS["rwkv7_code_label_h100"] == "jobs/rwkv7_code_label_h100/job_params.json"
 

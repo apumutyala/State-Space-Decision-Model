@@ -11,7 +11,7 @@
  "queue_ttl_minutes": 1440,
  "resume": "none",
  "hf_cache": true,
- "batch_usd_per_min": 0.0495,
+ "batch_usd_per_min": 0.063,
  "hard_cap_usd": 40.0,
  "reserve_minutes": 10,
  "margin_min_frac": 0.3,

@@ -151,7 +151,7 @@ def test_smoke_params_run_both_arms_cheaply():
     assert schedule_minutes(p) == p["max_duration_minutes"]
     est = F.estimate(p)
     assert est["ok"] and set(est["minutes"]) == {"fulldev", "parent_full"}
-    assert expected_usd(p) <= 5.0
+    assert expected_usd(p) <= 6.4  # $5.00 at the pre-2026-10-08 $0.0495/min, x 14/11
     smoke = _result(rows_mode="smoke", rows=250)
     smoke["arms"]["child"]["status"] = {"ok": 249, "exhausted": 1}
     assert F.valid_result(smoke) and not F.valid_result(_result(rows_mode="smoke"))

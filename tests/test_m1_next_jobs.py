@@ -30,10 +30,11 @@ CELL = json.loads((ROOT / "jobs/rwkv7/pilot_cell.json").read_text())
 # ----------------------------------------------------------------------------- cost arithmetic and schedules
 def test_worst_case_arithmetic_counts_build_and_a_retry():
     assert costs.attempts(PP) == 2 and costs.attempts(RB) == 2
-    assert costs.worst_case_usd(PP) == round((30 + 2 * 270) * 0.0495, 2) == 28.21
-    assert costs.worst_case_usd(RA) == round((30 + 2 * 150) * 0.0495, 2) == 16.34
-    assert costs.worst_case_usd(RB) == round((30 + 2 * 180) * 0.0495, 2) == 19.3
-    assert costs.worst_case_usd(costs.load("qual")) == 18.81  # unchanged qual job
+    # re-priced 2026-10-09 at $0.063/min (jobs/common/rates.py); at the old $0.0495: 28.21 / 16.34 / 19.30 / 18.81
+    assert costs.worst_case_usd(PP) == round((30 + 2 * 270) * 0.063, 2) == 35.91
+    assert costs.worst_case_usd(RA) == round((30 + 2 * 150) * 0.063, 2) == 20.79
+    assert costs.worst_case_usd(RB) == round((30 + 2 * 180) * 0.063, 2) == 24.57
+    assert costs.worst_case_usd(costs.load("qual")) == 23.94  # unchanged qual job, new rate
 
 
 @pytest.mark.parametrize("name", list(costs.PARAMS))
@@ -46,15 +47,64 @@ def test_every_job_fits_its_hard_cap_and_schedule(name):
 
 def test_probe_cap_is_the_planned_40_and_rate_matches_plan():
     assert PP["hard_cap_usd"] == 40.0  # PLAN.md: "~$40 one-layer probe"
-    assert all(costs.load(n)["batch_usd_per_min"] == round(2.97 / 60, 4) for n in costs.PARAMS)
+    assert all(costs.load(n)["batch_usd_per_min"] == costs.rates.BATCH_USD_PER_MIN == round(3.78 / 60, 4) for n in costs.PARAMS)
 
 
-def test_branch_ledger_fits_the_envelope_and_lines():
+def test_branch_ledger_fits_granted_credit_and_lines():
     led = costs.branch_ledger()
-    assert led["spent"] == 16.11 and led["envelope"] == 525.0
+    # MTD from the newest usage receipt; the fixed $525 envelope is retired (2026-10-10): spend + committed worst
+    # cases must fit the total credit granted for the period, from the newest billing receipt
+    assert led["spent"] == round(costs.latest_usage_receipt()["total_usd"], 2)
+    assert led["granted_credit_usd"] == costs.latest_billing_receipt()["granted_usd"] == costs.GRANTED_USD
+    assert led["spent_source"]["path"].startswith("receipts/") and led["granted_source"]["path"].startswith("receipts/")
     assert led["joint_gate_fits"]
-    for b in led["branches"].values():
-        assert b["fits_envelope"] and b["system1_left_for_m2"] > 0
+    for name, b in led["branches"].items():
+        assert b["spend_plus_worst"] <= led["granted_credit_usd"] and b["fits_granted_credit"], (name, b)
+        assert b["system1_left_for_m2"] > 0
+
+
+def test_ran_ledger_entry_is_not_double_counted(tmp_path):
+    """A ledger entry whose listed jobs are all terminal in committed job receipts counts 0 toward committed worst
+    cases (its actual cost is already in SPENT_USD); running / missing receipts keep the full worst case."""
+    names = {*costs.JOINT_GATE_JOBS, "clef_baseline_B", *costs.CLEF27B_INDEX_JOBS, *costs.TEACHER_JOBS,
+             "probe9b", "full8", "rwkv7_readout", "rwkv7_lora"}
+    assert set(costs.LEDGER_JOB_IDS) == names  # every branch-ledger entry carries a job_ids list
+    (tmp_path / "receipts" / "2026-10-10-D-x" / "jobs").mkdir(parents=True)
+
+    def job(jid, status, micros):
+        (tmp_path / "receipts" / "2026-10-10-D-x" / "jobs" / f"{jid}.json").write_text(json.dumps(
+            {"object": "job", "job_id": jid, "status": status, "receipt": {"charged_usd_micros": micros}}), encoding="utf-8")
+
+    ids = {n: [] for n in names}
+    base = costs.branch_ledger(tmp_path, ids)
+    assert base["ran"] == {} and base["ran_actual_usd_in_spent"] == 0
+    lora = costs.worst_case_usd(costs.load("rwkv7_lora"))
+    c = "C: qual fold -> rwkv7 readout + lora"
+    job("job-lora1", "running", 1_000_000)
+    ids["rwkv7_lora"] = ["job-lora1", "job-lora2"]
+    assert costs.branch_ledger(tmp_path, ids)["branches"][c]["spend_plus_worst"] == base["branches"][c]["spend_plus_worst"]
+    job("job-lora1", "failed", 1_000_000)  # terminal, but the second listed job has no receipt yet
+    assert "rwkv7_lora" not in costs.branch_ledger(tmp_path, ids)["ran"]
+    job("job-lora2", "succeeded", 7_500_000)
+    led = costs.branch_ledger(tmp_path, ids)
+    assert led["ran"]["rwkv7_lora"]["actual_usd"] == 8.5
+    assert led["branches"][c]["m1_committed"] == round(base["branches"][c]["m1_committed"] - lora, 2)
+    assert led["branches"][c]["spend_plus_worst"] == round(base["branches"][c]["spend_plus_worst"] - lora, 2)
+    assert led["branches"][c]["m1"] == base["branches"][c]["m1"]  # the System 1 line total stays the full worst case
+    real = costs.branch_ledger()  # committed repo receipts: probe9b, full8, qual, rwkv7 A, Clef subset have run
+    assert {"probe9b", "full8", "qual", "rwkv7_readout", "clef_index_subset", "clef_index_full_reference"} <= set(real["ran"])
+    assert real["ran"]["full8"]["actual_usd"] == 26.34 and real["ran"]["probe9b"]["actual_usd"] == 5.01
+
+
+def test_granted_credit_counts_every_grant_for_the_month():
+    new = costs.latest_billing_receipt()
+    assert new["path"] == "receipts/2026-10-10-D-sf-usage-billing/billing.json"
+    assert new["granted_usd"] == 785.0  # promo 500 + top-ups 25 + 250 + 10 (2026-10-09)
+    old = json.loads((ROOT / "receipts/2026-10-08-D-m2-cpu8-validation/post-run-billing.json").read_text(encoding="utf-8"))
+    assert costs.granted_credit_usd(old) == 525.0  # the retired envelope was exactly the 2026-10-06 grants
+    lapsed = dict(old, month="2026-11", credit_grants=[dict(g, expires_at="2026-10-27T06:53:54+00:00")
+                                                       for g in old["credit_grants"]])
+    assert costs.granted_credit_usd(lapsed) == 0.0  # a grant that expired before the month does not count
 
 
 def test_pipeline_fits_its_phase_cap():
@@ -515,9 +565,9 @@ def test_dev_subset_records_which_manifest_bytes_are_hashed():
 
 
 def test_chained_and_concurrent_workspace_caps():
-    assert costs.concurrent_cap_usd(["rwkv7_readout", "rwkv7_lora"]) == 36
-    assert costs.concurrent_cap_usd(["probe9b", "rwkv7_readout"]) == 45
-    assert costs.concurrent_cap_usd(["rwkv7_lora"]) == 20
+    assert costs.concurrent_cap_usd(["rwkv7_readout", "rwkv7_lora"]) == 46  # 36 at the pre-2026-10-08 rate
+    assert costs.concurrent_cap_usd(["probe9b", "rwkv7_readout"]) == 57  # was 45
+    assert costs.concurrent_cap_usd(["rwkv7_lora"]) == 25  # was 20
     spec = (ROOT / "jobs/rwkv7/JOB_SPEC.md").read_text(encoding="utf-8")
     assert "MTD + 36" in spec and "depends_on" in spec
     assert "MTD + 45" in (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")

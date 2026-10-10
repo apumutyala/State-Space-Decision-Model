@@ -129,7 +129,7 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
 1. Context: `python -m jobs.common.launch m2_first_cell --sha <merged sha> --out <dir> --data <SSDM_DATA>` (PR #93:
    lint + job tests on the archived tree, pinned data, deterministic context, `submit.json`), then `create_context`,
    upload, `finalize_context`.
-2. `open_mission("m2-first-cell")`; `set_workspace_cap(MTD + 70)`.
+2. `open_mission("m2-first-cell")`; `set_workspace_cap(MTD + 89.10)`.
 
 ```json
 {
@@ -185,7 +185,7 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
 ## Before submit
 
 1. Independent fresh-context review; merge to `agent-main`.
-2. Spend issue + LEDGER row; `set_workspace_cap(MTD + 70)` (hard cap $70; worst case $66.03); credit expiry 2026-10-27.
+2. Spend issue + LEDGER row; `set_workspace_cap(MTD + 89.10)` (hard cap $89.10; worst case $84.04 at $0.063/min, was $70 / $66.03); credit expiry 2026-10-27.
 3. Env: `TOK_S=3757 CALL_S=0.117` (job-tkfaj probe). No `M2FC_*` variable: those are the runner's test-only path
    overrides (`tests/test_m2_first_cell_shell.py` executes the runner end to end under bash on CPU; it needs the image's
    transformers 5.17.0, e.g. `CUDA_VISIBLE_DEVICES= .venv-gpu/Scripts/python -X utf8 -m pytest tests/test_m2_first_cell_shell.py`,
@@ -394,3 +394,19 @@ one checkpoint slot per job (a new job starts empty), so the state travels in ea
   1.17 GB = 4.69 GB, fits; r256 = 1,156,802,562 -> 13.9 GB latest alone, refused in setup (needs a bucket transport).
   A best that is carried trainable-only scores identically; only a collapse-guard rollback to it keeps the current
   AdamW moments (recorded in the collapse event).
+
+## Re-pricing 2026-10-09: H100 batch $0.0495 -> $0.063/min
+
+SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now bill $0.063 per GPU-minute (Mon-Thu and weekends; Fridays $0.05628) and the preflight quotes max_duration x $0.063. Evidence and history: `jobs/common/rates.py`. The dollar figures above this section are at the old $0.0495/min and stay as written (receipts and past decisions used them); the numbers below are the current ones (`python -m jobs.common.costs`). Where a hard cap was raised, it was raised by the same ratio as the rate (x 0.063/0.0495 = x 14/11, rounded up to the cent), so the cap still buys the same minutes.
+
+| Params | Worst case (build + 2 attempts) | Hard cap | Expected | One attempt (quoted max_cost) |
+|---|---|---|---|---|
+| `job_params.json` | $84.04 (was $66.03) | $89.10 (was $70.00) | $33.26 (was $26.14) | $40.13 (was $31.53) |
+| `job_params_d1_fast.json` | $84.04 (was $66.03) | $89.10 (was $70.00) | $33.26 (was $26.14) | $40.13 (was $31.53) |
+| `job_params_d3_r1_gold.json` | $84.04 (was $66.03) | $89.10 (was $70.00) | $33.26 (was $26.14) | $40.13 (was $31.53) |
+| `job_params_d3_v2f_fast.json` | $84.04 (was $66.03) | $89.10 (was $70.00) | $33.26 (was $26.14) | $40.13 (was $31.53) |
+| `job_params_d3_v2f_gold.json` | $84.04 (was $66.03) | $89.10 (was $70.00) | $33.26 (was $26.14) | $40.13 (was $31.53) |
+| `job_params_d3_v3w_fast.json` | $84.04 (was $66.03) | $89.10 (was $70.00) | $33.26 (was $26.14) | $40.13 (was $31.53) |
+| `job_params_fulldev_eval.json` | $80.89 (was $63.56) | $82.73 (was $65.00) | $28.85 (was $22.67) | $38.56 (was $30.29) |
+| `job_params_fulldev_smoke.json` | $23.56 (was $18.51) | $25.46 (was $20.00) | $5.54 (was $4.36) | $9.89 (was $7.77) |
+| `job_params_hijack_eval.json` | $18.52 (was $14.55) | $19.10 (was $15.00) | $5.48 (was $4.31) | $7.37 (was $5.79) |

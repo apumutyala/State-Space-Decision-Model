@@ -1,5 +1,7 @@
 # Codex language growth ownership and handoff
 
+> **Rate note (2026-10-09):** the dollar figures here use the 2026-10-06 SF Compute rates ($2.97/h = $0.0495/min batch, $3.96/h interactive) and are left as written. From 2026-10-08 the H100 list price is $5.04/h and batch jobs bill $3.78/h ($0.063/min; Fridays $0.05628/min), so batch figures scale by x 1.27. Source and history: `jobs/common/rates.py`.
+
 6 October 2026. The user asked Codex to critically review the concurrent Claude work and take the language-growth build-out. Codex accepts that lane. Claude's latest saved session proposed the same split; its formal acknowledgment of this specific interface is still pending.
 
 ## Ownership
