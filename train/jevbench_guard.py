@@ -323,14 +323,14 @@ def rescan(paths: Iterable[str | Path], full_fingerprint: bool = True, log=print
                 for line in fh:
                     r = json.loads(line)
                     n += 1
+                    if exact_segment_hits(fp, r.get("state"), r.get("questions")):  # the scan's exact gate
+                        exact_ids.append(str(r.get("id")))
                     h = {k: v for k, v in fingerprint_item_hits(fp, r.get("state"), r.get("questions")).items() if v}
                     if h:
                         n_hit += 1
-                        if "jevbench_exact" in h:
-                            exact_ids.append(str(r.get("id")))
                         for k in h:
                             fp_hits[k] = fp_hits.get(k, 0) + 1
-                        if len(ex_rows) < 50:
+                        if len(ex_rows) < 5000:
                             ex_rows.append({"id": r.get("id"), "source": r.get("source"), "matchers": sorted(h)})
                     if len(getattr(fp, "_seg_cache", ())) > 200_000:  # bound the per-segment cache
                         fp._seg_cache.clear()
@@ -338,9 +338,10 @@ def rescan(paths: Iterable[str | Path], full_fingerprint: bool = True, log=print
         doc_ids = rep["fail_ids"]
         gate_ids = sorted(set(doc_ids) | set(exact_ids))
         out[str(p)] = {"n_records": rep["n_records"], "records_sha256": DG._sha_file(p),
-                       "jevbench_doc_fail": len(doc_ids), "jevbench_doc_fails": rep["fails"][:50],
+                       "jevbench_doc_fail": len(doc_ids), "jevbench_doc_fails": rep["fails"][:5000],
                        "jevbench_exact_segment_rows": len(exact_ids),
-                       "jevbench_training_gate_fail": len(gate_ids), "jevbench_training_gate_fail_ids": gate_ids[:200],
+                       "jevbench_training_gate_fail": len(gate_ids), "jevbench_training_gate_fail_ids": gate_ids,
+                       "jevbench_exact_segment_ids": sorted(exact_ids),
                        "jevbench_fingerprint_rows_hit": n_hit if full_fingerprint else None,
                        "jevbench_fingerprint_hits_by_matcher": fp_hits if full_fingerprint else None,
                        "jevbench_fingerprint_examples": ex_rows, "fingerprint_records_checked": n,
