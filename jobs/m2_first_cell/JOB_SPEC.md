@@ -498,3 +498,5 @@ copy `job_params_d20_v4_chain_l1.json` to `job_params_d20_v4_chain_l<k+1>.json`;
 chain_link.json manifest_sha256>, "url_env": "D20_CHAIN_URL"}}; caps from the table; register the file in
 `jobs/DECISION_TREE.md`; put the presigned `get_artifact` URL into the submit env as `D20_CHAIN_URL` at submit time
 (never in git). The cell config never changes.
+
+Link 1 SUBMITTED 2026-10-10 as **job-7d3u9** (branch sha 1441374, package tar sha256 892247b0..., idempotency key m2-first-cell-d20-v4-chain-l1-892247b04520, quoted max_cost $56.64). Link 2 takes its `chain.from` from job-7d3u9: job get -> artifact id + artifact.sha256; out/chain_link.json -> manifest_sha256. The derived build `ssdm-data/m2/build/bschema-draw-v4-nophish/` stays on the laptop for the link 2 / 3 packages (rebuild: the subtract command above, byte-identical, checked against `data_d20_bschema_v4_nophish.sha256`).
