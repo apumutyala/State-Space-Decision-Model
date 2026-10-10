@@ -168,6 +168,8 @@ if not isinstance(td, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]
 ev = p.get("eval_only", "none")
 if ev not in ("none", "fulldev"):
     sys.exit(f"mode {mode}: eval_only {ev!r} must be none or fulldev")
+if "checkpoint" in p and ev == "none":  # job-s6kz7: a saved-checkpoint (eval-only) params file without eval_only ran as a TRAINING mode
+    sys.exit(f"mode {mode}: params carry a checkpoint block but no eval_only (an eval-only mode must declare it)")
 if ev != "none":
     sys.path.insert(0, ".")
     from jobs.m2_first_cell.checkpoint_loader import CheckpointError, checkpoint_block
@@ -307,8 +309,10 @@ if [ "$STAGE" = screen ]; then  # params "stage": "screen": the child evals are 
 fi
 for P in "${EVAL_PRICES[@]}"; do
   set -- $P
+  # a missing cap is a params error (exit 5), not a price overrun (job-s6kz7 reported it as exit 15)
+  CAPM=$(cap "$3" 2> /dev/null) || fail 5 "mode $MODE: job_params has no phase cap '$3' (an eval-only mode without \"eval_only\"?)"
   python -X utf8 -m jobs.m2_parent_arm.score_parent estimate --tok-s "$TOK_S" --call-s "$CALL_S" --stages "$1" \
-    --mode "$2" --cap-min "$(cap "$3")" --fixed-min "$4" > "$WORK/out/preflight-$3.json" || fail 15 "$3 projected past its cap at TOK_S=$TOK_S CALL_S=$CALL_S"
+    --mode "$2" --cap-min "$CAPM" --fixed-min "$4" > "$WORK/out/preflight-$3.json" || fail 15 "$3 projected past its cap at TOK_S=$TOK_S CALL_S=$CALL_S"
 done
 fi
 gate "setup" 0

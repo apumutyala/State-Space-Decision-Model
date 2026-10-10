@@ -80,6 +80,7 @@
   "cell_json_sha256": "dca234df8fa821d38d723a440589779f3ec50222228f94f9c75116871360a21c",
   "url_env": "CKPT_URL"
  },
+ "eval_only": "hijack",
  "reference_results_sha256": {
   "_note": "optional files shipped under /data/reference/ (same 2,008 subset rows); used only for the report's comparisons. null = not shipped / not used",
   "rwkv7_stock_tkfaj": null,
