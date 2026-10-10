@@ -1,0 +1,415 @@
+{
+ "build": "bschema-draw-v4-nophish (scripts/b_schema_subtract.py: bschema-draw-v4 minus dropped rows; no new rows)",
+ "location": "ssdm-data/m2/build/bschema-draw-v4-nophish/ (outside git; deterministic, a rerun reproduces it)",
+ "records_uncompressed_sha256": "054548a07e88b7dd28382caa2c88de2b3d9cebb6fde60175d95018448f780228",
+ "manifest": "bschema-draw-v4-nophish.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "7a8ca1da5eeb98b02e26fd16073ffac8621b4252f2f4aa46ce9577ba86e8ac26",
+ "content_map": "bschema-draw-v4-nophish.content.jsonl.gz",
+ "content_map_uncompressed_sha256": "9fcd268aa8e06918331ba524596b2d0c2f1099339628977da92c69dd6d3f6b91",
+ "n_records": 258798,
+ "excludes_cohort": "m2-dev-cohort-v2 be6efe2b... and m2-dev-cohort-v3 498efa61... (id, content, source item, key-free text), Index DEV/TEST rows (content, key-free text, item text)",
+ "max_variants_per_source_item": 8,
+ "builder": {
+  "module": "scripts/b_schema_subtract.py",
+  "commit": "a631e667d8c6382fc2e289f12c69511881fae5ca",
+  "parent_builder": {
+   "module": "scripts/b_schema_swap_pool.py",
+   "commit": "cddbe754f2470a377d2f6e59f12d0842ac50828a",
+   "parent_builder": {
+    "module": "scripts/b_schema_swap_pool.py",
+    "commit": "ffb4eb3587004af57adaa7f68f4e74004399531e",
+    "parent_builder": {
+     "module": "scripts/b_schema_swap_pool.py",
+     "commit": "13ea0b92cd2647fb111602960d1d91d3b1b95ae5",
+     "parent_builder": {
+      "module": "scripts/b_schema_subtract.py",
+      "commit": "e58e3b957ca0b79e52b2386b0fd6517701388494",
+      "parent_builder": {
+       "module": "data/b_schema.py",
+       "commit": "918a237836870eff9a25cc91ca76e5165141084d"
+      }
+     }
+    }
+   },
+   "family_module": {
+    "module": "data/b_schema_levers_v4.py",
+    "export": "scripts/b_schema_v4_export.py",
+    "finalize": "scripts/b_schema_levers_finalize.py --trim-to-target"
+   }
+  }
+ },
+ "receipt": "receipts/2026-10-08-B1-schema/bschema-draw-v4-nophish/",
+ "derived_from": {
+  "pointer": "data/manifests/bschema-draw-v4.pointer.json",
+  "pointer_sha256": "a4c505acf066377c5e04bc89d3d78a282a7f3cc6ce8bc4fedf29732d9501a29c",
+  "records_uncompressed_sha256": "6c3eafe265dd39ff1c25b75cd16afa72af8c04be3e3006dbb27ce9bb1c29baf9",
+  "n_records": 262468
+ },
+ "extra_pool": {
+  "dir": "m2/build/bschema-levers-v4",
+  "pointer_sha256": "6f2a034d2ef6fdd8db4434499d6a53808a39c80f917ab33c51b5157d316fab8c",
+  "build": "bschema-levers-v4 (data/b_schema_levers.py + scripts/b_schema_levers_finalize.py)",
+  "files_uncompressed_sha256": {
+   "records": "91c82f53ae1a7dc1627fb3cacdbb4467b9085400e5dc7bd145563df075046812",
+   "manifest": "76d0dbad3c60ff86632927841bdf4e64314f8273d7d64771882b66bee65529b1",
+   "content_map": "cb79e66f8883abc97b31b5190cc0d5e62fa6b0e65b933874439da4f466912b52"
+  },
+  "builder": null
+ },
+ "templates_verified": [
+  "jrt-rwkv-g1-v2f",
+  "jrt-rwkv-g1-v3w"
+ ],
+ "v1_overlength_ids": {
+  "path": "receipts/2026-10-08-B1-schema/bschema-draw-v3b/v1-overlength-ids.txt",
+  "sha256": "00783161496e21271d8f1da7e64f70beed7ad10051beb5812ef025de6d6c93e1",
+  "n": 7942,
+  "note": "same 7,942 C rows as v2e / v3; over 2,048 under jrt-rwkv-g1-v1 (max 2,309); the trainer drops (does not cut) rows over T"
+ },
+ "target_provenance": {
+  "path": "receipts/2026-10-08-B1-schema/bschema-draw-v4/target_provenance.json",
+  "sha256": "2a9d977592ea92b197bb05b4dc852d9e7d2b139489b202988403ea08b3b37498",
+  "rule": "agent-a / coordinator 2026-10-09: no target rate or shape from DEV/eval rows. v4 adds Index families the gap attribution (claude/b-gap-funding @5fc2b76, class data) marks missing and v3b still lacks: Amazon ESCI (train split), NLI4CT (train statements on trials in no Index row), PhishNChips shape (Zenodo 8339691 public corpus). Per-family target T = 3,670 = median rows of the parent Index-presentation train-split families (acos, vast, habermas, ragtruth, hover); capped by availability; natural train / corpus label rates.",
+  "parent_target_provenance": {
+   "path": "receipts/2026-10-08-B1-schema/bschema-draw-v3b/target_provenance.json",
+   "sha256": "3bfe90cafdd323b3680fca1d0c3a2a318941bebf81d21fd85b6f3e06f875f063",
+   "rule": "agent-a / coordinator 2026-10-09: no target rate or shape from DEV/eval rows; every target from a TRAIN split (or a training draw) on disk, recorded here (file, split, computed value). The first brief's eval-derived targets (ForecastBench 28% yes, CLINC oos 21%, RAGTruth 42%, API-Bank K=53) were withdrawn before any row was built and are not used. v3b (agent-a approved): API-Bank lever rebuilt name-only (K 40-60); review fixes B1 (item-tier Index fingerprint on every lever row), B2 (MMLU K10 options shuffled), N1-N5 applied.",
+   "ragtruth": {
+    "file": "dl-2026-10-08/ragtruth/response.jsonl",
+    "sha256": "e4c2e4ac24fff676d8984cc61c35d791612fadc58015335d97dd632375e18073",
+    "split": "train (quality != truncated)",
+    "train_hallucinated_rate": 0.4448,
+    "n_train": 15062,
+    "draw_noul_true_rate": 0.4191,
+    "change": "none (rows inherited from v2e; built at natural rate, then the 2,048-token filter shifts it to 41.9%; nothing eval-derived)"
+   },
+   "clinc_oos": {
+    "file": "clinc150/data_full.json (train + oos_train)",
+    "split": "train + oos_train",
+    "oos_train_share": 0.00662,
+    "draw_oos_share_of_intent_general_items": 0.00771,
+    "change": "none: v2e already sits at the TRAIN share; K151 views do not fit (see clinc_k151)"
+   },
+   "forecasting_yes_no": {
+    "source": null,
+    "change": "none: no clean non-eval resolved-forecasting train source on disk; left at natural rates"
+   },
+   "cruxeval": {
+    "change": "none: b1fam_cruxeval_synth rows = v2e's 35,997"
+   },
+   "apibank_long": {
+    "replaced": "v3's name+description rows (K 17-32) are not in v3b; see apibank_names"
+   },
+   "apibank_names": {
+    "file": "b1fam_apibank/lv1-api-train.json",
+    "sha256": "df55440a51e1ed86c261b3c1be1e636ac41a0f337eb3d3c23c7f1c8d5ba8154e",
+    "split": "train",
+    "revision": "12e8158b7628c168f07e8f31fbbe3445e99f44cf",
+    "n_samples": 3178,
+    "train_api_pool": 1767,
+    "given_apis_per_sample": "2-4",
+    "entries": "name only (API names from the lv1 train pool)",
+    "K_rule": "uniform over [40, min(60, K_fit)] (coordinator / agent-a v3b: K 40-60 as format coverage; entries and names only from the lv1 TRAIN pool; eval catalogs refused by API-name Jaccard >= 0.8); K_fit = largest catalog with estimated tokens (chars / 3.0) <= 1750; the train API pool (1767) bounds K",
+    "built": {
+     "synonym_distractor_skipped": 53712,
+     "parse_failed_or_toolsearcher": 429,
+     "k_fit_below_40": 3,
+     "per_dialogue_cap": 8,
+     "records": 2738
+    },
+    "token_check": {
+     "fit": 1794,
+     "over_2048": 490,
+     "index_fingerprint": 454
+    },
+    "index_fingerprint_item_tier": {
+     "rule": "data.dedup.Fingerprint (production index-fp-v3, all Index rows) on the row's ITEM-tier texts; any matcher (exact / ngram13 / minhash / edit / contain) drops the row, as the parent builds",
+     "fingerprint": {
+      "version": "ssdm-dedup-v3",
+      "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+      "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+      "rows": 155390
+     },
+     "dropped": 454,
+     "by_matcher": {
+      "exact": 124,
+      "minhash": 205,
+      "contain": 144,
+      "edit": 277,
+      "ngram13": 9
+     }
+    },
+    "K_distribution": {
+     "40": 125,
+     "41": 124,
+     "42": 116,
+     "43": 131,
+     "44": 125,
+     "45": 120,
+     "46": 120,
+     "47": 78,
+     "48": 100,
+     "49": 105,
+     "50": 105,
+     "51": 74,
+     "52": 71,
+     "53": 81,
+     "54": 62,
+     "55": 48,
+     "56": 64,
+     "57": 40,
+     "58": 42,
+     "59": 35,
+     "60": 28
+    },
+    "final_rows_in_draw": 1787,
+    "gold_position_chi2": {
+     "n": 0,
+     "chi2": 0,
+     "df": 0,
+     "chi2_per_df": null,
+     "p": null
+    },
+    "K_distribution_final": {
+     "40": 125,
+     "41": 123,
+     "42": 115,
+     "43": 130,
+     "44": 123,
+     "45": 120,
+     "46": 120,
+     "47": 78,
+     "48": 99,
+     "49": 105,
+     "50": 105,
+     "51": 74,
+     "52": 71,
+     "53": 81,
+     "54": 62,
+     "55": 48,
+     "56": 64,
+     "57": 40,
+     "58": 42,
+     "59": 35,
+     "60": 27
+    },
+    "eval_catalog_overlap": {
+     "rule": "API-name Jaccard of each built catalog vs every Index API-Bank eval option set; refuse >= 0.8",
+     "guard_root_commit": "6d3a4c1c075ae4ce4abc450b614face9aa867d59",
+     "n_eval_option_sets": 508,
+     "eval_rows_by_split": {
+      "TEST": 228,
+      "HELDOUT": 52,
+      "DEV": 228
+     },
+     "eval_k_hist": {
+      "53": 508
+     },
+     "n_candidates": 2738,
+     "max_jaccard": 0.0303,
+     "max_jaccard_by_split": {
+      "TEST": 0.0303,
+      "HELDOUT": 0.0303,
+      "DEV": 0.0303
+     },
+     "n_refused": 0
+    }
+   },
+   "mmlu_k10": {
+    "file": "mmlu_aux/train-00000-of-00001.parquet (cais/mmlu auxiliary_train)",
+    "sha256": "ae6662576ef989fed82a9289da1b89e950499c320f6849b052ec344dfcb709eb",
+    "split": "auxiliary_train",
+    "n_rows": 99842,
+    "K": "10: format coverage, accepted by the coordinator 2026-10-09 (format views such as the 10-option MMLU-Pro shape, 40-60-option catalogs and 77-option BANKING are fine as format coverage, provided no eval item text or option set is reused); the train items carry 2-5 options, so K 10 is a presentation choice, not a target rate",
+    "n_target": 7019,
+    "n_target_rule": "= mmlu_aux/mcq rows in v2e (keep the family volume)",
+    "built": {
+     "negated_stem_target": 667,
+     "too_few_distractors": 486,
+     "held_out_or_reuse_cap": 892,
+     "aggregate_option": 69,
+     "dup_or_empty_option": 7,
+     "records": 7019
+    },
+    "token_check": {
+     "fit": 6107,
+     "index_fingerprint": 912
+    },
+    "index_fingerprint_item_tier": {
+     "rule": "data.dedup.Fingerprint (production index-fp-v3, all Index rows) on the row's ITEM-tier texts; any matcher (exact / ngram13 / minhash / edit / contain) drops the row, as the parent builds",
+     "fingerprint": {
+      "version": "ssdm-dedup-v3",
+      "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+      "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+      "rows": 155390
+     },
+     "dropped": 912,
+     "by_matcher": {
+      "exact": 538,
+      "minhash": 772,
+      "edit": 267,
+      "contain": 45,
+      "ngram13": 15
+     }
+    },
+    "K_distribution": {
+     "10": 6107
+    },
+    "final_rows_in_draw": 6101,
+    "gold_position_chi2": {
+     "n": 6101,
+     "chi2": 3.9,
+     "df": 9,
+     "chi2_per_df": 0.43,
+     "p": 0.917942
+    }
+   },
+   "boolq_yesno": {
+    "file": "boolq/train-00000-of-00001.parquet (google/boolq)",
+    "sha256": "4f028e992c0bd4df30b9f056f4946b64f5c23028034ff0ed5ea467d8538cc623",
+    "split": "train",
+    "n_rows": 9427,
+    "train_yes_rate": 0.6231,
+    "rule": "every train item not held out by cohort v2/v3 once as a {yes, no} choice; label = the train answer (natural rate)",
+    "yes_rate_of_built_rows": 0.6215,
+    "built": {
+     "held_out_or_reuse_cap": 3124,
+     "records": 6303,
+     "yes": 3917
+    },
+    "token_check": {
+     "fit": 6161,
+     "index_fingerprint": 142
+    },
+    "index_fingerprint_item_tier": {
+     "rule": "data.dedup.Fingerprint (production index-fp-v3, all Index rows) on the row's ITEM-tier texts; any matcher (exact / ngram13 / minhash / edit / contain) drops the row, as the parent builds",
+     "fingerprint": {
+      "version": "ssdm-dedup-v3",
+      "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+      "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+      "rows": 155390
+     },
+     "dropped": 142,
+     "by_matcher": {
+      "ngram13": 111,
+      "contain": 27,
+      "minhash": 35,
+      "exact": 12,
+      "edit": 6
+     }
+    },
+    "K_distribution": {
+     "2": 6161
+    },
+    "final_rows_in_draw": 6159,
+    "gold_position_chi2": {
+     "n": 6159,
+     "chi2": 93.5,
+     "df": 1,
+     "chi2_per_df": 93.53,
+     "p": 0.0
+    }
+   },
+   "clinc_k151": {
+    "built": 0,
+    "reason": "first build: 0 of 3,000 K151 views fit 2,048 tokens under v3w (min 3,174 with digit ids, median 3,206; letters 3,445, option_k 3,810, keep 4,375, opaque 6,321)"
+   },
+   "banking_k77": {
+    "file": "banking77/train.csv",
+    "sha256": "b06e26ac675513959a63135f11b94ea7786ed02da65db93a5650d8838cbc664b",
+    "split": "train",
+    "n_rows": 10003,
+    "K": 77,
+    "rule": "uniform over train rows (natural label rates)",
+    "count_rule": {
+     "file": "ssdm-data/m2/build/b1-draw100k-v2/records.jsonl.gz minus d1a rows (D16 training draw)",
+     "rows": 94799,
+     "banking77_k77_rows": 2089,
+     "k77_row_share": 0.02204,
+     "parent_k77_rows": 1112,
+     "rows_before_k77": 250581,
+     "formula": "generate ceil(1.4 * (share * N - parent_k77) / (1 - share)); keep (share * N' - parent_k77) / (1 - share) after the token check (N' = final non-K77 rows)",
+     "x_generated": 6315,
+     "rows_without_new_k77": 248582,
+     "k77_rows_kept": 4496,
+     "k77_margin": 30,
+     "final_k77_share": 0.02216,
+     "final_k77_rows_in_draw": 5591,
+     "final_k77_share_in_draw": 0.02209
+    },
+    "n_target": 6315,
+    "built": {
+     "held_out_or_reuse_cap": 1699,
+     "records": 6315
+    },
+    "token_check": {
+     "over_2048": 13,
+     "fit": 5355,
+     "index_fingerprint": 947,
+     "kept_after_trim": 4496
+    },
+    "index_fingerprint_item_tier": {
+     "rule": "data.dedup.Fingerprint (production index-fp-v3, all Index rows) on the row's ITEM-tier texts; any matcher (exact / ngram13 / minhash / edit / contain) drops the row, as the parent builds",
+     "fingerprint": {
+      "version": "ssdm-dedup-v3",
+      "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+      "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+      "rows": 155390
+     },
+     "dropped": 947,
+     "by_matcher": {
+      "edit": 777,
+      "contain": 151,
+      "minhash": 265,
+      "exact": 19,
+      "ngram13": 30
+     }
+    },
+    "K_distribution": {
+     "77": 4496
+    },
+    "final_rows_in_draw": 4479,
+    "gold_position_chi2": {
+     "n": 4479,
+     "chi2": 96.3,
+     "df": 76,
+     "chi2_per_df": 1.27,
+     "p": 0.058032
+    }
+   },
+   "p3_checker_and_doc_gate_drops": {
+    "p3": {
+     "P3": {
+      "kept": 18526,
+      "index_item_text": 21,
+      "dup_text_other_item": 10
+     }
+    },
+    "doc_overlap_guard_6d3a4c1": [
+     "m2:mmlu_aux:1717~view:k10",
+     "m2:anli:a269156f-2536-41b4-8f3d-77584b1e5360~view:bs0 (v2e row)"
+    ]
+   }
+  }
+ },
+ "doc_overlap_guard": {
+  "commit": "7735be4 (origin/agent-main; train/doc_overlap_guard.py identical to 6d3a4c1)",
+  "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+  "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
+  "n_fail": 0,
+  "n_records": 262468,
+  "pool_ids_dropped": "receipts/2026-10-08-B1-schema/bschema-draw-v4/guard-7735be4-drop-pool-ids.txt"
+ },
+ "index_fingerprint_item_tier": {
+  "new_family_rows_hits": 0,
+  "parent_lever_rows_hits": 0,
+  "receipt": "receipts/2026-10-08-B1-schema/bschema-draw-v4/family-checks.json"
+ },
+ "eval_catalog_overlap": {
+  "max_jaccard": 0.0303,
+  "refuse_at": 0.8,
+  "n_refused": 0,
+  "receipt": "receipts/2026-10-08-B1-schema/bschema-draw-v3b/eval-catalog-overlap.json",
+  "scope": "inherited API-Bank lever rows (unchanged from v3b)"
+ }
+}

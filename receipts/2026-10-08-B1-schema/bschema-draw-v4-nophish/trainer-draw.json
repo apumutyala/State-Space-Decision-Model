@@ -1,0 +1,47 @@
+{
+ "config": "jobs/m2_first_cell/m2_first_cell_rwkv7_d20_v4_chain.json",
+ "heldout_gate_rc": 0,
+ "pointer": "data/manifests/bschema-draw-v4-nophish.pointer.json",
+ "pointer_sha256": "0e15aec5c0fc90e1c1acd64adab68b2ea5be1142596941267d9a4eb14483e70b",
+ "files_uncompressed_sha256": {
+  "records": "054548a07e88b7dd28382caa2c88de2b3d9cebb6fde60175d95018448f780228",
+  "manifest": "7a8ca1da5eeb98b02e26fd16073ffac8621b4252f2f4aa46ce9577ba86e8ac26",
+  "content_map": "9fcd268aa8e06918331ba524596b2d0c2f1099339628977da92c69dd6d3f6b91"
+ },
+ "n_set": 258798,
+ "n_pool": 258798,
+ "n_drawn": 258798,
+ "draw_seed": 0,
+ "drawn_ids_sha256": "a08ba5e3954e4346dcb6cb810a1f03c43fcdba4b7ba0b0b1d962ea34cff84662",
+ "phish_curated_in_draw": 0,
+ "n_sources": 28,
+ "cohort_v3_excluded": 0,
+ "attack_guard": {
+  "n_records": 258798,
+  "n_excluded": 0,
+  "check": "no hit"
+ },
+ "doc_overlap_guard": {
+  "n_records": 258798,
+  "n_excluded": 0,
+  "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+  "check": "no fail",
+  "jevbench": {
+   "n_fail": 0,
+   "n_fail_doc": 0,
+   "n_fail_exact": 0,
+   "index_sha256": "0fe994c40dfc70fa3a0cd711fa88abb7f439cb8f2546ecffd53e5ca232d3934b"
+  }
+ },
+ "drawn_heldout_scan": {
+  "n_texts": 258798,
+  "hits": 0,
+  "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5"
+ },
+ "lines_manifest_verified": 258798,
+ "content_drift": 0,
+ "drawn_attack_hits": 0,
+ "draw_secs": 352.8,
+ "total_secs": 352.8,
+ "note": "CPU 2026-10-10, stack/rwkv7/d20-v4-chain (agent-main 7c131f1 guards, #243 JevBench guard in doc_overlap_guard.scan): train.train_set.draw selection steps verbatim + its per-record checks on a streaming pass (laptop RAM); heldout gate receipt heldout-gate.json (207 s)"
+}

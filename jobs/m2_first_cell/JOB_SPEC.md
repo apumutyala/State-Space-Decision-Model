@@ -457,3 +457,44 @@ SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now b
 | `job_params_fulldev_eval.json` | $80.89 (was $63.56) | $82.73 (was $65.00) | $28.85 (was $22.67) | $38.56 (was $30.29) |
 | `job_params_fulldev_smoke.json` | $23.56 (was $18.51) | $25.46 (was $20.00) | $5.54 (was $4.36) | $9.89 (was $7.77) |
 | `job_params_hijack_eval.json` | $18.52 (was $14.55) | $19.10 (was $15.00) | $5.48 (was $4.31) | $7.37 (was $5.79) |
+
+## D20: chained cell `d20_v4_chain` (3 links; link 1 = mode `d20_v4_chain_l1`)
+
+One training run of the D19 recipe (RWKV7-G1k-13.3B attention-free, LoRA r64, D13 joint_record head + whole-record dev
+card, anti-collapse safe keys, v3w readout; job-fi5xf screen 48.61) over three SF jobs (`train/chain.py`, section above).
+Shared cell config `m2_first_cell_rwkv7_d20_v4_chain.json` (chain id = sha256 of its canonical JSON; every link uses it
+unchanged) = D19's cell with ONLY:
+- data: `bschema-draw-v4-nophish` = B's `bschema-draw-v4` (origin/claude/b-schema-v4 @0a204f99, pointer a4c505ac...,
+  262,468 rows) minus every `phish_curated` row (agent-a: drop it by default) via `scripts/b_schema_subtract.py
+  --drop-source phish_curated` (subtraction only, parent lines byte-for-byte; receipt
+  `receipts/2026-10-08-B1-schema/bschema-draw-v4-nophish/subtract-report.json`) = **258,798 rows**, pointer
+  `data/manifests/bschema-draw-v4-nophish.pointer.json` (0e15aec5...), raw files pinned by
+  `data_d20_bschema_v4_nophish.sha256`. No doc_clean / attack_clean / heldout pins: every guard must find zero.
+  CPU 2026-10-10 (streaming, this branch): heldout gate (train.heldout D1-B 0 / attack_guard 0 / doc_overlap_guard 0 incl. the #243 JevBench guard 0 doc + 0 exact) PASS in 207 s; train_set.draw 258,798 of 258,798 drawn, drawn-ids sha256 a08ba5e3954e4346dcb6cb810a1f03c43fcdba4b7ba0b0b1d962ea34cff84662, 0 content drift, 0 phish_curated (receipts `trainer-draw.json`, `heldout-gate.json` beside the subtract report).
+- clock: `max_minutes` 1694 = the TOTAL training clock, `max_steps` 24,000 (cap only; the clock binds). Cosine horizon
+  projected once in link 1 from the global clock and carried in the checkpoint.
+
+Plan (`python -X utf8 -m train.chain plan --base-params jobs/m2_first_cell/job_params_d19_v3w_v3b_joint.json --of 3`;
+base = D19's single-job params, data being the only recipe change):
+
+| Link | Mode | Caps (+ reserve 7 = 899) | Train min floor / expected | Runs |
+|---|---|---|---|---|
+| 1 | `d20_v4_chain_l1` | setup 25, guard 5, heldout 15, cell 837, chain_export 10 | 676 / 695 | guards + train + export |
+| 2 | `d20_v4_chain_l2` | setup 25, guard 5, heldout 15, chain 15, cell 822, chain_export 10 | 661 / 690 | install 1 + train + export |
+| 3 | `d20_v4_chain_l3` | setup 25, guard 5, heldout 15, chain 15, parent_g12 85, parent_index 65, cell 518, screen 159, report 5 | 357 / 423 | install 2 + train the rest + screen |
+
+`max_minutes` 1694 = the sum of the floors (`max_minutes_guaranteed`; expected sum 1,808), so the schedule completes
+inside link 3 even when every earlier phase runs to its cap. 3 x the middle link (3 x 661 = 1,983) was considered and
+rejected: link 3 would need 655 training minutes and its whole cell cap is 518. Only link 3 screens (proxy600 v3w vs
+d1_v3w / stock_v3w, as D19); links 1-2 have no parent arm, screen or evals.
+
+Price per link at $0.063/min: **worst case** (60 + 2 x 899) x 0.063 = **$117.05** (hard cap $120.91 = D19's $95 x
+14/11); platform hold 899 x $0.063 = $56.64; link 1 expected 883 min = $55.63. Chain total ~3 x $56.64 = $169.92 held.
+
+Hand-off (links 2 and 3, packaged by whoever continues): when link k ends (`out/chain_link.json` verdict `link_done`),
+copy `job_params_d20_v4_chain_l1.json` to `job_params_d20_v4_chain_l<k+1>.json`; set `mode`, `job`, `submit.key`,
+`submit.command` to `d20_v4_chain_l<k+1>`; `chain` = {"link": k+1, "of": 3, "from": {"job": <link k job id>,
+"artifact": <its art-id>, "artifact_sha256": <get_job artifact.sha256>, "manifest_sha256": <link k's
+chain_link.json manifest_sha256>, "url_env": "D20_CHAIN_URL"}}; caps from the table; register the file in
+`jobs/DECISION_TREE.md`; put the presigned `get_artifact` URL into the submit env as `D20_CHAIN_URL` at submit time
+(never in git). The cell config never changes.

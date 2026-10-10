@@ -1,0 +1,28 @@
+{
+ "parent": "bschema-draw-v4",
+ "parent_pointer_sha256": "a4c505acf066377c5e04bc89d3d78a282a7f3cc6ce8bc4fedf29732d9501a29c",
+ "n_parent": 262468,
+ "n_records": 258798,
+ "n_removed": 3670,
+ "removed_by_source_rule": {
+  "sources": [
+   "phish_curated"
+  ],
+  "rows": {
+   "phish_curated": 3670
+  }
+ },
+ "removed_by_id_lists": {
+  "rows_by_source": {},
+  "lists": {},
+  "n_ids_union": 0,
+  "n_ids_already_removed_by_source": 0
+ },
+ "uncompressed_sha256": {
+  "records": "054548a07e88b7dd28382caa2c88de2b3d9cebb6fde60175d95018448f780228",
+  "manifest": "7a8ca1da5eeb98b02e26fd16073ffac8621b4252f2f4aa46ce9577ba86e8ac26",
+  "content": "9fcd268aa8e06918331ba524596b2d0c2f1099339628977da92c69dd6d3f6b91"
+ },
+ "pointer": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\d20-v4-chain\\data\\manifests\\bschema-draw-v4-nophish.pointer.json",
+ "commit": "a631e667d8c6382fc2e289f12c69511881fae5ca"
+}
