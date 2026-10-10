@@ -44,6 +44,7 @@ from decide.prompt import TEMPLATES, Template
 from decide.untrusted import ControlTokenError
 
 from .layout import EncodeFn, LayoutRow, build_row
+from .symmetric import row_input_tokens
 from .model import DecisionModel
 
 
@@ -127,7 +128,7 @@ class DecisionModelBackend:
 
     def plan(self, request: dict[str, Any]) -> Plan:
         rows = self._rows(request)
-        lens = [len(r.ids) for r in rows]
+        lens = [row_input_tokens(r) for r in rows]  # sym layouts also feed their option continuations
         return Plan(inference_calls=1 if self._one_pass() else len(rows), max_call_input_tokens=max(lens),
                     total_input_tokens=sum(lens))
 
@@ -174,7 +175,7 @@ class DecisionModelBackend:
         if self._g16():
             extras["g16"] = g16diag
         return ScoreResult(logits=logits, inference_calls=(1 if self._one_pass() else len(rows)) + extra_calls,
-                           total_input_tokens=sum(len(r.ids) for r in rows), extras=extras, features=features)
+                           total_input_tokens=sum(row_input_tokens(r) for r in rows), extras=extras, features=features)
 
     def _g16_certificate(self, request: dict[str, Any], row: LayoutRow,
                          check_deadline: Callable[[], None] | None = None) -> dict[str, Any]:

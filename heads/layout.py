@@ -25,6 +25,12 @@ Two layouts, both "schema + options -> state -> question re-read" (JRT, arXiv 24
     (a token that straddles a segment boundary belongs to both neighbouring spans). Template must be
     ``jrt-rwkv-g1-v2``; the encoder must expose ``token_bytes(id)``.
 
+``sym-fork`` / ``sym-fork-ids`` (``heads.symmetric``)
+    Reorder AND relabel invariant by construction: the prefix holds state + question + the option COUNT, each option
+    is its own forked continuation rendering only its description (``sym-fork``; the id never enters the model), the
+    choice axis is content-canonical. Proof and caveats: docs/PROOF_INVARIANCE.md. ``sym-fork-ids`` is the ablation that
+    also renders the id (reorder-equivariant, not relabel-invariant).
+
 ``symmetric``
     The shared prefix lists every field but *not* its options (it says options
     are given separately). Each option of the target question is encoded in its
@@ -333,6 +339,12 @@ def build_row(
     from decide.shim_format import is_shim_template
     from decide.v3w_generic import is_generic_template
 
+    from .symmetric import SYM_LAYOUTS
+
+    if layout in SYM_LAYOUTS:  # reorder + relabel invariant by construction (docs/PROOF_INVARIANCE.md)
+        from .symmetric import build_row_sym
+
+        return build_row_sym(request, qid, encode, tpl, layout, option_order, empty_state)
     if is_shim_template(tpl):  # the trainable H2O shim format (decide.shim_format): ids == the shim's prompt ids
         if layout != G1V2_LAYOUT:
             raise ValueError(f"template {tpl.id} needs layout {G1V2_LAYOUT!r}, got {layout!r}")

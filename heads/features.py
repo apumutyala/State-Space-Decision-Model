@@ -137,6 +137,9 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
     q_pre_l, q_end_l, e_rows = [], [], []
     sym_seqs: list[list[int]] = []
     sym_index: list[tuple[int, int]] = []
+    from .symmetric import SYM_LAYOUTS
+
+    e_from_fork = torch.zeros((bsz,), dtype=torch.bool, device=dev)  # sym-fork rows under a fork head: e := fork
     for i, r in enumerate(rows):
         a, b = r.state_span
         ev[i, a:b] = True
@@ -148,6 +151,11 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
         # from e (typed.ordinal.gap: its weight never got a gradient) was dead under v2 / v2f / v3w
         if r.layout in ("ordered", G1V2_LAYOUT):
             er = torch.stack([_span_mean(h[i], sp) for sp in r.option_spans])
+        elif r.layout in SYM_LAYOUTS and need_fork:
+            # the option's own forked feature (prefix + its text alone) is its embedding: no extra backbone pass, and
+            # still a function of that option alone (heads.symmetric)
+            er = h.new_zeros((r.n_options, d))
+            e_from_fork[i] = True
         else:
             er = h.new_zeros((r.n_options, d))
             for k, seq in enumerate(r.option_seqs):
@@ -187,5 +195,7 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
             last = fm.sum(-1) - 1
             outs.append(hf[torch.arange(len(chunk), device=dev), last])
         fork = _scatter_rows(h.new_zeros((bsz, kmax, d)), where, torch.cat(outs))
+    if fork is not None and bool(e_from_fork.any()):
+        e = torch.where(e_from_fork.view(-1, 1, 1), fork.to(e.dtype), e)  # fork is zero on padded options
     return HeadInput(h=h, token_mask=mask, evidence_mask=ev, q_pre=q_pre, q_end=q_end, e=e,
                      option_mask=opt_mask, fork=fork, ks=ks)

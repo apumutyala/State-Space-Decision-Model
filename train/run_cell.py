@@ -605,7 +605,10 @@ def validate_head(cfg: dict) -> None:
 
 
 def keep_item(row, max_k: int, max_t: int) -> bool:
-    return row.n_options <= max_k and len(row.ids) <= max_t and max(len(c) for c in row.continuations) <= 16
+    from heads.symmetric import SYM_LAYOUTS, SYM_MAX_CONT
+
+    cap = SYM_MAX_CONT if row.layout in SYM_LAYOUTS else 16  # sym rows: the option text IS the continuation
+    return row.n_options <= max_k and len(row.ids) <= max_t and max(len(c) for c in row.continuations) <= cap
 
 
 class RwkvSegmentEncoder:
