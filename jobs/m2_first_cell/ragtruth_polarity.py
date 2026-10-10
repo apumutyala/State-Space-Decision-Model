@@ -328,7 +328,9 @@ def score(a) -> int:
             raise ValueError(f"arm {a.arm}: lineage replay is for pre-guard cells, but its config pins attack_clean")
         ro = readout_spec(READOUT, cfg)
         decider, _, ident = load_child(a, temperature=False, readout=(ro["template"], ro["layout"]))
-        ident = {**ident, "readout": ro, "arm_name": a.arm, "lineage_replay": a.lineage_replay}
+        from decide.ragtruth_rephrase import wording_sha256
+        ident = {**ident, "readout": ro, "arm_name": a.arm, "lineage_replay": a.lineage_replay,
+                 "wording": a.wording, "wording_sha256": wording_sha256(a.wording)}
     except (ValueError, KeyError, GuardNotReady, CohortLeak) as e:
         print(f"identity: {type(e).__name__}: {e}", file=sys.stderr)
         return 10
@@ -348,7 +350,9 @@ def score(a) -> int:
     todo = [it for it in items if it["_evaluation"]["run_id"] not in done]
     prog = G.Progress(a.progress)
     prog.plan([G.unit_weight(it) for it in todo])
-    decide = G.beat_wrap(prog.wrap(limited(decider.decide, a.max_input_tokens)))
+    from decide.ragtruth_rephrase import rephrased
+    # B-PREREG-RAGTRUTH-REPHRASE: --wording rt1 rewrites the catalog-59 question at readout time (original = identity)
+    decide = rephrased(G.beat_wrap(prog.wrap(limited(decider.decide, a.max_input_tokens))), a.wording)
     declare = checkpoint_declarer()
     t0 = time.perf_counter()
     with open(resume, "w", encoding="utf-8", newline="\n") as f:  # rewritten from the parsed rows: drops a torn tail
@@ -390,8 +394,9 @@ def report(a) -> dict[str, Any]:
     sel = json.loads(Path(a.selection).read_text(encoding="utf-8"))
     out: dict[str, Any] = {"schema": SCHEMA, "split": "RAGTruth TRAIN (never Index DEV)", "readout": READOUT,
                            "n_items": len(items), "ids_sha256": sel["ids_sha256"], "items_sha256": _sha(Path(a.items)),
-                           "decision_rule": DECISION_RULE, "arms": {}}
-    for arm in ARM_NAMES:
+                           "decision_rule": DECISION_RULE, "wording": params.get("wording", "original"),
+                           "arms_expected": list(params.get("arms", ARM_NAMES)), "arms": {}}
+    for arm in params.get("arms", ARM_NAMES):
         rp = d / f"{arm}.results.jsonl"
         if not rp.is_file():
             continue
@@ -405,6 +410,7 @@ def report(a) -> dict[str, Any]:
             idc = json.loads(idf.read_text(encoding="utf-8"))
             m["checkpoint_loaded"] = idc.get("checkpoint")
             m["readout_loaded"] = idc.get("readout")
+            m["wording_loaded"] = idc.get("wording")
         tm = d / f"timing-{arm}.json"
         if tm.is_file():
             m["timing"] = json.loads(tm.read_text(encoding="utf-8"))
@@ -423,10 +429,11 @@ def valid_result(d: Any) -> bool:
     equal the pins."""
     try:
         fin = lambda x: isinstance(x, (int, float)) and math.isfinite(x)  # noqa: E731
-        ok = d.get("schema") == SCHEMA and d.get("verdict") == "measured" and set(d["arms"]) == set(ARM_NAMES)
+        ok = d.get("schema") == SCHEMA and d.get("verdict") == "measured" and set(d["arms"]) == set(d.get("arms_expected", ARM_NAMES))
         pins = {"d13": d["checkpoints"]["checkpoint"]["ckpt_sha256"], "d1": d["checkpoints"]["checkpoint_d1"]["ckpt_sha256"]}
         for arm, m in d["arms"].items():
             ok = ok and sum(m["status"].values()) == d["n_items"] and m["n_scored"] > 0
+            ok = ok and m.get("wording_loaded", "original") == d.get("wording", "original")
             ok = ok and all(fin(m[k][f]) for k in ("auroc", "auroc_flipped") for f in ("point", "lo", "hi"))
             ok = ok and (m.get("checkpoint_loaded") or {}).get("sha256") == pins[arm]
         return bool(ok)
@@ -441,8 +448,8 @@ SLOW_BOX = 1.25  # every cap must still hold on a box this much slower than the 
 def _arm_minutes(params: dict, sel: dict) -> tuple[float, dict[str, float], dict[str, float]]:
     m = params["measured_rates_reference"]
     toks = sel["est_v1_tokens"] * float(params["readout_length_ratio"][READOUT])
-    score = {arm: toks / 1000 * m["child_s_per_1k_tokens"] / 60 for arm in ARM_NAMES}
-    load = {arm: float(params["evals_fixed_minutes"][arm]) for arm in ARM_NAMES}
+    score = {arm: toks / 1000 * m["child_s_per_1k_tokens"] / 60 for arm in params.get("arms", ARM_NAMES)}
+    load = {arm: float(params["evals_fixed_minutes"][arm]) for arm in params.get("arms", ARM_NAMES)}
     return toks, score, load
 
 
@@ -455,14 +462,14 @@ def estimate(params: dict, sel: dict) -> dict[str, Any]:
     the whole expected schedule (``expected_minutes`` minus build) x 1.25 fits max_duration minus reserve."""
     toks, score, load = _arm_minutes(params, sel)
     caps, scap = params["phase_caps_minutes"], params["score_setup_cap_minutes"]
-    phases = {f"score_{a}": load[a] + score[a] for a in ARM_NAMES}
+    phases = {f"score_{a}": load[a] + score[a] for a in params.get("arms", ARM_NAMES)}
     slow = {k: v * SLOW_BOX for k, v in phases.items()}
     sched = sum(v for k, v in params["expected_minutes"].items() if k != "build")
     checks = {
-        **{f"score_{a}_slow_le_95pct_cap": slow[f"score_{a}"] <= 0.95 * caps[f"score_{a}"] for a in ARM_NAMES},
-        **{f"load_{a}_slow_le_setup_cap": load[a] * SLOW_BOX <= scap[a] for a in ARM_NAMES},
+        **{f"score_{a}_slow_le_95pct_cap": slow[f"score_{a}"] <= 0.95 * caps[f"score_{a}"] for a in params.get("arms", ARM_NAMES)},
+        **{f"load_{a}_slow_le_setup_cap": load[a] * SLOW_BOX <= scap[a] for a in params.get("arms", ARM_NAMES)},
         **{f"setup_cap_{a}_leaves_scoring_room": scap[a] + score[a] * SLOW_BOX <= 0.95 * caps[f"score_{a}"]
-           for a in ARM_NAMES},
+           for a in params.get("arms", ARM_NAMES)},
         "schedule_slow_fits": sched * SLOW_BOX <= params["max_duration_minutes"] - params["reserve_minutes"],
     }
     return {"tokens_per_arm": round(toks), "minutes": {k: round(v, 1) for k, v in phases.items()},
@@ -567,6 +574,7 @@ def main(argv=None) -> int:
     s.add_argument("--out-dir", required=True)
     s.add_argument("--progress", default=None)
     s.add_argument("--device", default="cuda")
+    s.add_argument("--wording", default="original", help="decide.ragtruth_rephrase wording (original | rt1)")
     p = sub.add_parser("report")
     p.add_argument("--out-dir", required=True)
     p.add_argument("--params", required=True)

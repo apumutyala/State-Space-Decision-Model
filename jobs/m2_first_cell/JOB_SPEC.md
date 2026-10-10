@@ -391,3 +391,11 @@ Reference point on the proxy: D1 + v3w child 37.71 against stock v3w parent 27.3
 [5.58, 14.86].
 
 The 26 min child estimate is D1's v1 rate. The v3w prompts are longer, so the screen cap (60 min) keeps margin.
+
+### Mode `ragtruth_polarity_rt1`: the D13 arm of B-PREREG-RAGTRUTH-REPHRASE
+
+`ragtruth_polarity` with params `"wording": "rt1"` (score wraps the decider in `decide.ragtruth_rephrase.rephrased`, so the catalog-59 question
+is rewritten at readout time by exact content match) and `"arms": ["d13"]` (the runner loops over params arms; no D1, no reprice).
+Runs on this lineage because D13's cell pins attack_clean templates 930863..., which the D19 lineage's attack guard v2 no longer
+produces (job-862xw exit 10). Caps setup 7 / guard 2 / checkpoint 3 / score_d13 18 / report 3 + reserve 7 = 40; quoted hold $2.52,
+worst case (60 + 2 x 40) x 0.0495 = $6.93 (cap $15).
