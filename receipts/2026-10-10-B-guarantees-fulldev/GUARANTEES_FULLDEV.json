@@ -1,0 +1,2995 @@
+{
+ "prereg": "B-PREREG-GUAR-FULLDEV (state 2c683e74)",
+ "agent_main": "7c131f1",
+ "edition": "0.2.1",
+ "epsilon": 0.05,
+ "delta": 0.1,
+ "alphas": [
+  0.1,
+  0.05
+ ],
+ "input_sha256": {
+  "D19": "b6bab8034458b1a6b45da300f3a253141ed91b6fdb66eba9b5370c5ff8d846a8",
+  "D13": "7b42f4c34c4d80d997a2d349b15cbcc8560571ea3f4a4e17b32d24a7360bb1dd",
+  "Clef27B": "f5ad788be191f7737dfadd1594cab7b02a428d847b0cfd9478660df8032ab09e",
+  "ClefFlash": "2cb2e96114694b589a35c392099b2f67dc5ae0970e9939f8500f0bedf86649c5"
+ },
+ "n_rows": 12104,
+ "n_decisions": 34719,
+ "n_cases": 8473,
+ "no_gold_decisions_excluded": {
+  "choice": 12425,
+  "noul": 2300
+ },
+ "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+ "run_id": {
+  "split": {
+   "mode": "run_id",
+   "salt": "B-PREREG-GUAR-FULLDEV|v1",
+   "cal_rows": 6156,
+   "test_rows": 5948,
+   "cal_run_ids_sha256": "3f3dc85728d77803985ae2696a632eded8660c55e671301890855592a9bd943f",
+   "test_run_ids_sha256": "4e2ff6f5c7fea31ba07195f67ab6304594a45cecbe9eb0183a0a40fc8ae93837",
+   "test_decision_ids_sha256": "c3159692bfc05401ff79865140dbe9de27f0065bd7198d8508d6b30d18b64600",
+   "n_test_decisions": 17485
+  },
+  "models": {
+   "D19": {
+    "invalid_or_missing": {
+     "not_in_dev": 14725,
+     "missing": 0
+    },
+    "n_cal": 17234,
+    "n_test": 17485,
+    "alpha": {
+     "0.1": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8493,
+       "n_ltt": 8741,
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b"
+      },
+      "fit": {
+       "alpha": 0.1,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.7746,
+        "noul": 0.8784
+       },
+       "n": {
+        "choice": 8325,
+        "noul": 168
+       },
+       "ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480"
+      },
+      "sets": {
+       "alpha": 0.1,
+       "target_coverage": 0.9,
+       "all": {
+        "n": 17485,
+        "coverage": 0.8991135258793251,
+        "mean_set_size": 1.099571060909351,
+        "singleton_rate": 0.883786102373463,
+        "empty_rate": 0.009951386903059765,
+        "singleton_error": 0.09389762505662332
+       },
+       "per_type": {
+        "choice": {
+         "n": 17112,
+         "coverage": 0.8988429172510519,
+         "mean_set_size": 1.0918653576437587,
+         "singleton_rate": 0.8911290322580645,
+         "empty_rate": 0.010168302945301542,
+         "singleton_error": 0.09298970424290118
+        },
+        "noul": {
+         "n": 373,
+         "coverage": 0.9115281501340483,
+         "mean_set_size": 1.4530831099195711,
+         "singleton_rate": 0.546916890080429,
+         "empty_rate": 0.0,
+         "singleton_error": 0.16176470588235295
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8741,
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b",
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.86,
+       "act_rate_cal": 0.7415627502574076,
+       "accepted_error_cal": 0.04088244369021907,
+       "accepted_error_ucb": 0.049054071707584766,
+       "n_valid_lambdas": 11
+      },
+      "selective": {
+       "n": 17485,
+       "lambda": 0.86,
+       "act_rate": 0.750986559908493,
+       "abstention_rate": 0.24901344009150705,
+       "acted_error": 0.0433325717767116,
+       "n_act": 13131
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1196,
+        "coverage": 0.7249163879598662,
+        "mean_set_size": 1.241638795986622,
+        "singleton_rate": 0.5459866220735786,
+        "empty_rate": 0.11036789297658862,
+        "singleton_error": 0.27105666156202146
+       },
+       "knowledge": {
+        "n": 2288,
+        "coverage": 0.7368881118881119,
+        "mean_set_size": 1.173513986013986,
+        "singleton_rate": 0.805506993006993,
+        "empty_rate": 0.013548951048951048,
+        "singleton_error": 0.27075420510037984
+       },
+       "language": {
+        "n": 9985,
+        "coverage": 0.9740610916374561,
+        "mean_set_size": 1.0471707561342014,
+        "singleton_rate": 0.9547320981472208,
+        "empty_rate": 0.0,
+        "singleton_error": 0.02580509808035246
+       },
+       "retrieval": {
+        "n": 1943,
+        "coverage": 0.7972207925887802,
+        "mean_set_size": 1.1966031909418424,
+        "singleton_rate": 0.7931034482758621,
+        "empty_rate": 0.0051466803911477095,
+        "singleton_error": 0.2426995457495133
+       },
+       "tools": {
+        "n": 2073,
+        "coverage": 0.9131693198263386,
+        "mean_set_size": 1.0974433188615533,
+        "singleton_rate": 0.9083453931500242,
+        "empty_rate": 0.000482392667631452,
+        "singleton_error": 0.08231545406266595
+       }
+      }
+     },
+     "0.05": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8493,
+       "n_ltt": 8741,
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b"
+      },
+      "fit": {
+       "alpha": 0.05,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.92,
+        "noul": 0.9097
+       },
+       "n": {
+        "choice": 8325,
+        "noul": 168
+       },
+       "ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480"
+      },
+      "sets": {
+       "alpha": 0.05,
+       "target_coverage": 0.95,
+       "all": {
+        "n": 17485,
+        "coverage": 0.9493279954246497,
+        "mean_set_size": 1.337546468401487,
+        "singleton_rate": 0.7277666571346869,
+        "empty_rate": 0.0023448670288818987,
+        "singleton_error": 0.04196463654223968
+       },
+       "per_type": {
+        "choice": {
+         "n": 17112,
+         "coverage": 0.9491000467508182,
+         "mean_set_size": 1.331229546517064,
+         "singleton_rate": 0.7355072463768116,
+         "empty_rate": 0.0023959794296400188,
+         "singleton_error": 0.041236294295248686
+        },
+        "noul": {
+         "n": 373,
+         "coverage": 0.9597855227882037,
+         "mean_set_size": 1.6273458445040214,
+         "singleton_rate": 0.3726541554959786,
+         "empty_rate": 0.0,
+         "singleton_error": 0.1079136690647482
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8741,
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b",
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.0,
+       "act_rate_cal": 0.7195973000800824,
+       "accepted_error_cal": 0.04038155802861685,
+       "accepted_error_ucb": 0.04864102294517198,
+       "n_valid_lambdas": 97
+      },
+      "selective": {
+       "n": 17485,
+       "lambda": 0.0,
+       "act_rate": 0.7277666571346869,
+       "abstention_rate": 0.2722333428653131,
+       "acted_error": 0.04196463654223968,
+       "n_act": 12725
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1196,
+        "coverage": 0.8478260869565217,
+        "mean_set_size": 1.8227424749163879,
+        "singleton_rate": 0.2508361204013378,
+        "empty_rate": 0.03260869565217391,
+        "singleton_error": 0.34
+       },
+       "knowledge": {
+        "n": 2288,
+        "coverage": 0.8378496503496503,
+        "mean_set_size": 1.6853146853146854,
+        "singleton_rate": 0.5056818181818182,
+        "empty_rate": 0.0,
+        "singleton_error": 0.14174589455488332
+       },
+       "language": {
+        "n": 9985,
+        "coverage": 0.9918878317476214,
+        "mean_set_size": 1.159038557836755,
+        "singleton_rate": 0.8773159739609414,
+        "empty_rate": 0.0,
+        "singleton_error": 0.008105022831050229
+       },
+       "retrieval": {
+        "n": 1943,
+        "coverage": 0.9155944415851776,
+        "mean_set_size": 1.5331960885229028,
+        "singleton_rate": 0.49047864127637675,
+        "empty_rate": 0.001029336078229542,
+        "singleton_error": 0.14690451206715635
+       },
+       "tools": {
+        "n": 2073,
+        "coverage": 0.9575494452484322,
+        "mean_set_size": 1.3502170767004342,
+        "singleton_rate": 0.7501205981669079,
+        "empty_rate": 0.0,
+        "singleton_error": 0.036655948553054665
+       }
+      }
+     }
+    },
+    "seconds": 3.2
+   },
+   "D13": {
+    "invalid_or_missing": {
+     "not_in_dev": 14725,
+     "missing": 0
+    },
+    "n_cal": 17234,
+    "n_test": 17485,
+    "alpha": {
+     "0.1": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8493,
+       "n_ltt": 8741,
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b"
+      },
+      "fit": {
+       "alpha": 0.1,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.8842,
+        "noul": 0.9274
+       },
+       "n": {
+        "choice": 8325,
+        "noul": 168
+       },
+       "ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480"
+      },
+      "sets": {
+       "alpha": 0.1,
+       "target_coverage": 0.9,
+       "all": {
+        "n": 17485,
+        "coverage": 0.9017443523019731,
+        "mean_set_size": 1.4035458964826995,
+        "singleton_rate": 0.5836431226765799,
+        "empty_rate": 0.02956820131541321,
+        "singleton_error": 0.08878000979911808
+       },
+       "per_type": {
+        "choice": {
+         "n": 17112,
+         "coverage": 0.9015895278167368,
+         "mean_set_size": 1.3991935483870968,
+         "singleton_rate": 0.5877162225338943,
+         "empty_rate": 0.030212716222533895,
+         "singleton_error": 0.08670577707069703
+        },
+        "noul": {
+         "n": 373,
+         "coverage": 0.9088471849865952,
+         "mean_set_size": 1.6032171581769437,
+         "singleton_rate": 0.3967828418230563,
+         "empty_rate": 0.0,
+         "singleton_error": 0.22972972972972974
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8741,
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b",
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.92,
+       "act_rate_cal": 0.3499599588147809,
+       "accepted_error_cal": 0.03694017652827721,
+       "accepted_error_ucb": 0.04870568550334537,
+       "n_valid_lambdas": 4
+      },
+      "selective": {
+       "n": 17485,
+       "lambda": 0.92,
+       "act_rate": 0.3611667143265656,
+       "abstention_rate": 0.6388332856734344,
+       "acted_error": 0.03657957244655582,
+       "n_act": 6315
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1196,
+        "coverage": 0.7859531772575251,
+        "mean_set_size": 1.6672240802675586,
+        "singleton_rate": 0.20066889632107024,
+        "empty_rate": 0.1505016722408027,
+        "singleton_error": 0.17083333333333334
+       },
+       "knowledge": {
+        "n": 2288,
+        "coverage": 0.8299825174825175,
+        "mean_set_size": 1.5174825174825175,
+        "singleton_rate": 0.5716783216783217,
+        "empty_rate": 0.006993006993006993,
+        "singleton_error": 0.18654434250764526
+       },
+       "language": {
+        "n": 9985,
+        "coverage": 0.9670505758637957,
+        "mean_set_size": 1.3963945918878318,
+        "singleton_rate": 0.6269404106159239,
+        "empty_rate": 0.0,
+        "singleton_error": 0.04233226837060703
+       },
+       "retrieval": {
+        "n": 1943,
+        "coverage": 0.7215645908389089,
+        "mean_set_size": 1.2722593926917138,
+        "singleton_rate": 0.42460113226968604,
+        "empty_rate": 0.16006176016469378,
+        "singleton_error": 0.26181818181818184
+       },
+       "tools": {
+        "n": 2073,
+        "coverage": 0.9020742884708153,
+        "mean_set_size": 1.2831644958996624,
+        "singleton_rate": 0.7583212735166426,
+        "empty_rate": 0.00482392667631452,
+        "singleton_error": 0.089058524173028
+       }
+      }
+     },
+     "0.05": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8493,
+       "n_ltt": 8741,
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b"
+      },
+      "fit": {
+       "alpha": 0.05,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.9411,
+        "noul": 0.9424
+       },
+       "n": {
+        "choice": 8325,
+        "noul": 168
+       },
+       "ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480"
+      },
+      "sets": {
+       "alpha": 0.05,
+       "target_coverage": 0.95,
+       "all": {
+        "n": 17485,
+        "coverage": 0.9535030025736345,
+        "mean_set_size": 1.9267943951958821,
+        "singleton_rate": 0.1953102659422362,
+        "empty_rate": 0.016128109808407207,
+        "singleton_error": 0.07789165446559297
+       },
+       "per_type": {
+        "choice": {
+         "n": 17112,
+         "coverage": 0.9535998129967275,
+         "mean_set_size": 1.9306334735857877,
+         "singleton_rate": 0.19413277232351567,
+         "empty_rate": 0.016479663394109396,
+         "singleton_error": 0.07435279951836243
+        },
+        "noul": {
+         "n": 373,
+         "coverage": 0.9490616621983914,
+         "mean_set_size": 1.7506702412868633,
+         "singleton_rate": 0.24932975871313673,
+         "empty_rate": 0.0,
+         "singleton_error": 0.20430107526881722
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8741,
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b",
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.95,
+       "act_rate_cal": 0.06372268619151127,
+       "accepted_error_cal": 0.01615798922800718,
+       "accepted_error_ucb": 0.04020853677962431,
+       "n_valid_lambdas": 1
+      },
+      "selective": {
+       "n": 17485,
+       "lambda": 0.95,
+       "act_rate": 0.05930797826708607,
+       "abstention_rate": 0.9406920217329139,
+       "acted_error": 0.021215043394406944,
+       "n_act": 1037
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1196,
+        "coverage": 0.8444816053511706,
+        "mean_set_size": 2.1588628762541804,
+        "singleton_rate": 0.04180602006688963,
+        "empty_rate": 0.1505016722408027,
+        "singleton_error": 0.1
+       },
+       "knowledge": {
+        "n": 2288,
+        "coverage": 0.9086538461538461,
+        "mean_set_size": 2.1276223776223775,
+        "singleton_rate": 0.2652972027972028,
+        "empty_rate": 0.0,
+        "singleton_error": 0.09719934102141681
+       },
+       "language": {
+        "n": 9985,
+        "coverage": 0.9936905358037056,
+        "mean_set_size": 1.943915873810716,
+        "singleton_rate": 0.11186780170255384,
+        "empty_rate": 0.0,
+        "singleton_error": 0.04297224709042077
+       },
+       "retrieval": {
+        "n": 1943,
+        "coverage": 0.8826556870818322,
+        "mean_set_size": 1.7493566649511065,
+        "singleton_rate": 0.2552753474009264,
+        "empty_rate": 0.05198147195059187,
+        "singleton_error": 0.19556451612903225
+       },
+       "tools": {
+        "n": 2073,
+        "coverage": 0.9387361312108056,
+        "mean_set_size": 1.6550892426435118,
+        "singleton_rate": 0.5523396044380126,
+        "empty_rate": 0.000482392667631452,
+        "singleton_error": 0.04978165938864629
+       }
+      }
+     }
+    },
+    "seconds": 3.0
+   },
+   "Clef27B": {
+    "invalid_or_missing": {
+     "not_in_dev": 14725,
+     "missing": 0
+    },
+    "n_cal": 17234,
+    "n_test": 17485,
+    "alpha": {
+     "0.1": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8493,
+       "n_ltt": 8741,
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b"
+      },
+      "fit": {
+       "alpha": 0.1,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.6091,
+        "noul": 0.6123
+       },
+       "n": {
+        "choice": 8325,
+        "noul": 168
+       },
+       "ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480"
+      },
+      "sets": {
+       "alpha": 0.1,
+       "target_coverage": 0.9,
+       "all": {
+        "n": 17485,
+        "coverage": 0.9027738061195311,
+        "mean_set_size": 1.017157563625965,
+        "singleton_rate": 0.9338861881612811,
+        "empty_rate": 0.024478124106376894,
+        "singleton_error": 0.07728581052115867
+       },
+       "per_type": {
+        "choice": {
+         "n": 17112,
+         "coverage": 0.9031089294062646,
+         "mean_set_size": 1.0146096306685366,
+         "singleton_rate": 0.9353669939223936,
+         "empty_rate": 0.02501168770453483,
+         "singleton_error": 0.07622141696863675
+        },
+        "noul": {
+         "n": 373,
+         "coverage": 0.8873994638069705,
+         "mean_set_size": 1.1340482573726542,
+         "singleton_rate": 0.8659517426273459,
+         "empty_rate": 0.0,
+         "singleton_error": 0.13003095975232198
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8741,
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b",
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.78,
+       "act_rate_cal": 0.806315066925981,
+       "accepted_error_cal": 0.041004540295119185,
+       "accepted_error_ucb": 0.048828886567688974,
+       "n_valid_lambdas": 22
+      },
+      "selective": {
+       "n": 17485,
+       "lambda": 0.78,
+       "act_rate": 0.8105804975693451,
+       "abstention_rate": 0.18941950243065486,
+       "acted_error": 0.03838284061243209,
+       "n_act": 14173
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1196,
+        "coverage": 0.6881270903010034,
+        "mean_set_size": 0.9640468227424749,
+        "singleton_rate": 0.6981605351170569,
+        "empty_rate": 0.1688963210702341,
+        "singleton_error": 0.20359281437125748
+       },
+       "knowledge": {
+        "n": 2288,
+        "coverage": 0.7652972027972028,
+        "mean_set_size": 0.9549825174825175,
+        "singleton_rate": 0.8728146853146853,
+        "empty_rate": 0.08610139860139861,
+        "singleton_error": 0.16875312969454181
+       },
+       "language": {
+        "n": 9985,
+        "coverage": 0.9678517776664998,
+        "mean_set_size": 1.0300450676014021,
+        "singleton_rate": 0.9693540310465698,
+        "empty_rate": 0.00030045067601402103,
+        "singleton_error": 0.03244136790990805
+       },
+       "retrieval": {
+        "n": 1943,
+        "coverage": 0.840452907874421,
+        "mean_set_size": 1.0679361811631498,
+        "singleton_rate": 0.9166237776634071,
+        "empty_rate": 0.007720020586721565,
+        "singleton_error": 0.16507580011229647
+       },
+       "tools": {
+        "n": 2073,
+        "coverage": 0.9232995658465991,
+        "mean_set_size": 1.0067534973468404,
+        "singleton_rate": 0.9826338639652678,
+        "empty_rate": 0.005306319343945972,
+        "singleton_error": 0.07216494845360824
+       }
+      }
+     },
+     "0.05": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8493,
+       "n_ltt": 8741,
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b"
+      },
+      "fit": {
+       "alpha": 0.05,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.8607,
+        "noul": 0.7944
+       },
+       "n": {
+        "choice": 8325,
+        "noul": 168
+       },
+       "ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480"
+      },
+      "sets": {
+       "alpha": 0.05,
+       "target_coverage": 0.95,
+       "all": {
+        "n": 17485,
+        "coverage": 0.9484701172433514,
+        "mean_set_size": 1.231055190162997,
+        "singleton_rate": 0.7647698026880183,
+        "empty_rate": 0.012239062053188447,
+        "singleton_error": 0.03679329943164822
+       },
+       "per_type": {
+        "choice": {
+         "n": 17112,
+         "coverage": 0.9484572230014026,
+         "mean_set_size": 1.2270336605890604,
+         "singleton_rate": 0.768700327255727,
+         "empty_rate": 0.012505843852267415,
+         "singleton_error": 0.03595864375855253
+        },
+        "noul": {
+         "n": 373,
+         "coverage": 0.9490616621983914,
+         "mean_set_size": 1.415549597855228,
+         "singleton_rate": 0.5844504021447721,
+         "empty_rate": 0.0,
+         "singleton_error": 0.0871559633027523
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8741,
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b",
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.0,
+       "act_rate_cal": 0.7628417801166915,
+       "accepted_error_cal": 0.038992201559688064,
+       "accepted_error_ucb": 0.04687523245425623,
+       "n_valid_lambdas": 100
+      },
+      "selective": {
+       "n": 17485,
+       "lambda": 0.0,
+       "act_rate": 0.7647698026880183,
+       "abstention_rate": 0.2352301973119817,
+       "acted_error": 0.03679329943164822,
+       "n_act": 13372
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1196,
+        "coverage": 0.8127090301003345,
+        "mean_set_size": 1.4130434782608696,
+        "singleton_rate": 0.36454849498327757,
+        "empty_rate": 0.13712374581939799,
+        "singleton_error": 0.0963302752293578
+       },
+       "knowledge": {
+        "n": 2288,
+        "coverage": 0.854458041958042,
+        "mean_set_size": 1.3356643356643356,
+        "singleton_rate": 0.6835664335664335,
+        "empty_rate": 0.021853146853146852,
+        "singleton_error": 0.11828644501278772
+       },
+       "language": {
+        "n": 9985,
+        "coverage": 0.9883825738607912,
+        "mean_set_size": 1.1783675513269904,
+        "singleton_rate": 0.8269404106159239,
+        "empty_rate": 0.0,
+        "singleton_error": 0.010415405110815066
+       },
+       "retrieval": {
+        "n": 1943,
+        "coverage": 0.9253731343283582,
+        "mean_set_size": 1.357694287184766,
+        "singleton_rate": 0.6613484302624807,
+        "empty_rate": 0.0,
+        "singleton_error": 0.0980544747081712
+       },
+       "tools": {
+        "n": 2073,
+        "coverage": 0.9599614085865895,
+        "mean_set_size": 1.1456825856246986,
+        "singleton_rate": 0.8827785817655571,
+        "empty_rate": 0.0,
+        "singleton_error": 0.02896174863387978
+       }
+      }
+     }
+    },
+    "seconds": 4.8
+   },
+   "ClefFlash": {
+    "invalid_or_missing": {
+     "not_in_dev": 14725,
+     "missing": 0
+    },
+    "n_cal": 17234,
+    "n_test": 17485,
+    "alpha": {
+     "0.1": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8493,
+       "n_ltt": 8741,
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b"
+      },
+      "fit": {
+       "alpha": 0.1,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.6792,
+        "noul": 0.7968999999999999
+       },
+       "n": {
+        "choice": 8325,
+        "noul": 168
+       },
+       "ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480"
+      },
+      "sets": {
+       "alpha": 0.1,
+       "target_coverage": 0.9,
+       "all": {
+        "n": 17485,
+        "coverage": 0.9005433228481555,
+        "mean_set_size": 1.059593937660852,
+        "singleton_rate": 0.8821847297683729,
+        "empty_rate": 0.029110666285387474,
+        "singleton_error": 0.07721231766612642
+       },
+       "per_type": {
+        "choice": {
+         "n": 17112,
+         "coverage": 0.8997194950911641,
+         "mean_set_size": 1.052945301542777,
+         "singleton_rate": 0.8875642823749416,
+         "empty_rate": 0.02974520804114072,
+         "singleton_error": 0.07690281801422176
+        },
+        "noul": {
+         "n": 373,
+         "coverage": 0.938337801608579,
+         "mean_set_size": 1.3646112600536193,
+         "singleton_rate": 0.6353887399463807,
+         "empty_rate": 0.0,
+         "singleton_error": 0.0970464135021097
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8741,
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b",
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.81,
+       "act_rate_cal": 0.724287838920032,
+       "accepted_error_cal": 0.041383667667035225,
+       "accepted_error_ucb": 0.04970342517011878,
+       "n_valid_lambdas": 19
+      },
+      "selective": {
+       "n": 17485,
+       "lambda": 0.81,
+       "act_rate": 0.7221618530168716,
+       "abstention_rate": 0.27783814698312836,
+       "acted_error": 0.03714263087035717,
+       "n_act": 12627
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1196,
+        "coverage": 0.709866220735786,
+        "mean_set_size": 1.004180602006689,
+        "singleton_rate": 0.6831103678929766,
+        "empty_rate": 0.15635451505016723,
+        "singleton_error": 0.19216646266829865
+       },
+       "knowledge": {
+        "n": 2288,
+        "coverage": 0.7792832167832168,
+        "mean_set_size": 1.0052447552447552,
+        "singleton_rate": 0.833041958041958,
+        "empty_rate": 0.08085664335664336,
+        "singleton_error": 0.1652675760755509
+       },
+       "language": {
+        "n": 9985,
+        "coverage": 0.9707561342013019,
+        "mean_set_size": 1.0784176264396594,
+        "singleton_rate": 0.9215823735603406,
+        "empty_rate": 0.0,
+        "singleton_error": 0.030210823733970875
+       },
+       "retrieval": {
+        "n": 1943,
+        "coverage": 0.784354091610911,
+        "mean_set_size": 1.0782295419454453,
+        "singleton_rate": 0.7889861039629439,
+        "empty_rate": 0.06639217704580545,
+        "singleton_error": 0.1872146118721461
+       },
+       "tools": {
+        "n": 2073,
+        "coverage": 0.9150988904968644,
+        "mean_set_size": 1.0434153400868307,
+        "singleton_rate": 0.948866377231066,
+        "empty_rate": 0.003859141341051616,
+        "singleton_error": 0.07829181494661921
+       }
+      }
+     },
+     "0.05": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8493,
+       "n_ltt": 8741,
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b"
+      },
+      "fit": {
+       "alpha": 0.05,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.8829,
+        "noul": 0.8922
+       },
+       "n": {
+        "choice": 8325,
+        "noul": 168
+       },
+       "ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480"
+      },
+      "sets": {
+       "alpha": 0.05,
+       "target_coverage": 0.95,
+       "all": {
+        "n": 17485,
+        "coverage": 0.950185873605948,
+        "mean_set_size": 1.3520160137260508,
+        "singleton_rate": 0.6591364026308264,
+        "empty_rate": 0.0127537889619674,
+        "singleton_error": 0.03540130151843818
+       },
+       "per_type": {
+        "choice": {
+         "n": 17112,
+         "coverage": 0.949450677886863,
+         "mean_set_size": 1.3454885460495558,
+         "singleton_rate": 0.6659069658719028,
+         "empty_rate": 0.013031790556334737,
+         "singleton_error": 0.03527863097849934
+        },
+        "noul": {
+         "n": 373,
+         "coverage": 0.9839142091152815,
+         "mean_set_size": 1.6514745308310992,
+         "singleton_rate": 0.3485254691689008,
+         "empty_rate": 0.0,
+         "singleton_error": 0.046153846153846156
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8741,
+       "ltt_ids_sha256": "bb6ea77e4d69435e54e861bd72b9b87a5a769068bd8f8a3e4063df27d7187b1b",
+       "fit_ids_sha256": "d122fd4056657e44cc4e272a5bb7ef05d4a79e015f856151118d29f0bed12480",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.0,
+       "act_rate_cal": 0.6702894405674408,
+       "accepted_error_cal": 0.03874381293736132,
+       "accepted_error_ucb": 0.04716995191451188,
+       "n_valid_lambdas": 100
+      },
+      "selective": {
+       "n": 17485,
+       "lambda": 0.0,
+       "act_rate": 0.6591364026308264,
+       "abstention_rate": 0.3408635973691736,
+       "acted_error": 0.03540130151843818,
+       "n_act": 11525
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1196,
+        "coverage": 0.818561872909699,
+        "mean_set_size": 1.4657190635451505,
+        "singleton_rate": 0.31270903010033446,
+        "empty_rate": 0.1496655518394649,
+        "singleton_error": 0.07219251336898395
+       },
+       "knowledge": {
+        "n": 2288,
+        "coverage": 0.8736888111888111,
+        "mean_set_size": 1.5043706293706294,
+        "singleton_rate": 0.5979020979020979,
+        "empty_rate": 0.0118006993006993,
+        "singleton_error": 0.1074561403508772
+       },
+       "language": {
+        "n": 9985,
+        "coverage": 0.9898848272408612,
+        "mean_set_size": 1.2879318978467702,
+        "singleton_rate": 0.7182774161241863,
+        "empty_rate": 0.0,
+        "singleton_error": 0.011293920803123258
+       },
+       "retrieval": {
+        "n": 1943,
+        "coverage": 0.9001544004117344,
+        "mean_set_size": 1.4930519814719505,
+        "singleton_rate": 0.5126093669583119,
+        "empty_rate": 0.008749356664951106,
+        "singleton_error": 0.1214859437751004
+       },
+       "tools": {
+        "n": 2073,
+        "coverage": 0.9662325132657984,
+        "mean_set_size": 1.2947419199228172,
+        "singleton_rate": 0.779064158224795,
+        "empty_rate": 0.0,
+        "singleton_error": 0.019814241486068113
+       }
+      }
+     }
+    },
+    "seconds": 5.3
+   }
+  },
+  "bootstrap": {
+   "B": 2000,
+   "seed": 0,
+   "n_clusters": 4658,
+   "n_decisions": 17485,
+   "per_model": {
+    "D19": {
+     "0.1": {
+      "size": {
+       "point": 1.099571060909351,
+       "ci95": [
+        1.0860601796395974,
+        1.1158975764101553
+       ]
+      },
+      "act": {
+       "point": 0.750986559908493,
+       "ci95": [
+        0.7112243680851911,
+        0.7831314843230014
+       ]
+      },
+      "cov": {
+       "point": 0.8991135258793251,
+       "ci95": [
+        0.8825285780178732,
+        0.912165234016882
+       ]
+      }
+     },
+     "0.05": {
+      "size": {
+       "point": 1.337546468401487,
+       "ci95": [
+        1.2951627667106471,
+        1.3901767912405705
+       ]
+      },
+      "act": {
+       "point": 0.7277666571346869,
+       "ci95": [
+        0.6862711776010504,
+        0.7615497884101385
+       ]
+      },
+      "cov": {
+       "point": 0.9493279954246497,
+       "ci95": [
+        0.940354689896506,
+        0.9565422100068678
+       ]
+      }
+     }
+    },
+    "D13": {
+     "0.1": {
+      "size": {
+       "point": 1.4035458964826995,
+       "ci95": [
+        1.3752141043605945,
+        1.4351221385112989
+       ]
+      },
+      "act": {
+       "point": 0.3611667143265656,
+       "ci95": [
+        0.33478645387303513,
+        0.3850527921345081
+       ]
+      },
+      "cov": {
+       "point": 0.9017443523019731,
+       "ci95": [
+        0.8887252610331546,
+        0.9124063700412335
+       ]
+      }
+     },
+     "0.05": {
+      "size": {
+       "point": 1.9267943951958821,
+       "ci95": [
+        1.9059780419894805,
+        1.947846611662155
+       ]
+      },
+      "act": {
+       "point": 0.05930797826708607,
+       "ci95": [
+        0.050488436897238004,
+        0.07027532769606748
+       ]
+      },
+      "cov": {
+       "point": 0.9535030025736345,
+       "ci95": [
+        0.9456648954635144,
+        0.9600245924410602
+       ]
+      }
+     }
+    },
+    "Clef27B": {
+     "0.1": {
+      "size": {
+       "point": 1.017157563625965,
+       "ci95": [
+        1.0119217777223668,
+        1.0223493563864852
+       ]
+      },
+      "act": {
+       "point": 0.8105804975693451,
+       "ci95": [
+        0.7913875066165522,
+        0.8270357271973992
+       ]
+      },
+      "cov": {
+       "point": 0.9027738061195311,
+       "ci95": [
+        0.8881055286225253,
+        0.9149047953710844
+       ]
+      }
+     },
+     "0.05": {
+      "size": {
+       "point": 1.231055190162997,
+       "ci95": [
+        1.2143019176233445,
+        1.2512311554898787
+       ]
+      },
+      "act": {
+       "point": 0.7647698026880183,
+       "ci95": [
+        0.7454465334173579,
+        0.7815680109696171
+       ]
+      },
+      "cov": {
+       "point": 0.9484701172433514,
+       "ci95": [
+        0.9397120019101874,
+        0.9555670721841019
+       ]
+      }
+     }
+    },
+    "ClefFlash": {
+     "0.1": {
+      "size": {
+       "point": 1.059593937660852,
+       "ci95": [
+        1.0512552908447783,
+        1.0672612874280758
+       ]
+      },
+      "act": {
+       "point": 0.7221618530168716,
+       "ci95": [
+        0.7036664083569373,
+        0.7379804214976083
+       ]
+      },
+      "cov": {
+       "point": 0.9005433228481555,
+       "ci95": [
+        0.884728239848125,
+        0.913279954854785
+       ]
+      }
+     },
+     "0.05": {
+      "size": {
+       "point": 1.3520160137260508,
+       "ci95": [
+        1.3354873152613003,
+        1.3705823693181742
+       ]
+      },
+      "act": {
+       "point": 0.6591364026308264,
+       "ci95": [
+        0.6424595088597839,
+        0.6736052270885579
+       ]
+      },
+      "cov": {
+       "point": 0.950185873605948,
+       "ci95": [
+        0.9413552289763885,
+        0.9573973639358215
+       ]
+      }
+     }
+    }
+   },
+   "pairs": {
+    "D19-Clef27B": {
+     "0.1": {
+      "size": {
+       "diff": 0.08241349728338587,
+       "ci95": [
+        0.06800307579163488,
+        0.10039921881983052
+       ],
+       "verdict": "Clef27B tighter"
+      },
+      "act": {
+       "diff": -0.05959393766085219,
+       "ci95": [
+        -0.08595791948051038,
+        -0.03874612186501104
+       ],
+       "verdict": "Clef27B more actionable"
+      }
+     },
+     "0.05": {
+      "size": {
+       "diff": 0.10649127823849014,
+       "ci95": [
+        0.07261406267972943,
+        0.1489095067102085
+       ],
+       "verdict": "Clef27B tighter"
+      },
+      "act": {
+       "diff": -0.037003145553331396,
+       "ci95": [
+        -0.0679266545417414,
+        -0.011789359244443184
+       ],
+       "verdict": "Clef27B more actionable"
+      }
+     }
+    },
+    "D19-ClefFlash": {
+     "0.1": {
+      "size": {
+       "diff": 0.03997712324849889,
+       "ci95": [
+        0.023675265723230237,
+        0.060214289462602114
+       ],
+       "verdict": "ClefFlash tighter"
+      },
+      "act": {
+       "diff": 0.02882470689162131,
+       "ci95": [
+        0.0020956664220246448,
+        0.05115988400775758
+       ],
+       "verdict": "D19 more actionable"
+      }
+     },
+     "0.05": {
+      "size": {
+       "diff": -0.014469545324563793,
+       "ci95": [
+        -0.050216667230788554,
+        0.028563078315311775
+       ],
+       "verdict": "no separation"
+      },
+      "act": {
+       "diff": 0.06863025450386051,
+       "ci95": [
+        0.03476496701811499,
+        0.09720954138539487
+       ],
+       "verdict": "D19 more actionable"
+      }
+     }
+    },
+    "D13-Clef27B": {
+     "0.1": {
+      "size": {
+       "diff": 0.38638833285673435,
+       "ci95": [
+        0.35873891893059945,
+        0.4179046504531762
+       ],
+       "verdict": "Clef27B tighter"
+      },
+      "act": {
+       "diff": -0.44941378324277953,
+       "ci95": [
+        -0.46787111066369386,
+        -0.43050497830288387
+       ],
+       "verdict": "Clef27B more actionable"
+      }
+     },
+     "0.05": {
+      "size": {
+       "diff": 0.6957392050328852,
+       "ci95": [
+        0.6718533188034865,
+        0.718307146051044
+       ],
+       "verdict": "Clef27B tighter"
+      },
+      "act": {
+       "diff": -0.7054618244209322,
+       "ci95": [
+        -0.7273903887912346,
+        -0.6791248976883306
+       ],
+       "verdict": "Clef27B more actionable"
+      }
+     }
+    },
+    "D13-ClefFlash": {
+     "0.1": {
+      "size": {
+       "diff": 0.34395195882184737,
+       "ci95": [
+        0.31465842171032726,
+        0.3765510269710656
+       ],
+       "verdict": "ClefFlash tighter"
+      },
+      "act": {
+       "diff": -0.360995138690306,
+       "ci95": [
+        -0.381660387948371,
+        -0.3406127325891692
+       ],
+       "verdict": "ClefFlash more actionable"
+      }
+     },
+     "0.05": {
+      "size": {
+       "diff": 0.5747783814698313,
+       "ci95": [
+        0.5519083884516198,
+        0.5974929207799801
+       ],
+       "verdict": "ClefFlash tighter"
+      },
+      "act": {
+       "diff": -0.5998284243637403,
+       "ci95": [
+        -0.61982881958299,
+        -0.5765180207888182
+       ],
+       "verdict": "ClefFlash more actionable"
+      }
+     }
+    },
+    "D19-D13": {
+     "0.1": {
+      "size": {
+       "diff": -0.3039748355733485,
+       "ci95": [
+        -0.3285649706851508,
+        -0.2795431638896203
+       ],
+       "verdict": "D19 tighter"
+      },
+      "act": {
+       "diff": 0.38981984558192734,
+       "ci95": [
+        0.36102635954876566,
+        0.4160153657430391
+       ],
+       "verdict": "D19 more actionable"
+      }
+     },
+     "0.05": {
+      "size": {
+       "diff": -0.5892479267943951,
+       "ci95": [
+        -0.6303331884424067,
+        -0.5415319709606877
+       ],
+       "verdict": "D19 tighter"
+      },
+      "act": {
+       "diff": 0.6684586788676008,
+       "ci95": [
+        0.6193959089317713,
+        0.7083740561495535
+       ],
+       "verdict": "D19 more actionable"
+      }
+     }
+    },
+    "Clef27B-ClefFlash": {
+     "0.1": {
+      "size": {
+       "diff": -0.04243637403488698,
+       "ci95": [
+        -0.04899955808633054,
+        -0.03607413152761095
+       ],
+       "verdict": "Clef27B tighter"
+      },
+      "act": {
+       "diff": 0.0884186445524735,
+       "ci95": [
+        0.0798182659548145,
+        0.09720464341040867
+       ],
+       "verdict": "Clef27B more actionable"
+      }
+     },
+     "0.05": {
+      "size": {
+       "diff": -0.12096082356305393,
+       "ci95": [
+        -0.13185474038300268,
+        -0.10967423331533215
+       ],
+       "verdict": "Clef27B tighter"
+      },
+      "act": {
+       "diff": 0.1056334000571919,
+       "ci95": [
+        0.09442116958651994,
+        0.11597894922645388
+       ],
+       "verdict": "Clef27B more actionable"
+      }
+     }
+    }
+   }
+  }
+ },
+ "case": {
+  "split": {
+   "mode": "case",
+   "salt": "B-PREREG-GUAR-FULLDEV|v1",
+   "cal_rows": 5988,
+   "test_rows": 6116,
+   "cal_run_ids_sha256": "cd1f0ce59cdf64694ce87be6c7ad2586e60b2432e079bde51258bb86c57e3c08",
+   "test_run_ids_sha256": "da2e7af207113598047ea35a8c25fa4775be12aab10dc225c8b19e0672860575",
+   "test_decision_ids_sha256": "a696257b1aa6a2de2638e9d2495daf90a9e97fe8baced87f135add50d3ad2932",
+   "n_test_decisions": 17441
+  },
+  "models": {
+   "D19": {
+    "invalid_or_missing": {
+     "not_in_dev": 14725,
+     "missing": 0
+    },
+    "n_cal": 17278,
+    "n_test": 17441,
+    "alpha": {
+     "0.1": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8673,
+       "n_ltt": 8605,
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7"
+      },
+      "fit": {
+       "alpha": 0.1,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.7539,
+        "noul": 0.8784
+       },
+       "n": {
+        "choice": 8505,
+        "noul": 168
+       },
+       "ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0"
+      },
+      "sets": {
+       "alpha": 0.1,
+       "target_coverage": 0.9,
+       "all": {
+        "n": 17441,
+        "coverage": 0.8910039561951723,
+        "mean_set_size": 1.0860615790378991,
+        "singleton_rate": 0.8911759646809243,
+        "empty_rate": 0.01232727481222407,
+        "singleton_error": 0.09965901048703596
+       },
+       "per_type": {
+        "choice": {
+         "n": 17051,
+         "coverage": 0.8905049557210721,
+         "mean_set_size": 1.0774148143803883,
+         "singleton_rate": 0.8993020937188435,
+         "empty_rate": 0.012609231130138995,
+         "singleton_error": 0.09880005217164471
+        },
+        "noul": {
+         "n": 390,
+         "coverage": 0.9128205128205128,
+         "mean_set_size": 1.464102564102564,
+         "singleton_rate": 0.5358974358974359,
+         "empty_rate": 0.0,
+         "singleton_error": 0.16267942583732056
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8605,
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7",
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.86,
+       "act_rate_cal": 0.7428239395700175,
+       "accepted_error_cal": 0.03879849812265332,
+       "accepted_error_ucb": 0.04684455484922976,
+       "n_valid_lambdas": 11
+      },
+      "selective": {
+       "n": 17441,
+       "lambda": 0.86,
+       "act_rate": 0.7470328536207786,
+       "abstention_rate": 0.25296714637922135,
+       "acted_error": 0.04589761301711567,
+       "n_act": 13029
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1220,
+        "coverage": 0.7073770491803278,
+        "mean_set_size": 1.1934426229508197,
+        "singleton_rate": 0.5655737704918032,
+        "empty_rate": 0.12295081967213115,
+        "singleton_error": 0.2608695652173913
+       },
+       "knowledge": {
+        "n": 2222,
+        "coverage": 0.7191719171917191,
+        "mean_set_size": 1.1345634563456346,
+        "singleton_rate": 0.8168316831683168,
+        "empty_rate": 0.026102610261026102,
+        "singleton_error": 0.2809917355371901
+       },
+       "language": {
+        "n": 9784,
+        "coverage": 0.9682134096484055,
+        "mean_set_size": 1.0427228127555193,
+        "singleton_rate": 0.9585036794766967,
+        "empty_rate": 0.0,
+        "singleton_error": 0.03134996801023673
+       },
+       "retrieval": {
+        "n": 1925,
+        "coverage": 0.7927272727272727,
+        "mean_set_size": 1.1802597402597403,
+        "singleton_rate": 0.814025974025974,
+        "empty_rate": 0.003116883116883117,
+        "singleton_error": 0.2450542437779196
+       },
+       "tools": {
+        "n": 2290,
+        "coverage": 0.9082969432314411,
+        "mean_set_size": 1.0877729257641922,
+        "singleton_rate": 0.9139737991266376,
+        "empty_rate": 0.0004366812227074236,
+        "singleton_error": 0.0864787386526517
+       }
+      }
+     },
+     "0.05": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8673,
+       "n_ltt": 8605,
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7"
+      },
+      "fit": {
+       "alpha": 0.05,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.9131,
+        "noul": 0.9097
+       },
+       "n": {
+        "choice": 8505,
+        "noul": 168
+       },
+       "ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0"
+      },
+      "sets": {
+       "alpha": 0.05,
+       "target_coverage": 0.95,
+       "all": {
+        "n": 17441,
+        "coverage": 0.9436385528352732,
+        "mean_set_size": 1.3213118513846682,
+        "singleton_rate": 0.7354509489134797,
+        "empty_rate": 0.0034401697150392755,
+        "singleton_error": 0.047322055040149684
+       },
+       "per_type": {
+        "choice": {
+         "n": 17051,
+         "coverage": 0.9434637264676559,
+         "mean_set_size": 1.314233769280394,
+         "singleton_rate": 0.743827341504897,
+         "empty_rate": 0.003518855199108557,
+         "singleton_error": 0.04636127099266735
+        },
+        "noul": {
+         "n": 390,
+         "coverage": 0.9512820512820512,
+         "mean_set_size": 1.6307692307692307,
+         "singleton_rate": 0.36923076923076925,
+         "empty_rate": 0.0,
+         "singleton_error": 0.13194444444444445
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8605,
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7",
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.0,
+       "act_rate_cal": 0.7415456130156886,
+       "accepted_error_cal": 0.04074596458235386,
+       "accepted_error_ucb": 0.04897449110970729,
+       "n_valid_lambdas": 97
+      },
+      "selective": {
+       "n": 17441,
+       "lambda": 0.0,
+       "act_rate": 0.7354509489134797,
+       "abstention_rate": 0.26454905108652027,
+       "acted_error": 0.047322055040149684,
+       "n_act": 12827
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1220,
+        "coverage": 0.8426229508196721,
+        "mean_set_size": 1.792622950819672,
+        "singleton_rate": 0.24098360655737705,
+        "empty_rate": 0.04836065573770492,
+        "singleton_error": 0.3333333333333333
+       },
+       "knowledge": {
+        "n": 2222,
+        "coverage": 0.8253825382538253,
+        "mean_set_size": 1.6557155715571557,
+        "singleton_rate": 0.5162016201620162,
+        "empty_rate": 0.0,
+        "singleton_error": 0.15780296425457715
+       },
+       "language": {
+        "n": 9784,
+        "coverage": 0.9884505314799673,
+        "mean_set_size": 1.152289452166803,
+        "singleton_rate": 0.8804170073589533,
+        "empty_rate": 0.0,
+        "singleton_error": 0.011492918504759694
+       },
+       "retrieval": {
+        "n": 1925,
+        "coverage": 0.9023376623376623,
+        "mean_set_size": 1.4888311688311688,
+        "singleton_rate": 0.5345454545454545,
+        "empty_rate": 0.0005194805194805195,
+        "singleton_error": 0.1554907677356657
+       },
+       "tools": {
+        "n": 2290,
+        "coverage": 0.9554585152838428,
+        "mean_set_size": 1.3270742358078602,
+        "singleton_rate": 0.7611353711790393,
+        "empty_rate": 0.0,
+        "singleton_error": 0.039586919104991396
+       }
+      }
+     }
+    },
+    "seconds": 3.6
+   },
+   "D13": {
+    "invalid_or_missing": {
+     "not_in_dev": 14725,
+     "missing": 0
+    },
+    "n_cal": 17278,
+    "n_test": 17441,
+    "alpha": {
+     "0.1": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8673,
+       "n_ltt": 8605,
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7"
+      },
+      "fit": {
+       "alpha": 0.1,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.8854,
+        "noul": 0.9311
+       },
+       "n": {
+        "choice": 8505,
+        "noul": 168
+       },
+       "ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0"
+      },
+      "sets": {
+       "alpha": 0.1,
+       "target_coverage": 0.9,
+       "all": {
+        "n": 17441,
+        "coverage": 0.9053953328364199,
+        "mean_set_size": 1.4168912333008428,
+        "singleton_rate": 0.5732469468493779,
+        "empty_rate": 0.029757468035089732,
+        "singleton_error": 0.08291658331666334
+       },
+       "per_type": {
+        "choice": {
+         "n": 17051,
+         "coverage": 0.9049909096240689,
+         "mean_set_size": 1.4113541727757903,
+         "singleton_rate": 0.5785584423200986,
+         "empty_rate": 0.030438097472289014,
+         "singleton_error": 0.08099341104916372
+        },
+        "noul": {
+         "n": 390,
+         "coverage": 0.9230769230769231,
+         "mean_set_size": 1.658974358974359,
+         "singleton_rate": 0.34102564102564104,
+         "empty_rate": 0.0,
+         "singleton_error": 0.22556390977443608
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8605,
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7",
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.93,
+       "act_rate_cal": 0.2748402091807089,
+       "accepted_error_cal": 0.03298097251585624,
+       "accepted_error_ucb": 0.045936909451655135,
+       "n_valid_lambdas": 3
+      },
+      "selective": {
+       "n": 17441,
+       "lambda": 0.93,
+       "act_rate": 0.27492689639355544,
+       "abstention_rate": 0.7250731036064446,
+       "acted_error": 0.03086548488008342,
+       "n_act": 4795
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1220,
+        "coverage": 0.8008196721311476,
+        "mean_set_size": 1.705737704918033,
+        "singleton_rate": 0.18114754098360655,
+        "empty_rate": 0.15,
+        "singleton_error": 0.14479638009049775
+       },
+       "knowledge": {
+        "n": 2222,
+        "coverage": 0.828982898289829,
+        "mean_set_size": 1.5396039603960396,
+        "singleton_rate": 0.5607560756075608,
+        "empty_rate": 0.0067506750675067504,
+        "singleton_error": 0.18138041733547353
+       },
+       "language": {
+        "n": 9784,
+        "coverage": 0.9727105478331971,
+        "mean_set_size": 1.4084219133278824,
+        "singleton_rate": 0.615801308258381,
+        "empty_rate": 0.0,
+        "singleton_error": 0.034190871369294606
+       },
+       "retrieval": {
+        "n": 1925,
+        "coverage": 0.7262337662337662,
+        "mean_set_size": 1.2716883116883118,
+        "singleton_rate": 0.4202597402597403,
+        "empty_rate": 0.16207792207792207,
+        "singleton_error": 0.25092707045735474
+       },
+       "tools": {
+        "n": 2290,
+        "coverage": 0.8982532751091703,
+        "mean_set_size": 1.3021834061135371,
+        "singleton_rate": 0.7410480349344978,
+        "empty_rate": 0.003930131004366812,
+        "singleton_error": 0.09546258102533883
+       }
+      }
+     },
+     "0.05": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8673,
+       "n_ltt": 8605,
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7"
+      },
+      "fit": {
+       "alpha": 0.05,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.9407,
+        "noul": 0.9477
+       },
+       "n": {
+        "choice": 8505,
+        "noul": 168
+       },
+       "ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0"
+      },
+      "sets": {
+       "alpha": 0.05,
+       "target_coverage": 0.95,
+       "all": {
+        "n": 17441,
+        "coverage": 0.9531563557135485,
+        "mean_set_size": 1.9348087839000057,
+        "singleton_rate": 0.18943867897482944,
+        "empty_rate": 0.01685683160369245,
+        "singleton_error": 0.07717917675544794
+       },
+       "per_type": {
+        "choice": {
+         "n": 17051,
+         "coverage": 0.9527300451586417,
+         "mean_set_size": 1.9363087208961351,
+         "singleton_rate": 0.19078059937833558,
+         "empty_rate": 0.01724239047563193,
+         "singleton_error": 0.07500768521364894
+        },
+        "noul": {
+         "n": 390,
+         "coverage": 0.9717948717948718,
+         "mean_set_size": 1.8692307692307693,
+         "singleton_rate": 0.13076923076923078,
+         "empty_rate": 0.0,
+         "singleton_error": 0.21568627450980393
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8605,
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7",
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.91,
+       "act_rate_cal": 0.1570017431725741,
+       "accepted_error_cal": 0.029607698001480384,
+       "accepted_error_ucb": 0.04672712138924565,
+       "n_valid_lambdas": 5
+      },
+      "selective": {
+       "n": 17441,
+       "lambda": 0.91,
+       "act_rate": 0.14632188521300385,
+       "abstention_rate": 0.8536781147869962,
+       "acted_error": 0.029780564263322883,
+       "n_act": 2552
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1220,
+        "coverage": 0.8450819672131148,
+        "mean_set_size": 2.128688524590164,
+        "singleton_rate": 0.03114754098360656,
+        "empty_rate": 0.15,
+        "singleton_error": 0.13157894736842105
+       },
+       "knowledge": {
+        "n": 2222,
+        "coverage": 0.9045904590459046,
+        "mean_set_size": 2.1467146714671466,
+        "singleton_rate": 0.2668766876687669,
+        "empty_rate": 0.0,
+        "singleton_error": 0.10118043844856661
+       },
+       "language": {
+        "n": 9784,
+        "coverage": 0.9943785772690106,
+        "mean_set_size": 1.955130825838103,
+        "singleton_rate": 0.1027187244480785,
+        "empty_rate": 0.0,
+        "singleton_error": 0.031840796019900496
+       },
+       "retrieval": {
+        "n": 1925,
+        "coverage": 0.8846753246753247,
+        "mean_set_size": 1.772987012987013,
+        "singleton_rate": 0.22493506493506493,
+        "empty_rate": 0.05714285714285714,
+        "singleton_error": 0.21247113163972287
+       },
+       "tools": {
+        "n": 2290,
+        "coverage": 0.9393013100436681,
+        "mean_set_size": 1.6751091703056769,
+        "singleton_rate": 0.5393013100436681,
+        "empty_rate": 0.0004366812227074236,
+        "singleton_error": 0.05344129554655871
+       }
+      }
+     }
+    },
+    "seconds": 3.3
+   },
+   "Clef27B": {
+    "invalid_or_missing": {
+     "not_in_dev": 14725,
+     "missing": 0
+    },
+    "n_cal": 17278,
+    "n_test": 17441,
+    "alpha": {
+     "0.1": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8673,
+       "n_ltt": 8605,
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7"
+      },
+      "fit": {
+       "alpha": 0.1,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.5919,
+        "noul": 0.6628
+       },
+       "n": {
+        "choice": 8505,
+        "noul": 168
+       },
+       "ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0"
+      },
+      "sets": {
+       "alpha": 0.1,
+       "target_coverage": 0.9,
+       "all": {
+        "n": 17441,
+        "coverage": 0.8981709764348375,
+        "mean_set_size": 1.0086577604495155,
+        "singleton_rate": 0.9348087839000058,
+        "empty_rate": 0.02826672782523938,
+        "singleton_error": 0.0783243375858685
+       },
+       "per_type": {
+        "choice": {
+         "n": 17051,
+         "coverage": 0.8977772564658965,
+         "mean_set_size": 1.003988035892323,
+         "singleton_rate": 0.938185443668993,
+         "empty_rate": 0.028913260219341975,
+         "singleton_error": 0.07776458085891104
+        },
+        "noul": {
+         "n": 390,
+         "coverage": 0.9153846153846154,
+         "mean_set_size": 1.2128205128205127,
+         "singleton_rate": 0.7871794871794872,
+         "empty_rate": 0.0,
+         "singleton_error": 0.10749185667752444
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8605,
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7",
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.77,
+       "act_rate_cal": 0.8163858221963974,
+       "accepted_error_cal": 0.04142348754448399,
+       "accepted_error_ucb": 0.049296685825437274,
+       "n_valid_lambdas": 23
+      },
+      "selective": {
+       "n": 17441,
+       "lambda": 0.77,
+       "act_rate": 0.8173269881314145,
+       "abstention_rate": 0.18267301186858553,
+       "acted_error": 0.04103823219922834,
+       "n_act": 14255
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1220,
+        "coverage": 0.6827868852459016,
+        "mean_set_size": 0.9418032786885245,
+        "singleton_rate": 0.6959016393442623,
+        "empty_rate": 0.18114754098360655,
+        "singleton_error": 0.1955241460541814
+       },
+       "knowledge": {
+        "n": 2222,
+        "coverage": 0.7425742574257426,
+        "mean_set_size": 0.9324932493249325,
+        "singleton_rate": 0.8658865886588659,
+        "empty_rate": 0.10081008100810081,
+        "singleton_error": 0.17983367983367984
+       },
+       "language": {
+        "n": 9784,
+        "coverage": 0.9664758789860998,
+        "mean_set_size": 1.0230989370400654,
+        "singleton_rate": 0.9758789860997547,
+        "empty_rate": 0.0005110384300899427,
+        "singleton_error": 0.03341013824884793
+       },
+       "retrieval": {
+        "n": 1925,
+        "coverage": 0.8384415584415584,
+        "mean_set_size": 1.0711688311688312,
+        "singleton_rate": 0.9028571428571428,
+        "empty_rate": 0.012987012987012988,
+        "singleton_error": 0.16455696202531644
+       },
+       "tools": {
+        "n": 2290,
+        "coverage": 0.9222707423580786,
+        "mean_set_size": 1.003930131004367,
+        "singleton_rate": 0.980349344978166,
+        "empty_rate": 0.007860262008733625,
+        "singleton_error": 0.07126948775055679
+       }
+      }
+     },
+     "0.05": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8673,
+       "n_ltt": 8605,
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7"
+      },
+      "fit": {
+       "alpha": 0.05,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.8511,
+        "noul": 0.7944
+       },
+       "n": {
+        "choice": 8505,
+        "noul": 168
+       },
+       "ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0"
+      },
+      "sets": {
+       "alpha": 0.05,
+       "target_coverage": 0.95,
+       "all": {
+        "n": 17441,
+        "coverage": 0.9449572845593716,
+        "mean_set_size": 1.2162146665902185,
+        "singleton_rate": 0.7773063471131243,
+        "empty_rate": 0.013416661888653173,
+        "singleton_error": 0.0399055838312311
+       },
+       "per_type": {
+        "choice": {
+         "n": 17051,
+         "coverage": 0.9445193830273885,
+         "mean_set_size": 1.2111313119465135,
+         "singleton_rate": 0.7822415107618321,
+         "empty_rate": 0.01372353527652337,
+         "singleton_error": 0.03951117109011846
+        },
+        "noul": {
+         "n": 390,
+         "coverage": 0.9641025641025641,
+         "mean_set_size": 1.4384615384615385,
+         "singleton_rate": 0.5615384615384615,
+         "empty_rate": 0.0,
+         "singleton_error": 0.0639269406392694
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8605,
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7",
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.0,
+       "act_rate_cal": 0.7744334689134225,
+       "accepted_error_cal": 0.0391656662665066,
+       "accepted_error_ucb": 0.047066645049057415,
+       "n_valid_lambdas": 100
+      },
+      "selective": {
+       "n": 17441,
+       "lambda": 0.0,
+       "act_rate": 0.7773063471131243,
+       "abstention_rate": 0.2226936528868757,
+       "acted_error": 0.0399055838312311,
+       "n_act": 13557
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1220,
+        "coverage": 0.8106557377049181,
+        "mean_set_size": 1.4040983606557378,
+        "singleton_rate": 0.3680327868852459,
+        "empty_rate": 0.14426229508196722,
+        "singleton_error": 0.0801781737193764
+       },
+       "knowledge": {
+        "n": 2222,
+        "coverage": 0.8384338433843385,
+        "mean_set_size": 1.3141314131413142,
+        "singleton_rate": 0.693069306930693,
+        "empty_rate": 0.026102610261026102,
+        "singleton_error": 0.13246753246753246
+       },
+       "language": {
+        "n": 9784,
+        "coverage": 0.9874284546197875,
+        "mean_set_size": 1.1643499591169255,
+        "singleton_rate": 0.8414758789860998,
+        "empty_rate": 0.0,
+        "singleton_error": 0.011903315923721609
+       },
+       "retrieval": {
+        "n": 1925,
+        "coverage": 0.9215584415584416,
+        "mean_set_size": 1.3423376623376624,
+        "singleton_rate": 0.6774025974025975,
+        "empty_rate": 0.0,
+        "singleton_error": 0.10122699386503067
+       },
+       "tools": {
+        "n": 2290,
+        "coverage": 0.9580786026200874,
+        "mean_set_size": 1.1366812227074237,
+        "singleton_rate": 0.8868995633187773,
+        "empty_rate": 0.0,
+        "singleton_error": 0.034958148695224026
+       }
+      }
+     }
+    },
+    "seconds": 5.1
+   },
+   "ClefFlash": {
+    "invalid_or_missing": {
+     "not_in_dev": 14725,
+     "missing": 0
+    },
+    "n_cal": 17278,
+    "n_test": 17441,
+    "alpha": {
+     "0.1": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8673,
+       "n_ltt": 8605,
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7"
+      },
+      "fit": {
+       "alpha": 0.1,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.6654,
+        "noul": 0.7606999999999999
+       },
+       "n": {
+        "choice": 8505,
+        "noul": 168
+       },
+       "ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0"
+      },
+      "sets": {
+       "alpha": 0.1,
+       "target_coverage": 0.9,
+       "all": {
+        "n": 17441,
+        "coverage": 0.8965082277392351,
+        "mean_set_size": 1.0457542572100225,
+        "singleton_rate": 0.8931253941861131,
+        "empty_rate": 0.030560174301932228,
+        "singleton_error": 0.07902677023817166
+       },
+       "per_type": {
+        "choice": {
+         "n": 17051,
+         "coverage": 0.8967215999061638,
+         "mean_set_size": 1.0396457685766232,
+         "singleton_rate": 0.8978359040525482,
+         "empty_rate": 0.03125916368541434,
+         "singleton_error": 0.0775360898817689
+        },
+        "noul": {
+         "n": 390,
+         "coverage": 0.8871794871794871,
+         "mean_set_size": 1.3128205128205128,
+         "singleton_rate": 0.6871794871794872,
+         "empty_rate": 0.0,
+         "singleton_error": 0.16417910447761194
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8605,
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7",
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.82,
+       "act_rate_cal": 0.7027309703660662,
+       "accepted_error_cal": 0.0395237307755912,
+       "accepted_error_ucb": 0.04788060715435967,
+       "n_valid_lambdas": 18
+      },
+      "selective": {
+       "n": 17441,
+       "lambda": 0.82,
+       "act_rate": 0.7122298033369646,
+       "abstention_rate": 0.2877701966630354,
+       "acted_error": 0.033810980518435035,
+       "n_act": 12422
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1220,
+        "coverage": 0.7090163934426229,
+        "mean_set_size": 0.989344262295082,
+        "singleton_rate": 0.6975409836065574,
+        "empty_rate": 0.15655737704918032,
+        "singleton_error": 0.18683901292596944
+       },
+       "knowledge": {
+        "n": 2222,
+        "coverage": 0.765976597659766,
+        "mean_set_size": 0.986948694869487,
+        "singleton_rate": 0.8321332133213322,
+        "empty_rate": 0.09045904590459046,
+        "singleton_error": 0.16819902650081126
+       },
+       "language": {
+        "n": 9784,
+        "coverage": 0.9687244480784954,
+        "mean_set_size": 1.0653107113654947,
+        "singleton_rate": 0.9346892886345053,
+        "empty_rate": 0.0,
+        "singleton_error": 0.03247676325861126
+       },
+       "retrieval": {
+        "n": 1925,
+        "coverage": 0.7714285714285715,
+        "mean_set_size": 1.0581818181818181,
+        "singleton_rate": 0.8067532467532468,
+        "empty_rate": 0.06753246753246753,
+        "singleton_error": 0.19768190598840954
+       },
+       "tools": {
+        "n": 2290,
+        "coverage": 0.9196506550218341,
+        "mean_set_size": 1.0388646288209606,
+        "singleton_rate": 0.951528384279476,
+        "empty_rate": 0.00480349344978166,
+        "singleton_error": 0.07205139972464433
+       }
+      }
+     },
+     "0.05": {
+      "guarantee": "split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable data; q_hat from the FIT half). LTT: with probability >= 1 - delta over the LTT half, the acted-on error rate of the selected rule is <= epsilon; the LTT half is disjoint from the FIT half, so q_hat and the act rule are fixed before the test sees its data. Both need exchangeability with deployment data; neither survives distribution shift.",
+      "calibration_split": {
+       "rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half",
+       "seed": 0,
+       "fit_frac": 0.5,
+       "n_fit": 8673,
+       "n_ltt": 8605,
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7"
+      },
+      "fit": {
+       "alpha": 0.05,
+       "mondrian": true,
+       "qhat": {
+        "choice": 0.882,
+        "noul": 0.8688
+       },
+       "n": {
+        "choice": 8505,
+        "noul": 168
+       },
+       "ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0"
+      },
+      "sets": {
+       "alpha": 0.05,
+       "target_coverage": 0.95,
+       "all": {
+        "n": 17441,
+        "coverage": 0.949314832865088,
+        "mean_set_size": 1.3442463161515967,
+        "singleton_rate": 0.6677369416891233,
+        "empty_rate": 0.013473998050570495,
+        "singleton_error": 0.03563455263609823
+       },
+       "per_type": {
+        "choice": {
+         "n": 17051,
+         "coverage": 0.9490938947862295,
+         "mean_set_size": 1.3392762887807166,
+         "singleton_rate": 0.6729810568295115,
+         "empty_rate": 0.013782182863175181,
+         "singleton_error": 0.03477124183006536
+        },
+        "noul": {
+         "n": 390,
+         "coverage": 0.958974358974359,
+         "mean_set_size": 1.5615384615384615,
+         "singleton_rate": 0.43846153846153846,
+         "empty_rate": 0.0,
+         "singleton_error": 0.0935672514619883
+        }
+       }
+      },
+      "ltt": {
+       "epsilon": 0.05,
+       "delta": 0.1,
+       "method": "bonferroni",
+       "test_level": 0.0009900990099009901,
+       "n_cal": 8605,
+       "ltt_ids_sha256": "3ea55da5df3837696630d027412d01c4712a19b7c3c183102e0f0196c23fc4e7",
+       "fit_ids_sha256": "f56a89a185650c285ecf2e97da1842993063815d50a611b161cec19948f757f0",
+       "grid": [
+        0.0,
+        1.0,
+        101
+       ],
+       "lambda": 0.0,
+       "act_rate_cal": 0.664148750726322,
+       "accepted_error_cal": 0.04059492563429571,
+       "accepted_error_ucb": 0.049310564383152226,
+       "n_valid_lambdas": 100
+      },
+      "selective": {
+       "n": 17441,
+       "lambda": 0.0,
+       "act_rate": 0.6677369416891233,
+       "abstention_rate": 0.33226305831087666,
+       "acted_error": 0.03563455263609823,
+       "n_act": 11646
+      },
+      "sets_per_area": {
+       "arts": {
+        "n": 1220,
+        "coverage": 0.8204918032786885,
+        "mean_set_size": 1.4680327868852459,
+        "singleton_rate": 0.3122950819672131,
+        "empty_rate": 0.15,
+        "singleton_error": 0.06036745406824147
+       },
+       "knowledge": {
+        "n": 2222,
+        "coverage": 0.8667866786678667,
+        "mean_set_size": 1.4891989198919893,
+        "singleton_rate": 0.6012601260126013,
+        "empty_rate": 0.01755175517551755,
+        "singleton_error": 0.10703592814371257
+       },
+       "language": {
+        "n": 9784,
+        "coverage": 0.9891659852820932,
+        "mean_set_size": 1.277596075224857,
+        "singleton_rate": 0.7291496320523303,
+        "empty_rate": 0.0,
+        "singleton_error": 0.01247546958228203
+       },
+       "retrieval": {
+        "n": 1925,
+        "coverage": 0.9044155844155845,
+        "mean_set_size": 1.5038961038961038,
+        "singleton_rate": 0.5163636363636364,
+        "empty_rate": 0.006753246753246753,
+        "singleton_error": 0.12072434607645875
+       },
+       "tools": {
+        "n": 2290,
+        "coverage": 0.9655021834061135,
+        "mean_set_size": 1.2882096069868996,
+        "singleton_rate": 0.7864628820960698,
+        "empty_rate": 0.0,
+        "singleton_error": 0.02220988339811216
+       }
+      }
+     }
+    },
+    "seconds": 5.4
+   }
+  },
+  "bootstrap": {
+   "B": 2000,
+   "seed": 0,
+   "n_clusters": 4276,
+   "n_decisions": 17441,
+   "per_model": {
+    "D19": {
+     "0.1": {
+      "size": {
+       "point": 1.0860615790378991,
+       "ci95": [
+        1.0715942114803538,
+        1.1052634343791818
+       ]
+      },
+      "act": {
+       "point": 0.7470328536207786,
+       "ci95": [
+        0.6936932047293096,
+        0.7869591394951735
+       ]
+      },
+      "cov": {
+       "point": 0.8910039561951723,
+       "ci95": [
+        0.8675094536973295,
+        0.9088334538872155
+       ]
+      }
+     },
+     "0.05": {
+      "size": {
+       "point": 1.3213118513846682,
+       "ci95": [
+        1.2714008221204658,
+        1.3893280394420873
+       ]
+      },
+      "act": {
+       "point": 0.7354509489134797,
+       "ci95": [
+        0.6811562963817083,
+        0.777078208037076
+       ]
+      },
+      "cov": {
+       "point": 0.9436385528352732,
+       "ci95": [
+        0.9307481607801471,
+        0.9531435204091565
+       ]
+      }
+     }
+    },
+    "D13": {
+     "0.1": {
+      "size": {
+       "point": 1.4168912333008428,
+       "ci95": [
+        1.3827476987714877,
+        1.4532583163283137
+       ]
+      },
+      "act": {
+       "point": 0.27492689639355544,
+       "ci95": [
+        0.25051162543930283,
+        0.29943043767859956
+       ]
+      },
+      "cov": {
+       "point": 0.9053953328364199,
+       "ci95": [
+        0.8869416899713268,
+        0.918666188652248
+       ]
+      }
+     },
+     "0.05": {
+      "size": {
+       "point": 1.9348087839000057,
+       "ci95": [
+        1.9108760344543152,
+        1.957542830807383
+       ]
+      },
+      "act": {
+       "point": 0.14632188521300385,
+       "ci95": [
+        0.12933780510513793,
+        0.16718654327301188
+       ]
+      },
+      "cov": {
+       "point": 0.9531563557135485,
+       "ci95": [
+        0.9421682962078689,
+        0.9612482031102404
+       ]
+      }
+     }
+    },
+    "Clef27B": {
+     "0.1": {
+      "size": {
+       "point": 1.0086577604495155,
+       "ci95": [
+        1.0018782233467125,
+        1.0146821859488615
+       ]
+      },
+      "act": {
+       "point": 0.8173269881314145,
+       "ci95": [
+        0.7930328004444799,
+        0.8361457133763684
+       ]
+      },
+      "cov": {
+       "point": 0.8981709764348375,
+       "ci95": [
+        0.8783134193656374,
+        0.9130457759272954
+       ]
+      }
+     },
+     "0.05": {
+      "size": {
+       "point": 1.2162146665902185,
+       "ci95": [
+        1.196876898472134,
+        1.2404053960264811
+       ]
+      },
+      "act": {
+       "point": 0.7773063471131243,
+       "ci95": [
+        0.7534735132898683,
+        0.7969608108204991
+       ]
+      },
+      "cov": {
+       "point": 0.9449572845593716,
+       "ci95": [
+        0.9327352631690173,
+        0.9539547283159062
+       ]
+      }
+     }
+    },
+    "ClefFlash": {
+     "0.1": {
+      "size": {
+       "point": 1.0457542572100225,
+       "ci95": [
+        1.0358027407333075,
+        1.0550402942327919
+       ]
+      },
+      "act": {
+       "point": 0.7122298033369646,
+       "ci95": [
+        0.6849055074769106,
+        0.7342445325669441
+       ]
+      },
+      "cov": {
+       "point": 0.8965082277392351,
+       "ci95": [
+        0.8751561273885866,
+        0.9123000666680299
+       ]
+      }
+     },
+     "0.05": {
+      "size": {
+       "point": 1.3442463161515967,
+       "ci95": [
+        1.322427054675111,
+        1.3690678368475353
+       ]
+      },
+      "act": {
+       "point": 0.6677369416891233,
+       "ci95": [
+        0.6454712409428597,
+        0.687560809778615
+       ]
+      },
+      "cov": {
+       "point": 0.949314832865088,
+       "ci95": [
+        0.937243096064781,
+        0.9583374009587271
+       ]
+      }
+     }
+    }
+   },
+   "pairs": {
+    "D19-Clef27B": {
+     "0.1": {
+      "size": {
+       "diff": 0.07740381858838363,
+       "ci95": [
+        0.061547724696368086,
+        0.09826378143852937
+       ],
+       "verdict": "Clef27B tighter"
+      },
+      "act": {
+       "diff": -0.07029413451063582,
+       "ci95": [
+        -0.10401088246085459,
+        -0.04453693140105938
+       ],
+       "verdict": "Clef27B more actionable"
+      }
+     },
+     "0.05": {
+      "size": {
+       "diff": 0.10509718479444974,
+       "ci95": [
+        0.0653297342343737,
+        0.1577251549398072
+       ],
+       "verdict": "Clef27B tighter"
+      },
+      "act": {
+       "diff": -0.04185539819964457,
+       "ci95": [
+        -0.08068457400066327,
+        -0.012617976669397823
+       ],
+       "verdict": "Clef27B more actionable"
+      }
+     }
+    },
+    "D19-ClefFlash": {
+     "0.1": {
+      "size": {
+       "diff": 0.04030732182787666,
+       "ci95": [
+        0.02215421747052298,
+        0.06283133532938058
+       ],
+       "verdict": "ClefFlash tighter"
+      },
+      "act": {
+       "diff": 0.03480305028381403,
+       "ci95": [
+        -0.0006352996101055026,
+        0.06356483624634779
+       ],
+       "verdict": "no separation"
+      }
+     },
+     "0.05": {
+      "size": {
+       "diff": -0.02293446476692851,
+       "ci95": [
+        -0.06464192235893426,
+        0.030483033408381585
+       ],
+       "verdict": "no separation"
+      },
+      "act": {
+       "diff": 0.06771400722435639,
+       "ci95": [
+        0.022601455485568012,
+        0.1022930604365695
+       ],
+       "verdict": "D19 more actionable"
+      }
+     }
+    },
+    "D13-Clef27B": {
+     "0.1": {
+      "size": {
+       "diff": 0.4082334728513273,
+       "ci95": [
+        0.37377587251777744,
+        0.4456727968988032
+       ],
+       "verdict": "Clef27B tighter"
+      },
+      "act": {
+       "diff": -0.5424000917378591,
+       "ci95": [
+        -0.5638957481340799,
+        -0.517471367670797
+       ],
+       "verdict": "Clef27B more actionable"
+      }
+     },
+     "0.05": {
+      "size": {
+       "diff": 0.7185941173097872,
+       "ci95": [
+        0.6906121427450715,
+        0.7438431289037182
+       ],
+       "verdict": "Clef27B tighter"
+      },
+      "act": {
+       "diff": -0.6309844619001205,
+       "ci95": [
+        -0.6602380501949018,
+        -0.5936040183448296
+       ],
+       "verdict": "Clef27B more actionable"
+      }
+     }
+    },
+    "D13-ClefFlash": {
+     "0.1": {
+      "size": {
+       "diff": 0.3711369760908203,
+       "ci95": [
+        0.3362303117179201,
+        0.40886212418421636
+       ],
+       "verdict": "ClefFlash tighter"
+      },
+      "act": {
+       "diff": -0.4373029069434092,
+       "ci95": [
+        -0.46005196699261713,
+        -0.41196811966483815
+       ],
+       "verdict": "ClefFlash more actionable"
+      }
+     },
+     "0.05": {
+      "size": {
+       "diff": 0.5905624677484089,
+       "ci95": [
+        0.5627221093360286,
+        0.6169484078653266
+       ],
+       "verdict": "ClefFlash tighter"
+      },
+      "act": {
+       "diff": -0.5214150564761195,
+       "ci95": [
+        -0.5480093158006524,
+        -0.4894715606229837
+       ],
+       "verdict": "ClefFlash more actionable"
+      }
+     }
+    },
+    "D19-D13": {
+     "0.1": {
+      "size": {
+       "diff": -0.33082965426294364,
+       "ci95": [
+        -0.35961181761938754,
+        -0.30263418422266053
+       ],
+       "verdict": "D19 tighter"
+      },
+      "act": {
+       "diff": 0.4721059572272232,
+       "ci95": [
+        0.4282393790563049,
+        0.5073027420271062
+       ],
+       "verdict": "D19 more actionable"
+      }
+     },
+     "0.05": {
+      "size": {
+       "diff": -0.6134969325153374,
+       "ci95": [
+        -0.6612363086580446,
+        -0.5514391550718257
+       ],
+       "verdict": "D19 tighter"
+      },
+      "act": {
+       "diff": 0.5891290637004759,
+       "ci95": [
+        0.5216499434149888,
+        0.6395858752611291
+       ],
+       "verdict": "D19 more actionable"
+      }
+     }
+    },
+    "Clef27B-ClefFlash": {
+     "0.1": {
+      "size": {
+       "diff": -0.03709649676050697,
+       "ci95": [
+        -0.044573996363543686,
+        -0.029919902312679204
+       ],
+       "verdict": "Clef27B tighter"
+      },
+      "act": {
+       "diff": 0.10509718479444985,
+       "ci95": [
+        0.09415721225196694,
+        0.1161010293514894
+       ],
+       "verdict": "Clef27B more actionable"
+      }
+     },
+     "0.05": {
+      "size": {
+       "diff": -0.12803164956137825,
+       "ci95": [
+        -0.13983294545667485,
+        -0.11582078260736897
+       ],
+       "verdict": "Clef27B tighter"
+      },
+      "act": {
+       "diff": 0.10956940542400095,
+       "ci95": [
+        0.09691503464236673,
+        0.12143979210664656
+       ],
+       "verdict": "Clef27B more actionable"
+      }
+     }
+    }
+   }
+  }
+ },
+ "reorder_invariance": {
+  "measured": false,
+  "reason": "no predictions under permuted/relabelled options exist for any of the four models on DEV",
+  "D13_D19": "order-invariant by canonicalisation (decide/schema.canonical_options sorts choice ids; ordered option list in prefix; joint_record head symmetric over options); NOT relabel-invariant; layouts ordered (D13) / g1v2 (D19)",
+  "Clef": "order-invariant by canonicalisation (decide/schema + joint_schema_model.question_options sort by id; JointSchemaHead order-symmetric); NOT relabel-invariant; NOT question-order invariant"
+ },
+ "injection_robust": {
+  "computable": false,
+  "reason": "needs G16 per-option [lo,hi] trusted-only logit intervals; none of these runs produce them"
+ }
+}
