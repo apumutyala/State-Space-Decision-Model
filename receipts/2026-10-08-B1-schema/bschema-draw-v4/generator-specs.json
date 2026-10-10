@@ -1,0 +1,26 @@
+{
+ "new_family_specs": {
+  "esci_relevance": {
+   "name": "b4_esci",
+   "task_family": "product_relevance",
+   "targets": [
+    37
+   ]
+  },
+  "nli4ct_trial": {
+   "name": "b4_nli4ct",
+   "task_family": "clinical_trial_nli",
+   "targets": [
+    42
+   ]
+  },
+  "phish_email": {
+   "name": "b4_phish_email",
+   "task_family": "phishing_decision",
+   "targets": [
+    56
+   ]
+  }
+ },
+ "note": "check_generator also runs per (source, family) in b1_check (exclusion-check.json generators_checked)"
+}

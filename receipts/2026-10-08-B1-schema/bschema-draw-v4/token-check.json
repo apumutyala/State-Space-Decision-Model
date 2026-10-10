@@ -1,0 +1,79 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw-v4/records.jsonl.gz",
+ "n_rows": 262468,
+ "script": "scripts/b_schema_tokcheck.py (--set g1v2 and --set v1), trainer 9c3e435, RWKV7-G1k tokenizer @ce3630b8; parent rows are byte copies of bschema-draw-v3b (its token-check.json), new-family rows from their own run",
+ "parent_rows": {
+  "n": 253046,
+  "receipt": "receipts/2026-10-08-B1-schema/bschema-draw-v3b/token-check.json",
+  "tokens": {
+   "t_v2f": {
+    "p50": 454,
+    "p95": 1574,
+    "p99": 1691,
+    "max": 2048,
+    "n_over": 0
+   },
+   "t_v3w": {
+    "p50": 462,
+    "p95": 1767,
+    "p99": 1996,
+    "max": 2048,
+    "n_over": 0
+   },
+   "cont": {
+    "p50": 1,
+    "p95": 1,
+    "p99": 1,
+    "max": 1,
+    "n_over": 0
+   },
+   "t_v1": {
+    "p50": 485,
+    "p95": 1785,
+    "p99": 2251,
+    "max": 2309,
+    "n_over": 7942
+   },
+   "cont_v1": {
+    "p50": 2,
+    "p95": 9,
+    "p99": 10,
+    "max": 14,
+    "n_over": 0
+   }
+  }
+ },
+ "new_rows": {
+  "n": 9422,
+  "n_missing": 0,
+  "tokens": {
+   "t_v2f": {
+    "p50": 640,
+    "p99": 1491,
+    "max": 2030,
+    "n_over": 0
+   },
+   "t_v3w": {
+    "p50": 635,
+    "p99": 1490,
+    "max": 2026,
+    "n_over": 0
+   },
+   "cont": {
+    "p50": 1,
+    "p99": 1,
+    "max": 1,
+    "n_over": 0
+   },
+   "t_v1": {
+    "p50": 658,
+    "p99": 1507,
+    "max": 2039,
+    "n_over": 0
+   }
+  }
+ },
+ "v1_overlength_n": 7942,
+ "v1_overlength_ids_sha256": "00783161496e21271d8f1da7e64f70beed7ad10051beb5812ef025de6d6c93e1",
+ "pass_v2f_v3w": true
+}

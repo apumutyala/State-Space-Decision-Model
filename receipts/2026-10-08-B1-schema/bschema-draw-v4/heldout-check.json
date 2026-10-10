@@ -1,0 +1,6 @@
+{
+ "cmd": "harness.heldout check (main) on bschema-draw-v4 records.jsonl.gz, kit via train.cohort_v3._ensure_kit",
+ "records": 262468,
+ "refused": 0,
+ "pass": true
+}
