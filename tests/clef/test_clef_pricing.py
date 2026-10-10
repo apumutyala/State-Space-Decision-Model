@@ -101,10 +101,10 @@ def test_teacher_caps_cover_the_projection():
 def test_joint_gate_and_dependencies():
     led = costs.branch_ledger()
     assert led["joint_gate_fits"] and led["joint_gate_worst"] == 61.74  # qual + Clef-flash GCG B (48.51 at the pre-2026-10-08 rate)
-    # Clef-27B Index (re-priced at 5.39x) is a separately authorised line, still counted in the envelope
+    # Clef-27B Index (re-priced at 5.39x) is a separately authorised line, still counted against granted credit
     assert led["clef27b_index_authorised_worst"] == round(sum(costs.worst_case_usd(costs.load(n))
                                                               for n in costs.CLEF27B_INDEX_JOBS), 2)
-    assert all(b["fits_envelope"] for b in led["branches"].values())
+    assert all(b["fits_granted_credit"] for b in led["branches"].values())
     full = costs.load("clef_index_full")
     assert full["submit"]["depends_on"]["require"] == "result.s1_ok == true and result.ok == true"
     assert costs.load("clef_teacher_clef")["submit"]["depends_on"]["require"] == "result.s1_ok == true"

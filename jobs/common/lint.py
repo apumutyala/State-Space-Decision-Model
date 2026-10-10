@@ -506,7 +506,7 @@ def archive_cr_hits(root: Path = ROOT, rev: str = "HEAD", autocrlf: str = "true"
 
 def usage_staleness(root: Path = ROOT, costs=None, today=None) -> str | None:
     """L-49: a WARNING (never a failure) when the newest usage receipt behind costs.SPENT_USD is older than
-    costs.USAGE_STALE_DAYS, or missing: the envelope ledger then under-counts spend. Refresh with
+    costs.USAGE_STALE_DAYS, or missing: the granted-credit ledger then under-counts spend. Refresh with
     `autor usage --json` into receipts/<date>-<lane>-<what>/usage.json."""
     import datetime as dt
 
@@ -518,7 +518,25 @@ def usage_staleness(root: Path = ROOT, costs=None, today=None) -> str | None:
     age = (today - dt.date.fromisoformat(u["date"])).days
     if age > costs.USAGE_STALE_DAYS:
         return (f"usage receipt {u['path']} (MTD ${u['total_usd']:.2f}) is {age} days old "
-                f"(> {costs.USAGE_STALE_DAYS}): refresh it before trusting the envelope ledger")
+                f"(> {costs.USAGE_STALE_DAYS}): refresh it before trusting the granted-credit ledger")
+    return None
+
+
+def billing_staleness(root: Path = ROOT, costs=None, today=None) -> str | None:
+    """Same rule for the billing receipt behind costs.GRANTED_USD (the granted credit that replaced the $525
+    envelope): a WARNING when it is missing or older than costs.USAGE_STALE_DAYS. Refresh with
+    `autor billing --json` (read only: no top-ups, no payment links)."""
+    import datetime as dt
+
+    costs = costs or load_costs(root)
+    b = costs.latest_billing_receipt(root)
+    if b is None:
+        return "no billing receipt under receipts/: costs.GRANTED_USD (granted credit) is unknown"
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    age = (today - dt.date.fromisoformat(b["date"])).days
+    if age > costs.USAGE_STALE_DAYS:
+        return (f"billing receipt {b['path']} (granted ${b['granted_usd']:.2f}) is {age} days old "
+                f"(> {costs.USAGE_STALE_DAYS}): refresh it before trusting the granted-credit ledger")
     return None
 
 
@@ -539,9 +557,9 @@ def main(argv: list[str] | None = None) -> int:
         cr = archive_cr_hits(ROOT)
         print(f"eol attrs {attrs}; archive CR hits {cr or 'none'}; backslash-n {backslash_n_hits(ROOT) or 'none'}")
         rc |= any(v != "lf" for v in attrs.values()) or bool(cr) or bool(backslash_n_hits(ROOT))
-        stale = usage_staleness(ROOT, costs)
-        if stale:
-            print(f"WARN {stale}")
+        for stale in (usage_staleness(ROOT, costs), billing_staleness(ROOT, costs)):
+            if stale:
+                print(f"WARN {stale}")
     return int(rc)
 
 

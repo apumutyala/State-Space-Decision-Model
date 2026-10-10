@@ -348,3 +348,20 @@ def test_usage_receipt_staleness_warns_but_never_fails(tmp_path):
     w = lint.usage_staleness(tmp_path, costs, today=dt.date(2026, 10, 11))
     assert w and "3 days old" in w and "$57.98" in w
     assert costs.SPENT_USD == round(costs.latest_usage_receipt(ROOT)["total_usd"], 2)
+
+def test_billing_receipt_staleness_warns_but_never_fails(tmp_path):
+    """The granted credit (which replaced the $525 envelope) comes from the newest billing receipt, same WARN rule."""
+    import datetime as dt
+
+    costs = lint.load_costs(ROOT)
+    assert "no billing receipt" in lint.billing_staleness(tmp_path, costs)
+    grants = [{"kind": "top_up", "amount_usd": 25.0, "granted_at": "2026-10-06T06:53:53+00:00", "expires_at": None}]
+    for name, g in (("2026-10-08-D-a", grants), ("2026-10-09-D-b", grants + [dict(grants[0], amount_usd=250.0)])):
+        (tmp_path / "receipts" / name).mkdir(parents=True)
+        (tmp_path / "receipts" / name / "billing.json").write_text(
+            json.dumps({"object": "billing", "month": "2026-10", "credit_grants": g}), encoding="utf-8")
+    b = costs.latest_billing_receipt(tmp_path)
+    assert b["granted_usd"] == 275.0 and b["date"] == "2026-10-09"
+    assert lint.billing_staleness(tmp_path, costs, today=dt.date(2026, 10, 11)) is None
+    w = lint.billing_staleness(tmp_path, costs, today=dt.date(2026, 10, 12))
+    assert w and "3 days old" in w and "$275.00" in w

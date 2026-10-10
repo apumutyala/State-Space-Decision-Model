@@ -1,0 +1,348 @@
+{
+  "builds": {
+    "billed_minutes": 1682,
+    "free_minutes": 300,
+    "object": "build_usage",
+    "usd": 15.984614,
+    "usd_micros": 15984614
+  },
+  "items": [
+    {
+      "chip": "cpu-8",
+      "minutes": 0.62,
+      "name": "ssdm-codex-m2cpu8-20261007",
+      "object": "node_usage",
+      "usd": 0.0048,
+      "usd_micros": 4800
+    },
+    {
+      "chip": "cpu-8",
+      "minutes": 22.3,
+      "name": "ssdm-codex-m2cpu8-5dccdd70694b4e01a5ca958e9c827d32",
+      "object": "node_usage",
+      "usd": 0.1792,
+      "usd_micros": 179200
+    },
+    {
+      "chip": "cpu-8",
+      "minutes": 0.2,
+      "name": "ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6",
+      "object": "node_usage",
+      "usd": 0.0016,
+      "usd_micros": 1600
+    },
+    {
+      "chip": "cpu-8",
+      "minutes": 33.28,
+      "name": "ssdm-codex-m2cpu8-ae1d800871324d77960377a94e1532c2",
+      "object": "node_usage",
+      "usd": 0.2674,
+      "usd_micros": 267400
+    }
+  ],
+  "jobs": {
+    "attempt_count": 78,
+    "batches": [
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 620.38,
+        "job_count": 1,
+        "label": "m2 D10 d10_v2f_b100k_t380: RWKV7-13.3B fork + LoRA, v2f format + d1_fast flags, B1 100k-v2 draw, train K<=255, 380-min clock (~32k rows at the d1_fast step)",
+        "object": "batch_usage",
+        "usd": 39.0838,
+        "usd_micros": 39083800
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 521.57,
+        "job_count": 1,
+        "label": "D16 d16_v3w_b100k_safe: D10w (v3w, B1 100k-v2, K<=255, d1_fast flags) + anti-collapse + ordinal fix + attack_clean (5,201 D1-A dropped) + 380-min clock [SCREEN proxy600 v3w]",
+        "object": "batch_usage",
+        "usd": 29.3524,
+        "usd_micros": 29352400
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 498.85,
+        "job_count": 1,
+        "label": "q9af_v2 CLEAN rerun: all 8 attention layers -> GDN jointly (reuse_attn init, 70+385 min KD on the generic mix, full-eval-v1 decontam), same end-to-end gate (held-out KL <= 0.25 + stock Index proxy600), mix.json + window manifest exported",
+        "object": "batch_usage",
+        "usd": 28.0742,
+        "usd_micros": 28074200
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 442.5,
+        "job_count": 1,
+        "label": "m2 D10w d10w_v3w_b100k: RWKV7-13.3B fork + LoRA, v3w format (v3 codes + code key + word ids) + d1_fast flags, B1 100k-v2 draw, train K<=255, 190-min clock (~16k rows at the d1_fast step)",
+        "object": "batch_usage",
+        "usd": 27.8768,
+        "usd_micros": 27876800
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 431.38,
+        "job_count": 1,
+        "label": "m2 D10 d10_v2f_b100k: RWKV7-13.3B fork + LoRA, v2f format + d1_fast flags, B1 100k-v2 draw, train K<=255, 190-min clock (~16k rows at the d1_fast step)",
+        "object": "batch_usage",
+        "usd": 27.1768,
+        "usd_micros": 27176800
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 532.17,
+        "job_count": 1,
+        "label": "full8: all 8 attention layers -> GDN (Q9-AF), rule be9eed8+A1 @53b4cf7 (max_duration 720: org ceiling)",
+        "object": "batch_usage",
+        "usd": 26.3417,
+        "usd_micros": 26341700
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 415.8,
+        "job_count": 1,
+        "label": "m2 D12f d12f_v3w_b100kv3_fla: RWKV7-13.3B fork + LoRA, v3w format + d1_fast flags + fla WKV (job-9bs8w 1.46x), B1 100k-v3 draw, train K<=255, 190-min clock (~23k rows at the fast_fla step)",
+        "object": "batch_usage",
+        "usd": 26.1954,
+        "usd_micros": 26195400
+      },
+      {
+        "attempt_count": 2,
+        "gpu_minutes": 404.42,
+        "job_count": 2,
+        "label": "D1fla d1_fla: d1_fast: m2 first cell (RWKV7-13.3B LoRA r64 + fork head, Clef arm, 150k) + min_cost / single cont / compile_blocks + fla WKV (job-9bs8w 1.46x step)",
+        "object": "batch_usage",
+        "usd": 25.4772,
+        "usd_micros": 25477200
+      },
+      {
+        "attempt_count": 2,
+        "gpu_minutes": 411.57,
+        "job_count": 2,
+        "label": "D2kdfla d2_kd_fla: RWKV7-13.3B M2 fork + LoRA r64, Clef-flash KD alpha .5 T1, stock initialization, KD masked on injection rows + min_cost / single cont / compile_blocks + fla WKV (job-9bs8w 1.46x step)",
+        "object": "batch_usage",
+        "usd": 23.1924,
+        "usd_micros": 23192400
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 366.05,
+        "job_count": 1,
+        "label": "m2 D5 d5_r256: RWKV7-13.3B fork + LoRA, lora_rank 64->256 vs D1 (c7pq2), 24k gold",
+        "object": "batch_usage",
+        "usd": 23.0608,
+        "usd_micros": 23060800
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 330.77,
+        "job_count": 1,
+        "label": "m2 D11 d11_scale: RWKV7-13.3B fork + LoRA r256, v3w format + d1_fast flags (cont_plan per_group), B1 100k-v2 draw, train K<=255, 780-min clock (~44-58k items)",
+        "object": "batch_usage",
+        "usd": 20.8376,
+        "usd_micros": 20837600
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 391.5,
+        "job_count": 1,
+        "label": "m2 first cell: RWKV7-13.3B LoRA r64 + cache-fork head, Clef arm, 150k; tvuat ADOPT exec",
+        "object": "batch_usage",
+        "usd": 19.3787,
+        "usd_micros": 19378700
+      },
+      {
+        "attempt_count": 3,
+        "gpu_minutes": 292.83,
+        "job_count": 3,
+        "label": "fulldev_eval_champ: champion D1 (job-c7pq2 art-bm3e6) + v3w readout on the full 12,104-row Index DEV, no training",
+        "object": "batch_usage",
+        "usd": 17.0044,
+        "usd_micros": 17004400
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 250.1,
+        "job_count": 1,
+        "label": "D13n d13_joint_safe_nofla: d13_joint + anti-collapse + attack_clean [SCREEN proxy600 v3w] [NO fla]",
+        "object": "batch_usage",
+        "usd": 14.0756,
+        "usd_micros": 14075600
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 229.15,
+        "job_count": 1,
+        "label": "fulldev_eval_d13_v3w_s2of2: D13 (job-hjwpq art-cr9a2, best step 1600, joint_record head) readout v3w on full-DEV shard 2/2 (5995 rows, ids f523934e7b85), no training",
+        "object": "batch_usage",
+        "usd": 12.8954,
+        "usd_micros": 12895400
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 225.87,
+        "job_count": 1,
+        "label": "fulldev_eval_d13_v3w_s1of2: D13 (job-hjwpq art-cr9a2, best step 1600, joint_record head) readout v3w on full-DEV shard 1/2 (6109 rows, ids 5aa8ef1531b4), no training",
+        "object": "batch_usage",
+        "usd": 12.7106,
+        "usd_micros": 12710600
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 195.97,
+        "job_count": 1,
+        "label": "rwkv7 R3: stock readout, v2/v2f/v3/v3w/v3r/v3p/v1/v3c, Index DEV subset, one model load",
+        "object": "batch_usage",
+        "usd": 12.3452,
+        "usd_micros": 12345200
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 173.47,
+        "job_count": 1,
+        "label": "D14 d14_rlcd: RLCD second stage (E_p reward w/ ordinal partial credit + record-exact + KL to D1 + Brier) from D1 job-c7pq2, d1_fla execution, 120 min [SCREEN proxy600]",
+        "object": "batch_usage",
+        "usd": 10.9284,
+        "usd_micros": 10928400
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 162.65,
+        "job_count": 1,
+        "label": "readout_ab: D1 (job-c7pq2 art-bm3e6) on the 2,008-row DEV subset under v1 (control) + v3w, one model load",
+        "object": "batch_usage",
+        "usd": 10.2466,
+        "usd_micros": 10246600
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 152.4,
+        "job_count": 1,
+        "label": "m2 D7 d7_t380: RWKV7-13.3B fork + LoRA, train clock 190->380 min vs D1 (c7pq2), 24k gold",
+        "object": "batch_usage",
+        "usd": 9.6012,
+        "usd_micros": 9601200
+      },
+      {
+        "attempt_count": 54,
+        "gpu_minutes": 1729.4,
+        "job_count": 54,
+        "labels": 51,
+        "object": "batch_usage_remainder",
+        "usd": 97.7353,
+        "usd_micros": 97735300
+      }
+    ],
+    "gpu_minutes": 8778.78,
+    "job_count": 78,
+    "object": "job_usage_summary",
+    "top_jobs": [
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 620.38,
+        "job_id": "job-afe3k",
+        "label": "m2 D10 d10_v2f_b100k_t380: RWKV7-13.3B fork + LoRA, v2f format + d1_fast flags, B1 100k-v2 draw, train K<=255, 380-min clock (~32k rows at the d1_fast step)",
+        "object": "job_usage",
+        "usd": 39.0838,
+        "usd_micros": 39083800
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 521.57,
+        "job_id": "job-a6vt6",
+        "label": "D16 d16_v3w_b100k_safe: D10w (v3w, B1 100k-v2, K<=255, d1_fast flags) + anti-collapse + ordinal fix + attack_clean (5,201 D1-A dropped) + 380-min clock [SCREEN proxy600 v3w]",
+        "object": "job_usage",
+        "usd": 29.3524,
+        "usd_micros": 29352400
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 498.85,
+        "job_id": "job-7ji99",
+        "label": "q9af_v2 CLEAN rerun: all 8 attention layers -> GDN jointly (reuse_attn init, 70+385 min KD on the generic mix, full-eval-v1 decontam), same end-to-end gate (held-out KL <= 0.25 + stock Index proxy600), mix.json + window manifest exported",
+        "object": "job_usage",
+        "usd": 28.0742,
+        "usd_micros": 28074200
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 442.5,
+        "job_id": "job-hgwsq",
+        "label": "m2 D10w d10w_v3w_b100k: RWKV7-13.3B fork + LoRA, v3w format (v3 codes + code key + word ids) + d1_fast flags, B1 100k-v2 draw, train K<=255, 190-min clock (~16k rows at the d1_fast step)",
+        "object": "job_usage",
+        "usd": 27.8768,
+        "usd_micros": 27876800
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 431.38,
+        "job_id": "job-2gpiv",
+        "label": "m2 D10 d10_v2f_b100k: RWKV7-13.3B fork + LoRA, v2f format + d1_fast flags, B1 100k-v2 draw, train K<=255, 190-min clock (~16k rows at the d1_fast step)",
+        "object": "job_usage",
+        "usd": 27.1768,
+        "usd_micros": 27176800
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 532.17,
+        "job_id": "job-2xe5w",
+        "label": "full8: all 8 attention layers -> GDN (Q9-AF), rule be9eed8+A1 @53b4cf7 (max_duration 720: org ceiling)",
+        "object": "job_usage",
+        "usd": 26.3417,
+        "usd_micros": 26341700
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 415.8,
+        "job_id": "job-bs5we",
+        "label": "m2 D12f d12f_v3w_b100kv3_fla: RWKV7-13.3B fork + LoRA, v3w format + d1_fast flags + fla WKV (job-9bs8w 1.46x), B1 100k-v3 draw, train K<=255, 190-min clock (~23k rows at the fast_fla step)",
+        "object": "job_usage",
+        "usd": 26.1954,
+        "usd_micros": 26195400
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 397.73,
+        "job_id": "job-gi58k",
+        "label": "D1fla d1_fla: d1_fast: m2 first cell (RWKV7-13.3B LoRA r64 + fork head, Clef arm, 150k) + min_cost / single cont / compile_blocks + fla WKV (job-9bs8w 1.46x step)",
+        "object": "job_usage",
+        "usd": 25.0572,
+        "usd_micros": 25057200
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 366.05,
+        "job_id": "job-igcu4",
+        "label": "m2 D5 d5_r256: RWKV7-13.3B fork + LoRA, lora_rank 64->256 vs D1 (c7pq2), 24k gold",
+        "object": "job_usage",
+        "usd": 23.0608,
+        "usd_micros": 23060800
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 407.0,
+        "job_id": "job-b7xax",
+        "label": "D2kdfla d2_kd_fla: RWKV7-13.3B M2 fork + LoRA r64, Clef-flash KD alpha .5 T1, stock initialization, KD masked on injection rows + min_cost / single cont / compile_blocks + fla WKV (job-9bs8w 1.46x step)",
+        "object": "job_usage",
+        "usd": 22.9054,
+        "usd_micros": 22905400
+      }
+    ],
+    "usd": 513.5905,
+    "usd_micros": 513590500
+  },
+  "month": "2026-10",
+  "object": "list",
+  "total_usd": 530.028114,
+  "total_usd_micros": 530028114
+}

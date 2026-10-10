@@ -1,4 +1,4 @@
-"""Cost arithmetic, schedules, the $525 SF envelope ledger and the qualification -> next-job mapping for the m1 jobs.
+"""Cost arithmetic, schedules, the granted-credit ledger and the qualification -> next-job mapping for the m1 jobs.
 
     python -m jobs.common.costs            # prints every job's worst case / expected $ and the branch ledger
 
@@ -32,7 +32,10 @@ def _load_rates():
 
 rates = _load_rates()
 
-ENVELOPE_USD = 525.0
+#: The fixed $525 envelope is RETIRED (2026-10-10, coordinator / agent-a: the operator lifted the $525 cap and credit was
+#: topped up 2026-10-09 with $250 + $10). The ledger checks spend + committed worst cases against the TOTAL GRANTED CREDIT
+#: for the period, read from the newest committed `autor billing --json` receipt (credit_grants). Historical analyses
+#: that quote the $525 envelope (PLAN, LEDGER, receipts) are left as written.
 #: Month-to-date SF spend comes from the newest committed `autor usage --json` receipt (receipts/<date>-*/*usage*.json,
 #: object "list" with total_usd), not a hand-kept literal: the old SPENT_USD = 16.11 (2026-10-07) was stale by $41.87
 #: against LEDGER's 2026-10-08 $57.98. lint warns when the newest receipt is older than USAGE_STALE_DAYS.
@@ -62,6 +65,51 @@ def latest_usage_receipt(root: Path = ROOT) -> dict | None:
 
 _USAGE = latest_usage_receipt()
 SPENT_USD = round(_USAGE["total_usd"], 2) if _USAGE else None
+
+
+def granted_credit_usd(billing: dict) -> float:
+    """Total credit granted for the billing receipt's month: every grant made by the end of that month that had not
+    expired before the month began (promo, top-ups), summed at its granted amount_usd (not what remains)."""
+    import datetime as dt
+
+    y, m = (int(x) for x in billing["month"].split("-"))
+    start = dt.datetime(y, m, 1, tzinfo=dt.timezone.utc)
+    end = dt.datetime(y + (m == 12), m % 12 + 1, 1, tzinfo=dt.timezone.utc)
+    total = 0.0
+    for g in billing.get("credit_grants", []):
+        granted = dt.datetime.fromisoformat(g["granted_at"])
+        expires = dt.datetime.fromisoformat(g["expires_at"]) if g.get("expires_at") else None
+        if granted < end and (expires is None or expires >= start):
+            total += float(g["amount_usd"])
+    return round(total, 2)
+
+
+def latest_billing_receipt(root: Path = ROOT) -> dict | None:
+    """The newest `autor billing --json` receipt (object "billing" with credit_grants): latest month, then latest
+    receipt-directory date, then the most grants. None when no receipt is shipped."""
+    import datetime as dt
+
+    best = None
+    for f in (root / "receipts").glob("*/*billing*.json"):
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+            day = dt.date.fromisoformat(f.parent.name[:10])
+        except (ValueError, OSError):
+            continue
+        if not isinstance(d, dict) or d.get("object") != "billing" or "credit_grants" not in d or "month" not in d:
+            continue
+        key = (d["month"], day, len(d["credit_grants"]))
+        if best is None or key > best[0]:
+            best = (key, {"path": f.relative_to(root).as_posix(), "month": d["month"], "date": day.isoformat(),
+                          "granted_usd": granted_credit_usd(d), "grants": [
+                              {k: g.get(k) for k in ("kind", "amount_usd", "granted_at", "expires_at")}
+                              for g in d["credit_grants"]]})
+    return best[1] if best else None
+
+
+_BILLING = latest_billing_receipt()
+#: total granted credit for the period (replaces the retired ENVELOPE_USD = 525.0)
+GRANTED_USD = _BILLING["granted_usd"] if _BILLING else None
 #: PLAN.md spend lines
 LINES = {"joint_gate": 75.0, "system1": 250.0, "language": 100.0, "reserve": 100.0}
 PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_params_c_only.json", "probe9b": "jobs/probe9b/job_params.json",
@@ -243,9 +291,12 @@ def next_jobs_after_full8(verdict: str | None, exit_code: int | None = 0) -> lis
 
 
 def branch_ledger() -> dict:
-    """Worst-case $ per branch through the tree, against the envelope and the PLAN lines."""
+    """Worst-case $ per branch through the tree: MTD spend + every committed worst case, against the total granted
+    credit for the period, and the PLAN lines."""
     if SPENT_USD is None:
         raise RuntimeError("no usage receipt under receipts/ (autor usage --json): MTD spend unknown")
+    if GRANTED_USD is None:
+        raise RuntimeError("no billing receipt under receipts/ (autor billing --json): granted credit unknown")
     w = {k: worst_case_usd(load(k)) for k in PARAMS}
     joint = sum(w[k] for k in JOINT_GATE_JOBS) + OTHER["clef_baseline_B"]
     teachers = round(sum(w[k] for k in TEACHER_JOBS), 2)
@@ -260,11 +311,12 @@ def branch_ledger() -> dict:
         b["m1"] = round(b["m1"], 2)
         b["system1_left_for_m2"] = round(LINES["system1"] - b["m1"], 2)
         b["system1_left_after_teachers"] = round(b["system1_left_for_m2"] - teachers, 2)
-        b["envelope_total_worst"] = round(SPENT_USD + joint + clef27b + b["m1"] + teachers, 2)
-        b["fits_envelope"] = b["envelope_total_worst"] <= ENVELOPE_USD
+        b["spend_plus_worst"] = round(SPENT_USD + joint + clef27b + b["m1"] + teachers, 2)
+        b["fits_granted_credit"] = b["spend_plus_worst"] <= GRANTED_USD
     return {"worst_case_usd": w, "joint_gate_worst": round(joint, 2), "joint_gate_fits": joint <= LINES["joint_gate"],
             "teachers_optional_worst": teachers, "clef27b_index_authorised_worst": clef27b,
-            "envelope": ENVELOPE_USD, "spent": SPENT_USD, "spent_source": _USAGE, "branches": branches}
+            "granted_credit_usd": GRANTED_USD, "granted_source": _BILLING and {k: _BILLING[k] for k in ("path", "date", "month")},
+            "spent": SPENT_USD, "spent_source": _USAGE, "branches": branches}
 
 
 def main():

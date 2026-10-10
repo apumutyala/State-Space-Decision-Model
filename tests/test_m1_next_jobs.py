@@ -50,14 +50,28 @@ def test_probe_cap_is_the_planned_40_and_rate_matches_plan():
     assert all(costs.load(n)["batch_usd_per_min"] == costs.rates.BATCH_USD_PER_MIN == round(3.78 / 60, 4) for n in costs.PARAMS)
 
 
-def test_branch_ledger_fits_the_envelope_and_lines():
+def test_branch_ledger_fits_granted_credit_and_lines():
     led = costs.branch_ledger()
-    # MTD comes from the newest usage receipt (PR #241 review), no longer the hand-kept 16.11
-    assert led["spent"] == round(costs.latest_usage_receipt()["total_usd"], 2) and led["envelope"] == 525.0
-    assert led["spent_source"]["path"].startswith("receipts/")
+    # MTD from the newest usage receipt; the fixed $525 envelope is retired (2026-10-10): spend + committed worst
+    # cases must fit the total credit granted for the period, from the newest billing receipt
+    assert led["spent"] == round(costs.latest_usage_receipt()["total_usd"], 2)
+    assert led["granted_credit_usd"] == costs.latest_billing_receipt()["granted_usd"] == costs.GRANTED_USD
+    assert led["spent_source"]["path"].startswith("receipts/") and led["granted_source"]["path"].startswith("receipts/")
     assert led["joint_gate_fits"]
-    for b in led["branches"].values():
-        assert b["fits_envelope"] and b["system1_left_for_m2"] > 0
+    for name, b in led["branches"].items():
+        assert b["spend_plus_worst"] <= led["granted_credit_usd"] and b["fits_granted_credit"], (name, b)
+        assert b["system1_left_for_m2"] > 0
+
+
+def test_granted_credit_counts_every_grant_for_the_month():
+    new = costs.latest_billing_receipt()
+    assert new["path"] == "receipts/2026-10-10-D-sf-usage-billing/billing.json"
+    assert new["granted_usd"] == 785.0  # promo 500 + top-ups 25 + 250 + 10 (2026-10-09)
+    old = json.loads((ROOT / "receipts/2026-10-08-D-m2-cpu8-validation/post-run-billing.json").read_text(encoding="utf-8"))
+    assert costs.granted_credit_usd(old) == 525.0  # the retired envelope was exactly the 2026-10-06 grants
+    lapsed = dict(old, month="2026-11", credit_grants=[dict(g, expires_at="2026-10-27T06:53:54+00:00")
+                                                       for g in old["credit_grants"]])
+    assert costs.granted_credit_usd(lapsed) == 0.0  # a grant that expired before the month does not count
 
 
 def test_pipeline_fits_its_phase_cap():
