@@ -152,11 +152,35 @@ Each cell is act fraction / acted-on error. **—** = no λ certified, so the mo
 3. **D19 still trails Clef 27B, by a smaller margin** (−1.5 points). Under Holm it is no longer separated at α = 0.10.
 4. **The bottleneck for every model is now hard-area actionability.** A model that could certify knowledge or retrieval at ε = 0.05 would gain up to 13 (knowledge) + 11 (retrieval) points of act fraction. That is a model-quality target in those areas, not a procedure change.
 
+## 5. Add-on: per-area accuracy and ECE (descriptive, not pre-registered)
+
+Full DEV gold decisions (34,719; 0 invalid or missing for every model). Top-1 = argmax of the decision's distribution. ECE = `harness.calibration.debiased_ece(bins=15)` (debiased L2, 15 equal-mass bins). CIs are case-cluster bootstrap (8,473 cases, B = 2000, seed 0). Driver `area_accuracy.py`; numbers `AREA_ACCURACY.json`.
+
+| Area (n) | D19 acc / ECE | Clef-flash acc / ECE | Clef 27B acc / ECE | **Δ acc D19 − Clef-flash** |
+|---|---|---|---|---|
+| arts (2,434) | 61.3 [58.4, 64.3] / 0.074 | 65.3 [62.1, 68.4] / 0.029 | 66.4 [63.4, 69.1] / 0.053 | **−3.9 [−6.4, −1.5]** |
+| knowledge (4,532) | 66.7 [64.8, 68.5] / **0.157** | 75.8 [74.3, 77.3] / 0.029 | 75.8 [74.3, 77.4] / 0.058 | **−9.1 [−10.6, −7.8]** |
+| language (19,300) | 95.5 [94.2, 96.4] / 0.038 | 94.5 [93.6, 95.3] / 0.058 | 95.8 [95.0, 96.4] / 0.049 | +0.9 [−0.0, +1.7] (none) |
+| retrieval (3,883) | 72.5 [70.2, 74.8] / 0.104 | 73.4 [71.2, 75.5] / 0.071 | 81.5 [79.7, 83.3] / 0.047 | −0.9 [−3.5, +1.8] (none) |
+| tools (4,570) | 88.0 [86.8, 89.1] / 0.046 | 90.5 [89.3, 91.5] / 0.024 | 91.8 [90.7, 92.7] / 0.028 | **−2.4 [−3.4, −1.5]** |
+| overall (34,719) | 85.8 [83.7, 87.4] / 0.062 | 87.1 [85.7, 88.4] / 0.023 | 89.0 [87.6, 90.1] / 0.011 | **−1.4 [−2.2, −0.6]** |
+
+- D19 − Clef 27B is negative in every area except language (−0.3 [−1.1, +0.3], none). Retrieval is −9.0 [−11.7, −6.1].
+- **Why D19 is not certified on knowledge: it is overconfident there.** Its mean confidence is 0.801 against 66.7% accuracy (ECE 0.157). Clef-flash is at 0.783 against 75.8% (ECE 0.029).
+- **Acted-on accuracy under the per-area LTT rule** (TEST, run_id split):
+  - Knowledge: only Clef-flash acts. At α = 0.10 (λ 0.94) it acts on 906 of 2,288 decisions at 95.9% accuracy [94.3, 97.3]. At α = 0.05 (λ 0.93) it acts on 799 at 97.0% [95.6, 98.2].
+  - D19, Clef 27B and D13 act on 0 knowledge decisions.
+  - Retrieval: no model acts (no λ certified).
+  - For context, the marginal pooled rule acted on knowledge at 86.1% (D19), 92.6% (Clef-flash) and 90.2% (Clef 27B). That is below the 95% the ε = 0.05 target needs. On retrieval it acted at 77.9%, 85.6% and 88.3%.
+- The recomputed act fractions match `GUARANTEES_AREA.json` exactly (asserted in the script).
+
 ## Receipts
 
 - `GUARANTEES_AREA.json`: the full output, including per-group q_hat and n_fit, every LTT record (with UCB and LTT-half act rate), Holm λ, per-(area, type) coverage, and all bootstrap CIs.
 - `guarantees_area.py`: the driver. It imports `../2026-10-10-B-guarantees-fulldev/guarantees_fulldev.py` for load_gold / split / load_model. Run with `python -X utf8 -I guarantees_area.py <agent-main @7c131f1> GUARANTEES_AREA.json` from `ssdm-wt/m0-harness/.venv`. CPU, about 95 s.
 - `plot_area.py`: the figure.
+- `area_accuracy.py` → `AREA_ACCURACY.json`: section 5. Run with `python -X utf8 -I area_accuracy.py <agent-main @7c131f1> GUARANTEES_AREA.json AREA_ACCURACY.json` from `ssdm-wt/m0-harness/.venv`. CPU, about 16 s.
+- **Independent rerun (evidence worker, 2026-10-10):** `guarantees_area.py` was rerun from `m0-harness/.venv` (77 s). Its output is identical to the committed `GUARANTEES_AREA.json` except for the timing fields.
 - `run.log`: the run log.
 - `SHA256SUMS`: hashes of the Windows working copies.
 - **Input sha256** (checked at run time):
