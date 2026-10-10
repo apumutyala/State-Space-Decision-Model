@@ -646,9 +646,12 @@ def _access_policy(i: int) -> dict:
     lvl = DATA[req["data_class"]]
     hh = int(req["local_time"][:2]) + int(req["local_time"][3:]) / 60
     if req["role"] == "auditor" and req["open_audit_ticket"] and req["purpose"] == "annual_audit":
-        deciding, ok = "P5", True
-        if lvl >= need_mfa and not req["mfa"]:
+        if lvl >= 2 and req["purpose"] in banned:
+            deciding, ok = "P2", False
+        elif lvl >= need_mfa and not req["mfa"]:
             deciding, ok = "P3", False
+        else:
+            deciding, ok = "P5", True
     elif lvl > clear[req["role"]]:
         deciding, ok = "P1", False
     elif lvl >= 2 and req["purpose"] in banned:
@@ -743,11 +746,13 @@ SEV_DOMAINS = {
                              "priority: threatens to leave, or an enterprise customer with a repeat contact",
                              "urgent: mentions a regulator or ombudsman"]},
     "facility": {"fields": ["hazard", "people_exposed", "area_closed", "injury"],
-                 "levels": ["cosmetic: no hazard", "minor: hazard with nobody exposed", "serious: hazard with "
-                            "{a}+ people exposed and the area still open", "critical: any injury"]},
+                 "levels": ["cosmetic: no hazard", "minor: a hazard, but fewer than {a} people exposed or the "
+                            "area closed", "serious: hazard with {a}+ people exposed and the area still open",
+                            "critical: any injury"]},
     "finance": {"fields": ["discrepancy_usd", "recurring", "customer_funds", "auditor_flagged"],
-                "levels": ["trivial: under ${a}", "material: ${a}+ once", "significant: ${a}+ and recurring, or "
-                           "customer funds involved", "critical: flagged by the auditor and ${b}+"]},
+                "levels": ["trivial: under ${a}", "material: ${a}+, not recurring and no customer funds",
+                           "significant: ${a}+ and either recurring or involving customer funds",
+                           "critical: flagged by the auditor and ${b}+"]},
 }
 
 
@@ -1152,7 +1157,7 @@ def _lp_leave(r: random.Random) -> tuple[list[str], dict, dict]:
     bal = accrual * months + min(carried, carry) - c["days_taken_this_year"]
     if c["emergency"] and c["requested_days"] <= 2:
         ok, why = True, "L7"
-    elif c["blackout"]:
+    elif c["blackout"] and not c["emergency"]:
         ok, why = False, "L4"
     elif c["on_probation"] and c["days_taken_this_year"] + c["requested_days"] > 3:
         ok, why = False, "L5"
