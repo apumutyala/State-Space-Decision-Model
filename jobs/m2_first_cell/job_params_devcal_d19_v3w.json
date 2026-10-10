@@ -72,6 +72,7 @@
   "select": "best",
   "url_env": "CKPT_URL"
  },
+ "eval_only": "devcal",
  "devcal_expect_step": 2800,
  "reference_results_sha256": {
   "_note": "unused by this mode",

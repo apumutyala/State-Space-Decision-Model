@@ -119,3 +119,78 @@ def test_fit_end_to_end_with_the_devcard_gate(tmp_path):
     sc["training_card"]["nll"] = ref["nll"] + 0.05  # the rescored dev card does not reproduce the run's card
     (tmp_path / "devcal-score.json").write_text(json.dumps(sc), encoding="utf-8")
     assert not D.fit(SimpleNamespace(score_dir=str(tmp_path)))["usable"]
+
+
+# ---- job-s6kz7: the devcal params lacked "eval_only": "devcal", so the runner took the TRAINING setup branch and
+# priced parent_g12 (no cap in these params -> KeyError, reported as exit 15). Run the runner's own mode parse on the
+# real params, then the setup preflight's stage selection, on CPU.
+def _mode_env_script() -> str:
+    sh = (M / "first_cell_job.sh").read_text(encoding="utf-8")
+    start = sh.index("MODE_ENV=$(python -I - ")
+    body = sh[sh.index("<<'EOF'\n", start) + len("<<'EOF'\n"):]
+    return body[:body.index("\nEOF\n")]
+
+
+def _mode_env(params: dict, tmp_path):
+    import subprocess
+    import sys
+
+    f = tmp_path / f"job_params_{MODE}.json"
+    f.write_text(json.dumps(params), encoding="utf-8")
+    return subprocess.run([sys.executable, "-I", "-", MODE, params["cell_config"], str(f), ""], cwd=ROOT,
+                          input=_mode_env_script(), capture_output=True, text=True, timeout=120)
+
+
+def _priced_stages(params: dict, eval_only: str, stage: str) -> list[str]:
+    """The phase caps first_cell_job.sh's setup preflight looks up (the EVAL_PRICES loop), per branch."""
+    if eval_only in ("fulldev", "devcal"):
+        return []  # fulldev: fulldev_eval estimate; devcal: fixed phase caps only; neither prices a parent arm
+    priced = ["parent_g12", "parent_index", "evals"]
+    return priced[:2] if stage == "screen" else priced
+
+
+def test_devcal_mode_parses_as_eval_only_and_prices_no_parent_stage(tmp_path):
+    p = _p(MODE)
+    r = _mode_env(p, tmp_path)
+    assert r.returncode == 0, r.stderr
+    train_sub, teacher, ev, stage = r.stdout.split()
+    assert (train_sub, ev, stage) == (p["train_dir"], "devcal", "gates")
+    priced = _priced_stages(p, ev, stage)
+    assert priced == [] and not any(s.startswith("parent") for s in priced)
+    caps = p["phase_caps_minutes"]
+    assert all(s in caps for s in ("setup", "guard", "checkpoint", "devcal")) and "parent_g12" not in caps
+
+
+def test_devcal_params_without_eval_only_are_refused_at_mode_parse(tmp_path):
+    p = dict(_p(MODE))
+    del p["eval_only"]  # the job-s6kz7 params
+    r = _mode_env(p, tmp_path)
+    assert r.returncode != 0 and "devcal_expect_step" in (r.stdout + r.stderr)
+
+
+def test_runner_devcal_branch_never_schedules_parent_stages():
+    sh = (M / "first_cell_job.sh").read_text(encoding="utf-8")
+    # setup: the devcal branch sits before the training preflight's else (where EVAL_PRICES / parent_g12 live)
+    pre = sh.index('elif [ "$EVAL_ONLY" = devcal ]')
+    els = sh.index("\nelse\n", pre)
+    assert sh.index('EVAL_PRICES=("g12 parent parent_g12') > els and "parent" not in sh[pre:els]
+    # phases: the devcal block exits 0 before the fulldev / heldout / parent / cell phases
+    blk = sh.index('if [ "$EVAL_ONLY" = devcal ]; then  # ----- eval-only')
+    end = sh.index("  exit 0\nfi\n", blk)
+    assert "parent" not in sh[blk:end] and sh.index("cap parent_g12") > end
+    # a missing cap is a params error (exit 5), never a KeyError swallowed into exit 15
+    assert 'CAPM=$(cap "$3" 2> /dev/null) || fail 5' in sh and '--cap-min "$CAPM"' in sh
+
+
+def test_every_first_cell_mode_caps_the_stages_its_preflight_prices(tmp_path):
+    for f in sorted(M.glob("job_params*.json")):
+        p = json.loads(f.read_text(encoding="utf-8"))
+        if not p.get("runner", "").endswith("first_cell_job.sh") or "phase_caps_minutes" not in p:
+            continue
+        if str(p.get("status", "")).startswith("draft"):  # unsubmitted drafts (hijack_eval: phases the runner lacks)
+            continue
+        if "devcal_expect_step" in p:
+            assert p.get("eval_only") == "devcal", f.name
+        missing = [s for s in _priced_stages(p, p.get("eval_only", "none"), p.get("stage", "gates"))
+                   if s not in p["phase_caps_minutes"]]
+        assert not missing, (f.name, missing)
