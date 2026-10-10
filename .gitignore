@@ -12,3 +12,6 @@ harness/ssdm_harness.egg-info/
 data/ssdm_data.egg-info/
 .claude/*
 !.claude/skills/
+!.claude/settings.json
+# JevBench eval-only guard fingerprint: hashes only, pinned (train/jevbench_guard.py); job boxes need it with the code
+!data/manifests/doc_overlap/jevbench/fingerprint.npz

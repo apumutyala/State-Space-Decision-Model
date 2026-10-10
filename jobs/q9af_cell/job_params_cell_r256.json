@@ -31,7 +31,7 @@
  "assumed_restart_floor": 1,
  "queue_ttl_minutes": 1440,
  "hf_cache": true,
- "batch_usd_per_min": 0.0495,
+ "batch_usd_per_min": 0.063,
  "margin_min_frac": 0.3,
  "measured": {
   "_comment": "job-5cmat (probe9b one-layer 9B, art-2bybh; same image stack and 9B revision; jobs/full8/job_params.json measured). Scoring = positions / prefill_tok_s_min + calls x call_s_fitted (jobs.common.readout_cost model). Training step = jobs/q9af_cell/price.py (MFU anchored below stage 1's measured 0.316; per-call floor = small_call_s per pass).",
@@ -52,7 +52,7 @@
  "cell_config": "jobs/q9af_cell/q9af_cell_r256.json",
  "resume": "checkpoint",
  "max_duration_minutes": 720,
- "hard_cap_usd": 75.0,
+ "hard_cap_usd": 95.46,
  "phase_caps_minutes": {
   "setup": 25,
   "guard": 5,

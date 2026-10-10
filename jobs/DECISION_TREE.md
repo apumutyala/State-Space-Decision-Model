@@ -9,8 +9,8 @@ conservative inherited planning stress estimate of 474.984510 minutes (old 64x64
 not current v2 packs; historical small-call projection 293.991278 minutes).
 Real-shape H100 memory/parity and probe-derived rate
 gates precede scoring. Runtime 710 min, build 60 min, two-attempt conservative
-worst case/hard cap **$73.26**, published-rate bound **$70.89**, expected **$26.54**,
-workspace increment $74.
+worst case/hard cap **$93.24**, published-rate bound **$90.06**, expected **$33.78**,
+workspace increment $94 (re-priced 2026-10-09 at $0.063/min; at the old $0.0495: $73.26 / $70.89 / $26.54 / $74).
 This is derived within the $250 System 1 allocation; no fixed qualification-dollar
 ceiling applies. Completion produces an integrity receipt only: no promotion, Clef win,
 safety floors or automatic follow-on spend. Failed feasibility keeps permitted $0 work moving.
@@ -19,48 +19,50 @@ Every job below still needs its own `spend` issue, a LEDGER planned row, `set_wo
 and a `validate_job` re-run against that cap before submit (same preconditions as `jobs/qual/JOB_SPEC.md`). The
 numbers are computed by `python -m jobs.common.costs` and checked by `tests/test_m1_next_jobs.py`.
 
-**Worst case** = (build_timeout + 2 attempts x max_duration) x $0.0495/min (build counted as billable; one platform
+**Worst case** = (build_timeout + 2 attempts x max_duration) x $0.063/min (build counted as billable; one platform
 retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phase minutes x the same rate.
+
+**Re-priced 2026-10-09** (`jobs/common/rates.py`): the H100 list price rose $3.96 -> $5.04/h on 2026-10-08, so the billed batch rate is $0.063/min (was $0.0495; Fridays $0.05628). The worst-case, hard-cap and `~$` expected figures below are at $0.063; caps that bound were raised x 14/11 (the rate ratio), except the three $20 authorised lines (qual, m2_pilot, m2_parent_arm), which were re-authorised 2026-10-09 ($20 → $24) instead. One-attempt and other prose figures inside the cells, and every actual / receipt figure, are as originally written (pre-2026-10-08 rate).
 
 | Job | Spec | Worst case | Hard cap (workspace cap) | Expected |
 |---|---|---|---|---|
-| qual (rung-2 qualification, unchanged) | `jobs/qual/` | $18.81 | $20 | <= $8.91 (one attempt, validate_job) |
-| qual_c_only (phase-C re-run after the job-c4zkm 9B OOM; A and B passed there; env `QUAL_MODE=c_only`) | `jobs/qual/job_params_c_only.json` | $14.85 | $20 | <= $6.93 (one attempt; $7.92 with the 20-min build) |
-| probe9b (one-layer 9B conversion probe; re-priced from the job-4j3vu measured rates, issue #68) | `jobs/probe9b/` | $28.21 | $40 | ~$6.58 |
-| rwkv7 stage A (stock readout + steer smoke) | `jobs/rwkv7/` `JOB=readout` | $16.34 | $20 | ~$4.70 |
-| rwkv7 stage B (LoRA pilot, cache fork) | `jobs/rwkv7/` `JOB=lora` | $19.30 | $20 | ~$7.72 |
-| rwkv7 C1 (stock readout through the vendor-compliant jrt-rwkv-g1-v2 template, DEV subset only) | `jobs/rwkv7/job_params_readout_g1v2.json` `JOB=readout_g1v2` | $14.36 | $15 | ~$2.50 |
-| rwkv7 R3 (stock readout, v2 / v2f / v3 / v3w / v3r / v3p / v1 / v3c in one process, DEV subset only) | `jobs/rwkv7/job_params_readout_g1v3.json` `JOB=readout_g1v3` | $30.89 | $31 | ~$10.74 |
-| fla_rwkv7 (fla chunk_rwkv7 gate, v1 rule; ran as job-jn47u) | `jobs/fla_rwkv7/` | $3.96 | $4.50 | ~$1.09 |
-| fla_rwkv7 truth_v2 (RULE v2 + A1: fp64-truth numerics, m2 cell train speed; `fla_job.sh truth_v2`) | `jobs/fla_rwkv7/job_params_truth_v2.json` | $5.74 | $6 | ~$1.19 |
-| cell_step_profile (m2 cell train step: baseline / ckpt_rows_lean / ckpt_rows / ckpt; pre-registered rule v1-A2) | `jobs/cell_step_profile/` | $8.22 | $8.50 | ~$1.59 |
-| perf_step_gate v2 (m2 cell train step: greedy (numerics ref) / fast = d1_fast (speed ref) / fast_fla / fast_fla_nocompile: does fla chunk_rwkv7 speed TRAINING; pre-registered rule v2; v1 = job-2amiy $1.02; stack/rwkv7/perf-gate-fla) | `jobs/perf_step_gate/` | $8.91 | $9.00 | ~$1.46 |
-| full8 (all 8 layers -> GDN, Q9-AF; priced from job-5cmat's measured phases; rule pre-registered at be9eed8; issue #87) | `jobs/full8/` | $84.65 | $85 | ~$27.87 |
-| clef_index_subset (Clef-27B Index on the 2,008-row m1 DEV subset; canary; `RELEASE=clef JOB=I ROWS=subset`; planned at 5.39x) | `jobs/clef_baseline/job_params_index_subset.json` | $10.20 | $10.50 | ~$3.37 |
-| clef_index_full (Clef-27B Index on all 12,104 DEV rows; `depends_on` index_subset `s1_ok and ok`; caps re-derived from the subset with `price.py rederive`; DEV only) | `jobs/clef_baseline/job_params_index_full.json` | $23.46 | $24 | ~$8.27 |
-| clef_index_full_reference (Clef-27B full DEV with every Index phase on the torch reference GDN, JOB_SPEC 4d: job-jxevr's kernel_path 0.027 > 0.02, tolerance unchanged; caps = d2u54 rate x 4) | `jobs/clef_baseline/job_params_index_full_reference.json` | $39.20 | $40 | ~$13.81 |
-| clef_overlength_flash (Clef-flash 32k sensitivity on the 51 over-length DEV rows, substituted into job-sgihj; `ROWS=overlength`) | `jobs/clef_baseline/job_params_overlength_flash.json` | $5.25 | $6 | ~$1.49 |
-| clef_teacher_flash (optional m2 teacher: Clef-flash probabilities on the 24k TRAINING draw; guard exit 20) | `jobs/clef_baseline/job_params_teacher_clef_flash.json` | $11.68 | $12 | ~$3.56 |
-| clef_teacher_clef (optional m2 teacher: Clef-27B, same draw; `depends_on` index_subset `s1_ok`; planned at 5.39x) | `jobs/clef_baseline/job_params_teacher_clef.json` | $35.74 | $36 | ~$13.22 |
-| q9_feature_cache stock_dev (proxy head loop, PREMORTEM blocker #1; stock Q9 SELECT + HOLDOUT DEV features; independent of full-8; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_stock_dev.json` | $15.35 | $20 | ~$3.91 |
-| q9_feature_cache stock_train (proxy head loop, PREMORTEM blocker #1; stock Q9 20,000 training rows; independent of full-8; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_stock_train.json` | $17.32 | $30 | ~$4.65 |
-| q9_feature_cache conv1_dev (proxy head loop, PREMORTEM blocker #1; 1-layer-converted (L23 GDN) DEV features; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_conv1_dev.json` | $15.35 | $30 | ~$3.91 |
-| q9_feature_cache conv1_train (proxy head loop, PREMORTEM blocker #1; 1-layer-converted, first 5,000 training rows; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_conv1_train.json` | $12.87 | $30 | ~$2.87 |
-| q9_feature_cache e5_dev (proxy head loop, PREMORTEM blocker #1; E5 short-code DEV features; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_e5_dev.json` | $15.35 | $30 | ~$3.86 |
-| q9_feature_cache e5_train (proxy head loop, PREMORTEM blocker #1; E5 short-code, first 5,000 training rows; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_e5_train.json` | $12.87 | $30 | ~$2.82 |
-| m2_first_cell (first trained cell: RWKV7-13.3B LoRA r64 + cache-fork head, Clef arm, 150k set; job-tvuat ADOPT execution config; PR #74) | `jobs/m2_first_cell/` | $66.03 | $70 | ~$26.14 |
-| m2_first_cell d1_fast (D1 base cell + the job-2amiy perf_step_gate step fixes: row_plan min_cost, cont_plan single, compile_blocks; 1.40x step, same caps, ~40 % more rows in the same 190-min clock; template for future cells) | `jobs/m2_first_cell/job_params_d1_fast.json` | $66.03 | $70 | ~$26.14 |
-| m2_first_cell fulldev_eval (EVAL-ONLY: a SAVED cell checkpoint, D1 job-c7pq2 art-bm3e6 via the shared checkpoint_loader, scored on the FULL 12,104-row Index DEV, edition 0.2.1, every row read in full (cap 65,536 > longest row 47,509); full + 51-excluded Index, ECE, latency, cost; optional parent arm; vs-Clef paired CI landed with analysis/land_fulldev.py; 421 expected scoring min = 22.6 M tokens x D1's measured 1.037 s / 1k) | `jobs/m2_first_cell/job_params_fulldev_eval.json` | $63.56 | $65 | ~$22.67 (quoted $0.063: ~$28.85) |
-| m2_first_cell fulldev_smoke (fulldev_eval pipeline proof: D1 art-bm3e6 + the stock parent arm on a pre-declared 250-row DEV slice, 83 tracks, 12 rows > 16,384 tokens incl. the 47,509 one; report + land_fulldev in subset mode; 73 run min) | `jobs/m2_first_cell/job_params_fulldev_smoke.json` | $18.51 | $20 | ~$4.36 (run only $3.61) |
-| m2_first_cell hijack_eval (EVAL-ONLY, BOARD H1: D1 art-bm3e6 via the shared checkpoint_loader; hijack (5 HIJACK_TEMPLATES) + D1-A steer re-measure, paired child - parent, 3,600 units per arm; 72 run min) | `jobs/m2_first_cell/job_params_hijack_eval.json` | $14.55 | $15 | ~$4.31 (run only $3.56) |
-| q9af_cell parent (the Q9-AF PARENT ARM once: stock readout of the converted model on cohort v3 + full DEV; shared comparator + lineage anchor of both cells; rule `jobs/q9af_cell/rule.py` 2d18afa; blocked on the job-2xe5w export pin; G13 re-priced at T <= 4,096) | `jobs/q9af_cell/job_params_parent.json` | $38.12 | $40 | ~$12.56 |
-| q9af_cell cell_r64 (first Q9-AF decision cell: LoRA r64 + fork head, clef arm, 150k draw, act_ckpt, G12/G13 vs the parent arm; `depends_on` parent; E9 pair) | `jobs/q9af_cell/job_params_cell_r64.json` | $74.25 | $75 | ~$23.15 |
-| q9af_cell cell_r256 (same cell, LoRA r256; E9 pair) | `jobs/q9af_cell/job_params_cell_r256.json` | $74.25 | $75 | ~$23.15 |
+| qual (rung-2 qualification, unchanged) | `jobs/qual/` | $23.94 | $24 (re-authorised 2026-10-09 ($20 → $24)) | <= $11.34 (one attempt, validate_job) |
+| qual_c_only (phase-C re-run after the job-c4zkm 9B OOM; A and B passed there; env `QUAL_MODE=c_only`) | `jobs/qual/job_params_c_only.json` | $18.90 | $20 | <= $8.82 (one attempt; $10.08 with the 20-min build) |
+| probe9b (one-layer 9B conversion probe; re-priced from the job-4j3vu measured rates, issue #68) | `jobs/probe9b/` | $35.91 | $40 | ~$8.38 |
+| rwkv7 stage A (stock readout + steer smoke) | `jobs/rwkv7/` `JOB=readout` | $20.79 | $25.46 | ~$5.99 |
+| rwkv7 stage B (LoRA pilot, cache fork) | `jobs/rwkv7/` `JOB=lora` | $24.57 | $25.46 | ~$9.83 |
+| rwkv7 C1 (stock readout through the vendor-compliant jrt-rwkv-g1-v2 template, DEV subset only) | `jobs/rwkv7/job_params_readout_g1v2.json` `JOB=readout_g1v2` | $18.27 | $19.10 | ~$2.50 |
+| rwkv7 R3 (stock readout, v2 / v2f / v3 / v3w / v3r / v3p / v1 / v3c in one process, DEV subset only) | `jobs/rwkv7/job_params_readout_g1v3.json` `JOB=readout_g1v3` | $39.31 | $39.46 | ~$13.67 |
+| fla_rwkv7 (fla chunk_rwkv7 gate, v1 rule; ran as job-jn47u) | `jobs/fla_rwkv7/` | $5.04 | $5.73 | ~$1.39 |
+| fla_rwkv7 truth_v2 (RULE v2 + A1: fp64-truth numerics, m2 cell train speed; `fla_job.sh truth_v2`) | `jobs/fla_rwkv7/job_params_truth_v2.json` | $7.31 | $7.64 | ~$1.51 |
+| cell_step_profile (m2 cell train step: baseline / ckpt_rows_lean / ckpt_rows / ckpt; pre-registered rule v1-A2) | `jobs/cell_step_profile/` | $10.46 | $10.82 | ~$2.03 |
+| perf_step_gate v2 (m2 cell train step: greedy (numerics ref) / fast = d1_fast (speed ref) / fast_fla / fast_fla_nocompile: does fla chunk_rwkv7 speed TRAINING; pre-registered rule v2; v1 = job-2amiy $1.02; stack/rwkv7/perf-gate-fla) | `jobs/perf_step_gate/` | $11.34 | $11.46 | ~$1.86 |
+| full8 (all 8 layers -> GDN, Q9-AF; priced from job-5cmat's measured phases; rule pre-registered at be9eed8; issue #87) | `jobs/full8/` | $107.73 | $108.19 | ~$35.47 |
+| clef_index_subset (Clef-27B Index on the 2,008-row m1 DEV subset; canary; `RELEASE=clef JOB=I ROWS=subset`; planned at 5.39x) | `jobs/clef_baseline/job_params_index_subset.json` | $12.98 | $13.37 | ~$4.28 |
+| clef_index_full (Clef-27B Index on all 12,104 DEV rows; `depends_on` index_subset `s1_ok and ok`; caps re-derived from the subset with `price.py rederive`; DEV only) | `jobs/clef_baseline/job_params_index_full.json` | $29.86 | $30.55 | ~$10.52 |
+| clef_index_full_reference (Clef-27B full DEV with every Index phase on the torch reference GDN, JOB_SPEC 4d: job-jxevr's kernel_path 0.027 > 0.02, tolerance unchanged; caps = d2u54 rate x 4) | `jobs/clef_baseline/job_params_index_full_reference.json` | $49.90 | $50.91 | ~$17.58 |
+| clef_overlength_flash (Clef-flash 32k sensitivity on the 51 over-length DEV rows, substituted into job-sgihj; `ROWS=overlength`) | `jobs/clef_baseline/job_params_overlength_flash.json` | $6.68 | $7.64 | ~$1.89 |
+| clef_teacher_flash (optional m2 teacher: Clef-flash probabilities on the 24k TRAINING draw; guard exit 20) | `jobs/clef_baseline/job_params_teacher_clef_flash.json` | $14.87 | $15.28 | ~$4.54 |
+| clef_teacher_clef (optional m2 teacher: Clef-27B, same draw; `depends_on` index_subset `s1_ok`; planned at 5.39x) | `jobs/clef_baseline/job_params_teacher_clef.json` | $45.49 | $45.82 | ~$16.82 |
+| q9_feature_cache stock_dev (proxy head loop, PREMORTEM blocker #1; stock Q9 SELECT + HOLDOUT DEV features; independent of full-8; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_stock_dev.json` | $19.53 | $25.46 | ~$4.98 |
+| q9_feature_cache stock_train (proxy head loop, PREMORTEM blocker #1; stock Q9 20,000 training rows; independent of full-8; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_stock_train.json` | $22.05 | $30 | ~$5.92 |
+| q9_feature_cache conv1_dev (proxy head loop, PREMORTEM blocker #1; 1-layer-converted (L23 GDN) DEV features; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_conv1_dev.json` | $19.53 | $30 | ~$4.98 |
+| q9_feature_cache conv1_train (proxy head loop, PREMORTEM blocker #1; 1-layer-converted, first 5,000 training rows; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_conv1_train.json` | $16.38 | $30 | ~$3.65 |
+| q9_feature_cache e5_dev (proxy head loop, PREMORTEM blocker #1; E5 short-code DEV features; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_e5_dev.json` | $19.53 | $30 | ~$4.91 |
+| q9_feature_cache e5_train (proxy head loop, PREMORTEM blocker #1; E5 short-code, first 5,000 training rows; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_e5_train.json` | $16.38 | $30 | ~$3.59 |
+| m2_first_cell (first trained cell: RWKV7-13.3B LoRA r64 + cache-fork head, Clef arm, 150k set; job-tvuat ADOPT execution config; PR #74) | `jobs/m2_first_cell/` | $84.04 | $89.10 | ~$33.26 |
+| m2_first_cell d1_fast (D1 base cell + the job-2amiy perf_step_gate step fixes: row_plan min_cost, cont_plan single, compile_blocks; 1.40x step, same caps, ~40 % more rows in the same 190-min clock; template for future cells) | `jobs/m2_first_cell/job_params_d1_fast.json` | $84.04 | $89.10 | ~$33.26 |
+| m2_first_cell fulldev_eval (EVAL-ONLY: a SAVED cell checkpoint, D1 job-c7pq2 art-bm3e6 via the shared checkpoint_loader, scored on the FULL 12,104-row Index DEV, edition 0.2.1, every row read in full (cap 65,536 > longest row 47,509); full + 51-excluded Index, ECE, latency, cost; optional parent arm; vs-Clef paired CI landed with analysis/land_fulldev.py; 421 expected scoring min = 22.6 M tokens x D1's measured 1.037 s / 1k) | `jobs/m2_first_cell/job_params_fulldev_eval.json` | $80.89 | $82.73 | ~$28.85 (quoted $0.063: ~$28.85) |
+| m2_first_cell fulldev_smoke (fulldev_eval pipeline proof: D1 art-bm3e6 + the stock parent arm on a pre-declared 250-row DEV slice, 83 tracks, 12 rows > 16,384 tokens incl. the 47,509 one; report + land_fulldev in subset mode; 73 run min) | `jobs/m2_first_cell/job_params_fulldev_smoke.json` | $23.56 | $25.46 | ~$5.54 (run only $3.61) |
+| m2_first_cell hijack_eval (EVAL-ONLY, BOARD H1: D1 art-bm3e6 via the shared checkpoint_loader; hijack (5 HIJACK_TEMPLATES) + D1-A steer re-measure, paired child - parent, 3,600 units per arm; 72 run min) | `jobs/m2_first_cell/job_params_hijack_eval.json` | $18.52 | $19.10 | ~$5.48 (run only $3.56) |
+| q9af_cell parent (the Q9-AF PARENT ARM once: stock readout of the converted model on cohort v3 + full DEV; shared comparator + lineage anchor of both cells; rule `jobs/q9af_cell/rule.py` 2d18afa; blocked on the job-2xe5w export pin; G13 re-priced at T <= 4,096) | `jobs/q9af_cell/job_params_parent.json` | $48.51 | $50.91 | ~$15.99 |
+| q9af_cell cell_r64 (first Q9-AF decision cell: LoRA r64 + fork head, clef arm, 150k draw, act_ckpt, G12/G13 vs the parent arm; `depends_on` parent; E9 pair) | `jobs/q9af_cell/job_params_cell_r64.json` | $94.50 | $95.46 | ~$29.46 |
+| q9af_cell cell_r256 (same cell, LoRA r256; E9 pair) | `jobs/q9af_cell/job_params_cell_r256.json` | $94.50 | $95.46 | ~$29.46 |
 
 **Workspace cap when jobs overlap.** `set_workspace_cap` is workspace-wide, so jobs that can bill at the same time
 need one cap covering all of them: MTD + `costs.concurrent_cap_usd([...])` = the ceiling of the sum of their worst
-cases. probe9b + rwkv7 A (qual pass branch): MTD + 45. rwkv7 A + B chained with `depends_on`: MTD + 36 (B is
-submitted while A can still bill). A job submitted alone: MTD + its hard cap. All six q9_feature_cache parts in parallel: MTD + 90; the two stock parts alone: MTD + 33.
+cases. probe9b + rwkv7 A (qual pass branch): MTD + 57 (MTD + 45 before the 2026-10-09 re-pricing). rwkv7 A + B chained with `depends_on`: MTD + 46 (was 36; B is
+submitted while A can still bill). A job submitted alone: MTD + its hard cap. All six q9_feature_cache parts in parallel: MTD + 114 (was 90); the two stock parts alone: MTD + 42 (was 33).
 
 ## After the qualification (`scripts/decide_9b.py` verdict, `jobs/qual` exit code)
 
@@ -102,6 +104,10 @@ recorded decision, not an automatic one.
 | any other non-zero exit (incl. 9 = no-measurement) | diagnose; at most one re-run from the reserve |
 
 ## The $525 envelope (October MTD actual spend $16.11 as of 2026-10-07 incl. job-mden7 $1.06, job-5cmat $5.01 and job-tvuat $1.62, `costs.SPENT_USD`; $500 promo expires 2026-10-27T06:53Z)
+
+**2026-10-10: the fixed $525 envelope is retired.** The operator lifted the $525 cap, and credit was topped up 2026-10-09 ($250 + $10). `costs.branch_ledger` now checks October spend + every committed worst case against the total credit granted for the period, read from the newest committed billing receipt (`costs.GRANTED_USD`); spend is the newest usage receipt (`costs.SPENT_USD`); `python -m jobs.common.lint` WARNs when either receipt is older than 2 days. Live balance: `autor billing` (no top-ups or payment links).
+
+At $0.063/min with `receipts/2026-10-10-D-sf-usage-billing/usage.json` (MTD $530.03) and `receipts/2026-10-10-D-sf-usage-billing/billing.json` (granted $785.00 = promo $500 + top-ups $25 + $250 + $10): joint gate $61.74 of $75; Clef-27B Index line $69.56 (its full-DEV slot is clef_index_full_reference at $49.90 since PR #241 review: job-jxevr's fast-GDN index_full failed at S1 and job-zfexa ran the reference); optional teachers $60.36. Entries whose listed jobs (`costs.LEDGER_JOB_IDS`) are all terminal in committed job receipts count $0 toward the credit check, because their actual cost is already in the MTD: qual job-jbw22, job-c4zkm, job-4j3vu (actual $3.29); clef_index_subset job-5mw9h, job-d2u54 (actual $1.47); clef_index_full_reference job-jxevr, job-zfexa (actual $8.28); probe9b job-5cmat (actual $5.01); full8 job-2xe5w (actual $26.34); rwkv7_readout job-mhc3h, job-tkfaj (actual $2.35) ($46.74 in total). Still committed (not run): joint gate $37.80, Clef-27B Index $6.68, teachers $60.36; MTD + committed per branch A $634.87 / B $659.44 / C $659.44, all within the $785.00 granted. The table and paragraph below keep their 2026-10-07 figures ($525 envelope, $16.11 MTD, $0.0495/min).
 
 | Line (PLAN.md) | Budget | Worst case committed by this tree |
 |---|---|---|

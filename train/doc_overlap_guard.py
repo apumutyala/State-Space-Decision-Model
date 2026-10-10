@@ -575,19 +575,50 @@ def pin_record(idx: EvalIndex, key: str) -> dict:
 
 
 # ------------------------------------------------------------------------------------------------- scan
+def _jevbench_pair():
+    """(EvalIndex, Fingerprint) of the JevBench public items (train.jevbench_guard), or None when a test disabled it.
+    Fail closed: a missing / drifted JevBench pin raises, it never silently skips the gate."""
+    from train import jevbench_guard as JG
+
+    pair = JG.load()
+    return None if pair is False else pair
+
+
+class _Pass:
+    """Streaming state of one index during a scan: per-gram train df and the rows with any eval-gram hit."""
+
+    def __init__(self, idx: EvalIndex):
+        self.idx = idx
+        self.tdf = np.zeros(len(idx.h), np.uint32)
+        self.track = min(TEMPLATE_DF, BOILER_FRAC * idx.n_rows)
+        self.hits: list[tuple] = []
+
+    def add(self, rid: str, src: str, g: np.ndarray) -> None:
+        pos = self.idx.lookup(g)
+        if not len(pos):
+            return
+        self.tdf[pos[self.idx.df[pos] >= self.track]] += 1  # pos is unique per row
+        self.hits.append((rid, src, len(g), pos.astype(np.int64)))
+
+
 def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool = True,
-         want: set[str] | None = None) -> dict[str, Any]:
-    """Scan training rows. One streaming pass keeps only rows with any eval-gram hit (compact arrays); the boilerplate
-    set (needs the draw's train df) and the draw-union rule (U) are resolved after the pass."""
+         want: set[str] | None = None, jevbench: bool = True) -> dict[str, Any]:
+    """Scan training rows against the Index eval index AND the JevBench public items (``train.jevbench_guard``) in
+    one streaming pass. Each index keeps only rows with any eval-gram hit (compact arrays); the boilerplate set
+    (needs the draw's train df) and the draw-union rule (U) are resolved per index after the pass. JevBench also
+    fails a row whose normalised segment equals a JevBench segment exactly (short items under 13-gram reach).
+    A JevBench-clean scan reports exactly what the Index-only scan did, plus a ``jevbench`` block."""
     idx = idx or get_index()
+    jb = _jevbench_pair() if jevbench else None
     t0 = time.time()
-    cand_thr = BOILER_FRAC * idx.n_rows
-    tdf = np.zeros(len(idx.h), np.uint32)  # train df of every eval gram with eval df >= min(TEMPLATE_DF, 1%)
-    track = min(TEMPLATE_DF, cand_thr)
+    main_pass = _Pass(idx)
+    jb_pass = _Pass(jb[0]) if jb else None
+    jb_exact: list[tuple[str, str, int]] = []
+    if jb:
+        from train.jevbench_guard import exact_segment_hits
     n = 0
     found: set[str] = set()
     per_source_rows: dict[str, int] = {}
-    hits: list[tuple] = []
     for rec in records:
         if not isinstance(rec, dict) or "state" not in rec:  # fail closed: an unreadable row is never skipped
             raise DocOverlapError(f"record without state (cannot be scanned): {str(rec.get('id') if isinstance(rec, dict) else rec)[:80]}")
@@ -599,16 +630,64 @@ def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool =
         n += 1
         src = str(rec.get("source") or rec.get("family"))
         per_source_rows[src] = per_source_rows.get(src, 0) + 1
+        if jb:
+            ex = exact_segment_hits(jb[1], rec.get("state"), rec.get("questions"))
+            if ex:
+                jb_exact.append((rid, src, ex))
         g = text_grams(document_leaves(rec))
         if not len(g):
             continue
-        pos = idx.lookup(g)
-        if not len(pos):
-            continue
-        tdf[pos[idx.df[pos] >= track]] += 1  # pos is unique per row
-        hits.append((rid, src, len(g), pos.astype(np.int64)))
+        main_pass.add(rid, src, g)
+        if jb_pass:
+            jb_pass.add(rid, src, g)
     if want is not None and found != want:
         raise DocOverlapError(f"{len(want - found)} requested id(s) not in the records, e.g. {sorted(want - found)[:3]}")
+    rep, fails = _resolve(idx, main_pass.hits, main_pass.tdf, n, per_source_rows, keep_ids, t0)
+    if jb_pass is None:
+        rep["jevbench"] = {"enabled": False}
+        return rep
+    from train import jevbench_guard as JG
+
+    jrep, jfails = _resolve(jb_pass.idx, jb_pass.hits, jb_pass.tdf, n, per_source_rows, True, t0)
+    doc_ids = {f["id"] for f in jfails}
+    jall = [dict(f, gate="jevbench_doc") for f in jfails]
+    for rid, src, ex in jb_exact:
+        if rid not in doc_ids:
+            jall.append({"id": rid, "source": src, "reasons": "X", "exact_segments": ex, "gate": "jevbench_exact",
+                         "best_unit": {"split": JG.SPLIT, "family": "jevbench", "field": "segment"}})
+    jids = sorted({f["id"] for f in jall})
+    jsrc: dict[str, int] = {}
+    for f in jall:
+        jsrc[f["source"]] = jsrc.get(f["source"], 0) + 1
+    rep["jevbench"] = {**JG.identity(), "n_fail_doc": len(doc_ids), "n_fail_exact": len({r for r, _, _ in jb_exact}),
+                       "n_fail": len(jids), "fail_ids": jids, "fail_ids_sha256": ids_sha256(jids),
+                       "per_source_fail": dict(sorted(jsrc.items())), "n_rows_any_eval_gram": jrep["n_rows_any_eval_gram"],
+                       "fails": jall[:5000]}
+    if jids:  # the gate's verdict covers both sources: every JevBench fail is a fail of the scan
+        main_ids = {f["id"] for f in fails}
+        all_ids = sorted(main_ids | set(jids))
+        by_id = {f["id"]: f for f in fails}
+        for f in jall:
+            by_id.setdefault(f["id"], f)
+        psf: dict[str, int] = {}
+        for i in all_ids:
+            psf[by_id[i]["source"]] = psf.get(by_id[i]["source"], 0) + 1
+        rep["n_fail"] = len(all_ids)
+        rep["fail_ids_sha256"] = ids_sha256(all_ids)
+        rep["per_source_fail"] = dict(sorted(psf.items()))
+        rep["per_reason"] = dict(rep["per_reason"], JEVBENCH=len(jids))
+        rep["eval_rows_attributed_by_split"] = dict(rep["eval_rows_attributed_by_split"], JEVBENCH=len(jids))
+        rep["per_eval_family_fail"] = dict(rep["per_eval_family_fail"], jevbench=len(set(jids) - main_ids))
+        if keep_ids:
+            rep["fail_ids"] = all_ids
+            rep["fails"] = (fails + [f for f in jall if f["id"] not in main_ids])[:5000]
+    return rep
+
+
+def _resolve(idx: EvalIndex, hits: list[tuple], tdf: np.ndarray, n: int, per_source_rows: dict[str, int],
+             keep_ids: bool, t0: float) -> tuple[dict[str, Any], list[dict]]:
+    """Post-pass of one index: boilerplate / templates for this draw, rule U, then R / E / U per hit row."""
+    cand_thr = BOILER_FRAC * idx.n_rows
     edf = idx.df.astype(np.int64)
     is_boiler = (edf > cand_thr) & (tdf > BOILER_FRAC * max(n, 1))
     is_template = (((edf >= TEMPLATE_DF) & (tdf >= TEMPLATE_DF)) | (edf >= TEMPLATE_EVAL_DF)) & ~is_boiler
@@ -731,7 +810,9 @@ def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool =
     if keep_ids:
         rep["fail_ids"] = fail_ids
         rep["fails"] = fails[:5000]
-    return rep
+    return rep, fails
+
+
 
 
 def _allow_sha_safe() -> str | None:
@@ -772,7 +853,11 @@ def clean_spec(rep: dict[str, Any]) -> dict[str, Any]:
     return {"rule": RULE, "filter": "drop every row train.doc_overlap_guard.scan FAILS over the whole set",
             "index_sha256": rep["index_sha256"], "allowlist_sha256": rep["allowlist_sha256"],
             "n_records": rep["n_records"], "n_excluded": rep["n_fail"], "n_kept": rep["n_records"] - rep["n_fail"],
-            "excluded_ids_sha256": rep["fail_ids_sha256"], "per_source_fail": rep["per_source_fail"]}
+            "excluded_ids_sha256": rep["fail_ids_sha256"], "per_source_fail": rep["per_source_fail"],
+            **({"jevbench_index_sha256": rep["jevbench"]["index_sha256"],
+                "jevbench_fingerprint_arrays_sha256": rep["jevbench"]["fingerprint_arrays_sha256"],
+                "jevbench_n_excluded": rep["jevbench"]["n_fail"]}
+               if (rep.get("jevbench") or {}).get("enabled") else {})}
 
 
 def check_pinned(rep: dict[str, Any], pin: dict[str, Any] | None) -> tuple[bool, str]:
@@ -785,6 +870,11 @@ def check_pinned(rep: dict[str, Any], pin: dict[str, Any] | None) -> tuple[bool,
             return False, f"doc_clean pin lacks {k}"
     if pin["index_sha256"] != rep["index_sha256"] or pin["allowlist_sha256"] != rep["allowlist_sha256"]:
         return False, "doc_clean pin was made against a different eval index / allowlist"
+    jb = rep.get("jevbench") or {}
+    if "jevbench_index_sha256" in pin and jb.get("enabled") and (
+            pin["jevbench_index_sha256"] != jb.get("index_sha256")
+            or pin.get("jevbench_fingerprint_arrays_sha256") != jb.get("fingerprint_arrays_sha256")):
+        return False, "doc_clean pin was made against a different JevBench index / fingerprint"
     if int(pin["n_excluded"]) != rep["n_fail"] or pin["excluded_ids_sha256"] != rep["fail_ids_sha256"]:
         return False, (f"doc-overlap fails ({rep['n_fail']}, {rep['fail_ids_sha256'][:12]}) != pinned exclusions "
                        f"({pin['n_excluded']}, {str(pin['excluded_ids_sha256'])[:12]})")
@@ -792,8 +882,12 @@ def check_pinned(rep: dict[str, Any], pin: dict[str, Any] | None) -> tuple[bool,
 
 
 def summary(rep: dict[str, Any]) -> dict[str, Any]:
-    return {k: rep[k] for k in ("n_records", "n_fail", "per_source_fail", "per_reason",
-                                "eval_rows_attributed_by_split", "eval_rows_union_covered_by_split", "secs")}
+    out = {k: rep[k] for k in ("n_records", "n_fail", "per_source_fail", "per_reason",
+                               "eval_rows_attributed_by_split", "eval_rows_union_covered_by_split", "secs")}
+    jb = rep.get("jevbench") or {}
+    out["jevbench"] = ({k: jb.get(k) for k in ("n_fail", "n_fail_doc", "n_fail_exact", "index_sha256")}
+                       if jb.get("enabled") else {"enabled": False})
+    return out
 
 
 def main(argv=None) -> int:

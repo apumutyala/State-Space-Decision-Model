@@ -54,7 +54,7 @@ def _synthetic(n, seed, k=4, temp=1.0):
             if r <= acc:
                 lab = o
                 break
-        out.append(G.Scored(f"x{i}", "choice" if i % 2 else "noul", probs, lab or "o0"))
+        out.append(G.Scored(f"s{seed}-x{i}", "choice" if i % 2 else "noul", probs, lab or "o0"))
     return out
 
 
@@ -76,16 +76,53 @@ def test_ltt_bounds_acted_error():
     pool = _synthetic(20000, 99)
     eps, delta, trials, bad = 0.15, 0.1, 10, 0
     for t in range(trials):
-        cal = _synthetic(2000, 1000 + t)
-        fit = G.fit_conformal(cal, 0.1)
-        lt = G.ltt_select(cal, fit, epsilon=eps, delta=delta)
+        fit_half, ltt_half, _ = G.split_calibration(_synthetic(4000, 1000 + t), seed=t)
+        fit = G.fit_conformal(fit_half, 0.1)
+        lt = G.ltt_select(ltt_half, fit, epsilon=eps, delta=delta)
         assert lt["lambda"] is not None and lt["accepted_error_ucb"] <= eps + 1e-9
         bad += _true_acted_risk(fit, lt["lambda"], pool) > eps
         sel = G.selective_eval(pool[:2000], fit, lt["lambda"])
         assert 0 < sel["act_rate"] < 1
     assert bad <= 3  # expected <= delta * trials = 1 (seeds fixed, so the test is deterministic)
-    fs = G.ltt_select(_synthetic(2000, 7), G.fit_conformal(_synthetic(2000, 7), 0.1), eps, delta, method="fixed_sequence")
+    f7, l7, _ = G.split_calibration(_synthetic(4000, 7))
+    fs = G.ltt_select(l7, G.fit_conformal(f7, 0.1), eps, delta, method="fixed_sequence")
     assert fs["method"] == "fixed_sequence" and fs["test_level"] == delta
+
+
+def test_calibration_halves_are_disjoint_deterministic_and_recorded():
+    cal = _synthetic(1500, 11)
+    f1, l1, rec1 = G.split_calibration(cal, seed=3)
+    f2, l2, rec2 = G.split_calibration(list(reversed(cal)), seed=3)
+    ids_f, ids_l = {r.id for r in f1}, {r.id for r in l1}
+    assert not ids_f & ids_l and ids_f | ids_l == {r.id for r in cal}  # disjoint and exhaustive
+    assert rec1 == rec2 and {r.id for r in f2} == ids_f  # a function of (seed, id) only, not of order or answers
+    assert rec1["fit_ids_sha256"] == G.ids_sha256(ids_f) and rec1["ltt_ids_sha256"] == G.ids_sha256(ids_l)
+    assert 600 < rec1["n_fit"] < 900 and rec1["n_fit"] + rec1["n_ltt"] == 1500
+    assert G.split_calibration(cal, seed=4)[2]["fit_ids_sha256"] != rec1["fit_ids_sha256"]
+
+
+def test_reported_guarantee_uses_only_the_held_out_ltt_half():
+    cal, test = _synthetic(3000, 12), _synthetic(2000, 13)
+    rep = G.conformal_report(cal, test, alpha=0.1, epsilon=0.15, delta=0.1, split_seed=5)
+    fit_half, ltt_half, split = G.split_calibration(cal, seed=5)
+    assert rep["calibration_split"] == split
+    assert rep["fit"]["ids_sha256"] == split["fit_ids_sha256"] and sum(rep["fit"]["n"].values()) == split["n_fit"]
+    assert rep["ltt"]["ltt_ids_sha256"] == split["ltt_ids_sha256"] and rep["ltt"]["n_cal"] == split["n_ltt"]
+    assert rep["ltt"]["fit_ids_sha256"] == split["fit_ids_sha256"] != rep["ltt"]["ltt_ids_sha256"]
+    assert "_ids" not in rep["fit"] and "disjoint" in rep["guarantee"]
+    # the LTT verdict equals one computed from the held-out half alone
+    alone = G.ltt_select(ltt_half, G.fit_conformal(fit_half, 0.1), 0.15, 0.1)
+    assert {k: alone[k] for k in ("lambda", "n_cal", "accepted_error_ucb")} == \
+           {k: rep["ltt"][k] for k in ("lambda", "n_cal", "accepted_error_ucb")}
+
+
+def test_ltt_refuses_the_fit_data_and_test_overlap():
+    cal = _synthetic(1000, 14)
+    fit = G.fit_conformal(cal, 0.1)
+    with pytest.raises(ValueError, match="overlaps the conformal fit"):
+        G.ltt_select(cal[:400], fit, 0.1, 0.1)
+    with pytest.raises(ValueError, match="test decisions overlap"):
+        G.conformal_report(cal, cal[:10])
 
 
 def test_binomial_helpers():

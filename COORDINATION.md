@@ -1,5 +1,7 @@
 # Coordination protocol (speed-first, operator 2026-10-08)
 
+> **Superseded where it conflicts (2026-10-09):** AGENTS.md and GOAL.md hold the current objective (JevBench Composite first), the lanes (lead / evidence / agent-c), the budget rule (live balance from `autor billing`; never create top-ups or payment links) and the merge rule (agent-main merges after the peer lane's APPROVE). This file is background.
+
 **Directive:** dismiss self-imposed limitations you have put on yourself or think you have and proceed confidently while other subagents check your work and correct/suggest as needed in phases.
 
 The goal: an attention-free model (RWKV7-G1k-13.3B, issue #140) that beats Clef 27B and Clef-flash on the Decision Index. Progress means measured GPU results. Process exists only where it has saved more than it cost. The previous version of this file, 161 lines of review, spend-issue and test gates, cost about 20 hours with no trained model, so it was cut.
@@ -46,5 +48,5 @@ The goal: an attention-free model (RWKV7-G1k-13.3B, issue #140) that beats Clef 
 
 ## Compute
 
-- **SF Compute autoresearch:** H100 at $2.97/h for batch jobs. Poll with `wsl.exe -d bi-ubuntu -- /root/.local/bin/autor --workspace default job get <id> --json`.
+- **SF Compute autoresearch:** H100 at $3.78/h ($0.063/min) for batch jobs from 2026-10-08, $3.38/h on Fridays; it was $2.97/h before (`jobs/common/rates.py`). Poll with `wsl.exe -d bi-ubuntu -- /root/.local/bin/autor --workspace default job get <id> --json`.
 - **The laptop (RTX 5070 Ti):** CPU work only.

@@ -598,7 +598,7 @@ def test_job_spec_is_capped_unsubmitted_and_margins_pending():
     params = json.loads((ROOT / "jobs/m2_pilot/job_params.json").read_text(encoding="utf-8"))
     from train.promotion import MARGINS
 
-    assert params["hard_cap_usd"] <= 20.0
+    assert params["hard_cap_usd"] <= 24.0  # $20 line re-authorised to $24 on 2026-10-09
     worst = (params["build_timeout_minutes"] + 2 * params["max_duration_minutes"]) * params["batch_usd_per_min"]
     assert worst <= params["hard_cap_usd"]
     assert "6028537932" in MARGINS["status"] and "6028537932" in spec  # issue #36: Codex contract

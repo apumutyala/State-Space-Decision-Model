@@ -37,7 +37,8 @@ ECE_BINS = 10
 #: items). Override with ``choice_ece_tiers`` if a later revision changes this.
 CHOICE_ECE_TIERS = ("hard",)
 
-#: Speed: f(s) = 100 - 20 log10(s / 0.1 s); Speed = mean(f(p50), f(p95)); self-hosted s' = 2 s + 0.15 s
+#: Speed: S = 80 - 10 log10(p50) - 10 log10(p95), p in seconds (adjusted for self-hosted rows),
+#: = mean(f(p50), f(p95)) with f(s) = 100 - 20 log10(s / 0.1 s); self-hosted s' = 2 s + 0.15 s
 SPEED_REF_S = 0.1
 SPEED_SLOPE = 20.0
 SELF_HOSTED_FACTOR = 2.0

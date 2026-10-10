@@ -27,6 +27,8 @@ import sys
 from pathlib import Path
 from typing import Any, Sequence
 
+from jobs.common.rates import BATCH_USD_PER_MIN
+
 #: Token volumes per stage, measured 2026-10-06 on cohort v2 (``VOLUME_COHORT_SHA256``) with the RWKV7-G1k tokenizer.
 #: Upper bounds: every question row of every role record (records whose rows the K/T filter drops still count), steer
 #: units = clean + D1 variants. Index DEV = the FULL DEV slice (issue #36): a PROJECTION, the EXACT 2,008-row-subset
@@ -65,7 +67,7 @@ VOLUME_CALLS = {"g12": {"dev_records": 2 * 835, "steer_dev_units": 9_000},
                         "index_dev_full": round(4_536 * 12_104 / 2_008)},
                 "index": {"index_dev_subset": 4_536, "order_diag": DIAG_CALLS}}
 CHILD_EXTRA_CALLS = {"calibration_fit": 2 * 1_000, "dev_card": 2 * 835}
-USD_PER_MIN = 0.0495  # SF H100 batch rate (jobs/DECISION_TREE.md)
+USD_PER_MIN = BATCH_USD_PER_MIN  # SF H100 batch rate, jobs/common/rates.py ($0.0495 before 2026-10-08)
 FIXED_MIN = 35  # build 15 + setup/download/verify 15 + finalize 5 (expected, rwkv7 stage-A measured shape)
 
 

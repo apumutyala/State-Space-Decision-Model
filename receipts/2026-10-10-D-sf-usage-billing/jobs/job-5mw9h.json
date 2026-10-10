@@ -1,0 +1,43 @@
+{
+ "object": "job",
+ "job_id": "job-5mw9h",
+ "status": "failed",
+ "label": "clef_baseline/index_subset @ ctx 1c844639f10c (Clef 27B, 2,008 DEV subset) @5b478e3",
+ "chip": {
+  "count": 1,
+  "model": "h100"
+ },
+ "max_restarts": 0,
+ "submitted_at": "2026-10-07T03:27:50.045551+00:00",
+ "finished_at": "2026-10-07T04:29:50.225410+00:00",
+ "attempt_history": [
+  {
+   "attempt": 1,
+   "end_cause": "process_exit",
+   "end_reason": null,
+   "ended_at": "2026-10-07T04:29:50.225410+00:00",
+   "outcome": "completed",
+   "started_at": "2026-10-07T04:22:07.439037+00:00"
+  }
+ ],
+ "receipt": {
+  "attempts": [
+   {
+    "attempt": 1,
+    "billed_seconds": 462,
+    "charged_usd_micros": 380600,
+    "gpu_count": 1,
+    "rate_usd_micros_per_gpu_minute": 49428
+   }
+  ],
+  "billed_attempts": 1,
+  "billed_seconds": 462,
+  "charged_usd_micros": 380600,
+  "image_digest": "sha256:cb9cd2b0b222486f434d76cca0e632c0d83add17e8f7bae9e439d1ff46900df5"
+ },
+ "_capture": {
+  "command": "autor --workspace default job get job-5mw9h --json",
+  "captured_at_utc": "2026-10-10T05:05:20Z",
+  "fields": "subset (artifact download links, logs, results and preflight omitted)"
+ }
+}

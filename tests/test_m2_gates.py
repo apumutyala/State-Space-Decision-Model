@@ -294,7 +294,7 @@ def test_parent_arm_estimate_and_cap():
         S.estimate(0)
     params = json.loads((Path(__file__).resolve().parents[1] / "jobs/m2_parent_arm/job_params.json").read_text())
     worst = (params["build_timeout_minutes"] + 2 * params["max_duration_minutes"]) * params["batch_usd_per_min"]
-    assert worst <= params["hard_cap_usd"] <= 20.0
+    assert worst <= params["hard_cap_usd"] <= 24.0  # $20 line re-authorised to $24 on 2026-10-09 ($0.063/min re-pricing)
 
 
 def test_parent_arm_job_scores_before_nothing_trains():

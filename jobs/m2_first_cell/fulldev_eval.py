@@ -435,7 +435,7 @@ def _sha(p: Path) -> str:
 
 
 def report(a) -> dict:
-    from jobs.common.costs import quoted_max_cost_usd, worst_case_usd
+    from jobs.common.costs import QUOTE_USD_PER_MIN, quoted_max_cost_usd, worst_case_usd
 
     d = Path(a.out_dir)
     params = json.loads(Path(a.params).read_text(encoding="utf-8"))
@@ -497,8 +497,8 @@ def report(a) -> dict:
         out["child_minus_parent"] = cmp.get("diff", cmp)
     usd = params["batch_usd_per_min"]
     out["cost"] = {"elapsed_min": a.elapsed_min, "runtime_usd_batch": round(a.elapsed_min * usd, 2),
-                   "usd_per_min_batch": usd, "runtime_usd_quoted": round(a.elapsed_min * 0.063, 2),
-                   "usd_per_min_quoted": 0.063, "build_minutes_not_included": True,
+                   "usd_per_min_batch": usd, "runtime_usd_quoted": round(a.elapsed_min * QUOTE_USD_PER_MIN, 2),
+                   "usd_per_min_quoted": QUOTE_USD_PER_MIN, "build_minutes_not_included": True,
                    "worst_case_usd": worst_case_usd(params), "quoted_max_cost_usd": quoted_max_cost_usd(params),
                    "hard_cap_usd": params["hard_cap_usd"]}
     out["checkpoint"] = {k: v for k, v in (params.get("checkpoint") or {}).items() if not k.startswith("_")}

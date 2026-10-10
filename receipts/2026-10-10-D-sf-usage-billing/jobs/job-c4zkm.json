@@ -1,0 +1,43 @@
+{
+ "object": "job",
+ "job_id": "job-c4zkm",
+ "status": "failed",
+ "label": "m1 H100 hardware qualification v2 (torch 2.13/triton 3.7.1) @1e830ff",
+ "chip": {
+  "count": 1,
+  "model": "h100"
+ },
+ "max_restarts": 0,
+ "submitted_at": "2026-10-06T15:57:45.000066+00:00",
+ "finished_at": "2026-10-06T16:51:57.117914+00:00",
+ "attempt_history": [
+  {
+   "attempt": 1,
+   "end_cause": "process_exit",
+   "end_reason": null,
+   "ended_at": "2026-10-06T16:51:57.117914+00:00",
+   "outcome": "completed",
+   "started_at": "2026-10-06T16:36:53.943146+00:00"
+  }
+ ],
+ "receipt": {
+  "attempts": [
+   {
+    "attempt": 1,
+    "billed_seconds": 903,
+    "charged_usd_micros": 744700,
+    "gpu_count": 1,
+    "rate_usd_micros_per_gpu_minute": 49481
+   }
+  ],
+  "billed_attempts": 1,
+  "billed_seconds": 903,
+  "charged_usd_micros": 744700,
+  "image_digest": "sha256:f2f906bbfa3de8d8d47ae133774c03cf5f925b844637d95dbf59acdd0c285db6"
+ },
+ "_capture": {
+  "command": "autor --workspace default job get job-c4zkm --json",
+  "captured_at_utc": "2026-10-10T05:04:08Z",
+  "fields": "subset (artifact download links, logs, results and preflight omitted)"
+ }
+}

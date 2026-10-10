@@ -1,0 +1,8 @@
+# objective: win the targets below in rank order (1 is PRIMARY). Hybrid-SSM main line + strict attention-free research line. State-space structure CONTROLS learning with stated guarantees: reorder invariance by construction, conformal + injection-robust coverage, nuPI-constrained training, state stability bounds.
+# Machine-readable (tab-separated; scripts/session_start.sh prints it). Update `ours` when a number lands with a receipt. An origin/state:TARGETS.tsv, if present, overrides this file.
+rank	target	leader	score	ours	rule
+1	JevBench v1.6.1 Composite (open weights)	H2O-Lightning-4B v1.1	72.5	not measured	jevkit score after kit parity (>=3 published open-weights rows); API leader Sage 1.3.0 74.0
+2	JevBench Capability = mean(I,C)	Quyet-1.0-Large	81.7	not measured	jevkit score, same run as rank 1
+3	MD1 reported (no MD1 re-runs)	Microsoft-Decision-1	83.5% avg/36; cal 92.2; p50 85 ms (Foundry); flips 1.3%	not measured	compare on JevBench's adjusted scale; jevkit perturb for flips
+4a	Decision Index vs Clef-flash	Clef-flash	55.78 DEV-subset; 59.03 proxy600	D13 41.07 proxy600	paired CI > 0, full DEV + full_excl51, 0.3 public reported, G-proxy tier (PREREG.md B-PREREG-CLAIM)
+4b	Decision Index vs Clef 27B	Clef 27B	62.14 DEV-subset; 64.56 proxy600	D13 41.07 proxy600	same rules as 4a

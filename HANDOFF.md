@@ -105,7 +105,7 @@ Also stale in the repo: `jobs/common/costs.py::SPENT_USD = 0.0` and `STATUS.md`'
 
 ## 5. Stage by stage
 
-Costs are from `jobs/*/JOB_SPEC.md`, `jobs/DECISION_TREE.md`, `jobs/common/costs.py` and `train/M2_RUN_SPEC.md` at the SF batch rate $2.97/h ($0.0495/min). "Worst case" = (build + 2 attempts × max_duration) × rate. Every paid job still needs a `spend` issue, a `LEDGER.md` row, `set_workspace_cap(MTD + cap)` and a `validate_job` re-run.
+Costs are from `jobs/*/JOB_SPEC.md`, `jobs/DECISION_TREE.md`, `jobs/common/costs.py` and `train/M2_RUN_SPEC.md` at the SF batch rate $2.97/h ($0.0495/min) (superseded 2026-10-08: batch now $3.78/h = $0.063/min; job_params, costs.py and DECISION_TREE re-priced 2026-10-09, see `jobs/common/rates.py`). "Worst case" = (build + 2 attempts × max_duration) × rate. Every paid job still needs a `spend` issue, a `LEDGER.md` row, `set_workspace_cap(MTD + cap)` and a `validate_job` re-run.
 
 | Stage | Falsifiable hypothesis | Pre-registered decision rule | Cost | Status | Key files |
 |---|---|---|---|---|---|

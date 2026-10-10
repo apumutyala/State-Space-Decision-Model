@@ -1,5 +1,7 @@
 # 10 — The Clef recipe, the gap from stock Qwen3.5-9B, and what closes each slice
 
+> **Rate note (2026-10-09):** the dollar figures here use the 2026-10-06 SF Compute rates ($2.97/h = $0.0495/min batch, $3.96/h interactive) and are left as written. From 2026-10-08 the H100 list price is $5.04/h and batch jobs bill $3.78/h ($0.063/min; Fridays $0.05628/min), so batch figures scale by x 1.27. Source and history: `jobs/common/rates.py`.
+
 Written 2026-10-06. Same legend as `01`: evidence R (replicated), S (single peer-reviewed), P (preprint / single group), X (our extrapolation); cost $0 / $ (<$100) / $$ …. Sources are tagged **[P]** primary (the paper, model card, official blog, repo, board data file) or **[S]** secondary (aggregator, news, third-party summary). Every URL was fetched or found in search on 2026-10-06 unless marked **[unverified]**. Where something is not published, this file says **unknown**.
 
 This file extends `01` (conversion), `02` (recall), `06` (calibration) and `reviews/01` (Clef/Jev fact-check). It does not repeat them. New here:

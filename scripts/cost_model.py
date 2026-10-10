@@ -17,7 +17,8 @@ import os
 import sys
 
 H100_PEAK = 989e12
-RATE_BATCH = 2.97  # $/H100-h, SF Compute batch (LEDGER.md, verified 2026-10-06)
+RATE_BATCH = 2.97  # $/H100-h, SF Compute batch (LEDGER.md, verified 2026-10-06). HISTORICAL: this script reproduces the
+#                   2026-10-06 qualification pricing; current rates (from 2026-10-08, $3.78/h) are in jobs/common/rates.py
 LAPTOP_PEAK = 2 * 44e12  # RTX 5070 Ti Laptop: ~44 dense fp16/bf16 TFLOP/s w/ fp32 acc per spec sheets; x2 = fp16 acc (uncertain)
 
 P08 = {"N": 0.75e9, "n_attn": 6, "gdn_new_params": 10.5e6}  # 0.8B text params excl. embeddings ~0.5B; incl ~0.75B
