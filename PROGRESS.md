@@ -1,5 +1,10 @@
 # PROGRESS: rolling, 3–5 lines per session (did / learned / next). Older entries roll into history/.
 
+## 2026-10-10: agent-b guarantees on full DEV (B-PREREG-GUAR-FULLDEV)
+- Did: split conformal + LTT (jevkit 7c131f1, unmodified) on D19/D13/Clef27B/Clef-flash full-DEV preds; receipts claude/b-guarantees-fulldev @62028486 (receipts/2026-10-10-B-guarantees-fulldev/).
+- Learned: certified act fraction at eps 0.05/delta 0.10, alpha 0.10: Clef27B 0.811 > D19 0.751 > Clef-flash 0.722 > D13 0.361; D19 beats flash on act (+2.9 [0.2,5.1]; +6.9 at alpha 0.05) but trails Clef27B (-6.0 [-8.6,-3.9]). Marginal coverage met for all, but arts/knowledge areas under-cover (0.69-0.83) for every model. Reorder invariance is by id-sorting for all four (no differentiator); nothing permuted was measured.
+- Next: pre-register Mondrian-per-area conformal; jevkit invariance_report (reorders + relabels) on a DEV subset; G16 cell full-DEV export for injection-robust sets.
+
 ## 2026-10-08 ~10:30Z: coordinator (Claude)
 - Did: speed-first process merged (#208): launch from any pushed sha, test gate opt-in, no blocking reviews. Harness v2 (AGENTS.md map, lanes, state branch, skills). Submitted the KD cell job-zhv3f. Started R1 (format fix) and R2 (Clef full DEV).
 - Learned: Codex spent ~20 h on validation and Stage 2 language PRs; the only training run is job-c7pq2 (resubmitted cell with the #147 OOM fix + seeded parent arm).
