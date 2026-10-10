@@ -36,7 +36,7 @@ Keep a worktree on `state`, then `git pull --rebase` → edit → commit → pus
 - **Score on JevBench axes** (jevkit, PR #243 until merged; CPU; `--public` = the pinned public items, eval-only):
   `python -X utf8 -m jevkit score --public --pred preds.jsonl --price "<declared price class>" --out report.json` (`--api` for hosted APIs).
 - **Perturb and flip rate:** `python -m jevkit perturb make --public --out pert.jsonl`, then `perturb score --public --perturbed pert.jsonl --pred base.jsonl --pred-perturbed pp.jsonl`.
-- **Guarantees:** `python -m jevkit guarantees conformal|injection --public --pred preds.jsonl --alpha 0.1`. **Board receipt:** `python -m jevkit board --api api_v161.json`.
+- **Guarantees:** `python -m jevkit guarantees conformal --public --pred preds.jsonl --alpha 0.1` (disjoint FIT / LTT halves); `guarantees injection --cal-items I --cal-pred P --test intervals.jsonl`. **Board receipt:** `python -m jevkit board --api api_v161.json`.
 - **Package a GPU job from any pushed sha** (test gate opt-in with `--tests`):
   `python -m jobs.common.launch <job> [--mode M] --sha <pushed sha> --out <dir> --data C:\Users\apumu\research\CHLabs\ssdm-data`
 - **Upload + submit** (`autor` in WSL; `--dry` prints the args): `python -I jobs/common/sf_submit.py <dir>`. Rates: `jobs/common/rates.py` (PR #241).
