@@ -290,31 +290,97 @@ def next_jobs_after_full8(verdict: str | None, exit_code: int | None = 0) -> lis
     return list(FULL8_TO_NEXT[verdict])
 
 
-def branch_ledger() -> dict:
-    """Worst-case $ per branch through the tree: MTD spend + every committed worst case, against the total granted
-    credit for the period, and the PLAN lines."""
+#: Every branch-ledger entry -> the SF job ids whose runs did that entry's committed work. An entry is RAN when every
+#: listed id is terminal in a committed job receipt (receipts/**/job-<id>.json, `autor job get --json`); a RAN entry
+#: counts 0 toward committed worst cases, because its actual cost is already inside SPENT_USD (the ledger reports that
+#: actual for reference). Usage receipts list top jobs without a status, so they cannot mark a job terminal on their
+#: own. An empty list = not run. clef_index_full is NOT marked: job-jxevr failed at S1 (exit 11) and its work moved to
+#: clef_index_full_reference, which has not run.
+LEDGER_JOB_IDS: dict[str, list[str]] = {
+    "qual": ["job-jbw22", "job-c4zkm", "job-4j3vu"],  # v1, v2 (A+B pass, C OOM), C-only re-run PASS
+    "clef_baseline_B": [],
+    "clef_index_subset": ["job-5mw9h", "job-d2u54"],  # failed canary, then the succeeded subset run
+    "clef_index_full": [],
+    "clef_overlength_flash": [],
+    "probe9b": ["job-5cmat"],
+    "full8": ["job-2xe5w"],
+    "rwkv7_readout": ["job-mhc3h", "job-tkfaj"],  # stage A v1 (rate guard stop), v2 succeeded
+    "rwkv7_lora": [],
+    "clef_teacher_flash": [],
+    "clef_teacher_clef": [],
+}
+TERMINAL_STATUSES = frozenset({"succeeded", "failed", "canceled", "cancelled", "build_failed", "self_terminated",
+                               "timed_out", "expired"})
+
+
+def job_receipts(root: Path = ROOT) -> dict[str, dict]:
+    """job id -> its newest committed `autor job get` receipt (receipts/**/job-*.json, object "job")."""
+    out: dict[str, tuple] = {}
+    for f in (root / "receipts").glob("**/job-*.json"):
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            continue
+        if not isinstance(d, dict) or d.get("object") != "job" or not d.get("job_id") or "status" not in d:
+            continue
+        key = (f.relative_to(root / "receipts").parts[0][:10], d.get("finished_at") or "")
+        if d["job_id"] not in out or key > out[d["job_id"]][0]:
+            out[d["job_id"]] = (key, dict(d, _path=f.relative_to(root).as_posix()))
+    return {k: v[1] for k, v in out.items()}
+
+
+def ran_entries(root: Path = ROOT, job_ids: dict[str, list[str]] | None = None) -> dict[str, dict]:
+    """Ledger entries whose every listed job is terminal in a committed job receipt, with their actual billed cost."""
+    rec = job_receipts(root)
+    out = {}
+    for name, ids in (LEDGER_JOB_IDS if job_ids is None else job_ids).items():
+        if ids and all(i in rec and rec[i]["status"] in TERMINAL_STATUSES for i in ids):
+            usd = sum(((rec[i].get("receipt") or {}).get("charged_usd_micros") or 0) for i in ids) / 1e6
+            out[name] = {"job_ids": list(ids), "statuses": {i: rec[i]["status"] for i in ids},
+                         "actual_usd": round(usd, 2), "receipts": [rec[i]["_path"] for i in ids]}
+    return out
+
+
+def branch_ledger(root: Path = ROOT, job_ids: dict[str, list[str]] | None = None) -> dict:
+    """Worst-case $ per branch through the tree: MTD spend + every committed worst case of work NOT yet run, against the
+    total granted credit for the period, and the PLAN lines. The line totals (joint gate, Clef-27B Index, teachers,
+    m1) stay full worst cases, as authorised; only the credit check drops RAN entries (their spend is in SPENT_USD)."""
     if SPENT_USD is None:
         raise RuntimeError("no usage receipt under receipts/ (autor usage --json): MTD spend unknown")
     if GRANTED_USD is None:
         raise RuntimeError("no billing receipt under receipts/ (autor billing --json): granted credit unknown")
     w = {k: worst_case_usd(load(k)) for k in PARAMS}
-    joint = sum(w[k] for k in JOINT_GATE_JOBS) + OTHER["clef_baseline_B"]
+    ran = ran_entries(root, job_ids)
+    ids = LEDGER_JOB_IDS if job_ids is None else job_ids
+
+    def worst(name: str) -> float:
+        return OTHER[name] if name in OTHER else w[name]
+
+    def committed(names) -> float:
+        return round(sum(0.0 if n in ran else worst(n) for n in names), 2)
+
+    joint_names = (*JOINT_GATE_JOBS, "clef_baseline_B")
+    joint = sum(worst(n) for n in joint_names)
     teachers = round(sum(w[k] for k in TEACHER_JOBS), 2)
     clef27b = round(sum(w[k] for k in CLEF27B_INDEX_JOBS), 2)
-    branches = {
-        "A: qual pass -> probe proceed -> full-8 (+rwkv7 readout comparator)":
-            {"m1": w["probe9b"] + w["full8"] + w["rwkv7_readout"]},
-        "B: qual pass/lean -> probe fail -> rwkv7 readout + lora": {"m1": w["probe9b"] + w["rwkv7_readout"] + w["rwkv7_lora"]},
-        "C: qual fold -> rwkv7 readout + lora": {"m1": w["rwkv7_readout"] + w["rwkv7_lora"]},
+    m1_names = {
+        "A: qual pass -> probe proceed -> full-8 (+rwkv7 readout comparator)": ("probe9b", "full8", "rwkv7_readout"),
+        "B: qual pass/lean -> probe fail -> rwkv7 readout + lora": ("probe9b", "rwkv7_readout", "rwkv7_lora"),
+        "C: qual fold -> rwkv7 readout + lora": ("rwkv7_readout", "rwkv7_lora"),
     }
-    for b in branches.values():
-        b["m1"] = round(b["m1"], 2)
+    committed_lines = {"joint_gate": committed(joint_names), "clef27b_index": committed(CLEF27B_INDEX_JOBS),
+                       "teachers": committed(TEACHER_JOBS)}
+    branches = {}
+    for label, names in m1_names.items():
+        b = branches[label] = {"m1": round(sum(w[n] for n in names), 2), "m1_committed": committed(names)}
         b["system1_left_for_m2"] = round(LINES["system1"] - b["m1"], 2)
         b["system1_left_after_teachers"] = round(b["system1_left_for_m2"] - teachers, 2)
-        b["spend_plus_worst"] = round(SPENT_USD + joint + clef27b + b["m1"] + teachers, 2)
+        b["spend_plus_worst"] = round(SPENT_USD + sum(committed_lines.values()) + b["m1_committed"], 2)
         b["fits_granted_credit"] = b["spend_plus_worst"] <= GRANTED_USD
     return {"worst_case_usd": w, "joint_gate_worst": round(joint, 2), "joint_gate_fits": joint <= LINES["joint_gate"],
             "teachers_optional_worst": teachers, "clef27b_index_authorised_worst": clef27b,
+            "committed_worst_not_run": committed_lines, "job_ids": {k: list(v) for k, v in ids.items()},
+            "ran": ran, "ran_actual_usd_in_spent": round(sum(r["actual_usd"] for r in ran.values()), 2),
             "granted_credit_usd": GRANTED_USD, "granted_source": _BILLING and {k: _BILLING[k] for k in ("path", "date", "month")},
             "spent": SPENT_USD, "spent_source": _USAGE, "branches": branches}
 

@@ -63,6 +63,39 @@ def test_branch_ledger_fits_granted_credit_and_lines():
         assert b["system1_left_for_m2"] > 0
 
 
+def test_ran_ledger_entry_is_not_double_counted(tmp_path):
+    """A ledger entry whose listed jobs are all terminal in committed job receipts counts 0 toward committed worst
+    cases (its actual cost is already in SPENT_USD); running / missing receipts keep the full worst case."""
+    names = {*costs.JOINT_GATE_JOBS, "clef_baseline_B", *costs.CLEF27B_INDEX_JOBS, *costs.TEACHER_JOBS,
+             "probe9b", "full8", "rwkv7_readout", "rwkv7_lora"}
+    assert set(costs.LEDGER_JOB_IDS) == names  # every branch-ledger entry carries a job_ids list
+    (tmp_path / "receipts" / "2026-10-10-D-x" / "jobs").mkdir(parents=True)
+
+    def job(jid, status, micros):
+        (tmp_path / "receipts" / "2026-10-10-D-x" / "jobs" / f"{jid}.json").write_text(json.dumps(
+            {"object": "job", "job_id": jid, "status": status, "receipt": {"charged_usd_micros": micros}}), encoding="utf-8")
+
+    ids = {n: [] for n in names}
+    base = costs.branch_ledger(tmp_path, ids)
+    assert base["ran"] == {} and base["ran_actual_usd_in_spent"] == 0
+    lora = costs.worst_case_usd(costs.load("rwkv7_lora"))
+    c = "C: qual fold -> rwkv7 readout + lora"
+    job("job-lora1", "running", 1_000_000)
+    ids["rwkv7_lora"] = ["job-lora1", "job-lora2"]
+    assert costs.branch_ledger(tmp_path, ids)["branches"][c]["spend_plus_worst"] == base["branches"][c]["spend_plus_worst"]
+    job("job-lora1", "failed", 1_000_000)  # terminal, but the second listed job has no receipt yet
+    assert "rwkv7_lora" not in costs.branch_ledger(tmp_path, ids)["ran"]
+    job("job-lora2", "succeeded", 7_500_000)
+    led = costs.branch_ledger(tmp_path, ids)
+    assert led["ran"]["rwkv7_lora"]["actual_usd"] == 8.5
+    assert led["branches"][c]["m1_committed"] == round(base["branches"][c]["m1_committed"] - lora, 2)
+    assert led["branches"][c]["spend_plus_worst"] == round(base["branches"][c]["spend_plus_worst"] - lora, 2)
+    assert led["branches"][c]["m1"] == base["branches"][c]["m1"]  # the System 1 line total stays the full worst case
+    real = costs.branch_ledger()  # committed repo receipts: probe9b, full8, qual, rwkv7 A, Clef subset have run
+    assert {"probe9b", "full8", "qual", "rwkv7_readout", "clef_index_subset"} <= set(real["ran"])
+    assert real["ran"]["full8"]["actual_usd"] == 26.34 and real["ran"]["probe9b"]["actual_usd"] == 5.01
+
+
 def test_granted_credit_counts_every_grant_for_the_month():
     new = costs.latest_billing_receipt()
     assert new["path"] == "receipts/2026-10-10-D-sf-usage-billing/billing.json"

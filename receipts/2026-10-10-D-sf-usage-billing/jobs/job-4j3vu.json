@@ -1,0 +1,43 @@
+{
+ "object": "job",
+ "job_id": "job-4j3vu",
+ "status": "succeeded",
+ "label": "m1 qual C-only (9B, memory fix) @3b4169a, build timeout 60",
+ "chip": {
+  "count": 1,
+  "model": "h100"
+ },
+ "max_restarts": 0,
+ "submitted_at": "2026-10-06T18:30:00.785667+00:00",
+ "finished_at": "2026-10-06T19:34:03.324550+00:00",
+ "attempt_history": [
+  {
+   "attempt": 1,
+   "end_cause": "process_exit",
+   "end_reason": null,
+   "ended_at": "2026-10-06T19:34:03.324550+00:00",
+   "outcome": "completed",
+   "started_at": "2026-10-06T18:43:58.755783+00:00"
+  }
+ ],
+ "receipt": {
+  "attempts": [
+   {
+    "attempt": 1,
+    "billed_seconds": 3004,
+    "charged_usd_micros": 2478300,
+    "gpu_count": 1,
+    "rate_usd_micros_per_gpu_minute": 49500
+   }
+  ],
+  "billed_attempts": 1,
+  "billed_seconds": 3004,
+  "charged_usd_micros": 2478300,
+  "image_digest": "sha256:62ebf3fe157769297258da18d576877ec98c56ffbf09a82dda4479e5549e185c"
+ },
+ "_capture": {
+  "command": "autor --workspace default job get job-4j3vu --json",
+  "captured_at_utc": "2026-10-10T05:04:20Z",
+  "fields": "subset (artifact download links, logs, results and preflight omitted)"
+ }
+}
