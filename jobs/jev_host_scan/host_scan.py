@@ -39,7 +39,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
-CANDIDATES = ROOT / "jobs/jev_host_scan/candidates.json"
+#: JEV_SCAN_CANDIDATES (repo-relative) selects another candidate list: mode parity = candidates_parity.json
+CANDIDATES = ROOT / os.environ.get("JEV_SCAN_CANDIDATES", "jobs/jev_host_scan/candidates.json")
 #: H2O-Lightning-4B v1.1 model card ("Identity check for an evaluator", H100 SXM, JevBench commit bb05a33, the same
 #: 231 public items): 205 / 231 top-1 correct, easy 48 / standard 71 / hard 86; near-ties GPU numerics can flip
 H2O_IDENTITY = {"correct": 205, "by_tier": {"easy": 48, "standard": 71, "hard": 86},
@@ -50,6 +51,8 @@ H2O_IDENTITY = {"correct": 205, "by_tier": {"easy": 48, "standard": 71, "hard": 
                                   "hard-opus-c-temporal_numeric-04", "hard-sol-b-temporal_numeric-03"],
                 "tolerance": 3}
 WARMUP = 2
+#: decider-ai, the version decider-12b's card measured with (scan_job.sh installs this wheel by sha256, --no-deps)
+DECIDER_AI_VERSION = "1.8.0"
 
 
 def load_candidates() -> dict:
@@ -96,6 +99,10 @@ def verify(c: dict, model_dir: Path) -> dict:
         import third_party.h2o_lightning_shim as H
 
         out["shim"] = H.verify_snapshot(model_dir)
+    if any(a["readout"] == "torchcast_shim" for a in c["arms"]):
+        import third_party.torchcast_shim as T
+
+        out["shim"] = T.verify_snapshot(model_dir)
     return out
 
 
@@ -208,12 +215,92 @@ class D1Engine:
                 "usage": {"input_tokens": n, "output_tokens": 1, "compute_input_tokens": n}}
 
 
+class TorchcastEngine:
+    """Torchcast Decision 12B's shim readout (third_party/torchcast_shim, vendored unmodified): the shim's own
+    ``answer_for`` runs unchanged; only its ``call_vllm`` is replaced by a local stand-in that renders the same chat
+    request (system + user message, the model's chat template, thinking off: vLLM's /v1/chat/completions rendering, then
+    tokenized without added special tokens) and returns, like vLLM's default raw-logprob mode, the top
+    ``TOP_LOGPROBS`` (20) log-probabilities of ONE transformers forward at the answer slot (before any structured-output
+    mask; the shim sums them per option letter and renormalises)."""
+
+    def __init__(self, plugin, model_dir: Path, model_name: str, double_bos: bool = False):
+        import third_party.torchcast_shim as T
+        from transformers import AutoTokenizer
+
+        self.mod = T.load_shim()
+        self.tok = AutoTokenizer.from_pretrained(str(model_dir))
+        self.plugin, self.model_name = plugin, model_name
+        self.top_k = int(self.mod.TOP_LOGPROBS)
+        #: the author's vLLM run counts exactly ONE more prompt token than this template rendering on all 231 items
+        #: (checked on CPU against runs/h100-release usage.prompt_tokens); the double_bos arm prepends a second <bos>
+        #: (vLLM's multimodal processor path tokenizing a template that already starts with <bos>), which matches it
+        self.double_bos = double_bos
+        self.mod.call_vllm = self._call  # the only replaced function; answer_for / letter_probs / temperatures unchanged
+
+    def render(self, prompt_text: str) -> list[int]:
+        msgs = [{"role": "system", "content": self.mod.SYSTEM}, {"role": "user", "content": prompt_text}]
+        text = self.tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True,
+                                            **self.mod.CHAT_TEMPLATE_KWARGS)
+        ids = list(self.tok(text, add_special_tokens=False).input_ids)
+        if self.double_bos and ids and ids[0] == self.tok.bos_token_id:
+            ids = [self.tok.bos_token_id] + ids
+        return ids
+
+    def _call(self, prompt_text, allowed_letters):
+        import torch
+
+        ids = self.render(prompt_text)
+        with torch.inference_mode():
+            lg = self.plugin.forward(torch.tensor([ids], dtype=torch.long, device=self.plugin.device), 1)
+            lp = torch.log_softmax(lg[0, -1].float(), dim=-1)
+            vals, idx = torch.topk(lp, self.top_k)
+        top = [{"token": self.tok.decode([i]), "logprob": v} for i, v in zip(idx.tolist(), vals.tolist())]
+        self._last_n = len(ids)
+        return {"choices": [{"logprobs": {"content": [{"top_logprobs": top}]}}],
+                "usage": {"prompt_tokens": len(ids), "completion_tokens": 1, "total_tokens": len(ids) + 1}}
+
+    def __call__(self, request: dict) -> dict:
+        answers, ntok = {}, 0
+        for qid, q in request["questions"].items():
+            ans, usage, err = self.mod.answer_for(request.get("state") or "", q)
+            if err:
+                raise RuntimeError(f"torchcast shim: {err}")  # the shim answers 502: a failed (wrong) item
+            answers[qid] = ans
+            ntok += int(usage.get("prompt_tokens") or 0)
+        return {"model": self.model_name, "answers": answers,
+                "usage": {"input_tokens": ntok, "output_tokens": 1, "compute_input_tokens": ntok}}
+
+
+class DeciderPkgEngine:
+    """decider-ai's documented readout: ``Decider(path).system_one(state, questions)`` (eager, use_graphs=False)."""
+
+    def __init__(self, decider, model_name: str):
+        self.d, self.model_name = decider, model_name
+
+    def __call__(self, request: dict) -> dict:
+        out = self.d.system_one(request["state"], request["questions"])
+        n = int((out.get("usage") or {}).get("input_tokens") or 0)
+        return {"model": self.model_name, "answers": out["answers"],
+                "usage": {"input_tokens": n, "output_tokens": 1, "compute_input_tokens": n}}
+
+
 def load_model(c: dict, model_dir: Path, device: str, dtype: str = "bfloat16"):
     """(kind, handle): one load per candidate, shared by its arms."""
     if c["loader"] == "d1":
         import third_party.d1_3b as D
 
         return "d1", D.load_d1(model_dir, device=device, dtype=dtype)
+    if c["loader"] == "decider_pkg":
+        import decider
+        from decider.infer import Decider
+
+        ver = getattr(decider, "__version__", None)
+        from importlib import metadata
+
+        ver = ver or metadata.version("decider-ai")
+        if ver != DECIDER_AI_VERSION:
+            raise RuntimeError(f"decider-ai {ver} != pinned {DECIDER_AI_VERSION}")
+        return "decider_pkg", Decider(str(model_dir), device=device, use_graphs=False)
     from decide.backends import hf_readout as HR
 
     if c["loader"] == "rwkv7_hf":
@@ -240,7 +327,22 @@ def build_arm(c: dict, arm: dict, kind: str, handle, model_dir: Path, tok_root: 
             raise ValueError("d1 readout needs the d1 loader")
         return SystemOneAdapter(D1Engine(handle), kind="request", model_name=c["repo"]), \
             {"readout": "d1.system_one", "vendored": "third_party/d1_3b"}
+    if r == "decider_pkg":
+        if kind != "decider_pkg":
+            raise ValueError("decider_pkg readout needs the decider_pkg loader")
+        return SystemOneAdapter(DeciderPkgEngine(handle, c["repo"]), kind="request", model_name=c["repo"]), \
+            {"readout": "decider.infer.Decider.system_one", "decider_ai": DECIDER_AI_VERSION, "use_graphs": False,
+             "layout": handle.layout, "T": handle.T, "T_by_type": handle.T_by_type, "name": handle.name,
+             "isolated_levels": handle.isolated_levels, "neutralize_none": handle.neutralize_none}
     plug = handle
+    if r in ("torchcast_shim", "torchcast_shim_double_bos"):
+        import third_party.torchcast_shim as T
+
+        eng = TorchcastEngine(plug, model_dir, c["repo"], double_bos=r.endswith("double_bos"))
+        return SystemOneAdapter(eng, kind="request", model_name=c["repo"]), \
+            {"readout": r, "double_bos": eng.double_bos, "shim": f"{T.REPO}@{T.REVISION}", "temperatures": eng.mod.TEMPS,
+             "top_logprobs": eng.top_k, "chat_template_kwargs": eng.mod.CHAT_TEMPLATE_KWARGS,
+             "fp32_head": plug.notes.get("fp32_head"), "softcap": plug.notes.get("final_logit_softcapping")}
     if r == "h2o_shim":
         eng = ShimEngine(plug, model_name=c["repo"])
         import third_party.h2o_lightning_shim as H
@@ -394,6 +496,15 @@ def h2o_parity(acc: dict) -> dict:
             "pass": abs(acc["correct"] - ref["correct"]) <= ref["tolerance"]}
 
 
+def reference_parity(acc: dict, ref: dict, complete: bool) -> dict:
+    """A candidate's published public-231 count (candidates "reference"): pass = all 231 answered and the top-1 count
+    within ``tolerance`` of the published one (the H2O-Lightning anchor rule); per-tier differences reported."""
+    by = {k: v[0] for k, v in acc["by_tier"].items()}
+    return {"reference": ref, "correct": acc["correct"], "by_tier": by, "diff": acc["correct"] - ref["correct"],
+            "by_tier_diff": {k: by.get(k, 0) - v for k, v in ref["by_tier"].items()}, "complete": complete,
+            "pass": bool(complete) and abs(acc["correct"] - ref["correct"]) <= ref["tolerance"]}
+
+
 def summarize(root: Path) -> dict:
     """decision.json: per candidate x arm, the jevkit report's axes / composite / capability (+ CIs), latency, tokens,
     cost, top-1 counts; the H2O identity check; rankings. Measurement only (no verdict)."""
@@ -433,6 +544,8 @@ def summarize(root: Path) -> dict:
                     "eligibility": rep.get("eligibility"), "intelligence_basis": (rep.get("intelligence") or {}).get("basis")})
             if c["id"] == "h2o-lightning-4b" and arm["readout"] == "h2o_shim":
                 row["h2o_identity_check"] = h2o_parity(acc)
+            if c.get("reference"):
+                row["reference_check"] = reference_parity(acc, c["reference"], row["complete"])
             rows.append(row)
     scored = [r for r in rows if r.get("composite") and r["complete"]]
 
@@ -445,6 +558,9 @@ def summarize(root: Path) -> dict:
             "basis": "open-only, the 231 public JevBench v1.2 items (b6b8fff7); not the v1.6.1 open set P300, no "
                      "sealed side: local numbers measure the board's constructs on a different draw (jevkit/README.md)",
             "board_leader": leader, "status": status, "rows": rows,
+            "reference_checks": {f"{r['candidate']}/{r['arm']}": {k: r["reference_check"][k] for k in
+                                                                 ("correct", "diff", "by_tier_diff", "pass")}
+                                 for r in rows if r.get("reference_check")},
             "ranking_composite_A": [(r["candidate"], r["arm"], round(r["composite"]["A"], 2)) for r in
                                     sorted(scored, key=key("A"), reverse=True)],
             "ranking_capability": [(r["candidate"], r["arm"], round(r["capability"], 2)) for r in

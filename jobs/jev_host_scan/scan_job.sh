@@ -18,7 +18,9 @@
 set -Euo pipefail
 MAIN_PID=$$  # jobs/clef_baseline/watchdog.sh beats only while this PID lives
 CODE=/opt/ssdm/m1
-PARAMS=$CODE/jobs/jev_host_scan/job_params.json
+# mode parity (job_params_parity.json) sets JEV_SCAN_PARAMS / JEV_SCAN_CANDIDATES (repo-relative); defaults = the host scan
+PARAMS=$CODE/${JEV_SCAN_PARAMS:-jobs/jev_host_scan/job_params.json}
+CANDS=$CODE/${JEV_SCAN_CANDIDATES:-jobs/jev_host_scan/candidates.json}
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
 WORK=/tmp/jev-host-scan
@@ -76,14 +78,29 @@ assert torch.cuda.is_available()
 import fla  # noqa: F401  (Qwen3.5 Gated DeltaNet kernels; transformers falls back to torch without it)
 from importlib import metadata
 import third_party.d1_3b as D, third_party.h2o_lightning_shim as H, third_party.rwkv7_hf as V
+import third_party.torchcast_shim as T
 assert all(D.vendored_ok().values()) and all(H.vendored_ok().values()) and all(V.vendored_ok().values())
+assert all(T.vendored_ok().values())
 print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0),
                   "transformers": transformers.__version__, "fla": metadata.version("flash-linear-attention"),
                   "gpu_mem_gib": round(torch.cuda.get_device_properties(0).total_memory / 2**30, 2)}))
 EOF
 python -I /opt/ssdm/m1/jobs/common/fla_guard.py --out "$WORK/out/fla_guard.json" > "$WORK/logs/fla_guard.log" 2>&1 || fail 5 "fla #640 guard: $(tail -1 "$WORK/logs/fla_guard.log")"
+# pinned readout wheels (job_params "wheels": [{url, sha256}]; mode parity: decider-ai 1.8.0): hash-checked, --no-deps (the
+# image's torch / transformers stay as pinned above)
+python - "$PARAMS" > "$WORK/wheels.txt" <<'EOF' || fail 5 "wheels list"
+import json, sys
+for w in json.load(open(sys.argv[1])).get("wheels", []):
+    print(f"{w['url']} --hash=sha256:{w['sha256']}")
+EOF
+if [ -s "$WORK/wheels.txt" ]; then
+  timeout 5m pip install --no-cache-dir --no-deps --require-hashes -r "$WORK/wheels.txt" > "$WORK/logs/wheels.log" 2>&1 \
+    || fail 5 "wheel install: $(tail -1 "$WORK/logs/wheels.log")"
+  python -c "import transformers, torch; assert transformers.__version__ == '5.17.0', transformers.__version__" || fail 5 "wheels changed the stack"
+  cp "$WORK/wheels.txt" "$WORK/out/"
+fi
 python -X utf8 -m jevkit items > "$WORK/out/items-verify.json" 2> "$WORK/logs/items.log" || fail 10 "public items sha256"
-NITEMS=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['items']['n'])" "$CODE/jobs/jev_host_scan/candidates.json") \
+NITEMS=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['items']['n'])" "$CANDS") \
   || fail 5 "candidates"
 CAP_SCAN=$(cap scan) && CAP_SUM=$(cap summarize) && SCORE_MIN=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['score_cap_minutes'])" "$PARAMS") \
   || fail 5 "job_params"

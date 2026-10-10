@@ -19,7 +19,8 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-CANDIDATES = ROOT / "jobs/jev_host_scan/candidates.json"
+#: JEV_SCAN_CANDIDATES (repo-relative) selects another candidate list, e.g. jobs/jev_host_scan/candidates_parity.json
+CANDIDATES = ROOT / os.environ.get("JEV_SCAN_CANDIDATES", "jobs/jev_host_scan/candidates.json")
 API = "https://huggingface.co/api/models/{repo}/revision/{rev}?blobs=true"
 RESOLVE = "https://huggingface.co/{repo}/resolve/{rev}/{path}"
 

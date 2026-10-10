@@ -1,0 +1,121 @@
+{
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [
+   "safetensors",
+   "accelerate",
+   "jinja2"
+  ],
+  "allowed_skips": [],
+  "image": "jobs/probe9b/Dockerfile"
+ },
+ "_comment": "jobs/jev_host_scan mode parity (KIT PARITY gate, BOARD item 2, pre-registered EV-PREREG-KIT-PARITY on state PREREG.md): one H100, three published JevBench v1.6.1 open-weights rows (torchcast-decision-12b, decider-12b v2, decider-12b-v1), SERIALLY, each through its own documented readout on the 231 public JevBench v1.2 items (EVAL-ONLY) through jevkit, compared with the public-231 counts their authors published (tolerance 3, the H2O anchor rule). Scan phase = 3 x (run cap 15 + download cap 14 + 2 min scoring) = 93 -> 98 min; expected ~45 min. Hold 120 x $0.063 = $7.56; worst case (60 + 2 x 120) x 0.0495 = $14.85.",
+ "job": "jev-kit-parity",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement only in-job: the reference_checks block reports each candidate's top-1 count vs its published public-231 count; the PASS/FAIL verdict is the evidence lane's at landing under EV-PREREG-KIT-PARITY (incl. the torchcast item-level comparison)",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 120,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": false,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 15.0,
+ "reserve_minutes": 5,
+ "phase_caps_minutes": {
+  "setup": 12,
+  "scan": 98,
+  "summarize": 5
+ },
+ "score_cap_minutes": 2,
+ "expected_minutes": {
+  "build": 10,
+  "setup": 4,
+  "scan": 45,
+  "summarize": 1
+ },
+ "wheels": [
+  {
+   "name": "decider-ai 1.8.0 (Apache-2.0), the version decider-12b's card measured with",
+   "url": "https://files.pythonhosted.org/packages/7a/f4/9b1c25268ab2924d2cdffae8f56482a349ee4c465819bcd5e852ad3b2307/decider_ai-1.8.0-py3-none-any.whl",
+   "sha256": "107cd5fb7fbca23d98a3cc755574a2d0b96cddf20edc8ed1ed5978022b0a2a1d"
+  }
+ ],
+ "model": "torchcast-ai/torchcast-decision-12b@49107b5589bf2dc4ec3f5acd54316971dd5978b1",
+ "mission": "jev-kit-parity",
+ "candidates": "jobs/jev_host_scan/candidates_parity.json",
+ "submit": {
+  "command": "bash /opt/ssdm/m1/jobs/jev_host_scan/scan_job.sh",
+  "env": {
+   "PYTHONUNBUFFERED": "1",
+   "PYTHONUTF8": "1",
+   "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
+   "JEV_SCAN_PARAMS": "jobs/jev_host_scan/job_params_parity.json",
+   "JEV_SCAN_CANDIDATES": "jobs/jev_host_scan/candidates_parity.json"
+  },
+  "key": "jev-kit-parity-v1",
+  "label": "JevBench KIT PARITY: torchcast-decision-12b, decider-12b v2, decider-12b-v1 end to end on the 231 public items vs their published public-231 results",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/JEV_HOST_SCAN_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 2400,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "dockerfile": "jobs/probe9b/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/probe9b/probe_job.sh",
+   "jobs/jev_host_scan/scan_job.sh"
+  ],
+  "manifest_files": [
+   "jobs/jev_host_scan/candidates_parity.json",
+   "jevkit/data/jevbench_public_pin.json",
+   "jobs/jev_host_scan/snapshots/torchcast-decision-12b.sha256",
+   "jobs/jev_host_scan/snapshots/decider-12b.sha256",
+   "jobs/jev_host_scan/snapshots/decider-12b-v1.sha256",
+   "third_party/torchcast_shim/torchcast_shim.py",
+   "third_party/torchcast_shim/readout_config.json"
+  ],
+  "data": [
+   {
+    "src": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/original.jsonl",
+    "dest": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/original.jsonl",
+    "pin_sha256": "5c2414edb3006b8bfcb70fda433f0f9ca015759433849f8d3104328a1f7c4180"
+   },
+   {
+    "src": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/easy.jsonl",
+    "dest": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/easy.jsonl",
+    "pin_sha256": "231df3c2c8e88a1a8c137ebe85de96ba70fabd330849098ac7b3c52c70b7172b"
+   },
+   {
+    "src": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/hard.jsonl",
+    "dest": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/hard.jsonl",
+    "pin_sha256": "89e9e6becb33ed88c1de7d42dcc87531b2fb64cfaef4e1986faf7c37b3f80ebb"
+   }
+  ]
+ }
+}

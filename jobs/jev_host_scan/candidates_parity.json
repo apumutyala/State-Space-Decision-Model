@@ -1,0 +1,144 @@
+{
+ "_comment": "jobs/jev_host_scan, mode parity (KIT PARITY gate, BOARD item 2; A-PREREG line 'EV-PREREG-KIT-PARITY' on state PREREG.md): three published JevBench v1.6.1 open-weights rows run END TO END through jevkit on the 231 public items, each through ITS OWN documented readout (vendored / pinned unmodified), against the public-231 result its author published for the SAME pinned weights. Board I/C cells use the v1.6.1 open draw P300 + 1,200 sealed items, which are not downloadable, so the comparable published numbers on these items are the authors' public-231 counts (H2O-Lightning-4B anchor rule: top-1 count within 3, job-zbtbj). torchcast also publishes per-item results (runs/h100-release/results.jsonl), compared item by item at landing.",
+ "items": {
+  "pin": "jevkit/data/jevbench_public_pin.json",
+  "n": 231
+ },
+ "output_tokens_per_decision": 1,
+ "billed_input_tokens": "the decision's prompt tokens, read once (as the board prices these rows: the shim's usage.prompt_tokens; decider: its system_one usage.input_tokens)",
+ "price_classes": {
+  "gemma12b_ref": {
+   "kind": "base_model_reference",
+   "usd_per_m_input": 0.05,
+   "usd_per_m_output": 0.15,
+   "source": "JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1), torchcast-decision-12b cost basis: OpenRouter google/gemma-3-12b-it list price $0.05/M input, $0.15/M output (gemma-4-12b-it not listed), the board's reference for the Gemma-4-12B rows",
+   "as_of": "2026-10-10",
+   "model": "google/gemma-3-12b-it"
+  }
+ },
+ "candidates": [
+  {
+   "id": "torchcast-decision-12b",
+   "repo": "torchcast-ai/torchcast-decision-12b",
+   "revision": "49107b5589bf2dc4ec3f5acd54316971dd5978b1",
+   "released": "v1.0.0 weights (sha256 f8553c9e...); the revision the author's h100-release run pulled",
+   "params_b": 12.0,
+   "safetensors_bytes": 23919549408,
+   "license": "cc-by-nc-4.0 (weights, non-commercial research use); serving MIT",
+   "loader": "hf",
+   "arms": [
+    {
+     "arm": "torchcast_shim",
+     "readout": "torchcast_shim"
+    },
+    {
+     "arm": "torchcast_shim_double_bos",
+     "readout": "torchcast_shim_double_bos"
+    }
+   ],
+   "price_class": "gemma12b_ref",
+   "cap_min": 15,
+   "download_cap_min": 14,
+   "group": "parity",
+   "board_key": "torchcast-decision-12b",
+   "snapshot_pin": "jobs/jev_host_scan/snapshots/torchcast-decision-12b.sha256",
+   "allow_patterns": [
+    "*.safetensors",
+    "config.json",
+    "generation_config.json",
+    "tokenizer.json",
+    "tokenizer_config.json",
+    "chat_template.jinja",
+    "processor_config.json",
+    "torchcast_shim.py",
+    "readout_config.json"
+   ],
+   "reference": {
+    "source": "model card + github.com/Torchcast-AI/torchcast-decision-12b@d7f84468 (tag v1.0.0) runs/h100-release (results.jsonl sha256 fa2e0ca8e745c02c9add971f8f22cf90881829a88b578985db98161e9a78b0f9): JevBench CLI bb05a335, typesafe adapter, vLLM 0.30.0 BF16, 1x H100",
+    "correct": 203,
+    "by_tier": {"easy": 48, "standard": 70, "hard": 85},
+    "tolerance": 3
+   },
+   "primary_arm_rule": "the arm whose per-item input token count equals the author's usage.prompt_tokens on all 231 items is primary (CPU check before submit: the template rendering is exactly 1 token short on all 231, so torchcast_shim_double_bos is expected primary); if neither matches on all, torchcast_shim is primary",
+   "note": "its own shim (third_party/torchcast_shim, vendored unmodified, MIT): system prompt + state/question/options prompt in the model's chat template (thinking off), one forward, the top-20 raw log-probabilities at the answer slot summed per option letter, per-type temperature from readout_config.json (choice 1.0, score 1.0, noul 0.2); the vLLM call replaced by one transformers forward"
+  },
+  {
+   "id": "decider-12b",
+   "repo": "Mapika/decider-12b",
+   "revision": "8ac1efa708b71b86ae33b01d2a8d7a3ddcb48e66",
+   "released": "version 2 (2026-09-29), the board row's model_pin",
+   "params_b": 12.0,
+   "safetensors_bytes": 23919549408,
+   "license": "apache-2.0",
+   "loader": "decider_pkg",
+   "arms": [
+    {
+     "arm": "decider",
+     "readout": "decider_pkg"
+    }
+   ],
+   "price_class": "gemma12b_ref",
+   "cap_min": 15,
+   "download_cap_min": 14,
+   "group": "parity",
+   "board_key": "decider-12b",
+   "snapshot_pin": "jobs/jev_host_scan/snapshots/decider-12b.sha256",
+   "allow_patterns": [
+    "*.safetensors",
+    "config.json",
+    "generation_config.json",
+    "tokenizer.json",
+    "tokenizer_config.json",
+    "chat_template.jinja",
+    "processor_config.json",
+    "decider_config.json"
+   ],
+   "reference": {
+    "source": "model card (Mapika/decider-12b@8ac1efa7 README, 'Measurements (decider-ai 1.8.0, one B300)'): JevBench public items accuracy easy / standard / hard 1.000 / 0.986 / 0.712 (v2; hard 79 of 111)",
+    "correct": 198,
+    "by_tier": {"easy": 48, "standard": 71, "hard": 79},
+    "tolerance": 3
+   },
+   "note": "its documented readout Decider(path).system_one(state, questions) from decider-ai 1.8.0 (the card's measurement version; pip wheel pinned by sha256, installed --no-deps), eager (use_graphs=False), temperatures from the snapshot's decider_config.json"
+  },
+  {
+   "id": "decider-12b-v1",
+   "repo": "Mapika/decider-12b",
+   "revision": "09e9e3387fa42fed740233be2290385d18a6044d",
+   "released": "version 1 = stock google/gemma-4-12B-it weights read through decider (the board row decider-12b-v1's model_pin; same weights as tag v1 89a628b0)",
+   "params_b": 12.0,
+   "safetensors_bytes": 23919549408,
+   "license": "apache-2.0",
+   "loader": "decider_pkg",
+   "arms": [
+    {
+     "arm": "decider",
+     "readout": "decider_pkg"
+    }
+   ],
+   "price_class": "gemma12b_ref",
+   "cap_min": 15,
+   "download_cap_min": 14,
+   "group": "parity",
+   "board_key": "decider-12b-v1",
+   "snapshot_pin": "jobs/jev_host_scan/snapshots/decider-12b-v1.sha256",
+   "allow_patterns": [
+    "*.safetensors",
+    "config.json",
+    "generation_config.json",
+    "tokenizer.json",
+    "tokenizer_config.json",
+    "chat_template.jinja",
+    "processor_config.json",
+    "decider_config.json"
+   ],
+   "reference": {
+    "source": "model card (Mapika/decider-12b@8ac1efa7 README, v1 column): JevBench public items accuracy easy / standard / hard 1.000 / 0.986 / 0.730 (hard 81 of 111)",
+    "correct": 200,
+    "by_tier": {"easy": 48, "standard": 71, "hard": 81},
+    "tolerance": 3
+   },
+   "note": "as decider-12b, at the v1 pin (decider_config.json v1 temperatures choice 4.0 / noul 1.0 / score 3.5)"
+  }
+ ]
+}
