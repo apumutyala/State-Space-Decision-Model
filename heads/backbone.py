@@ -203,6 +203,13 @@ class HiddenStateBackbone(nn.Module):
         #: once; ``train.trainer`` ``cont_plan="single"``): one prefix call per sub-group, then ONE continuation call
         #: for all rows. None = one prefix call for all rows.
         self.prefix_groups: list[list[int]] | None = None
+        #: option chunking of the HF cache fork under autograd (``TrainConfig.cont_chunk``, an EXECUTION knob: same loss
+        #: and gradients): 0 = every continuation in one call (as before); C > 0 and K > C = the K continuations run C at
+        #: a time, each chunk (prefix + its C forked cache copies) inside a reentrant checkpoint, so only ONE chunk's
+        #: copies / activations are alive at a time (forward under no_grad, recomputed one chunk at a time in backward).
+        #: job-w2t73: Qwen3.5-4B's per-option copy (8 attention layers' prefix KV + 24 GDN states) is ~0.7 GB at T 1,020
+        #: under act_ckpt, so a K = 77 row took 64 GB and the first training step went out of memory.
+        self.cont_chunk = 0
         self._captured: torch.Tensor | None = None
         self._hook = None
         if capture != "hidden_states":
@@ -281,7 +288,36 @@ class HiddenStateBackbone(nn.Module):
             h, state = self.model.prefill(ids)
             hc, _ = self.model.extend(cids, self.model.expand_state(state, k))
             return h[0], hc[torch.arange(k, device=dev), last]
+        if self.cont_chunk and k > self.cont_chunk and torch.is_grad_enabled() and self.capture == "hidden_states":
+            return self._hf_fork_chunked(ids, cids, last)
         return self._hf_fork(ids, cids, last)
+
+    def _hf_fork_chunked(self, ids: torch.Tensor, cids: torch.Tensor, last: torch.Tensor):
+        """``_hf_fork`` with the K continuations in chunks of ``cont_chunk`` (see ``cont_chunk``): chunk j is
+        ``torch.utils.checkpoint(use_reentrant=True)`` of (prefix call + chunk j's continuation call); the prefix
+        features come from chunk 0. Forward values are those of ``_hf_fork`` (the same calls on the same inputs; only
+        the continuation batch is split, and right padding is exact). In backward each chunk is recomputed with grad and
+        back-propagated with its slice of dL/dfork, so the LoRA / head gradients are the un-chunked ones up to float
+        summation order (tests/test_sizecliff.py). The anchor is a dummy leaf that puts every chunk in the graph."""
+        from torch.utils.checkpoint import checkpoint
+
+        c = int(self.cont_chunk)
+        anchor = torch.zeros((), device=ids.device, requires_grad=True)
+        h, feats = None, []
+        for s in range(0, cids.shape[0], c):
+            cc, lc = cids[s: s + c], last[s: s + c]
+            w = int(lc.max().item()) + 1
+            cc = cc[:, : max(w, MIN_CONT_WIDTH)]  # this chunk's own width (still right padded, still exact)
+
+            def run(_anchor, cc=cc, lc=lc):
+                hh, ff = self._hf_fork(ids, cc, lc)
+                return hh, ff
+
+            hh, ff = checkpoint(run, anchor, use_reentrant=True, preserve_rng_state=True)
+            if h is None:
+                h = hh
+            feats.append(ff)
+        return h, torch.cat(feats)
 
     def _hf_fork(self, ids: torch.Tensor, cids: torch.Tensor, last: torch.Tensor):
         dev = ids.device

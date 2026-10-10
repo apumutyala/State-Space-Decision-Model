@@ -116,6 +116,10 @@ class TrainConfig:
     #: group of long catalogs (K = 77..255) can hold thousands of copies at once; a row whose K alone is over the cap
     #: runs alone. Grouping only: the same rows, losses and gradients (tests/test_cell_perf.py).
     row_options: int = 0
+    #: max continuations per HF cache-fork call under autograd (heads.backbone.HiddenStateBackbone.cont_chunk): rows
+    #: with K > cont_chunk run their options in checkpointed chunks. Execution only: same loss and gradients
+    #: (tests/test_sizecliff.py::test_cont_chunk_gradients_equal_the_unchunked_step). 0 = off.
+    cont_chunk: int = 0
     axis_loss_weight: float = 0.0  # opt-in MSE on HeadOutput.semantic_axes, targets live only on Item
     # ---- anti-collapse (research-notes/D10_DIVERGENCE.md). Every default = the old behaviour; at their defaults these
     # fields are left out of to_json / the hash, so old configs, records and checkpoints are byte-identical.
@@ -164,7 +168,8 @@ class TrainConfig:
     #: operational dev-card keys that ARE hashed when collapse_guard is on
     GUARD_HASHED = ("dev_card_every", "dev_card_rows", "dev_card_seed")
     #: execution-strategy fields: same loss and gradients, not part of the hash (old hashes unchanged)
-    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan", "cont_plan", "compile_blocks", "row_options")
+    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan", "cont_plan", "compile_blocks", "row_options",
+                 "cont_chunk")
 
     def hash(self) -> str:
         keep = self.GUARD_HASHED if self.collapse_guard else ()
@@ -183,7 +188,8 @@ def with_execution(cfg: TrainConfig, cell: dict) -> TrainConfig:
                                row_tokens=int(cell.get("row_tokens", 0)), row_plan=str(cell.get("row_plan", "greedy")),
                                cont_plan=str(cell.get("cont_plan", "per_group")),
                                compile_blocks=bool(cell.get("compile_blocks", False)),
-                               row_options=int(cell.get("row_options", 0)))
+                               row_options=int(cell.get("row_options", 0)),
+                               cont_chunk=int(cell.get("cont_chunk", 0) if cell.get("cont_chunk") != "auto" else 0))
 
 
 #: fixed cost of one group (prefix + continuation call, forward + recompute + backward) in padded-token equivalents:
@@ -337,7 +343,14 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
         raise ValueError(f"row_options must be >= 0, got {cfg.row_options}")
     if cfg.row_options and cfg.loss.order_consistency_weight:
         raise ValueError("row_options is not implemented for order-consistency views (row_groups_with_views)")
+    if cfg.cont_chunk < 0:
+        raise ValueError(f"cont_chunk must be >= 0, got {cfg.cont_chunk}")
+    if cfg.cont_chunk and cfg.lora_dropout:
+        raise ValueError("cont_chunk recomputes the prefix per chunk: exact only without LoRA dropout")
+    if cfg.cont_chunk and cfg.row_batch > 1:
+        raise ValueError("cont_chunk is implemented for the per-row cache fork (row_batch 1)")
     model.backbone.batch_rows = cfg.row_batch > 1
+    model.backbone.cont_chunk = cfg.cont_chunk
     return replaced
 
 

@@ -1004,6 +1004,56 @@ def _main(argv=None, ctx: dict | None = None):
         return Trainer(model, with_execution(train_config(cfg, max_steps, ckpt_dir, cuda), cfg), train_items,
                        eval_items, guard=guard)
 
+    if cfg.get("cont_chunk") == "auto" and ("ladder" in stages or "train" in stages):
+        # job-w2t73 (Qwen3.5-4B OOM on its first step): the option-chunk probe. The worst step shape of the training set
+        # (the batch_size x grad_accum rows with the largest K x T, T <= the top ladder rung) runs one optimiser step
+        # per candidate chunk size, largest first; the largest whose peak stays <= cont_chunk_peak_frac x
+        # max_peak_gb is the cell's cont_chunk (an EXECUTION knob: same loss and gradients; the ladder then measures
+        # T_max with it). Cached in cell.json across restarts.
+        if "cont_chunk_probe" not in cell:
+            t_top = max(cfg["t_ladder"])
+            pool = sorted((x for x in train_items if len(x.row.ids) <= t_top),
+                          key=lambda x: (-x.row.n_options * len(x.row.ids), -x.row.n_options))
+            rows = pool[: cfg["batch_size"] * cfg["grad_accum"]]
+            limit = float(cfg.get("cont_chunk_peak_frac", 0.85)) * cfg["pass_rule"]["max_peak_gb"]
+            cands = [int(c) for c in cfg.get("cont_chunk_candidates", [64, 32, 16, 8])]
+            probe = {"rows": [{"k": x.row.n_options, "t": len(x.row.ids)} for x in rows], "limit_gb": limit,
+                     "candidates": cands, "points": {}, "chosen": None}
+            cfg_auto = cfg
+            for cand in cands:
+                cfg = {**cfg_auto, "cont_chunk": cand}  # make_trainer reads cfg
+                reset_peak()
+                tr = None
+                try:
+                    tr = make_trainer(1)
+                    tr.train_items = list(rows)
+                    t0 = time.time()
+                    with fla_strict():
+                        loss = tr.train_step()
+                    if cuda:
+                        torch.cuda.synchronize()
+                    probe["points"][str(cand)] = {"ok": math.isfinite(loss), "peak_gb": peak(),
+                                                  "step_s": time.time() - t0}
+                except torch.OutOfMemoryError as e:
+                    probe["points"][str(cand)] = {"ok": False, "oom": str(e)[:200], "peak_gb": peak()}
+                finally:
+                    del tr
+                    bb.model.zero_grad(set_to_none=True)
+                    remove_lora(bb.model)
+                    reset_peak()
+                pt = probe["points"][str(cand)]
+                if pt["ok"] and pt["peak_gb"] <= limit:
+                    probe["chosen"] = cand
+                    break
+            cfg = cfg_auto
+            if probe["chosen"] is None:
+                probe["chosen"] = min(cands)  # the ladder below still measures (and refuses: exit 22) what does not fit
+            cell["cont_chunk_probe"] = probe
+            save()
+        cfg = {**cfg, "cont_chunk": int(cell["cont_chunk_probe"]["chosen"])}
+        print(f"cont_chunk probe: {cell['cont_chunk_probe']['chosen']} ({cell['cont_chunk_probe']['points']})",
+              flush=True)
+
     if "ladder" in stages and "ladder" not in cell:
         lad = {}
         order_active = bool(order_consistency_fields(cfg))

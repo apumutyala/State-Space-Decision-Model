@@ -450,3 +450,14 @@ Schedule per arm: setup 20 + guard 5 + heldout 10 + cell 130 (100 clock + 10 tok
 checkpoints) + screen 45 (fixed 15 + D1's 25.97 proxy minutes = 40.97 <= 0.95 x 45) + report 5 + reserve 7 = 222 min.
 Quoted hold 222 x $0.063 = $13.99 per arm ($41.96 for the three). **Worst case** (60 + 2 x 222) x $0.0495 =
 **$24.95** per arm (hard cap $30). CPU verification: `scripts/check_sizecliff_cpu.py` (receipts/2026-10-09-sizecliff/).
+
+**Resubmissions.** r2 (all three arms): `heads.layout.hf_segment_encoder` became the picklable `HFSegmentEncoder`
+(job-rtg9e died in `run_cell.cell_items`' spawn process pool). r3 (4B ONLY, job-w2t73 OOM on its first step, 71.5 GB):
+the per-row cache fork held one forked copy of the prefix state per option (8 attention layers' prefix KV + 24 GDN
+states; ~0.7 GB per option at T 1,020 under act_ckpt, the K = 77 ladder rung peaked at 63.7 GB). The 4B cell sets the
+EXECUTION knob `cont_chunk: "auto"`: rows with K > cont_chunk run their options in reentrant-checkpointed chunks
+(`HiddenStateBackbone._hf_fork_chunked`), so one chunk's copies are alive at a time; run_cell probes the 8 rows with the
+largest K x T (candidates 64 / 32 / 16 / 8, peak <= 0.85 x 76 GB) before the ladder. Same loss, gradients, effective
+batch (1 x 8), LR, schedule and data order; `cont_chunk` is not in the TrainConfig hash
+(tests/test_sizecliff.py::test_cont_chunk_gradients_equal_the_unchunked_step). The 0.8B (job-reknq) and 2B (job-haxmm)
+arms run the original path. Caps and worst case unchanged ($24.95; hold $13.99).

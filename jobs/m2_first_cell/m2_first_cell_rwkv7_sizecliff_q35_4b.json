@@ -127,5 +127,14 @@
   "snapshot_sha256_file": "jobs/m2_first_cell/qwen35_4b_snapshot.sha256",
   "note": "heads.backbone.qwen35_pin_check (repo@revision in QWEN35_STOCK + config.json sha256) before the tokenizer or any weight; the runner checks the whole snapshot against the manifest"
  },
- "shim_note": "template jrt-h2o-shim:qwen3.5-4b (decide/shim_format.py, pinned identity): the vendored, unmodified H2O-Lightning-4B v1.1 shim prompt (third_party/h2o_lightning_shim, the host scan's replica that matched H2O's card 205/231): Qwen chat turn, thinking off, the shim system text, 'record: / question: / options: A) name: desc', 'Answer:' prefill; option k = shim label k (A, B, ...), its continuation the ONE token of ' <label>' (the shim's own probe); bound to the snapshot's tokenizer files, any other tokenizer fails closed. Train rows == the shim prompt ids (and == transformers' whole-string tokenization = vLLM /tokenize): scripts/check_sizecliff_cpu.py."
+ "shim_note": "template jrt-h2o-shim:qwen3.5-4b (decide/shim_format.py, pinned identity): the vendored, unmodified H2O-Lightning-4B v1.1 shim prompt (third_party/h2o_lightning_shim, the host scan's replica that matched H2O's card 205/231): Qwen chat turn, thinking off, the shim system text, 'record: / question: / options: A) name: desc', 'Answer:' prefill; option k = shim label k (A, B, ...), its continuation the ONE token of ' <label>' (the shim's own probe); bound to the snapshot's tokenizer files, any other tokenizer fails closed. Train rows == the shim prompt ids (and == transformers' whole-string tokenization = vLLM /tokenize): scripts/check_sizecliff_cpu.py.",
+ "cont_chunk": "auto",
+ "cont_chunk_candidates": [
+  64,
+  32,
+  16,
+  8
+ ],
+ "cont_chunk_peak_frac": 0.85,
+ "cont_chunk_note": "4B ONLY (r3, job-w2t73 OOM on its first step: 71.5 GB allocated in the act_ckpt recompute of a GDN block). Cause: the per-row cache fork copies the prefix state once per option (8 attention layers' prefix KV + 24 GDN states, ~0.7 GB per option at T 1,020 under act_ckpt on the 4B; the ladder's K = 77 rung peaked at 63.7 GB) and keeps every copy alive through backward. Fix = an EXECUTION knob, the same loss / gradients / effective batch / LR / data order (TrainConfig.cont_chunk is left out of the config hash): rows with K > cont_chunk run their options in reentrant-checkpointed chunks of cont_chunk (heads.backbone.HiddenStateBackbone._hf_fork_chunked), so one chunk's copies are alive at a time. 'auto' = run_cell's probe: the 8 training rows with the largest K x T (T <= 2,048) run one step per candidate (64, 32, 16, 8), the largest with peak <= 0.85 x max_peak_gb wins; the ladder then measures T_max with it. Gradient equality: tests/test_sizecliff.py::test_cont_chunk_gradients_equal_the_unchunked_step. row_batch is already 1 (batch 1 x grad_accum 8), so no row-level knob is left to lower. The 0.8B / 2B arms (job-reknq, job-haxmm) run without cont_chunk: identical math."
 }

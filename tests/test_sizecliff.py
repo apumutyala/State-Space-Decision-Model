@@ -172,7 +172,8 @@ def test_mode_configs_one_recipe_one_draw_one_rank_one_clock():
     from jobs.common import costs
 
     allowed = {"_comment", "parent", "template", "max_minutes", "max_steps", "max_minutes_note", "lora_rank_note",
-               "execution_note", "qwen35", "v3w_note", "shim_note", "variant", "q9af", "census_note"}
+               "execution_note", "qwen35", "v3w_note", "shim_note", "variant", "q9af", "census_note",
+               "cont_chunk", "cont_chunk_candidates", "cont_chunk_peak_frac", "cont_chunk_note"}
     for a, c in CELLS.items():
         assert c["parent"] == "qwen35" and c["template"] == TPL[a] and "q9af" not in c
         for k in set(c) | set(Q9):
@@ -180,7 +181,10 @@ def test_mode_configs_one_recipe_one_draw_one_rank_one_clock():
                 assert c.get(k) == Q9.get(k), (a, k)  # = q9af_v2_v3w's D16 keys (data, attack/doc clean, LR, ...)
         assert c["n_train_records"] == 94786 and c["lora_rank"] == 64 and c["max_minutes"] == 100
         assert c["train_set"]["doc_clean"]["n_excluded"] == 14 and c["train_set"]["attack_clean"]["n_excluded"] == 5201
-    for k in ("train_set", "n_train_records", "lora_rank", "max_minutes", "max_steps", "seed", "lr_lora", "head"):
+    # the 4B's execution-only option chunking (job-w2t73); the 0.8B / 2B arms ran without it (same math)
+    assert CELLS["4b"]["cont_chunk"] == "auto" and "cont_chunk" not in CELLS["0p8b"] and "cont_chunk" not in CELLS["2b"]
+    for k in ("train_set", "n_train_records", "lora_rank", "max_minutes", "max_steps", "seed", "lr_lora", "head",
+              "lr_head", "batch_size", "grad_accum", "loss_arm", "lr_schedule", "warmup_steps", "t_ladder", "train_max_k"):
         assert len({json.dumps(c[k], sort_keys=True) for c in CELLS.values()}) == 1, k
     hold = 0.0
     for a, p in PARAMS.items():
@@ -348,3 +352,94 @@ def test_cell_items_through_the_spawn_process_pool_with_two_workers():
     key = lambda xs: [(x.id, x.row.ids, x.row.continuations, x.row.option_ids, x.label, x.row.meta["template"])  # noqa: E731
                       for x in xs]
     assert len(a) == 48 and key(a) == key(b) and a[0].row.meta["template"] == TPL["2b"]
+
+
+# --------------------------------------------------------------- job-w2t73 regression: option chunking of the cache fork
+def _chunk_case(act_ckpt: bool, cont_chunk: int, k: int = 11, seed: int = 0):
+    """(loss, {param: grad}, fork features) of ONE training row (K options, the cell's per-row cache fork) on a tiny
+    stock-Qwen3.5 hybrid (3 GDN : 1 attention), LoRA on GDN + attention + MLP, fork head, Clef loss arm."""
+    torch = pytest.importorskip("torch")
+    pytest.importorskip("transformers")
+    from heads.backbone import tiny_hf_backbone
+    from heads.layout import ByteEncoder, build_row
+    from heads.model import DecisionModel
+    from train.data import TOY_TEMPLATE, Item
+    from train.guard import SplitGuard
+    from train.losses import LossConfig
+    from train.trainer import TrainConfig, Trainer
+
+    bb = tiny_hf_backbone("qwen3.5", seed=seed, fork_mode="cache")
+    model = DecisionModel(bb, "fork", {}, pad_id=0, seed=seed)
+    req = {"state": "the museum moved to the harbour in 1964; rooms 12; curator Ito",
+           "questions": {"q": {"type": "choice", "instructions": "which option?",
+                               "criteria": {f"o{i:02d}": f"option number {i}" for i in range(k)}}}}
+    row = build_row(req, "q", ByteEncoder(), template=TOY_TEMPLATE, layout="ordered")
+    cfg = TrainConfig(head="fork", layout="ordered", fork_mode="cache", lora_rank=4, batch_size=1, grad_accum=1,
+                      loss=LossConfig(arm="clef"), act_ckpt=act_ckpt, cont_chunk=cont_chunk, seed=seed)
+    it = Item("toy/q", row, 3)
+    tr = Trainer(model, cfg, [it], [], guard=SplitGuard.synthetic_only("t"))
+    torch.manual_seed(1)
+    with torch.no_grad():  # non-zero LoRA B so the LoRA gradients are not trivially equal
+        for n, p in model.named_parameters():
+            if n.endswith("lora_B"):
+                p.normal_(0.0, 0.05)
+    model.train()
+    model.zero_grad(set_to_none=True)
+    fw = model([row])
+    loss = tr._supervised_loss(fw, [it], 1.0)
+    loss.backward()
+    grads = {n: p.grad.detach().clone() for n, p in model.named_parameters() if p.grad is not None}
+    return float(loss), grads, bb.cont_chunk
+
+
+@pytest.mark.parametrize("act_ckpt", [False, True])
+@pytest.mark.parametrize("chunk", [1, 3, 5])
+def test_cont_chunk_gradients_equal_the_unchunked_step(act_ckpt, chunk):
+    """cont_chunk (the 4B arm's execution knob) changes only how many forked cache copies are alive at once: the loss
+    and EVERY LoRA / head gradient equal the un-chunked step (same row, same init), with and without act_ckpt."""
+    torch = pytest.importorskip("torch")
+    l0, g0, c0 = _chunk_case(act_ckpt, 0)
+    l1, g1, c1 = _chunk_case(act_ckpt, chunk)
+    assert c0 == 0 and c1 == chunk
+    assert abs(l0 - l1) < 1e-6
+    assert set(g0) == set(g1) and any("lora_A" in n for n in g0) and any(n.startswith("head") for n in g0)
+    for n in g0:
+        assert torch.allclose(g0[n], g1[n], rtol=1e-4, atol=1e-6), n
+
+
+def test_cont_chunk_is_execution_only_and_refuses_unsupported_paths():
+    from train.trainer import TrainConfig, with_execution
+
+    base = TrainConfig(head="fork", lora_rank=4)
+    assert TrainConfig(head="fork", lora_rank=4, cont_chunk=16).hash() == base.hash()  # same recipe identity
+    assert with_execution(base, {"cont_chunk": 16}).cont_chunk == 16
+    assert with_execution(base, {"cont_chunk": "auto"}).cont_chunk == 0  # resolved by run_cell's probe
+
+
+def test_cont_chunk_keeps_only_one_chunk_of_forked_copies_saved():
+    """The point of the knob: with chunking, the forward saves (for backward) far fewer bytes, because each chunk's K
+    cache copies are recomputed in backward instead of being held from the forward (reentrant checkpoint)."""
+    torch = pytest.importorskip("torch")
+    from heads.backbone import tiny_hf_backbone
+    from train.lora import apply_lora
+
+    bb = tiny_hf_backbone("qwen3.5", seed=0, fork_mode="cache")
+    apply_lora(bb.model, bb.spec.lora_groups, 4, generator=torch.Generator().manual_seed(0))
+    bb.train()
+    prefix, conts = list(range(5, 200)), [[30 + i, 40] for i in range(24)]
+
+    def saved(chunk):
+        bb.cont_chunk = chunk
+        total = [0]
+
+        def pack(t):
+            total[0] += t.numel() * t.element_size()
+            return t
+
+        with torch.autograd.graph.saved_tensors_hooks(pack, lambda t: t):
+            _, f = bb.fork_features(prefix, conts)
+        f.pow(2).sum().backward()
+        return total[0]
+
+    full, chunked = saved(0), saved(4)
+    assert chunked < 0.2 * full, (full, chunked)
