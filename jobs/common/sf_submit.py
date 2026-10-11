@@ -1,5 +1,7 @@
 """Upload a launcher package and submit it via `autor api` (WSL). Usage: python -I jobs/common/sf_submit.py <launcher --out dir containing submit.json> [--dry]"""
-import json, os, subprocess, sys, pathlib, time
+import hashlib, json, os, subprocess, sys, pathlib, time
+
+BLOCK = 1 << 20  # low-RAM: the package is only ever read in 1 MiB blocks (peak RSS ~ tens of MB)
 
 AUTOR = ["wsl.exe", "-d", "bi-ubuntu", "--", "/root/.local/bin/autor", "--workspace", "default", "api"]
 
@@ -31,21 +33,35 @@ def main():
     if left and not dry:
         raise SystemExit(f"export {', '.join(left)} in this shell first (placeholders in submit.json are never sent)")
     print("mission", mission, "worst", s["cost"]["worst_case_usd"])
+    # the bytes uploaded must be the bytes create_context declares: sha256 + size re-checked, streamed (1 MiB blocks)
+    f = pathlib.Path(ctx["file"]); h = hashlib.sha256(); n = 0
+    with open(f, "rb") as fh:
+        for b in iter(lambda: fh.read(BLOCK), b""):
+            h.update(b); n += len(b)
+    if (h.hexdigest(), n) != (ctx["sha256"], ctx["size_bytes"]):
+        raise SystemExit(f"{f}: sha256/size {h.hexdigest()} {n} != submit.json {ctx['sha256']} {ctx['size_bytes']}")
+    print("context file verified", ctx["sha256"][:12], n, "bytes")
     if dry:
         shown = {**sub, "env": {k: ("<set from shell env, not printed>" if k in holes and k not in left else v)
                                 for k, v in env.items()}}
         print(json.dumps(shown, indent=1)); return
     api("post", "/missions", {"name": mission})
     c = api("post", "/contexts", {"sha256": ctx["sha256"], "size_bytes": ctx["size_bytes"]})
-    cid = c["context_id"]; up = c["upload"]; f = pathlib.Path(ctx["file"])
+    cid = c["context_id"]; up = c["upload"]
     urls = up["multipart"]["urls"] if "multipart" in up else [up.get("url") or up.get("put_url")]
     part = up.get("multipart", {}).get("part_size", ctx["size_bytes"])
-    data = f.read_bytes()
     for i, u in enumerate(urls):
-        chunk = data[i * part:(i + 1) * part]
-        tmp = d / f"part{i}"; tmp.write_bytes(chunk)
+        # low-RAM (2026-10-11): curl -T reads from disk; a single part uploads the package file itself, a multipart
+        # part is copied to a temp file in 1 MiB blocks (never the whole file in memory)
+        tmp = f if len(urls) == 1 else d / f"part{i}"
+        if tmp != f:
+            with open(f, "rb") as src, open(tmp, "wb") as w:
+                src.seek(i * part); left = part
+                while left > 0 and (b := src.read(min(BLOCK, left))):
+                    w.write(b); left -= len(b)
         r = subprocess.run(["curl", "-s", "-o", "NUL", "-w", "%{http_code}", "-T", str(tmp), u], capture_output=True)
-        tmp.unlink()
+        if tmp != f:
+            tmp.unlink()
         code = r.stdout.decode()
         print("part", i, code)
         if code != "200":

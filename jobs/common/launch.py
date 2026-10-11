@@ -7,7 +7,8 @@ the code that ran is always in shared history. The job's CPU test gate (step 4) 
 
 Steps (each refuses with a non-zero exit):
   1. `git fetch origin`; the SHA must be contained in some origin branch.
-  2. `git -c core.autocrlf=false archive <sha>` -> code/m1 (in memory, plus a staged copy under <out>/stage).
+  2. `git -c core.autocrlf=false archive <sha>` -> code/m1, streamed straight into <out>/stage/<sha12> (never held in
+     memory; the context is built from those staged files).
   3. The sha's own jobs/common/lint.py on the staged tree (waived failures only with --allow-waived, recorded in submit.json).
   4. The job's CPU tests on the staged tree (every tests/ file naming jobs/<job>/ or jobs.<job>, + test_jobs_lint), in
      the job image's own stack: `uv run --with transformers==<job_params test_env pin>` (LESSONS L-24). Tests marked
@@ -16,6 +17,9 @@ Steps (each refuses with a non-zero exit):
   5. Context = Dockerfile (+ CMD rewrite) + code/m1 + pinned data (sha256 checked against the pin file in the
      archive) + CONTEXT_MANIFEST.json, as a deterministic tar (sorted, mtime 2026-01-01, uid/gid 0, modes 644/755)
      compressed with Python zstandard (no zstd binary). Shipped *.sh/*.sha256/*.json/*.py/Dockerfile must have no CR.
+     Low-RAM (2026-10-11): the tar is STREAMED file by file into a zstd stream writer with the exact tar size pledged
+     (content size in the frame header; the tar is byte-identical, the zstd bytes can differ from the old one-shot
+     compress), sha256 + size taken from the bytes written; peak RSS ~120 MB at level 19 (D20 link: 370 MB context).
   6. <out>/<name>.tar.zst, <out>/CONTEXT_MANIFEST.json and <out>/submit.json: create_context / upload /
      finalize_context / open_mission / submit_job arguments (idempotency key from the context sha256).
 
@@ -32,6 +36,7 @@ import io
 import json
 import math
 import os
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -176,17 +181,78 @@ def resolve_pushed(root: Path, sha: str, fetch: bool = True) -> str:
 resolve_merged = resolve_pushed  # old name, kept for callers
 
 
-def archive(root: Path, sha: str) -> dict[str, tuple[bytes, int]]:
-    """`git -c core.autocrlf=false archive <sha>` as {path: (bytes, mode)}; modes normalised to 644/755."""
-    raw = git(root, "archive", sha, binary=True)
+# ----------------------------------------------------------------------------- file contents: bytes or a Path on disk
+#: A files / ctx value is (content, mode); content is either the bytes or a Path whose bytes are read lazily, in
+#: blocks where possible, so a 100 MB code archive plus pinned data never sits in memory (low-RAM laptop, 2026-10-11).
+BLOCK = 1 << 20
+
+
+def blob(c) -> bytes:
+    """The whole content (use only for small files: params, pins, Dockerfile, manifest JSON)."""
+    return bytes(c) if isinstance(c, (bytes, bytearray)) else Path(c).read_bytes()
+
+
+def blob_size(c) -> int:
+    return len(c) if isinstance(c, (bytes, bytearray)) else Path(c).stat().st_size
+
+
+def blob_open(c):
+    return io.BytesIO(c) if isinstance(c, (bytes, bytearray)) else open(c, "rb")
+
+
+def blob_sha256(c, gunzip: bool = False) -> str:
+    """sha256 of the content (of its gunzipped bytes with ``gunzip``), streamed in 1 MiB blocks."""
+    h = hashlib.sha256()
+    with blob_open(c) as raw:
+        f = gzip.GzipFile(fileobj=raw, mode="rb") if gunzip else raw
+        for b in iter(lambda: f.read(BLOCK), b""):
+            h.update(b)
+    return h.hexdigest()
+
+
+def blob_has_cr(c) -> bool:
+    if isinstance(c, (bytes, bytearray)):
+        return b"\r" in c
+    with open(c, "rb") as f:
+        return any(b"\r" in b for b in iter(lambda: f.read(BLOCK), b""))
+
+
+def archive(root: Path, sha: str, dest: Path | None = None) -> dict[str, tuple[bytes | Path, int]]:
+    """`git -c core.autocrlf=false archive <sha>` as {path: (content, mode)}; modes normalised to 644/755.
+
+    With ``dest`` the archive is STREAMED from git (tar read in stream mode) and each file written to dest/<path>; the
+    content is then that Path (nothing is held in memory). Without it, contents are bytes (small repos / tests)."""
+    p = subprocess.Popen(["git", "-C", str(root), "-c", "core.autocrlf=false", "archive", sha],
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out = {}
     odd = []
-    with tarfile.open(fileobj=io.BytesIO(raw)) as t:
-        for m in t.getmembers():
-            if m.isfile():
-                out[m.name] = (t.extractfile(m).read(), 0o755 if m.mode & 0o111 else 0o644)
-            elif not m.isdir() and m.name != "pax_global_header":
-                odd.append(f"{m.name} ({'symlink -> ' + m.linkname if m.issym() else 'type ' + repr(m.type)})")
+    try:
+        with tarfile.open(fileobj=p.stdout, mode="r|") as t:
+            for m in t:
+                if m.isfile():
+                    mode = 0o755 if m.mode & 0o111 else 0o644
+                    src = t.extractfile(m)
+                    if dest is None:
+                        out[m.name] = (src.read(), mode)
+                        continue
+                    if m.name.startswith(("/", "../")) or "/../" in m.name:
+                        raise LaunchError(f"archive member escapes the stage dir: {m.name}")
+                    f = dest / m.name
+                    f.parent.mkdir(parents=True, exist_ok=True)
+                    with open(f, "wb") as w:
+                        shutil.copyfileobj(src, w, BLOCK)
+                    out[m.name] = (f, mode)
+                elif not m.isdir() and m.name != "pax_global_header":
+                    odd.append(f"{m.name} ({'symlink -> ' + m.linkname if m.issym() else 'type ' + repr(m.type)})")
+    except tarfile.TarError as e:
+        p.kill()
+        err = p.stderr.read().decode(errors="replace").strip()
+        p.wait()
+        raise LaunchError(f"git archive {sha}: {err or e}") from e
+    p.stdout.close()
+    err = p.stderr.read().decode(errors="replace").strip()
+    if p.wait():
+        raise LaunchError(f"git archive {sha}: {err}")
     if odd:
         raise LaunchError(f"the archive has non-regular members (symlinks are not shipped silently): {odd}")
     return out
@@ -223,7 +289,7 @@ def stage(files: dict, d: Path) -> None:
     for rel, (b, _) in files.items():
         f = d / rel
         f.parent.mkdir(parents=True, exist_ok=True)
-        f.write_bytes(b)
+        f.write_bytes(blob(b))
 
 
 def run_lint(code: Path, rel: str, allow_waived: bool, sha_lint=None) -> dict:
@@ -385,12 +451,12 @@ def pins(text: str) -> dict[str, str]:
 def data_pin(files: dict, item: dict) -> str | None:
     """The sha256 a data item must have: from a `<sha>  <path>` pin file, a literal, or a key of a committed JSON."""
     if item.get("pin"):
-        return pins(files[item["pin"]][0].decode()).get(item["dest"])
+        return pins(blob(files[item["pin"]][0]).decode()).get(item["dest"])
     if item.get("pin_sha256"):
         return item["pin_sha256"]
     if item.get("pin_json"):
         rel, *keys = item["pin_json"]
-        v = json.loads(files[rel][0])
+        v = json.loads(blob(files[rel][0]))
         for k in keys:
             v = v.get(k) if isinstance(v, dict) else None
         return v if isinstance(v, str) else None
@@ -402,7 +468,7 @@ def build_context(files: dict, job: str, sha: str, spec: dict, params_path: str,
     if "unsupported" in spec:
         raise LaunchError(f"{job}: {spec['unsupported']}")
     ctx = {f"code/m1/{p}": v for p, v in files.items()}
-    df = files[spec["dockerfile"]][0].decode()
+    df = blob(files[spec["dockerfile"]][0]).decode()
     for old, new in ([spec["cmd_rewrite"]] if spec.get("cmd_rewrite") else []) + list(spec.get("rewrites", [])):
         if old not in df:
             raise LaunchError(f"Dockerfile rewrite failed: {old!r} not in {spec['dockerfile']}")
@@ -418,25 +484,24 @@ def build_context(files: dict, job: str, sha: str, spec: dict, params_path: str,
         if not src.is_file():
             raise LaunchError(f"data {item['dest']}: source {src} missing" +
                               (f" (set {item['src_env']})" if item.get("src_env") else ""))
-        b = src.read_bytes()
-        want, got, what = data_pin(files, item), sha256(gzip.decompress(b) if item.get("gunzip") else b), \
+        want, got, what = data_pin(files, item), blob_sha256(src, gunzip=bool(item.get("gunzip"))), \
             item.get("pin") or item.get("pin_json") or "pin_sha256"
         if not want or want != got:
             raise LaunchError(f"data {item['dest']}: sha256 {got} != pin {want} ({what})")
-        ctx[f"data/{item['dest']}"] = (b, 0o644)
+        ctx[f"data/{item['dest']}"] = (src, 0o644)  # streamed from disk into the tar, never read whole
     if "COPY data/" in df and not any(p.startswith("data/") for p in ctx):
         ctx["data/.keep"] = (b"", 0o644)
     man = {"job": job, "m1_sha": sha, "branch_commit": sha, "builder": "jobs.common.launch", "params": params_path,
-           "dockerfile_sha256": sha256(ctx["Dockerfile"][0]),
-           "files_sha256": {p: sha256(files[p][0]) for p in sorted({params_path, *spec.get("manifest_files", [])})},
-           "data_sha256": {p: sha256(b) for p, (b, _) in sorted(ctx.items()) if p.startswith("data/")}}
+           "dockerfile_sha256": blob_sha256(ctx["Dockerfile"][0]),
+           "files_sha256": {p: blob_sha256(files[p][0]) for p in sorted({params_path, *spec.get("manifest_files", [])})},
+           "data_sha256": {p: blob_sha256(b) for p, (b, _) in sorted(ctx.items()) if p.startswith("data/")}}
     ctx["CONTEXT_MANIFEST.json"] = (json.dumps(man, indent=1).encode() + b"\n", 0o644)
     return ctx
 
 
 def cr_violations(ctx: dict, root: Path, sha: str, exempt: tuple[str, ...] = lint.CR_EXEMPT_PREFIXES) -> list[str]:
     """Shipped text files that must be LF but carry CR (byte-exact `-text` paths in the archive are exempt)."""
-    cand = [p for p, (b, _) in ctx.items() if (p.endswith(LF_SHIPPED) or p.endswith("Dockerfile")) and b"\r" in b
+    cand = [p for p, (b, _) in ctx.items() if (p.endswith(LF_SHIPPED) or p.endswith("Dockerfile")) and blob_has_cr(b)
             and not p.removeprefix("code/m1/").startswith(exempt)]
     if not cand:
         return []
@@ -448,23 +513,51 @@ def cr_violations(ctx: dict, root: Path, sha: str, exempt: tuple[str, ...] = lin
     return [p for p in cand if p not in unset]
 
 
-def deterministic_tar(ctx: dict) -> bytes:
+def _tar_members(ctx: dict):
+    """(TarInfo, content or None) in the deterministic order: sorted names, implicit parent dirs, fixed metadata."""
     dirs = set()
     for p in ctx:
         parts = p.split("/")[:-1]
         dirs.update("/".join(parts[:i]) for i in range(1, len(parts) + 1))
-    buf = io.BytesIO()
-    with tarfile.open(fileobj=buf, mode="w", format=tarfile.GNU_FORMAT) as t:
-        for name in sorted(dirs | set(ctx)):
-            ti = tarfile.TarInfo(name)
-            ti.mtime, ti.uid, ti.gid, ti.uname, ti.gname = MTIME, 0, 0, "", ""
-            if name in ctx:
-                b, mode = ctx[name]
-                ti.size, ti.mode = len(b), mode
-                t.addfile(ti, io.BytesIO(b))
-            else:
-                ti.type, ti.mode = tarfile.DIRTYPE, 0o755
+    for name in sorted(dirs | set(ctx)):
+        ti = tarfile.TarInfo(name)
+        ti.mtime, ti.uid, ti.gid, ti.uname, ti.gname = MTIME, 0, 0, "", ""
+        if name in ctx:
+            b, mode = ctx[name]
+            ti.size, ti.mode = blob_size(b), mode
+            yield ti, b
+        else:
+            ti.type, ti.mode = tarfile.DIRTYPE, 0o755
+            yield ti, None
+
+
+def tar_size(ctx: dict) -> int:
+    """The exact byte size write_tar produces (headers incl. GNU longname records, 512-padded data, 2 end blocks,
+    padded to tarfile.RECORDSIZE), so the zstd frame can pledge it as the one-shot compress did."""
+    n = 0
+    for ti, b in _tar_members(ctx):
+        n += len(ti.tobuf(tarfile.GNU_FORMAT, tarfile.ENCODING, "surrogateescape"))
+        if b is not None:
+            n += -(-ti.size // tarfile.BLOCKSIZE) * tarfile.BLOCKSIZE
+    n += 2 * tarfile.BLOCKSIZE
+    return -(-n // tarfile.RECORDSIZE) * tarfile.RECORDSIZE
+
+
+def write_tar(ctx: dict, fh) -> None:
+    """The deterministic tar, streamed into the writable ``fh`` one file at a time (stream mode: no seeks)."""
+    with tarfile.open(fileobj=fh, mode="w|", format=tarfile.GNU_FORMAT) as t:
+        for ti, b in _tar_members(ctx):
+            if b is None:
                 t.addfile(ti)
+            else:
+                with blob_open(b) as f:
+                    t.addfile(ti, f)
+
+
+def deterministic_tar(ctx: dict) -> bytes:
+    """The whole tar in memory (tests / small contexts; launch() streams it with write_context instead)."""
+    buf = io.BytesIO()
+    write_tar(ctx, buf)
     return buf.getvalue()
 
 
@@ -472,6 +565,54 @@ def compress(b: bytes, level: int) -> bytes:
     import zstandard
 
     return zstandard.ZstdCompressor(level=level).compress(b)
+
+
+class _Sink(io.RawIOBase):
+    """Write-only pass-through: counts bytes and feeds sha256 on the way to ``fh`` (None: count / hash only)."""
+
+    def __init__(self, fh=None):
+        super().__init__()
+        self.fh, self.n, self.h = fh, 0, hashlib.sha256()
+
+    def writable(self) -> bool:
+        return True
+
+    def write(self, b) -> int:
+        self.h.update(b)
+        self.n += len(b)
+        if self.fh is not None:
+            self.fh.write(b)
+        return len(b)
+
+
+def write_context(ctx: dict, path: Path, level: int) -> tuple[str, int]:
+    """tar -> zstd stream (exact tar size pledged, so the frame header carries it) -> ``path``, file by file; returns
+    (sha256, size) of the compressed file, hashed while writing. The tar equals deterministic_tar(ctx); the zstd bytes
+    can differ from a one-shot ``compress`` of it (block decisions), which is fine: the receipt hashes what is uploaded. Peak memory is the zstd compressor's tables (~100 MB at level 19), not the context size."""
+    import zstandard
+
+    size = tar_size(ctx)
+    tmp = path.with_name(path.name + ".part")
+    with open(tmp, "wb") as f:
+        out = _Sink(f)
+        z = zstandard.ZstdCompressor(level=level).stream_writer(out, size=size, closefd=False)
+        tar_n = [0]
+
+        class _Tar(io.RawIOBase):
+            def writable(self):
+                return True
+
+            def write(self, b):
+                tar_n[0] += len(b)
+                z.write(b)
+                return len(b)
+
+        write_tar(ctx, _Tar())
+        if tar_n[0] != size:
+            raise LaunchError(f"tar stream wrote {tar_n[0]} bytes, pledged {size} (tar_size out of step with write_tar)")
+        z.close()
+    os.replace(tmp, path)
+    return out.h.hexdigest(), out.n
 
 
 def submit_args(job: str, mode: str | None, p: dict, sub: dict, ctx_sha: str) -> dict:
@@ -504,14 +645,13 @@ def launch(job: str, sha: str, out: Path, mode: str | None = None, root: Path | 
            data_dir: Path | None = None, allow_waived: bool = False, run_job_tests: bool = False, level: int = 19) -> dict:
     root = Path(root or git(Path.cwd(), "rev-parse", "--show-toplevel"))
     full = resolve_pushed(root, sha, fetch)
-    files = archive(root, full)
-    rel = params_rel(files, job, mode)
-    p = json.loads(files[rel][0])
-    out.mkdir(parents=True, exist_ok=True)
     code = out / "stage" / full[:12]
     if code.exists():
         raise LaunchError(f"{code} exists: use a fresh --out so stale files cannot be linted or tested")
-    stage(files, code)
+    code.mkdir(parents=True)
+    files = archive(root, full, dest=code)  # streamed into the stage dir: contents are Paths, read lazily
+    rel = params_rel(files, job, mode)
+    p = json.loads(blob(files[rel][0]))
     sha_lint = load_lint(code)
     lint_res = run_lint(code, rel, allow_waived, sha_lint)
     tests = run_tests(code, job, p.get("test_env"), data_dir) if run_job_tests else {"skipped": True}
@@ -527,11 +667,9 @@ def launch(job: str, sha: str, out: Path, mode: str | None = None, root: Path | 
     bad = cr_violations(ctx, root, full, sha_lint.CR_EXEMPT_PREFIXES)
     if bad:
         raise LaunchError(f"CR in shipped LF files (fix .gitattributes / the blob): {bad}")
-    blob = compress(deterministic_tar(ctx), level)
-    ctx_sha, size = sha256(blob), len(blob)
     name = f"{job}{'-' + mode if mode else ''}-{full[:12]}"
-    (out / f"{name}.tar.zst").write_bytes(blob)
-    (out / "CONTEXT_MANIFEST.json").write_bytes(ctx["CONTEXT_MANIFEST.json"][0])
+    ctx_sha, size = write_context(ctx, out / f"{name}.tar.zst", level)  # streamed; sha256 / size hashed on the fly
+    (out / "CONTEXT_MANIFEST.json").write_bytes(blob(ctx["CONTEXT_MANIFEST.json"][0]))
     costs = sha_lint.load_costs(code)
     worst = costs.worst_case_usd(p)
     receipt = {
