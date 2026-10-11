@@ -227,8 +227,16 @@ class G16SymHead(nn.Module):
 
     # -------------------------------------------------------------- judge (trusted-only)
     def judge(self, hP: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """(a [K, r], b [K]) from P features only: the SAME map for every option, no slot index anywhere."""
-        return self.A(hP), self.w(hP).squeeze(-1)
+        """(a [K, r], b [K]) from P features only: the SAME map for every option, no slot index anywhere.
+
+        Row by row (K one-row products), not one [K, d] GEMM: a CPU GEMM's rounding can depend on a row's POSITION in
+        the batch (blocked kernels, remainder rows), and the axis position of a trusted option moves when an UNTRUSTED
+        description sorts elsewhere. Measured on cpu-8 / torch 2.13 (job-8kqt9): lo moved by 2.4e-7 under undeclared
+        description edits, and two duplicate options got lo values 2.4e-7 apart. Per row, each option's (a, b) is a
+        function of its own h_P row alone, so G15 and the duplicate tie hold bitwise whatever the batch."""
+        a = torch.cat([self.A(hP[k:k + 1]) for k in range(hP.shape[0])], 0)
+        b = torch.cat([self.w(hP[k:k + 1]) for k in range(hP.shape[0])], 0).squeeze(-1)
+        return a, b
 
     def forward(self, row, host_allowed_ids: Iterable[str] | None = None) -> G16SymOutput:
         hP, hD = self.streams(row)
