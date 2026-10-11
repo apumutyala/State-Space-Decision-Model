@@ -11,7 +11,20 @@ from fractions import Fraction as Fr
 from typing import Iterator
 
 from data.jev1 import choice_q, noul_q, norm, pick, score_q
-from data.jev2 import CITIES, FIRST, LAST, _pname, fmt_date, money, opts_from_texts, record, rng, uniq_norm, yn
+from data.jev2 import CITIES, FIRST, LAST, _pname, fmt_date, money, opts_from_texts, record, rng, uniq_norm
+
+#: explicit noul criteria (JEV1_AUDIT.md fix 4: every public noul item carries descriptions); picked by a hash of
+#: the instruction, so the choice is deterministic and label-blind
+YN_DESC = [("yes: the stated facts and rules give this result", "no: the stated facts and rules give a different "
+            "result"), ("yes, that is what the text requires", "no, the text requires otherwise"),
+           ("true: the condition in the question holds", "false: the condition in the question does not hold"),
+           ("yes, it follows from the record", "no, it does not follow from the record")]
+
+
+def yn(instr: str) -> dict:
+    import hashlib
+    t, f = YN_DESC[int(hashlib.sha256(instr.encode()).hexdigest()[:6], 16) % len(YN_DESC)]
+    return noul_q(instr, t, f)
 
 GEN_SPECS_B = {
     "jev2_prob": {"name": "jev2_prob", "task_family": "exact_probability_word_problems"},
@@ -345,7 +358,14 @@ def _ambig(i: int) -> dict:
     K = r.choice([3, 4])
     keep = [gold_id] + [k for k in opts if k != gold_id]
     opts = {k: opts[k] for k in keep[:max(K, 3)]}
-    state = {"agent_policy": policy, f"{coll}_found": cands, "conversation": convo}
+    if r.random() < 0.6:  # JEV1_AUDIT fix 3: most states as plain prose (public ambiguous states are mostly strings)
+        def one(c):
+            return "; ".join(f"{k} {v}" for k, v in c.items())
+        state = ("Assistant policy: " + " ".join(policy) + f" Matching {coll} found by the assistant's search: " +
+                 " | ".join(one(c) for c in cands) + ". Conversation so far: " +
+                 " ".join(f"{t['role'].capitalize()}: \"{t['text']}\"" for t in convo))
+    else:
+        state = {"agent_policy": policy, f"{coll}_found": cands, "conversation": convo}
     q, g = choice_q(pick(r, ["What should the assistant do next?", "Choose the assistant's next step.",
                              "How should the assistant respond to the request?"]), opts, gold_id, r)
     return _rec("ambiguous", f"ambig_{kind}", i, "next", state, q, g, "jev2_ambig", matches=n_match)
@@ -398,13 +418,14 @@ def _tradeoff(i: int) -> dict:
         ok = [x for x in rows if x["uptime"] >= 99.9]
         gold = min(ok, key=lambda x: (rk[x["risk"]], x["weeks"], x["monthly"], x["name"]))["name"] if ok else "none"
     st = intro + " Candidates:\n" + "\n".join(lines) + "\n" + rule
-    if r.random() < 0.2:
-        cand = gold if r.random() < 0.5 else r.choice(names)
+    if r.random() < 0.25:
+        cand = gold if r.random() < 0.5 else r.choice([x for x in names + ["none"] if x != gold])
         return _rec("tradeoff", f"tradeoff_{kind}_yn", i, "yn", st, yn(f"Under the decision rule, is {cand} the "
                     "choice?" if cand != "none" else "Under the decision rule, should no option be chosen?"),
                     cand == gold, "jev2_tradeoff")
     opts = {nm.lower(): f"choose {nm}" for nm in names}
-    opts["none"] = "choose none: no option survives the rule"
+    if gold == "none" or r.random() < 0.6:  # K 4-6: the 'none' option is sometimes left out (never when it is gold)
+        opts["none"] = "choose none: no option survives the rule"
     q, g = choice_q("Which option does the decision rule select?", opts, gold.lower(), r)
     return _rec("tradeoff", f"tradeoff_{kind}", i, "pick", st, q, g, "jev2_tradeoff")
 
@@ -502,12 +523,22 @@ def _adv(i: int) -> dict:
                 "jev2_adv", injected=bool(inj))
 
 
-PLAN_B = {"probability": {"synth": 8200}, "trap": {"synth": 8200}, "ambiguous": {"synth": 8200},
-          "tradeoff": {"synth": 8200}, "adversarial": {"synth": 8200}}
+PLAN_B = {"probability": {"synth": 2200}, "trap": {"synth": 2200}, "ambiguous": {"synth": 2200},
+          "tradeoff": {"synth": 2200}, "adversarial": {"synth": 2200}}
 GEN_B = {"probability": _prob, "trap": _trap, "ambiguous": _ambig, "tradeoff": _tradeoff, "adversarial": _adv}
 
 
 def generate_b(families) -> Iterator[dict]:
+    """Row i of a family: draw the wanted yes/no label first (50/50, label-blind seed); try generator seeds
+    i*64 + t until a non-noul row or a noul row with that label comes out (noul gold balanced per family)."""
     for f in families:
         for i in range(PLAN_B[f]["synth"]):
-            yield GEN_B[f](i)
+            want = "true" if rng("b-want", f, i).random() < 0.5 else "false"
+            row = None
+            for t in range(64):
+                cand = GEN_B[f](i * 64 + t)
+                if cand["questions"]["q"]["type"] != "noul" or cand["labels"]["q"] == want:
+                    row = cand
+                    break
+            if row is not None:
+                yield row

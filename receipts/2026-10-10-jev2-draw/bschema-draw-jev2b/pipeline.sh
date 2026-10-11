@@ -19,4 +19,5 @@ step doc timeout 3600 $P -X utf8 -m train.doc_overlap_guard scan --records $REC 
 step atk timeout 3600 $P -X utf8 -m train.attack_guard scan --records $REC --out $R/attack-guard.json
 step jev timeout 3600 $P -X utf8 -m train.jevbench_guard rescan $REC --out $R/jevbench-guard-rescan.json --min-free-mb 1000
 step rows timeout 3600 $P -X utf8 -I scripts/jev1_gates.py --generator data.jev2 --records $REC --out $R/row-gates.json
+step shape timeout 1200 $P -X utf8 -I scripts/jev2_shape_gate.py check --fp receipts/2026-10-10-jev2-draw/public-shape-fingerprint.json --records $REC --lens "$W/lens-shim.jsonl" --out $R/shape-gate.json
 echo "[$(date +%T)] ALL DONE" >> $L
