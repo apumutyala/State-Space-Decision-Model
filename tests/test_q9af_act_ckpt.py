@@ -323,9 +323,11 @@ def test_act_ckpt_shrinks_saved_activations_per_token():
 
 @pytest.mark.requires_transformers(PIN)
 def test_short_continuations_fail_closed_under_autograd_on_fla(monkeypatch):
-    """PR #121 review (non-blocking 1): with fla installed, a 1-token continuation under autograd would take fla's
-    single-token recurrent kernel, which has no backward (a GPU-only crash). The fork refuses it up front; >= 2-token
-    continuations and no_grad evaluation are unaffected. (CPU: fla is absent, so the detector is forced on.)"""
+    """PR #121 review (non-blocking 1): with fla installed, a 1-token-wide continuation CALL under autograd would take
+    fla's single-token recurrent kernel, which has no backward (a GPU-only crash); the guard refuses it up front. The
+    GDN path depends on the call's width, not on each row's continuation length, so the fork right-pads single-token
+    continuations (v3w codes) to MIN_CONT_WIDTH and the chunked path (with a backward) runs. No_grad evaluation is
+    unaffected. (CPU: fla is absent, so the detector is forced on.)"""
     import heads.backbone as B
 
     bb = build("q9af", seed=5)
@@ -333,8 +335,10 @@ def test_short_continuations_fail_closed_under_autograd_on_fla(monkeypatch):
     prefix = list(range(5, 40))
     monkeypatch.setattr(B, "fla_installed", lambda: True)
     with pytest.raises(RuntimeError, match="no backward"):
-        bb.fork_features(prefix, [[30, 31], [40]])
-    bb.fork_features(prefix, [[30, 31], [40, 41, 42]])[1].sum().backward()  # every continuation >= 2 tokens: fine
+        B._refuse_short_continuations_on_fla(torch.tensor([0, 0]), 1)
+    bb.fork_features(prefix, [[30, 31], [40]])[1].sum().backward()  # call width 2: the chunked path
+    bb.fork_features(prefix, [[30], [40]])[1].sum().backward()  # single-token codes: padded to MIN_CONT_WIDTH
+    bb.fork_features(prefix, [[30, 31], [40, 41, 42]])[1].sum().backward()
     with torch.no_grad():
         bb.fork_features(prefix, [[30], [40]])  # evaluation: no backward, no refusal
     monkeypatch.setattr(B, "fla_installed", lambda: False)

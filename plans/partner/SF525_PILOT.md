@@ -1,5 +1,7 @@
 # A 525 dollar pilot for decision first SSMs
 
+> **Rate note (2026-10-09):** the dollar figures here use the 2026-10-06 SF Compute rates ($2.97/h = $0.0495/min batch, $3.96/h interactive) and are left as written. From 2026-10-08 the H100 list price is $5.04/h and batch jobs bill $3.78/h ($0.063/min; Fridays $0.05628/min), so batch figures scale by x 1.27. Source and history: `jobs/common/rates.py`.
+
 6 October 2026. This is a proposed use of the user's reported SF Compute credits. Account balance, credit expiry, availability and account-specific prices have not been queried. No compute was started. This supplements [the architecture plan](PLAN.md) with a small first campaign; the long-term competitive target remains unchanged.
 
 The useful objective is to test one complete piece of the proposed lineage: **a learned SSM makes typed decisions, exposes editable semantic state, and grows a checked language module from those decisions without losing useful decision capability**. This budget can support a substantive pilot. It does not establish that a frontier competitor or a generally aligned language model can be completed for this amount.

@@ -93,7 +93,7 @@ WAIVERS: dict[str, dict[str, str]] = {
                              "train.run_cell / jobs/rwkv7/pilot_cell.json, not pinned constants in scripts/decide_rwkv7.py"},
 }
 
-CHECKS = ("build_timeout", "schedule", "worst_case_stated", "registered", "shell_test", "decision_rule",
+CHECKS = ("build_timeout", "schedule", "rate_current", "worst_case_stated", "registered", "shell_test", "decision_rule",
           "rate_guard", "no_backslash_n", "submit_checks")
 
 #: L-25: the platform's CheckSpec table (validate_job's own error table, probed 2026-10-07: "<type> takes only ...",
@@ -279,6 +279,14 @@ def chk_build_timeout(p: dict, **_) -> tuple[bool, str]:
 def chk_schedule(p: dict, **_) -> tuple[bool, str]:
     t = schedule_total(p)
     return t == p["max_duration_minutes"], f"phase caps + reserve = {t}, max_duration_minutes = {p['max_duration_minutes']}"
+
+
+def chk_rate_current(p: dict, costs, **_) -> tuple[bool, str]:
+    """L-49: a params file priced at a stale rate under-states its worst case (the 2026-10-08 list change moved the
+    billed batch rate $0.0495 -> $0.063/min while every params file still said 0.0495)."""
+    want = costs.rates.BATCH_USD_PER_MIN
+    got = p.get("batch_usd_per_min")
+    return got == want, f"batch_usd_per_min {got} (jobs/common/rates.py BATCH_USD_PER_MIN {want}, since {costs.rates.EFFECTIVE})"
 
 
 def chk_worst_case_stated(p: dict, root: Path, job: str, costs, **_) -> tuple[bool, str]:
@@ -496,6 +504,42 @@ def archive_cr_hits(root: Path = ROOT, rev: str = "HEAD", autocrlf: str = "true"
     return [c for c in cand if c not in unset]
 
 
+def usage_staleness(root: Path = ROOT, costs=None, today=None) -> str | None:
+    """L-49: a WARNING (never a failure) when the newest usage receipt behind costs.SPENT_USD is older than
+    costs.USAGE_STALE_DAYS, or missing: the granted-credit ledger then under-counts spend. Refresh with
+    `autor usage --json` into receipts/<date>-<lane>-<what>/usage.json."""
+    import datetime as dt
+
+    costs = costs or load_costs(root)
+    u = costs.latest_usage_receipt(root)
+    if u is None:
+        return "no usage receipt under receipts/: costs.SPENT_USD (MTD) is unknown"
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    age = (today - dt.date.fromisoformat(u["date"])).days
+    if age > costs.USAGE_STALE_DAYS:
+        return (f"usage receipt {u['path']} (MTD ${u['total_usd']:.2f}) is {age} days old "
+                f"(> {costs.USAGE_STALE_DAYS}): refresh it before trusting the granted-credit ledger")
+    return None
+
+
+def billing_staleness(root: Path = ROOT, costs=None, today=None) -> str | None:
+    """Same rule for the billing receipt behind costs.GRANTED_USD (the granted credit that replaced the $525
+    envelope): a WARNING when it is missing or older than costs.USAGE_STALE_DAYS. Refresh with
+    `autor billing --json` (read only: no top-ups, no payment links)."""
+    import datetime as dt
+
+    costs = costs or load_costs(root)
+    b = costs.latest_billing_receipt(root)
+    if b is None:
+        return "no billing receipt under receipts/: costs.GRANTED_USD (granted credit) is unknown"
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    age = (today - dt.date.fromisoformat(b["date"])).days
+    if age > costs.USAGE_STALE_DAYS:
+        return (f"billing receipt {b['path']} (granted ${b['granted_usd']:.2f}) is {age} days old "
+                f"(> {costs.USAGE_STALE_DAYS}): refresh it before trusting the granted-credit ledger")
+    return None
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     costs, tests = load_costs(ROOT), _test_sources(ROOT)
@@ -513,6 +557,9 @@ def main(argv: list[str] | None = None) -> int:
         cr = archive_cr_hits(ROOT)
         print(f"eol attrs {attrs}; archive CR hits {cr or 'none'}; backslash-n {backslash_n_hits(ROOT) or 'none'}")
         rc |= any(v != "lf" for v in attrs.values()) or bool(cr) or bool(backslash_n_hits(ROOT))
+        for stale in (usage_staleness(ROOT, costs), billing_staleness(ROOT, costs)):
+            if stale:
+                print(f"WARN {stale}")
     return int(rc)
 
 

@@ -116,6 +116,10 @@ class TrainConfig:
     #: group of long catalogs (K = 77..255) can hold thousands of copies at once; a row whose K alone is over the cap
     #: runs alone. Grouping only: the same rows, losses and gradients (tests/test_cell_perf.py).
     row_options: int = 0
+    #: max continuations per HF cache-fork call under autograd (heads.backbone.HiddenStateBackbone.cont_chunk): rows
+    #: with K > cont_chunk run their options in checkpointed chunks. Execution only: same loss and gradients
+    #: (tests/test_sizecliff.py::test_cont_chunk_gradients_equal_the_unchunked_step). 0 = off.
+    cont_chunk: int = 0
     axis_loss_weight: float = 0.0  # opt-in MSE on HeadOutput.semantic_axes, targets live only on Item
     # ---- anti-collapse (research-notes/D10_DIVERGENCE.md). Every default = the old behaviour; at their defaults these
     # fields are left out of to_json / the hash, so old configs, records and checkpoints are byte-identical.
@@ -164,7 +168,8 @@ class TrainConfig:
     #: operational dev-card keys that ARE hashed when collapse_guard is on
     GUARD_HASHED = ("dev_card_every", "dev_card_rows", "dev_card_seed")
     #: execution-strategy fields: same loss and gradients, not part of the hash (old hashes unchanged)
-    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan", "cont_plan", "compile_blocks", "row_options")
+    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan", "cont_plan", "compile_blocks", "row_options",
+                 "cont_chunk")
 
     def hash(self) -> str:
         keep = self.GUARD_HASHED if self.collapse_guard else ()
@@ -183,7 +188,8 @@ def with_execution(cfg: TrainConfig, cell: dict) -> TrainConfig:
                                row_tokens=int(cell.get("row_tokens", 0)), row_plan=str(cell.get("row_plan", "greedy")),
                                cont_plan=str(cell.get("cont_plan", "per_group")),
                                compile_blocks=bool(cell.get("compile_blocks", False)),
-                               row_options=int(cell.get("row_options", 0)))
+                               row_options=int(cell.get("row_options", 0)),
+                               cont_chunk=int(cell.get("cont_chunk", 0) if cell.get("cont_chunk") != "auto" else 0))
 
 
 #: fixed cost of one group (prefix + continuation call, forward + recompute + backward) in padded-token equivalents:
@@ -337,7 +343,14 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
         raise ValueError(f"row_options must be >= 0, got {cfg.row_options}")
     if cfg.row_options and cfg.loss.order_consistency_weight:
         raise ValueError("row_options is not implemented for order-consistency views (row_groups_with_views)")
+    if cfg.cont_chunk < 0:
+        raise ValueError(f"cont_chunk must be >= 0, got {cfg.cont_chunk}")
+    if cfg.cont_chunk and cfg.lora_dropout:
+        raise ValueError("cont_chunk recomputes the prefix per chunk: exact only without LoRA dropout")
+    if cfg.cont_chunk and cfg.row_batch > 1:
+        raise ValueError("cont_chunk is implemented for the per-row cache fork (row_batch 1)")
     model.backbone.batch_rows = cfg.row_batch > 1
+    model.backbone.cont_chunk = cfg.cont_chunk
     return replaced
 
 
@@ -600,7 +613,10 @@ class Trainer:
             with torch.no_grad():
                 for n, t in st["trainable"].items():
                     params[n].copy_(t)
-            self.opt.load_state_dict(st["optimizer"])
+            if st.get("optimizer") is not None:
+                self.opt.load_state_dict(st["optimizer"])
+            else:  # train.chain: a best carried trainable-only across a link (5 GiB artifact cap) has no moments
+                ev["optimizer"] = "kept: the best was carried across a chain link without its AdamW moments"
             self.lr_scale *= 0.5
             self._apply_lr()
             ev.update(action="reload_best", lr_scale=self.lr_scale, lrs=[g["lr"] for g in self.opt.param_groups])
@@ -787,7 +803,9 @@ class Trainer:
     def anti_collapse_state(self) -> dict[str, Any]:
         return {"horizon": self.horizon, "horizon_fixed": self.horizon_fixed, "lr_scale": self.lr_scale, "dev_cards": list(self.dev_cards),
                 "best": None if self.best is None else dict(self.best), "collapse_events": list(self.collapse_events),
-                "stopped": self.stopped, "guard_armed": self.guard_armed}
+                "stopped": self.stopped, "guard_armed": self.guard_armed,
+                # the loss trigger's window (<= collapse_window pairs): a resume (or chain link) continues it exactly
+                **({"guard_window": [list(x) for x in self._guard_window]} if self.cfg.collapse_guard else {})}
 
     def save(self, path: str | Path | None = None) -> Path:
         d = Path(path or self.cfg.ckpt_dir)
@@ -829,7 +847,9 @@ class Trainer:
     def load(self, path: str | Path, strict_config: bool = True, strict_lineage: bool = True) -> None:
         """Restore a ``.pt`` checkpoint (full: trainable + optimizer + scheduler + RNG), or an INFERENCE export
         (``train.ckpt_export``: ``trainable-stepN.safetensors`` + sidecar; trainable + step / history only, for eval,
-        same config-hash and lineage checks). ``self.loaded_format`` records which."""
+        same config-hash and lineage checks), or a ``train.chain`` trainable-only best (``.pt`` with optimizer None:
+        trainable + step / history, for scoring). ``self.loaded_format`` records which ("full" / "inference" /
+        "trainable"); ``resume`` accepts only "full"."""
         from .ckpt_export import _jsonable, is_inference, read_inference
 
         if is_inference(path):
@@ -861,9 +881,12 @@ class Trainer:
             self.dev_cards, self.best = list(ac["dev_cards"]), ac["best"]
             self.collapse_events, self.stopped = list(ac["collapse_events"]), ac.get("stopped")
             self.guard_armed = bool(ac.get("guard_armed"))
-            self._guard_window.clear()
+            self._guard_window[:] = [(float(x), float(u)) for x, u in ac.get("guard_window") or []]
         if is_inference(path):
             self.loaded_format = "inference"
+            return
+        if st.get("optimizer") is None:  # train.chain trainable-only best: the fp32 weights, for scoring
+            self.loaded_format = "trainable"
             return
         self.loaded_format = "full"
         self.opt.load_state_dict(st["optimizer"])
@@ -884,4 +907,6 @@ class Trainer:
             raise ValueError(f"{p.name} is an inference export (no optimizer / scheduler / RNG state): eval only, "
                              "resume needs the full .pt in the checkpoint dir")
         self.load(p)
+        if self.loaded_format != "full":
+            raise ValueError(f"{p.name} has no optimizer / scheduler / RNG state ({self.loaded_format}): not a resume point")
         return True

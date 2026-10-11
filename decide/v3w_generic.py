@@ -216,10 +216,11 @@ class HFEncoder:
     ``enc(text, trusted)`` -> ids without auto-added specials; untrusted text that yields a control (added-token) id
     is refused. ``encode_pieces`` gives ids + byte offsets (heads.layout maps tokens back to char spans)."""
 
-    def __init__(self, tok_dir: Path) -> None:
+    def __init__(self, tok_dir: Path, name: str | None = None) -> None:
         from tokenizers import Tokenizer
 
         self.dir = Path(tok_dir)
+        self.name = name or self.dir.name  # identity name: the pinned tokenizers-root dir name, wherever the files sit
         path = self.dir / "tokenizer.json"
         self.tok = Tokenizer.from_file(str(path))
         self.tokenizer_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
@@ -236,7 +237,7 @@ class HFEncoder:
         self.bos_id = self.tok.token_to_id(self.bos_token) if self.bos_token else None
 
     def identity(self) -> dict[str, Any]:
-        return {"kind": "hf-tokenizers-whole-string", "dir": self.dir.name, "tokenizer_sha256": self.tokenizer_sha256,
+        return {"kind": "hf-tokenizers-whole-string", "dir": self.name, "tokenizer_sha256": self.tokenizer_sha256,
                 "untrusted": "fail closed on added-token ids"}
 
     def __call__(self, text: str, trusted: bool = True) -> list[int]:
@@ -317,7 +318,13 @@ class Backbone:
     hf_repo: str | None = None
     attention_free: bool = True
     note: str = ""
+    #: lean v3w (heads.layout.lean_segments): schema block dropped, the asked question once, LEAN_SYSTEM as system text
+    lean: bool = False
 
+
+#: the lean template's system text (the full v3w's is decide.prompt.G1V2_SYSTEM_PROMPT)
+LEAN_SYSTEM = "Answer with exactly one option."
+_Q35_NOTE = "stock Qwen3.5 (A-PREREG-SIZECLIFF size-cliff arm; parent qwen35, heads.backbone.QWEN35_STOCK)"
 
 BACKBONES: dict[str, Backbone] = {b.id: b for b in [
     Backbone("rwkv7-g1k-13.3b", "rwkv7-g1", "RWKV--RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
@@ -339,16 +346,21 @@ BACKBONES: dict[str, Backbone] = {b.id: b for b in [
     # jobs/jev_host_scan (JevBench host scan, 2026-10-09): small hosts read stock, without the prefix fork
     Backbone("rwkv7-g1i-2.9b", "rwkv7-g1", "RWKV--RWKV7-2.9B-20260805@aae64511841dd32f5235f6bcc7a931c6ef806e6c",
              "rwkv_g1", 16384, "RWKV/RWKV7-2.9B-20260805", note="G1i; tokenizer.json identical to G1k's"),
-    Backbone("qwen3.5-4b", "qwen3.5", "Qwen--Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a", "chat_template",
-             262144, "Qwen/Qwen3.5-4B", False),
-    Backbone("qwen3.5-2b", "qwen3.5", "Qwen--Qwen3.5-2B@15852e8c16360a2fea060d615a32b45270f8a8fc", "chat_template",
-             262144, "Qwen/Qwen3.5-2B", False),
     Backbone("lfm2.5-2.6b", "lfm2.5", "LiquidAI--LFM2.5-2.6B@654f9463ce32b05d0429d76fe1f580b27d4c1ac0", "chat_template",
              131072, "LiquidAI/LFM2.5-2.6B", False, "hybrid short-conv + attention"),
     Backbone("gemma-4-e4b-it", "gemma4", "google--gemma-4-E4B-it@ee0ef6023621cff504d758262d4e04895a5af4a2",
              "chat_template", 131072, "google/gemma-4-E4B-it", False),
     Backbone("nemotron-3-nano-4b", "nemotron-h", "nvidia--NVIDIA-Nemotron-3-Nano-4B-BF16@dfaf35de3e30f1867dd8dbc38a7fc9fb52d3914f",
              "chat_template", 262144, "nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16", False, "hybrid Mamba2 + attention"),
+    Backbone("qwen3.5-0.8b", "qwen3.5-0.8b", "Qwen--Qwen3.5-0.8B@2fc06364715b967f1860aea9cf38778875588b17",
+             "chat_template", 262144, "Qwen/Qwen3.5-0.8B", False, _Q35_NOTE),
+    Backbone("qwen3.5-2b", "qwen3.5-2b", "Qwen--Qwen3.5-2B@15852e8c16360a2fea060d615a32b45270f8a8fc",
+             "chat_template", 262144, "Qwen/Qwen3.5-2B", False, _Q35_NOTE),
+    Backbone("qwen3.5-4b", "qwen3.5-4b", "Qwen--Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+             "chat_template", 262144, "Qwen/Qwen3.5-4B", False, _Q35_NOTE),
+    Backbone("qwen3.5-4b-lean", "qwen3.5-4b-lean", "Qwen--Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+             "chat_template", 262144, "Qwen/Qwen3.5-4B", False,
+             _Q35_NOTE + "; LEAN template (rescore only): schema dropped, question once, short system text", lean=True),
 ]}
 
 
@@ -364,6 +376,7 @@ class V3W:
     budget: int
     template_id: str
     control_ids: frozenset[int]
+    lean: bool = False  # heads.layout.lean_segments layout (Backbone.lean)
     _first: dict[str, int | None] = field(default_factory=dict)
     _ctx_ids: list[int] = field(default_factory=list)
 
@@ -387,6 +400,10 @@ class V3W:
         return text[len(_G1_HEAD):len(text) - len(_G1_TAIL)]
 
     def render(self, request: dict[str, Any], qid: str, catalog_chars: int | None, words: frozenset[str]) -> str:
+        if self.lean:  # the lean layout's own text (the same segments heads.layout builds the training row from)
+            from heads.layout import lean_v3w_render
+
+            return lean_v3w_render(request, qid, self, catalog_chars, words)
         if self.is_legacy_rwkv:
             return render_g1v3(request, qid, self.table, catalog_chars, False, True, words)
         return self.fmt.full(self.body(request, qid, catalog_chars, words))
@@ -528,6 +545,8 @@ class V3W:
                  "codes": self.codes, "wordlike_excluded": sorted(WORDLIKE), "budget": self.budget,
                  "catalog": list(CATALOG_CHARS_LADDER), "word_ids": "non-opaque ids, unique first token after ANSWER:",
                  "tokenizer": getattr(self.encode, "identity", lambda: None)()}
+        if self.lean:  # only lean specs carry the key: every existing identity is unchanged
+            value["layout"] = "lean-v3w-1: schema dropped, the asked question once (heads.layout.lean_segments)"
         return {"id": self.template_id, "sha256": sha256_text(canonical_json(value))}
 
 
@@ -540,17 +559,20 @@ def _rwkv_encoder(tok_dir: Path):
 
 
 def make_v3w(backbone_id: str, tokenizers_root: str | Path | None = None, budget: int | None = None,
-             require_nospace: bool | None = None) -> V3W:
+             require_nospace: bool | None = None, tokenizer_dir: str | Path | None = None) -> V3W:
     """The v3w readout + training-row builder for ``backbone_id`` (a key of BACKBONES). ``budget``: the readout's
     prompt-token budget for the code-key ladder (default min(max_context, adapter max_input_tokens) - 1, as
     G1V3Backend). ``require_nospace`` (default False; the frozen RWKV table never uses it) also requires
     each code to be one token WITHOUT the leading space. Off by default: in Qwen-family BPE ":A" is one pretoken, so
     "ANSWER:A" re-tokenizes the colon and A..F would be dropped; the scored form is " <code>" (always proved), the
-    no-space form is recorded per code (``nospace_token_id``) and reported by scripts/check_v3w_generic.py."""
+    no-space form is recorded per code (``nospace_token_id``) and reported by scripts/check_v3w_generic.py.
+    ``tokenizer_dir``: read the tokenizer / chat-template files from this directory instead (e.g. the model's HF
+    snapshot on a GPU box); the identity keeps the pinned ``bb.tokenizer_dir`` name, so the same files give the same
+    identity sha256 anywhere (``spec_for_template`` checks it against ``PINNED_SPEC_SHA256``)."""
     from .adapter import DEFAULT_LIMITS
 
     bb = BACKBONES[backbone_id]
-    tok_dir = Path(tokenizers_root or DEFAULT_TOKENIZERS) / bb.tokenizer_dir
+    tok_dir = Path(tokenizer_dir) if tokenizer_dir else Path(tokenizers_root or DEFAULT_TOKENIZERS) / bb.tokenizer_dir
     if budget is None:
         budget = min(bb.max_context, DEFAULT_LIMITS["max_input_tokens"]) - 1
     if bb.fmt == "rwkv_g1":
@@ -558,10 +580,79 @@ def make_v3w(backbone_id: str, tokenizers_root: str | Path | None = None, budget
         entries, _ = load_v3_codes()
         codes = [{"code": e["code"], "token_id": e["token_id"]} for e in entries]
         return V3W(bb, RWKV_G1, enc, codes, budget, G1V3W_ID, frozenset({0}))
-    enc = HFEncoder(tok_dir)
+    enc = HFEncoder(tok_dir, name=bb.tokenizer_dir)
     if bb.fmt == "chat_template":
-        fmt = format_from_chat_template(bb.family, tok_dir)
+        fmt = format_from_chat_template(bb.family, tok_dir, **({"system": LEAN_SYSTEM} if bb.lean else {}))
     else:
         fmt = plain_format(bb.family, (enc.bos_id,) if enc.add_bos and enc.bos_id is not None else ())
     codes = build_code_table(enc, fmt.answer_ctx, V3_MAX_K, bool(require_nospace), enc.control_ids)
-    return V3W(bb, fmt, enc, codes, budget, f"{GENERIC_ID}:{bb.family}", enc.control_ids)
+    return V3W(bb, fmt, enc, codes, budget, f"{GENERIC_ID}:{bb.family}", enc.control_ids, lean=bb.lean)
+
+
+# ------------------------------------------------------------------------------------- trained-cell template registry
+def template_id(backbone_id: str) -> str:
+    """The training / readout template id of a generic v3w backbone (``jrt-v3w-generic:<family>``)."""
+    bb = BACKBONES[backbone_id]
+    if bb.fmt == "rwkv_g1":
+        return G1V3W_ID
+    return f"{GENERIC_ID}:{bb.family}"
+
+
+def is_generic_template(template: Any) -> bool:
+    tid = getattr(template, "id", template)
+    return isinstance(tid, str) and tid.startswith(GENERIC_ID + ":")
+
+
+#: generic template id -> backbone id (trained cells name the template; the backbone follows from it)
+TEMPLATE_BACKBONE = {template_id(b): b for b, bb in BACKBONES.items() if bb.fmt != "rwkv_g1"}
+#: generic template id -> the sha256 of ``V3W.identity()`` built from the pinned tokenizer files (CPU, 2026-10-09,
+#: ``python -X utf8 scripts/check_q9af_v3w_equivalence.py --print-pins``). A trained cell's rows and its readout use the
+#: spec only when the files on this box give exactly this identity (tokenizer.json sha256, chat-template sha256, code
+#: table, budget, format): a different tokenizer revision fails closed instead of silently changing the prompt ids.
+PINNED_SPEC_SHA256: dict[str, str] = {
+    "jrt-v3w-generic:qwen3.5": "2e4907ee4302d9d196052fc04c5618e88fc8058446644715345eaad93a3a2543",
+    # A-PREREG-SIZECLIFF (stack/qwen35/sizecliff, CPU 2026-10-09, scripts/check_sizecliff_cpu.py): the stock Qwen3.5
+    # small sizes at their pinned revisions (same tokenizer.json as the 9B; the 0.8B / 2B ship another chat-template
+    # file that renders the same system / user / no-think turn) and the 4B lean rescore template
+    "jrt-v3w-generic:qwen3.5-0.8b": "e8388d14ea08851a55aa4d4773bb5f62c16d606380ad70550e237177fdd1d069",
+    "jrt-v3w-generic:qwen3.5-2b": "157905232693fe7c94ecf58ad60b6d279dfcf27f08559b96cf35c00f7f07a206",
+    "jrt-v3w-generic:qwen3.5-4b": "1d871833353051964d15d06a96735fcc1699e051a4cc2518f2310a7abc647068",
+    "jrt-v3w-generic:qwen3.5-4b-lean": "da89e999789870899b46ad3343839df2fa5676af14fca6e55621c3c506968666",
+}
+_SPECS: dict[str, V3W] = {}
+
+
+def bind_template(template: Any, tokenizer_dir: str | Path | None = None) -> V3W:
+    """Build (once per process) the spec of a generic template from ``tokenizer_dir`` (default: the local tokenizers
+    root) and check its identity against ``PINNED_SPEC_SHA256``. Later ``spec_for_template`` calls return it."""
+    tid = getattr(template, "id", template)
+    if tid not in TEMPLATE_BACKBONE:
+        raise KeyError(f"{tid!r} is not a generic v3w template ({sorted(TEMPLATE_BACKBONE)})")
+    spec = make_v3w(TEMPLATE_BACKBONE[tid], tokenizer_dir=tokenizer_dir)
+    got = spec.identity()["sha256"]
+    want = PINNED_SPEC_SHA256.get(tid)
+    if want is None:
+        raise ValueError(f"{tid}: no pinned spec identity (PINNED_SPEC_SHA256); refusing an unpinned readout")
+    if got != want:
+        raise ValueError(f"{tid}: spec identity {got[:16]} != pinned {want[:16]} (tokenizer / chat template / code "
+                         f"table files differ from the pinned ones in {tokenizer_dir or DEFAULT_TOKENIZERS})")
+    old = _SPECS.get(tid)
+    if old is not None and old.identity()["sha256"] != got:
+        raise ValueError(f"{tid}: already bound to another spec")
+    _SPECS[tid] = spec
+    if tokenizer_dir:  # spawned workers (run_cell tokenize_workers) re-bind from the same files
+        os.environ[_env_key(tid)] = str(Path(tokenizer_dir).resolve())
+    return spec
+
+
+def _env_key(tid: str) -> str:
+    return "SSDM_V3W_TOKDIR_" + "".join(c if c.isalnum() else "_" for c in tid.split(":", 1)[1]).upper()
+
+
+def spec_for_template(template: Any) -> V3W:
+    """The bound spec of a generic template. Unbound in this process: bound from the directory a parent process
+    bound (``SSDM_V3W_TOKDIR_<FAMILY>``, inherited by spawned workers), else from the local tokenizers root."""
+    tid = getattr(template, "id", template)
+    if tid in _SPECS:
+        return _SPECS[tid]
+    return bind_template(tid, os.environ.get(_env_key(tid)) if tid in TEMPLATE_BACKBONE else None)

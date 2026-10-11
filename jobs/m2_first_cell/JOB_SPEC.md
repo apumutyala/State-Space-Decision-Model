@@ -129,7 +129,7 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
 1. Context: `python -m jobs.common.launch m2_first_cell --sha <merged sha> --out <dir> --data <SSDM_DATA>` (PR #93:
    lint + job tests on the archived tree, pinned data, deterministic context, `submit.json`), then `create_context`,
    upload, `finalize_context`.
-2. `open_mission("m2-first-cell")`; `set_workspace_cap(MTD + 70)`.
+2. `open_mission("m2-first-cell")`; `set_workspace_cap(MTD + 89.10)`.
 
 ```json
 {
@@ -185,7 +185,7 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
 ## Before submit
 
 1. Independent fresh-context review; merge to `agent-main`.
-2. Spend issue + LEDGER row; `set_workspace_cap(MTD + 70)` (hard cap $70; worst case $66.03); credit expiry 2026-10-27.
+2. Spend issue + LEDGER row; `set_workspace_cap(MTD + 89.10)` (hard cap $89.10; worst case $84.04 at $0.063/min, was $70 / $66.03); credit expiry 2026-10-27.
 3. Env: `TOK_S=3757 CALL_S=0.117` (job-tkfaj probe). No `M2FC_*` variable: those are the runner's test-only path
    overrides (`tests/test_m2_first_cell_shell.py` executes the runner end to end under bash on CPU; it needs the image's
    transformers 5.17.0, e.g. `CUDA_VISIBLE_DEVICES= .venv-gpu/Scripts/python -X utf8 -m pytest tests/test_m2_first_cell_shell.py`,
@@ -203,6 +203,42 @@ gradient cosine 0.998 for every variant including pure regrouping (the GPU reduc
 D1's: **Worst case** **$66.03** (cap $70), expected ~$26.14; the same 190-min clock trains ~40 % more rows (time cap
 binds). The template future cells copy. With `row_options` set (D8), `cont_plan` `single` runs a step as one
 continuation call only when the step's summed K fits the cap; otherwise that step takes the per-group path.
+
+Mode `d10_v2f_b100k` (D10, the combined cell; `first_cell_job.sh d10_v2f_b100k`, `job_params_d10_v2f_b100k.json`,
+`m2_first_cell_rwkv7_d10_v2f_b100k.json`; generic runner, `train_dir` `m2-b100k`): `d3_v2f_fast` (template `jrt-rwkv-g1-v2f`,
+layout `g1v2`, d1_fast flags) on Agent B's B1 100k weighted draw v2 (stack/rwkv7/b1-draw @e3eedeb; pointer
+`data/manifests/b1-draw100k-v2.pointer.json`, raw gz pins `data_d10_b100k.sha256`, `n_train_records` 100,000, heldout
+exclusions empty) with D8's training-K lift `train_max_k` 255 / `row_options` 160 (#221). T ladder stays 512/1,024/2,048
+and eval is unchanged (`max_k` 16, `eval_max_t` 2,048, parent arm in-job in v2f). Census (real tokenizer, v2f, CPU): draw
+100,000, heldout 0 hits, 154,355 training items (K <= 16 144,590; K 17-27 7,602; K 77 2,163), mean T 838.7; only 635 items
+(0.4 %) exceed 2,048 tokens, so no T = 4,096 mode. Tokenize for 100k rows: 10 x 100/24 = 41.7 -> 42 min (+32 vs D1). Cell cap
+230 + 32 = 262; schedule 630 - 230 + 262 + 7 = 669 min. **Worst case** (60 + 2 x 669) x $0.0495 = **$69.20** (cap $70).
+Expected 560 min ≈ $27.72. ~16k rows at the d1_fast step (5.63 s); ~12k if the longer v2f rows (mean T 839 vs 604) slow it.
+
+Mode `d10_v2f_b100k_t380` (`job_params_d10_v2f_b100k_t380.json`, `m2_first_cell_rwkv7_d10_v2f_b100k_t380.json`): `d10_v2f_b100k`
+with the clock 190 -> 380 min (as D7 `d7_t380`) and `max_steps` 3,000 -> 4,500 (operational, not hashed) so the clock binds
+(~4,050 steps / ~32k rows at 5.63 s; ~24k at ~7.5 s). Cell cap = D7's 421 + 2 checkpoint margin + 32 tokenize = 455; schedule
+630 - 230 + 455 + 7 = 862 min. **Worst case** (60 + 2 x 862) x $0.0495 = **$88.31** (cap $90). Expected 753 min ≈ $37.27.
+
+Mode `d10w_v3w_b100k` (D10w; `job_params_d10w_v3w_b100k.json`, `m2_first_cell_rwkv7_d10w_v3w_b100k.json`): `d10_v2f_b100k` with only
+template `jrt-rwkv-g1-v3w` (layout `g1v2`, r1_format_commit 0290fa8; parent arm in-job via `G1V3Backend(mode='words')`). Caps and
+schedule are D10's: **Worst case** (60 + 2 x 669) x $0.0495 = **$69.20** (cap $70).
+
+Mode `d16_v3w_b100k_safe` (D16; `job_params_d16_v3w_b100k_safe.json`, `m2_first_cell_rwkv7_d16_v3w_b100k_safe.json`): `d10w_v3w_b100k` +
+anti-collapse safe keys (PR #232) + the g1v2 ordinal-head fix (6be1c8f) + `train_set.attack_clean` (b1-draw100k-v2: 5,201 D1-A rows dropped) +
+the `d10_v2f_b100k_t380` clock (380 min, max_steps 4,500, cell cap 455); `"stage": "screen"` with screen_readout v3w (d1_v3w / stock_v3w),
+screen cap 85 (fixed 15 + 32 tokenize for 100k + 25.97 proxy child = 72.97 <= 0.95 x 85). Schedule 25 + 5 + 10 + 85 + 65 + 455 + 85 + 5 + 7 =
+742 min. **Worst case** (60 + 2 x 742) x $0.0495 = **$76.43** (cap $90). Expected 671 min ≈ $33.21.
+
+Mode `q9af_v2_v3w` (Q9-AF v2 first cell; `job_params_q9af_v2_v3w.json`, `m2_first_cell_rwkv7_q9af_v2_v3w.json`): D16 with the
+cell config's `"parent": "q9af"`. The runner reads the parent from the cell config: q9af fetches `Qwen/Qwen3.5-9B@c2022362`
+(`q9af_snapshot_v3w.sha256`, incl. chat_template.jinja), verifies the shipped export (`gdn_q9af_v2.sha256` + `jobs.q9af_cell.pin
+check`: ok / final / attention_free, never hybrid) and the generic v3w spec identity on the snapshot's own tokenizer files, and passes
+`--parent q9af --gdn-ckpt $DATA/gdn/gdn_converted.pt` to score_parent / run_cell / screen / m2_gates. Template `jrt-v3w-generic:qwen3.5`
+(`decide.v3w_generic`; readout `decide.backends.v3w_generic.V3WGenericBackend`, training rows `heads.layout.build_row` -> the spec's
+`train_row`). row_batch 1 (d1_fast row flags inert), compile_blocks false, image `jobs/probe9b/Dockerfile`. Screen: in-job parent,
+reference d1_v3w with `screen_reference_match: family`. Caps / schedule / **worst case $76.43** = D16's. Pins at launch:
+`python -X utf8 scripts/fill_conversion_pins.py --export-json export.json --gdn gdn_converted.pt --decision decision.json`.
 
 fla in cells (any mode whose cell config sets `"rwkv7_wkv": "fla"`; defaults unchanged, every committed config keeps its
 own WKV). Adopted from SF job-9bs8w (`jobs/perf_step_gate` rule v2, stack/rwkv7/perf-gate-fla @3501b56): `fast_fla`
@@ -367,3 +403,140 @@ Reference point on the proxy: D1 + v3w child 37.71 against stock v3w parent 27.3
 [5.58, 14.86].
 
 The 26 min child estimate is D1's v1 rate. The v3w prompts are longer, so the screen cap (60 min) keeps margin.
+
+## Modes `sizecliff_q35_0p8b` / `sizecliff_q35_2b` / `sizecliff_q35_4b` (A-PREREG-SIZECLIFF size-cliff probe)
+
+Pre-registration: A-PREREG-SIZECLIFF + AMENDMENT 1 (PREREG.md on origin/state; both written before any size-cliff
+run was submitted). Same recipe, same data draw, same LoRA rank and clock on the stock Qwen/Qwen3.5-0.8B, -2B and -4B;
+the 4B is also rescored with a lean prompt. The probe measures RELATIVE retention across sizes, not absolute peak.
+
+- **Readout / train format (Amendment 1)**: `jrt-h2o-shim:qwen3.5-<size>` (`decide/shim_format.py`): the vendored,
+  unmodified H2O-Lightning-4B v1.1 shim (`third_party/h2o_lightning_shim`, from claude/jev-host-scan @91a506a, the
+  replica that matched H2O's card 205/231). Prompt = the shim's `Contract.question_prompt` (Qwen chat turn, thinking
+  off, the shim system text, "record: / question: / options: A) name: desc", "Answer:" prefill), tokenized whole-string
+  by transformers (= vLLM /tokenize); option k's continuation is the ONE token of " <label k>" (the shim's own probe).
+  Training rows are built from exactly that prompt, so train == serve. Host scan basis (job-zbtbj, stock Qwen3.5-4B,
+  231 public items): open-I 42.3 m0 / 46.1 v3w / 56.3 shim.
+- **Recipe** = q9af_v2_v3w's D16 keys unchanged (loss arm clef = LS-CE + Brier + RPS, fork head, LoRA r64, lr 1e-4 /
+  3e-4, cosine to 0.1x, dev card every 200 on 200 rows + best_ckpt, collapse guard, train_max_k 255, T ladder 512 /
+  1,024 / 2,048, row_batch 1, act_ckpt). Changes: parent `qwen35` (heads.backbone.load_qwen35_backbone: the stock text
+  model, NO conversion, NO q9af pins; LoRA on every GDN, every kept attention layer and every MLP), the shim template,
+  clock **100 min on every arm** (max_steps 20,000 never binds; cosine horizon = the clock-projected final step).
+- **Data**: the B1 100k-v2 cleaned pool, n_train_records 94,786 (attack_clean v2 5,201 + doc_clean 14 ids, index
+  af096960, allowlist 556296cc = D16's pins @3e7142c). One draw, identical drawn-id sha256 on every arm.
+- **No parent arm** (`parent_arm: none`, `screen_parent: none`): the runner skips the arm seed and the parent g12 /
+  index phases. The proxy600 screen scores the child under its native shim readout and pairs it, row for row and
+  labelled cross-readout (`screen_reference_match: cross`), with the d1_v3w reference and with the Clef-flash
+  (job-t5yg2) and Clef 27B (job-zfexa) decide_32k_substituted units restricted to the proxy rows
+  (`screen_comparators`, shipped and sha-pinned; 59.03 / 64.56 on the proxy).
+- **jevkit** (`jevkit` block): after the proxy rows the same child model answers the 231 pinned public JevBench items
+  serially (2 untimed warm-ups) under: `native` (the shim, primary), `v3w` (`jrt-v3w-generic:qwen3.5-<size>`,
+  score-only, same checkpoint), and for the 4B `lean`. `screen report` scores each with `jevkit score --public`
+  (open-split Intelligence, Calibration, Speed from in-process latency on the self-hosted lane, Cost at the declared
+  size-class reference price 0.8B $0.01/M, 2B $0.02/M, 4B $0.03/M input), plus `native_shimcal` (the shim's own
+  T 0.8 / yes-no floor 0.801 post-processing on the native answers, score-only, no GPU), and the paired lean - native
+  I / C differences with the adoption rule.
+- **Lean prompt** (`jrt-h2o-shim:qwen3.5-4b-lean`): the shim prompt without the system turn and with the shim's own
+  head / tail state truncation ("\n...\n") at 1,472 state tokens. On the 231 public items: 456.8 input tokens per
+  decision on average vs 653.6 (-30.1 %), p50 124 vs 157; 37 of 231 states truncated.
+- **Single-token fork continuations**: `HiddenStateBackbone._hf_fork` right-pads 1-token continuation calls (shim
+  labels, v3w codes) to 2 tokens so a cached GDN layer takes its chunked path (with a backward); fla's single-token
+  fused_recurrent_gated_delta_rule has none. Exact (causal; only the last real position is read).
+- **LiquidAI/LFM2.5-2.6B-Base is not an arm**: transformers' `Lfm2ShortConv` cached path is single-token decode
+  (`causal_conv1d_update` / one conv step once the cache holds a state), so our cache fork (prefix once, K continuations
+  in one call) is not exact for it; it needs a conv-state continuation patch plus a GPU fork == recompute check first.
+
+Schedule per arm: setup 20 + guard 5 + heldout 10 + cell 130 (100 clock + 10 tokenize + 10 load / smoke / ladder + 10
+checkpoints) + screen 45 (fixed 15 + D1's 25.97 proxy minutes = 40.97 <= 0.95 x 45) + report 5 + reserve 7 = 222 min.
+Quoted hold 222 x $0.063 = $13.99 per arm ($41.96 for the three). **Worst case** (60 + 2 x 222) x $0.0495 =
+**$24.95** per arm (hard cap $30). CPU verification: `scripts/check_sizecliff_cpu.py` (receipts/2026-10-09-sizecliff/).
+
+**Resubmissions.** r2 (all three arms): `heads.layout.hf_segment_encoder` became the picklable `HFSegmentEncoder`
+(job-rtg9e died in `run_cell.cell_items`' spawn process pool). r3 (4B ONLY, job-w2t73 OOM on its first step, 71.5 GB):
+the per-row cache fork held one forked copy of the prefix state per option (8 attention layers' prefix KV + 24 GDN
+states; ~0.7 GB per option at T 1,020 under act_ckpt, the K = 77 ladder rung peaked at 63.7 GB). The 4B cell sets the
+EXECUTION knob `cont_chunk: "auto"`: rows with K > cont_chunk run their options in reentrant-checkpointed chunks
+(`HiddenStateBackbone._hf_fork_chunked`), so one chunk's copies are alive at a time; run_cell probes the 8 rows with the
+largest K x T (candidates 64 / 32 / 16 / 8, peak <= 0.85 x 76 GB) before the ladder. Same loss, gradients, effective
+batch (1 x 8), LR, schedule and data order; `cont_chunk` is not in the TrainConfig hash
+(tests/test_sizecliff.py::test_cont_chunk_gradients_equal_the_unchunked_step). The 0.8B (job-reknq) and 2B (job-haxmm)
+arms run the original path. Caps and worst case unchanged ($24.95; hold $13.99).
+
+**r4 (4B ONLY, PREREG Amendment 2: step parity).** r3 (job-anx5y) stopped with exit 22. Its cont_chunk probe kept
+~60 GB of the first candidate alive: with act_ckpt, each forked HF cache held its blocks' output tensors, whose
+autograd nodes held the checkpoint frame, which held the cache. That is a Python / autograd reference cycle gc cannot
+see. `heads.backbone.release_cache` now empties every used fork cache (CPU: +234 MB per tiny step before, flat after).
+The probe now runs candidates smallest first (8, 16, 32, 48, 64), frees memory between them (gc + empty_cache + reset
+stats), keeps the largest passing one and refuses to train when none passes (`train.run_cell.choose_cont_chunk`). Step
+parity with the 2B (job-haxmm, art-vg2sk cell.json): max_steps = min_steps = 1,121, `lr_horizon_steps` 753 (the 2B's
+cosine horizon), T cap 2,048 (the minimum T_max across the arms; 0.8B job-reknq: 1,147 steps, horizon 750, T_max 2,048).
+Clock 200 min (2B 5.48 s/step x the 4B / 2B ladder ratio 1.21 + chunking ~ 7.5 s/step; 1,121 x 7.5 x 1.3 = 182).
+Schedule: setup 20 + guard 5 + heldout 10 + cell 235 + screen 45 + report 5 + reserve 7 = 327 min; quoted hold
+$20.60; **worst case** (60 + 2 x 327) x $0.0495 = **$35.34** (hard cap $40).
+## Params `"chain"`: one training run over several jobs (`train/chain.py`)
+
+An SF job is capped at 899 min and a single-job cell trains ~380 of them. A chained cell is ONE run (one shared cell
+config: `max_minutes` = the TOTAL training clock, `max_steps` the global cap) carried over N jobs. The platform keeps
+one checkpoint slot per job (a new job starts empty), so the state travels in each link's /output artifact.
+
+- Params per link: `"cell_config"` = the shared config (not `m2_first_cell_rwkv7_<mode>.json`) and
+  `"chain": {"link": k, "of": N, "from": {"job", "artifact", "artifact_sha256", "manifest_sha256", "url_env"}}`
+  (`from` for k >= 2: `artifact_sha256` from `get_job` artifact.sha256, `manifest_sha256` from link k-1's declared
+  result `decision.manifest_sha256`; the presigned `get_artifact` URL goes into the submit env at submit time).
+  `python -m train.chain plan --base-params <single-job params> --of N` prints every link's phase caps (caps +
+  reserve = 899) and training minutes.
+- Link k < N: setup (+ `train.chain check`: the export must fit the 5 GiB artifact), guard, heldout (and the draw's
+  attack / doc-overlap gates in the cell) as in every cell job; k >= 2: phase `chain` installs link k-1 (exit 10 on
+  any pin / chain id / link order / cell config mismatch); cell trains until the JOB's deadline (max_duration - time
+  used - post-cell caps - reserve, minus 8 min tail); phase `chain_export` writes /output/chain (CHAIN.json, the
+  latest full .pt, the best .pt full or trainable-only, latest.json, cell.json); result = `out/chain_link.json`. No
+  parent arm, no screen / evals, no inference export.
+- Link N: install link N-1, train the rest of the global clock (to its deadline at most), then the mode's stage.
+- Resume is exact: config hash + lineage at `Trainer.load` (exit 29), cosine horizon fixed once in link 1 from the
+  global clock, data cursor / optimizer / scheduler / RNG / dev cards / best / collapse-guard window in the checkpoint,
+  `train_clock` and the eval cards in cell.json (`tests/test_chain.py`: a 2-link chain equals one run bit for bit).
+- Size (D18 recipe, joint_record head 5,466,114 params): r64 = 293,300,226 trainable -> latest 3.52 GB + slim best
+  1.17 GB = 4.69 GB, fits; r256 = 1,156,802,562 -> 13.9 GB latest alone, refused in setup (needs a bucket transport).
+  A best that is carried trainable-only scores identically; only a collapse-guard rollback to it keeps the current
+  AdamW moments (recorded in the collapse event).
+
+## Re-pricing 2026-10-09: H100 batch $0.0495 -> $0.063/min
+
+SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now bill $0.063 per GPU-minute (Mon-Thu and weekends; Fridays $0.05628) and the preflight quotes max_duration x $0.063. Evidence and history: `jobs/common/rates.py`. The dollar figures above this section are at the old $0.0495/min and stay as written (receipts and past decisions used them); the numbers below are the current ones (`python -m jobs.common.costs`). Where a hard cap was raised, it was raised by the same ratio as the rate (x 0.063/0.0495 = x 14/11, rounded up to the cent), so the cap still buys the same minutes.
+
+| Params | Worst case (build + 2 attempts) | Hard cap | Expected | One attempt (quoted max_cost) |
+|---|---|---|---|---|
+| `job_params.json` | $84.04 (was $66.03) | $89.10 (was $70.00) | $33.26 (was $26.14) | $40.13 (was $31.53) |
+| `job_params_d1_fast.json` | $84.04 (was $66.03) | $89.10 (was $70.00) | $33.26 (was $26.14) | $40.13 (was $31.53) |
+| `job_params_d3_r1_gold.json` | $84.04 (was $66.03) | $89.10 (was $70.00) | $33.26 (was $26.14) | $40.13 (was $31.53) |
+| `job_params_d3_v2f_fast.json` | $84.04 (was $66.03) | $89.10 (was $70.00) | $33.26 (was $26.14) | $40.13 (was $31.53) |
+| `job_params_d3_v2f_gold.json` | $84.04 (was $66.03) | $89.10 (was $70.00) | $33.26 (was $26.14) | $40.13 (was $31.53) |
+| `job_params_d3_v3w_fast.json` | $84.04 (was $66.03) | $89.10 (was $70.00) | $33.26 (was $26.14) | $40.13 (was $31.53) |
+| `job_params_fulldev_eval.json` | $80.89 (was $63.56) | $82.73 (was $65.00) | $28.85 (was $22.67) | $38.56 (was $30.29) |
+| `job_params_fulldev_smoke.json` | $23.56 (was $18.51) | $25.46 (was $20.00) | $5.54 (was $4.36) | $9.89 (was $7.77) |
+| `job_params_hijack_eval.json` | $18.52 (was $14.55) | $19.10 (was $15.00) | $5.48 (was $4.31) | $7.37 (was $5.79) |
+
+## Mode `jev1_q35_4b` (A-PREREG-JEV1-4B: the Composite line's first real test)
+
+Pre-registration: A-PREREG-JEV1-4B (PREREG.md on origin/state, before any run). The size-cliff 4B recipe (the r4 cell:
+H2O shim train/serve `jrt-h2o-shim:qwen3.5-4b`, LoRA r64, fork head, loss arm clef, the same optimiser settings,
+act_ckpt, option-chunked fork with the smallest-first probe, released fork caches) on STOCK Qwen/Qwen3.5-4B, trained on
+bschema-draw-jev1 (claude/b-jev1-draw @60a6dd7; pointer 582ffe1c, records 45735109; 96,000 rows, 12,000 per JevBench
+family; `train_dir` m2-jev1 pinned by `data_jev1.sha256`). Option keys stay in the builder's order: the shim prompt
+lists them as given (`scripts/check_jev1_train_serve.py`: 140 rows with unsorted keys, 0 mismatches against the
+vendored shim prompt + AutoTokenizer; `tests/test_jev1_4b.py`). FIXED budget: 1,121 optimiser steps (max_steps =
+min_steps), cosine horizon 753 fixed before step 1 (as r4). Clock 180 min = 1,121 x 7.40 s/step (r4 job-27anq: 8,300 s)
+x 1.3. The draw is gated in-job (heldout phase: train.attack_guard, train.doc_overlap_guard with train.jevbench_guard
+from agent-main 7c131f1; no clean pins, so every guard must find 0).
+
+PRIMARY (in the same job, `jevkit.stock_shim`): the 231 public JevBench items answered by the trained cell (`native`,
+plus the score-only `native_shimcal`) AND by stock Qwen3.5-4B + the H2O shim (`screen.StockShimEngine`: the same loaded
+model with every LoRA off, the shim's prompt, label log-probs from the tied LM head, T 0.8, yes-no floor 0.801), paired
+on the same bootstrap draws (B 1,000, seed 16; `screen.paired_vs`): delta I, C, Capability, Composite A.
+`screen.json` `jevkit.primary.success` = delta Composite A > 0 with its 95% CI excluding 0. SECONDARY: the proxy600
+screen (cross-readout vs d1_v3w and the Clef-flash / Clef 27B units), tokens per decision.
+
+Schedule: setup 20 + guard 5 + heldout 10 + cell 215 + screen 45 + report 5 + reserve 7 = 307 min; quoted hold
+$19.34; **worst case** (60 + 2 x 307) x $0.063 = **$42.46** (jobs/common/rates.py rate; hard cap $45).
+
+**r2 (job-v6qm3 stopped at exit 26).** The jev1 mix measured 10.92 s/step at the step-10 rate check (979 affordable < 1,111 needed in 180 min). Clock = ceil(1,121 x 10.92 x 1.3 / 60) = 266 -> 270 min; cell cap 305; max_duration 397 min; quoted hold $25.01; **worst case** (60 + 2 x 397) x $0.063 = **$53.80** (hard cap $60). Everything else unchanged (1,121 fixed steps, LR horizon 753, the same data and arms).

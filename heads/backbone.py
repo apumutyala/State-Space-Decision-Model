@@ -203,6 +203,13 @@ class HiddenStateBackbone(nn.Module):
         #: once; ``train.trainer`` ``cont_plan="single"``): one prefix call per sub-group, then ONE continuation call
         #: for all rows. None = one prefix call for all rows.
         self.prefix_groups: list[list[int]] | None = None
+        #: option chunking of the HF cache fork under autograd (``TrainConfig.cont_chunk``, an EXECUTION knob: same loss
+        #: and gradients): 0 = every continuation in one call (as before); C > 0 and K > C = the K continuations run C at
+        #: a time, each chunk (prefix + its C forked cache copies) inside a reentrant checkpoint, so only ONE chunk's
+        #: copies / activations are alive at a time (forward under no_grad, recomputed one chunk at a time in backward).
+        #: job-w2t73: Qwen3.5-4B's per-option copy (8 attention layers' prefix KV + 24 GDN states) is ~0.7 GB at T 1,020
+        #: under act_ckpt, so a K = 77 row took 64 GB and the first training step went out of memory.
+        self.cont_chunk = 0
         self._captured: torch.Tensor | None = None
         self._hook = None
         if capture != "hidden_states":
@@ -281,7 +288,36 @@ class HiddenStateBackbone(nn.Module):
             h, state = self.model.prefill(ids)
             hc, _ = self.model.extend(cids, self.model.expand_state(state, k))
             return h[0], hc[torch.arange(k, device=dev), last]
+        if self.cont_chunk and k > self.cont_chunk and torch.is_grad_enabled() and self.capture == "hidden_states":
+            return self._hf_fork_chunked(ids, cids, last)
         return self._hf_fork(ids, cids, last)
+
+    def _hf_fork_chunked(self, ids: torch.Tensor, cids: torch.Tensor, last: torch.Tensor):
+        """``_hf_fork`` with the K continuations in chunks of ``cont_chunk`` (see ``cont_chunk``): chunk j is
+        ``torch.utils.checkpoint(use_reentrant=True)`` of (prefix call + chunk j's continuation call); the prefix
+        features come from chunk 0. Forward values are those of ``_hf_fork`` (the same calls on the same inputs; only
+        the continuation batch is split, and right padding is exact). In backward each chunk is recomputed with grad and
+        back-propagated with its slice of dL/dfork, so the LoRA / head gradients are the un-chunked ones up to float
+        summation order (tests/test_sizecliff.py). The anchor is a dummy leaf that puts every chunk in the graph."""
+        from torch.utils.checkpoint import checkpoint
+
+        c = int(self.cont_chunk)
+        anchor = torch.zeros((), device=ids.device, requires_grad=True)
+        h, feats = None, []
+        for s in range(0, cids.shape[0], c):
+            cc, lc = cids[s: s + c], last[s: s + c]
+            w = int(lc.max().item()) + 1
+            cc = cc[:, : max(w, MIN_CONT_WIDTH)]  # this chunk's own width (still right padded, still exact)
+
+            def run(_anchor, cc=cc, lc=lc):
+                hh, ff = self._hf_fork(ids, cc, lc)
+                return hh, ff
+
+            hh, ff = checkpoint(run, anchor, use_reentrant=True, preserve_rng_state=True)
+            if h is None:
+                h = hh
+            feats.append(ff)
+        return h, torch.cat(feats)
 
     def _hf_fork(self, ids: torch.Tensor, cids: torch.Tensor, last: torch.Tensor):
         dev = ids.device
@@ -312,13 +348,23 @@ class HiddenStateBackbone(nn.Module):
         cache.reorder_cache(torch.zeros(k, dtype=torch.long, device=dev))  # K state copies
         _assign_not_copy(cache)  # HF linear-attention caches write in place, which breaks autograd
         if not uses_cache_params:
-            _refuse_short_continuations_on_fla(last)
+            if cids.shape[1] < MIN_CONT_WIDTH:
+                # single-token continuations (v3w codes / word ids): right-pad the call to MIN_CONT_WIDTH tokens so a
+                # cached GDN layer takes its chunked multi-token path (initial state + conv context, with a backward)
+                # instead of the single-token decode path (fla's fused_recurrent_gated_delta_rule has no backward;
+                # the in-place causal_conv1d_update breaks autograd). Exact: causal, only positions <= last are read,
+                # and the state after the call is dropped. Train and serve take the same kernel path.
+                cids = torch.nn.functional.pad(cids, (0, MIN_CONT_WIDTH - cids.shape[1]), value=self.pad_id)
+            _refuse_short_continuations_on_fla(last, cids.shape[1])
             # past_key_values models (Qwen3.5 hybrid, Q9-AF) continue a cache over several tokens in ONE call; right
             # padding of the continuations is exact (causal; only positions <= last are read; the state is dropped).
             # Replaces cids.shape[1] full-model calls per row (PERF_AUDIT: training / eval-card fork head).
             self._captured = None
             out = m(input_ids=cids, past_key_values=cache, **base)
-            return h, self._pick(out)[torch.arange(k, device=dev), last]
+            feats = self._pick(out)[torch.arange(k, device=dev), last]
+            release_cache(cache)  # the cache is dropped here: break its reference cycle with the autograd graph
+            del out
+            return h, feats
         feats = torch.zeros((k, h.shape[-1]), dtype=h.dtype, device=dev)
         for t in range(cids.shape[1]):  # token by token: the cached-decode path HF Mamba (cache_params) supports
             self._captured = None
@@ -416,14 +462,19 @@ def fla_installed() -> bool:
     return importlib.util.find_spec("fla") is not None
 
 
-def _refuse_short_continuations_on_fla(last: torch.Tensor) -> None:
+#: the narrowest continuation CALL of the HF cache fork: a 1-token call would take the GDN single-token decode path
+MIN_CONT_WIDTH = 2
+
+
+def _refuse_short_continuations_on_fla(last: torch.Tensor, width: int | None = None) -> None:
     """PR #121 review (non-blocking 1): fail closed BEFORE a training forward whose cache continuation could take the
-    fla single-token recurrent path (no backward). Every continuation must be >= 2 tokens while autograd records on
-    an fla install. The CPU tests use the torch fallback (which has a backward), so this guard is the only thing that
-    would catch it before a paid GPU step. ``jrt-chatml-v1`` continuations are always >= 2 tokens (option id + end)."""
+    fla single-token recurrent path (no backward). The continuation CALL must be >= 2 tokens wide while autograd
+    records on an fla install. The CPU tests use the torch fallback (which has a backward), so this guard is the only
+    thing that would catch it before a paid GPU step. ``_hf_fork`` right-pads single-token continuations (v3w codes)
+    to ``MIN_CONT_WIDTH`` and passes the padded ``width``; without it the longest continuation is the width."""
     if not torch.is_grad_enabled() or not fla_installed():
         return
-    n = int(last.min().item()) + 1
+    n = int(width) if width is not None else int(last.max().item()) + 1
     if n < 2:
         raise RuntimeError(f"cache-fork continuation of {n} token(s) under autograd with fla installed: fla's "
                            "fused_recurrent_gated_delta_rule (the GDN single-token path) has no backward. Use a "
@@ -484,6 +535,29 @@ def _assign_not_copy(cache) -> None:
 
         layer.update_conv_state = types.MethodType(conv, layer)
         layer.update_recurrent_state = types.MethodType(rec, layer)
+
+
+def release_cache(cache) -> None:
+    """Drop every tensor a used HF cache holds (attention keys / values, GDN conv / recurrent states).
+
+    job-anx5y / job-w2t73: with act_ckpt (heads.act_ckpt._wrap_hf) each block's checkpoint frame keeps its
+    ``_HFSlot`` -> the cache alive, and the cache holds the block's output tensors whose grad_fn holds that frame: a
+    Python <-> autograd reference cycle the garbage collector cannot see through, so every forked cache (K copies of
+    the prefix KV + GDN states) stayed allocated after backward (CPU: +234 MB per tiny step; GPU: the 4B probe / ladder
+    kept ~60 GB). The fork never reads the cache again after its continuation call, so emptying it is free and exact;
+    the checkpoint's own saved inputs (``_HFSlot.inputs``) are unaffected."""
+    for layer in getattr(cache, "layers", []) or []:
+        for attr in ("keys", "values"):
+            if getattr(layer, attr, None) is not None:
+                setattr(layer, attr, None)
+        for attr in ("conv_states", "recurrent_states"):
+            st = getattr(layer, attr, None)
+            if isinstance(st, list):
+                for i in range(len(st)):
+                    st[i] = None
+            elif isinstance(st, dict):
+                for key in list(st):
+                    st[key] = None
 
 
 def _set_seen(cache, n: int) -> None:
@@ -799,12 +873,22 @@ def q9af_pin_check(pin: dict, gdn_ckpt, model_dir=None) -> dict:
       ``base_repo`` / ``base_revision``  must equal the pinned stock parent
       ``base_config_sha256`` (REQUIRED)  sha256 of the snapshot's config.json (= its line in
                                           ``jobs/m2_pilot/q9af_snapshot.sha256``); checked whenever ``model_dir`` is given
+      ``conversion`` (optional key; when PRESENT it must be filled)  which conversion job made the export and under
+                     which decontamination (scripts/fill_conversion_pins.py: job, mix_decontam, config_sha256, ...);
+                     a mode that ships ``conversion: null`` is refused until it is filled. It goes into the provenance
+                     (lineage, backbone identity, parent-arm identity) so two conversions can never be confused.
     Returns the provenance block stamped into the backbone identity."""
     from pathlib import Path
 
     want = pin.get("converted_sha256")
     if not want or len(str(want)) != 64:
         raise LineageError(f"q9af.converted_sha256 is not pinned ({want!r}); refusing to train on an unpinned conversion")
+    conv = None
+    if "conversion" in pin:
+        conv = pin["conversion"]
+        if (not isinstance(conv, dict) or not str(conv.get("job") or "").startswith("job-") or "mix_decontam" not in conv
+                or len(str(conv.get("config_sha256") or "")) != 64):
+            raise LineageError(f"q9af.conversion is not pinned ({conv!r}): fill it with scripts/fill_conversion_pins.py")
     got = _sha256_file(gdn_ckpt)
     if got != want:
         raise LineageError(f"converted checkpoint sha256 {got} != pinned {want}")
@@ -815,6 +899,8 @@ def q9af_pin_check(pin: dict, gdn_ckpt, model_dir=None) -> dict:
         raise LineageError(f"base {pin.get('base_repo')}@{pin.get('base_revision')} != {Q9AF_BASE_REPO}@{Q9AF_BASE_REVISION}")
     prov = {"kind": "q9af", "base_repo": Q9AF_BASE_REPO, "base_revision": Q9AF_BASE_REVISION,
             "converted_sha256": got, "converted_from": pin.get("converted_from")}
+    if conv is not None:
+        prov["conversion"] = {k: conv.get(k) for k in ("job", "artifact", "commit", "mix_decontam", "config_sha256")}
     if model_dir is not None:
         cfg_sha = _sha256_file(Path(model_dir) / "config.json")
         if cfg_pin != cfg_sha:
@@ -861,6 +947,77 @@ def load_q9af_backbone(model_dir: str, gdn_ckpt: str, pin: dict, device: str = "
         spec = dataclasses.replace(spec, name="q9af-hybrid", attention_free=False,
                                    hf_id=spec.hf_id + " (HYBRID: " + prov["label"] + ")",
                                    lora_groups=spec.lora_groups + (("attn", _QATTN, kept * 4),))
+    bb = HiddenStateBackbone(text, spec=spec, pad_id=0, fork_mode=fork_mode)
+    bb.provenance = prov
+    return bb
+
+
+# --------------------------------------------------------------------------------------------- stock Qwen3.5 (any size)
+#: The stock Qwen3.5 hybrids a cell may name as parent "qwen35" (A-PREREG-SIZECLIFF): repo -> pinned revision. The
+#: cell config's ``qwen35`` block must name one of these exactly, plus the sha256 of its config.json.
+QWEN35_STOCK = {
+    "Qwen/Qwen3.5-0.8B": "2fc06364715b967f1860aea9cf38778875588b17",
+    "Qwen/Qwen3.5-2B": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+    "Qwen/Qwen3.5-4B": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+}
+
+
+def qwen35_pin_check(pin: dict, model_dir=None) -> dict:
+    """Lineage pins of a stock Qwen3.5 parent (no conversion, attention layers kept). ``pin`` = the cell config's
+    ``qwen35`` block: ``repo`` / ``revision`` (one of ``QWEN35_STOCK``), ``config_sha256`` (sha256 of the snapshot's
+    config.json; REQUIRED, checked whenever ``model_dir`` is given). Returns the provenance stamped into the backbone
+    identity (lineage, decide revision)."""
+    from pathlib import Path
+
+    repo, rev = pin.get("repo"), pin.get("revision")
+    if QWEN35_STOCK.get(repo) != rev:
+        raise LineageError(f"qwen35 {repo}@{rev} is not a pinned stock Qwen3.5 ({sorted(QWEN35_STOCK)})")
+    cfg_pin = pin.get("config_sha256")
+    if not cfg_pin or len(str(cfg_pin)) != 64:
+        raise LineageError(f"qwen35.config_sha256 is not pinned ({cfg_pin!r})")
+    prov = {"kind": "qwen35-stock", "repo": repo, "revision": rev, "config_sha256": cfg_pin, "attention_free": False}
+    if model_dir is not None:
+        got = _sha256_file(Path(model_dir) / "config.json")
+        if got != cfg_pin:
+            raise LineageError(f"qwen35 config.json sha256 {got} != pinned {cfg_pin}")
+    return prov
+
+
+def qwen35_spec(text_config, name: str, hf_id: str, params: float = 0.0) -> BackboneSpec:
+    """BackboneSpec of a stock Qwen3.5 text model from its config: LoRA on every GDN (in_proj_qkv / in_proj_z /
+    out_proj), every kept attention layer (q / k / v / o) and every MLP; hybrid, so never attention_free."""
+    types = list(text_config.layer_types)
+    n_lin, n_att = types.count("linear_attention"), types.count("full_attention")
+    if n_lin + n_att != len(types):
+        raise LineageError(f"unknown Qwen3.5 layer types {sorted(set(types))}")
+    return BackboneSpec(name=name, family="qwen3.5", hf_id=hf_id, params=params, n_layers=len(types),
+                        d_model=int(text_config.hidden_size),
+                        lora_groups=(("gdn", _GDN, n_lin * 3), ("attn", _QATTN, n_att * 4), ("mlp", _QMLP, len(types) * 3)),
+                        capture="hidden_states", attention_free=False, mfu_assumed=0.35,
+                        notes=f"stock hybrid ({n_lin} GDN : {n_att} attention layers); counts from config.json")
+
+
+def load_qwen35_backbone(model_dir: str, pin: dict, device: str = "cuda", dtype: str = "bfloat16",
+                         fork_mode: str = "cache") -> HiddenStateBackbone:
+    """A stock Qwen3.5 (0.8B / 2B / 4B, ``QWEN35_STOCK``) for m2 training, loaded as ``load_q9af_backbone`` loads the
+    9B (text path of the vision-language checkpoint; vision tower and LM head dropped) WITHOUT any conversion. Pins
+    are checked before any weight is loaded; the provenance goes into ``backbone_identity``."""
+    from transformers import AutoConfig, Qwen3_5ForCausalLM, Qwen3_5ForConditionalGeneration
+
+    prov = qwen35_pin_check(pin, model_dir)
+    place = {} if str(device) == "cpu" else {"device_map": {"": device}}
+    if hasattr(AutoConfig.from_pretrained(model_dir), "text_config"):  # the real snapshot (vision + text)
+        full = Qwen3_5ForConditionalGeneration.from_pretrained(model_dir, dtype=getattr(torch, dtype), **place)
+        text = full.model.language_model
+    else:  # a text-only Qwen3.5 checkpoint (tiny CPU stand-ins)
+        full = Qwen3_5ForCausalLM.from_pretrained(model_dir, dtype=getattr(torch, dtype), **place)
+        text = full.model
+    del full
+    for p in text.parameters():
+        p.requires_grad_(False)
+    size = prov["repo"].split("-")[-1].lower()
+    non_emb = float(sum(p.numel() for n, p in text.named_parameters() if "embed_tokens" not in n))
+    spec = qwen35_spec(text.config, f"qwen3.5-{size}-stock", f"{prov['repo']}@{prov['revision']} (stock hybrid)", non_emb)
     bb = HiddenStateBackbone(text, spec=spec, pad_id=0, fork_mode=fork_mode)
     bb.provenance = prov
     return bb

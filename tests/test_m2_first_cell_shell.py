@@ -201,8 +201,10 @@ def test_all_long_phase_timeouts_escalate_within_existing_reserve():
     timed = [line for line in source.splitlines() if not line.lstrip().startswith("#") and re.search(r"\btimeout\s", line)]
     # terminal, download, guard, heldout, two verify branches, parent loop, cell, evals, report; plus the eval-only
     # fulldev branch (mode fulldev_eval): checkpoint, the arm loop, its report; plus the stage-screen branch (replaces
-    # evals + report: screen score, its report; same number of graces per run)
-    assert len(timed) == 15
+    # evals + report: screen score, its report; same number of graces per run). The snapshot download has one line per
+    # parent (rwkv7, q9af, qwen35: mutually exclusive branches, exactly one runs per job), so 15 + 2 lines, same graces.
+    assert len(timed) == 17
+    assert sum("snapshot_download" in line for line in timed) == 3
     assert "timeout --kill-after=30s $(cap screen)m python -X utf8 -m jobs.m2_first_cell.screen score" in source
     assert "timeout --kill-after=30s $(cap checkpoint)m python" in source
     assert "timeout --kill-after=30s $(cap $PH)m python" in source
@@ -824,6 +826,7 @@ sys.exit(subprocess.call([sys.executable, *a]))
     block = job[job.index("ARM=$CK/parent_arm"):job.index('say "phase cell"')]
     script = tmp_path / "parent-block.sh"
     script.write_text('''set -Euo pipefail
+PARENT=rwkv7 GDN_ARGS=() PARENT_ARM=in_job  # set by the runner's setup before this block (rwkv7: no GDN args)
 say() { echo "$*"; }
 gate() { :; }
 cap() { echo 1; }

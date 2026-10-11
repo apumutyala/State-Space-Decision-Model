@@ -1,0 +1,60 @@
+{
+ "template": "jrt-v3w-generic:qwen3.5",
+ "layout": "g1v2",
+ "spec_identity": {
+  "id": "jrt-v3w-generic:qwen3.5",
+  "sha256": "2e4907ee4302d9d196052fc04c5618e88fc8058446644715345eaad93a3a2543"
+ },
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/b1-draw100k-v2/records.jsonl.gz",
+ "records_checked": 1000,
+ "rows": 1919,
+ "mismatches": 0,
+ "mismatch_examples": [],
+ "strata": {
+  "k<=16": 1602,
+  "words": 1038,
+  "k17-255": 317,
+  "dict_instructions": 408
+ },
+ "refused_records": {},
+ "examples": [
+  {
+   "id": "m2:hellaswag:13545/output",
+   "k": 4,
+   "T": 292,
+   "words": false
+  },
+  {
+   "id": "m2:toolace:5627/answer",
+   "k": 6,
+   "T": 672,
+   "words": false
+  },
+  {
+   "id": "m2:sst5:3493/answer",
+   "k": 5,
+   "T": 292,
+   "words": false
+  }
+ ],
+ "backend_revision": "qwen3.5:model-free@local;w=unknown;tok=unknown;prompt=jrt-v3w-generic:qwen3.5.2e4907ee;cfg=bfc9ca15;adapter=0.2.0",
+ "census": {
+  "records": 10000,
+  "items": 15510,
+  "kept_by_cell_filter": 14741,
+  "train_max_k": 255,
+  "max_t": 2048,
+  "by_k": {
+   "k<=16": 14519,
+   "k17-255": 991
+  },
+  "T_mean": 861.3,
+  "T_p50": 827,
+  "T_p90": 1516,
+  "T_p99": 2276,
+  "T_max": 3576,
+  "over_max_t": 769
+ },
+ "ok": true,
+ "seconds": 231.3
+}

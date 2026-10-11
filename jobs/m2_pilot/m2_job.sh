@@ -127,6 +127,9 @@ timeout ${CAP_H}m python -X utf8 -m train.heldout --records /data/m2/records.jso
   > "$WORK/logs/heldout.log" 2>&1; r=$?
 gate "heldout" $r
 case $r in 0) ;; 124) fail 7 "heldout timeout" ;; 3) fail 33 "D1-B template in training records" ;; *) fail 5 "heldout rc=$r" ;; esac
+# Index eval DOCUMENT text (DEV/TEST/held-out premises, passages, catalogs; train.doc_overlap_guard): exit 34
+timeout ${CAP_H}m python -X utf8 -m train.doc_overlap_guard scan --records /data/m2/records.jsonl.gz   --out "$WORK/out/doc_overlap_guard.json" > "$WORK/logs/doc_overlap_guard.log" 2>&1; r=$?
+case $r in 0) ;; 124) fail 7 "doc_overlap_guard timeout" ;; 4) fail 34 "Index eval document text in training records" ;; *) fail 5 "doc_overlap_guard rc=$r" ;; esac
 
 # ------------------------------------------------------------------ cell: smoke -> ladder -> train (resumable)
 say "phase cell (smoke -> ladder -> train; resumes from $CK)"

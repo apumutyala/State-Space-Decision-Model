@@ -1,0 +1,137 @@
+"""jobs.sym_eval.perturb_eval (jevkit perturb ops 4-6 on a decision-head checkpoint) and the content-based decisions of
+sym rows (decide.schema.wire_answer ``tie``): duplicates form a tie SET, empty descriptions fall back to the id.
+CPU, tiny random Qwen3.5 hybrid, synthetic JevBench-shaped items (never the public items with a byte model)."""
+from __future__ import annotations
+
+import random
+
+import pytest
+
+torch = pytest.importorskip("torch")
+
+from heads.layout import build_row  # noqa: E402
+from heads.symmetric import SYM_LAYOUT  # noqa: E402
+from tests.test_sym_invariance import ENC, make_request, tiny_model, transform  # noqa: E402
+from train.data import TOY_TEMPLATE  # noqa: E402
+
+
+def _decider(layout: str, model=None):
+    from decide import Decider
+    from heads.decide_backend import DecisionModelBackend
+
+    return Decider(DecisionModelBackend(model or tiny_model("qwen3.5", "cache"), ENC, template=TOY_TEMPLATE,
+                                        layout=layout))
+
+
+def _items(n: int, seed: int = 3):
+    from jevkit.items import Item
+
+    rng = random.Random(seed)
+    out = []
+    for i in range(n):
+        req = make_request(rng, rng.randrange(3, 6))
+        q = req["questions"]["q"]
+        labels = list(q["criteria"])
+        out.append(Item(id=f"syn-{i}", family="intent", state=req["state"], question=q, labels=labels,
+                        expected=labels[0], split="public").validate())
+    out.append(Item(id="syn-noul", family="fact", state="the card was declined twice",
+                    question={"type": "noul", "instructions": "Was the card declined?"}, labels=["no", "yes"],
+                    expected="yes", split="public").validate())
+    return out
+
+
+def _row_fn(layout):
+    return lambda req: build_row(req, "q", ENC, template=TOY_TEMPLATE, layout=layout)
+
+
+def test_perturb_eval_sym_fork_passes_g1_with_identical_rows(tmp_path):
+    from jobs.sym_eval.perturb_eval import run
+
+    rep = run(_decider(SYM_LAYOUT), _items(5), tmp_path, row_fn=_row_fn(SYM_LAYOUT))
+    per = rep["flip_report"]["per_operator"]
+    assert set(per) == {"option_reverse", "option_shuffle", "key_relabel"}
+    assert rep["g1_pass"] and rep["rows_all_identical"]
+    assert all(v["flips"] == 0 and v["max_abs_dp"] == 0.0 for v in per.values()), per
+    for f in ("base.preds.jsonl", "perturbed.jsonl", "perturbed.preds.jsonl", "perturb_report.json"):
+        assert (tmp_path / f).is_file()
+    # the written files are the ones `jevkit perturb score` reads, and it agrees
+    from jevkit import cli
+
+    it_path = tmp_path / "items.jsonl"
+    from jevkit.items import write_items
+
+    write_items(_items(5), it_path)
+    assert cli.main(["perturb", "score", "--items", str(it_path), "--perturbed", str(tmp_path / "perturbed.jsonl"),
+                     "--pred", str(tmp_path / "base.preds.jsonl"), "--pred-perturbed",
+                     str(tmp_path / "perturbed.preds.jsonl"), "--out", str(tmp_path / "cli.json")]) == 0
+
+
+def test_perturb_eval_teeth_ordered_layout_moves_under_key_relabel(tmp_path):
+    from jobs.sym_eval.perturb_eval import run
+
+    rep = run(_decider("ordered"), _items(5), tmp_path, row_fn=_row_fn("ordered"))
+    assert not rep["rows_all_identical"]
+    assert rep["flip_report"]["per_operator"]["key_relabel"]["max_abs_dp"] > 1e-6
+
+
+def test_duplicate_options_form_a_tie_set_invariant_as_a_set():
+    dec = _decider(SYM_LAYOUT)
+    rng = random.Random(5)
+    for t in range(4):
+        req = make_request(rng, 4)
+        crit = req["questions"]["q"]["criteria"]
+        a, b = list(crit)[:2]
+        crit[b] = crit[a]  # exact duplicate content
+        ans = dec.decide(req)["answers"]["q"]
+        assert ans["probabilities"][a] == ans["probabilities"][b]  # equal content -> equal probability (mass split)
+        new, m = transform(req, rng, relabel=True, reorder=True)
+        ans2 = dec.decide(new)["answers"]["q"]
+        assert all(ans2["probabilities"][m[o]] == p for o, p in ans["probabilities"].items())
+        assert sorted(m[o] for o in ans["tie_set"]) == ans2["tie_set"]  # the decision is invariant AS A SET
+        if len(ans["tie_set"]) > 1:
+            assert set(ans["tie_set"]) == {a, b}
+
+
+def test_near_ties_between_different_options_break_by_content_not_id():
+    from decide.schema import wire_answer
+
+    q = {"type": "choice", "instructions": "x", "criteria": {"zz": "first text", "aa": "second text"}}
+    tie = {"content_key": {"zz": "00", "aa": "ff"}, "dup_groups": [], "digits": 12}
+    ans = wire_answer(q, {"zz": 0.5, "aa": 0.5}, tie)
+    assert ans["choice"] == "zz" and ans["tie_set"] == ["zz"]  # content hash order, not the smallest id ("aa")
+    assert wire_answer(q, {"zz": 0.5, "aa": 0.5})["choice"] == "aa"  # default path unchanged (smallest id)
+    q2 = {"type": "choice", "instructions": "x", "criteria": {"p": "t", "r": "u"}}
+    near = wire_answer(q2, {"p": 0.500001, "r": 0.499999}, {"content_key": {"p": "1", "r": "0"}, "digits": 12})
+    assert near["choice"] == "p" and near["probabilities"]["p"] != near["probabilities"]["r"]  # 12 digits: no wire tie
+
+
+def test_evidence_harness_adapter_sym_exact_and_ordered_not():
+    """jobs.sym_eval.inv_adapter (the SSDM_INV_HEAD plug of the evidence lane's harness): sym-fork served probabilities
+    are bit-identical under reorder + relabel; the ordered layout moves under relabel."""
+    from jobs.sym_eval.inv_adapter import ordered_score, sym_fork_score
+
+    opts = [("opt_1", "card was declined"), ("opt_2", "exchange rate wrong"), ("opt_3", "lost card")]
+    base = sym_fork_score("my card payment failed", opts)
+    sig = {"opt_1": "x9_2", "opt_2": "x1_0", "opt_3": "x5_1"}
+    moved = sym_fork_score("my card payment failed", [(sig[i], c) for i, c in opts[::-1]])
+    assert all(moved[sig[k]] == v for k, v in base.items())
+    ob = ordered_score("my card payment failed", opts)
+    om = ordered_score("my card payment failed", [(sig[i], c) for i, c in opts])
+    assert max(abs(om[sig[k]] - v) for k, v in ob.items()) > 1e-6
+
+
+def test_empty_descriptions_reorder_invariant_and_flagged_as_id_content():
+    dec = _decider(SYM_LAYOUT)
+    rng = random.Random(9)
+    req = make_request(rng, 4)
+    crit = req["questions"]["q"]["criteria"]
+    for o in list(crit)[:2]:
+        crit[o] = "" if o == list(crit)[0] else None
+    row = build_row(req, "q", ENC, template=TOY_TEMPLATE, layout=SYM_LAYOUT)
+    assert sorted(row.meta["id_as_content"]) == sorted(list(crit)[:2])
+    ans = dec.decide(req)["answers"]["q"]
+    new, m = transform(req, rng, relabel=False, reorder=True)
+    ans2 = dec.decide(new)["answers"]["q"]
+    assert ans2["probabilities"] == {m[o]: p for o, p in ans["probabilities"].items()} or all(
+        ans2["probabilities"][m[o]] == p for o, p in ans["probabilities"].items())
+    assert ans["choice"] == ans2["choice"]

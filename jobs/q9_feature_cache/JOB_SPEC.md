@@ -443,3 +443,18 @@ Mode `stock_train` (`job_params_stock_train.json`):
  }
 }
 ```
+
+## Re-pricing 2026-10-09: H100 batch $0.0495 -> $0.063/min
+
+SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now bill $0.063 per GPU-minute (Mon-Thu and weekends; Fridays $0.05628) and the preflight quotes max_duration x $0.063. Evidence and history: `jobs/common/rates.py`. The dollar figures above this section are at the old $0.0495/min and stay as written (receipts and past decisions used them); the numbers below are the current ones (`python -m jobs.common.costs`). Where a hard cap was raised, it was raised by the same ratio as the rate (x 0.063/0.0495 = x 14/11, rounded up to the cent), so the cap still buys the same minutes.
+
+| Params | Worst case (build + 2 attempts) | Hard cap | Expected | One attempt (quoted max_cost) |
+|---|---|---|---|---|
+| `job_params_conv1_dev.json` | $19.53 (was $15.35) | $30.00 (unchanged) | $4.98 (was $3.91) | $7.88 (was $6.19) |
+| `job_params_conv1_train.json` | $16.38 (was $12.87) | $30.00 (unchanged) | $3.65 (was $2.87) | $6.30 (was $4.95) |
+| `job_params_e5_dev.json` | $19.53 (was $15.35) | $30.00 (unchanged) | $4.91 (was $3.86) | $7.88 (was $6.19) |
+| `job_params_e5_train.json` | $16.38 (was $12.87) | $30.00 (unchanged) | $3.59 (was $2.82) | $6.30 (was $4.95) |
+| `job_params_stock_dev.json` | $19.53 (was $15.35) | $25.46 (was $20.00; the >= 20 % margin guard binds: 19.53 x 1.2 = 23.44) | $4.98 (was $3.91) | $7.88 (was $6.19) |
+| `job_params_stock_train.json` | $22.05 (was $17.32) | $30.00 (unchanged) | $5.92 (was $4.65) | $9.13 (was $7.18) |
+
+Workspace caps at $0.063/min: all six parts in parallel MTD + 114 (was 90); the two stock parts MTD + 42 (was 33) (`costs.concurrent_cap_usd`).

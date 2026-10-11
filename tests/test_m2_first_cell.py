@@ -45,13 +45,13 @@ def test_cell_config_is_the_specified_cell():
 def test_cost_worst_case_and_expected():
     from jobs.common.costs import cap_ok, expected_usd, schedule_ok, worst_case_usd
 
-    assert worst_case_usd(PARAMS) == round((60 + 2 * 637) * 0.0495, 2) == 66.03
+    assert worst_case_usd(PARAMS) == round((60 + 2 * 637) * 0.063, 2) == 84.04  # 66.03 at the pre-2026-10-08 $0.0495
     assert PARAMS["build_timeout_minutes"] >= 60  # launch lint L-09
     assert PARAMS["phase_caps_minutes"]["parent_index"] == 65
-    assert cap_ok(PARAMS) and PARAMS["hard_cap_usd"] == 70.0 and schedule_ok(PARAMS)
+    assert cap_ok(PARAMS) and PARAMS["hard_cap_usd"] == 89.1 and schedule_ok(PARAMS)
     assert CELL["max_minutes"] == 190  # pre-registered
-    assert expected_usd(PARAMS) == round(sum(PARAMS["expected_minutes"].values()) * 0.0495, 2)
-    assert 20 <= expected_usd(PARAMS) <= 30
+    assert expected_usd(PARAMS) == round(sum(PARAMS["expected_minutes"].values()) * 0.063, 2)
+    assert 25 <= expected_usd(PARAMS) <= 38  # 20-30 at $0.0495, x 14/11
     assert sum(PARAMS["phase_caps_minutes"].values()) + PARAMS["reserve_minutes"] == PARAMS["max_duration_minutes"]
     # training wall clock fits its phase with the non-training work (load, smoke, ladder, two cards, checkpoints)
     assert CELL["max_minutes"] + 40 <= PARAMS["phase_caps_minutes"]["cell"]
@@ -556,7 +556,8 @@ def test_registered_for_the_launch_lint():
 
     assert costs.PARAMS["m2_first_cell"] == "jobs/m2_first_cell/job_params.json"
     tree = (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
-    assert "`jobs/m2_first_cell/` | $66.03 | $70 |" in tree
+    # derived from the params (re-priced 2026-10-09 at jobs/common/rates.py; was "$66.03 | $70" at $0.0495/min)
+    assert f"`jobs/m2_first_cell/` | ${costs.worst_case_usd(PARAMS):.2f} | ${PARAMS['hard_cap_usd']:.2f} |" in tree
     assert f"{costs.worst_case_usd(PARAMS):.2f}" in (ROOT / "jobs/m2_first_cell/JOB_SPEC.md").read_text(encoding="utf-8")
 
 
@@ -997,6 +998,44 @@ def test_train_max_k_lifts_training_cap_only():
     assert unit_spec(lifted)["max_k"] == 1
     with pytest.raises(ValueError, match="train_max_k"):
         train_max_k({**base, "max_k": 16, "train_max_k": 8})
+
+
+def test_d10_is_d3_v2f_fast_on_the_b1_100k_draw():
+    """d10_v2f_b100k = d3_v2f_fast with only the training set (B1 100k-v2 draw, empty heldout exclusions) and the D8
+    training-K lift changed; _t380 adds only the 380-min clock and max_steps 4,500 (operational). Eval (max_k 16,
+    eval_max_t 2,048), T ladder (<= 2,048), flags and parent-arm handling are d3_v2f_fast's. The readout format
+    (template / layout / r1_format_commit) is the cell JSON's own swap point: a v3w D10 changes only those keys, in
+    both cell JSONs together (data, flags, caps and job params unchanged)."""
+    d = ROOT / "jobs/m2_first_cell"
+    load = lambda n: json.loads((d / n).read_text(encoding="utf-8"))
+    d3 = load("m2_first_cell_rwkv7_d3_v2f_fast.json")
+    notes = lambda c: {k for k in c if k.endswith("_note") or k.startswith("_")}
+    changed = {"n_train_records": 100000, "train_max_k": 255, "row_options": 160}
+    FORMAT = {"template", "layout", "r1_format_commit"}
+    fmt = {m: {k: load(f"m2_first_cell_rwkv7_{m}.json").get(k) for k in FORMAT}
+           for m in ("d10_v2f_b100k", "d10_v2f_b100k_t380")}
+    assert fmt["d10_v2f_b100k"] == fmt["d10_v2f_b100k_t380"] and fmt["d10_v2f_b100k"]["layout"] == "g1v2"
+    for mode, extra in (("d10_v2f_b100k", {}), ("d10_v2f_b100k_t380", {"max_minutes": 380, "max_steps": 4500})):
+        c = load(f"m2_first_cell_rwkv7_{mode}.json")
+        want = {**changed, **extra, "variant": mode}
+        assert {k: c[k] for k in want} == want
+        assert c["train_set"]["pointer"] == "data/manifests/b1-draw100k-v2.pointer.json"
+        assert c["train_set"]["heldout_excluded"]["ids"] == []
+        skip = set(want) | {"train_set"} | FORMAT | notes(c) | notes(d3)
+        assert {k: v for k, v in c.items() if k not in skip} == {k: v for k, v in d3.items() if k not in skip}
+        assert c["max_k"] == 16 and c["eval_max_t"] == 2048 and max(c["t_ladder"]) == 2048
+        p = load(f"job_params_{mode}.json")
+        assert p["mode"] == mode and p["train_dir"] == "m2-b100k"
+        assert p["cell_config"] == f"jobs/m2_first_cell/m2_first_cell_rwkv7_{mode}.json"
+        assert p["submit"]["command"].endswith(f"first_cell_job.sh {mode}")
+        assert p["parent_arm_seed"]["arm_sha256"] is None
+        assert sum(p["phase_caps_minutes"].values()) + p["reserve_minutes"] == p["max_duration_minutes"]
+        worst = (p["build_timeout_minutes"] + 2 * p["max_duration_minutes"]) * p["batch_usd_per_min"]
+        assert worst <= p["hard_cap_usd"]
+        pins = (d / "data_d10_b100k.sha256").read_text(encoding="utf-8")
+        for e in p["context"]["data"]:
+            if e["dest"].startswith("m2-b100k/"):
+                assert e["pin"] == "jobs/m2_first_cell/data_d10_b100k.sha256" and e["dest"] in pins
 
 
 def test_train_wkv_split_keeps_the_d1_parent_and_unit_identity(tmp_path):

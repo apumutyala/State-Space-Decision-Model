@@ -1,6 +1,10 @@
-"""Cost arithmetic, schedules, the $525 SF envelope ledger and the qualification -> next-job mapping for the m1 jobs.
+"""Cost arithmetic, schedules, the granted-credit ledger and the qualification -> next-job mapping for the m1 jobs.
 
     python -m jobs.common.costs            # prints every job's worst case / expected $ and the branch ledger
+
+Rates live in jobs/common/rates.py (current: $0.063/GPU-min billed and quoted from 2026-10-08; $0.0495 before). Each
+job_params.json carries the rate as `batch_usd_per_min` for the in-job scripts; the lint's `rate_current` check holds it
+equal to rates.BATCH_USD_PER_MIN.
 
 Worst case for one job = (build_timeout + attempts * max_duration) * batch rate, with attempts = 1 + max(max_restarts,
 assumed_restart_floor): the build is counted as billable and the platform is assumed to retry at least once, so the cap
@@ -8,16 +12,104 @@ never relies on "only the running attempt is billed". jobs/DECISION_TREE.md quot
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-ENVELOPE_USD = 525.0
-#: October 2026 MTD actual SF spend (receipts): job-4j3vu 2.48, job-tkfaj 1.79, job-sgihj 1.40, job-c4zkm 0.74,
-#: job-mhc3h 0.56, job-4idg4 0.30, job-jucxx 0.25, job-jn47u 0.84, job-jbw22 0.07, job-mden7 1.06, job-5cmat 5.01
-#: (LEDGER: 14.49 per get_usage) + job-tvuat 1.62 (get_job receipt: charged_usd_micros 1,619,200, 1,963 billed s)
-SPENT_USD = 16.11
+
+
+def _load_rates():
+    """rates.py beside THIS file (the lint and launch load costs.py from a staged tree by path, so a package import
+    could pick up another checkout's rates)."""
+    f = Path(__file__).resolve().with_name("rates.py")
+    spec = importlib.util.spec_from_file_location(f"_rates_{abs(hash(str(f)))}", f)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+rates = _load_rates()
+
+#: The fixed $525 envelope is RETIRED (2026-10-10, coordinator / agent-a: the operator lifted the $525 cap and credit was
+#: topped up 2026-10-09 with $250 + $10). The ledger checks spend + committed worst cases against the TOTAL GRANTED CREDIT
+#: for the period, read from the newest committed `autor billing --json` receipt (credit_grants). Historical analyses
+#: that quote the $525 envelope (PLAN, LEDGER, receipts) are left as written.
+#: Month-to-date SF spend comes from the newest committed `autor usage --json` receipt (receipts/<date>-*/*usage*.json,
+#: object "list" with total_usd), not a hand-kept literal: the old SPENT_USD = 16.11 (2026-10-07) was stale by $41.87
+#: against LEDGER's 2026-10-08 $57.98. lint warns when the newest receipt is older than USAGE_STALE_DAYS.
+USAGE_STALE_DAYS = 2
+
+
+def latest_usage_receipt(root: Path = ROOT) -> dict | None:
+    """The newest usage receipt: latest month, then latest receipt-directory date, then the larger MTD (MTD only grows
+    within a month, so the larger of two same-day snapshots is the later one). None when no receipt is shipped."""
+    import datetime as dt
+
+    best = None
+    for f in (root / "receipts").glob("*/*usage*.json"):
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+            day = dt.date.fromisoformat(f.parent.name[:10])
+        except (ValueError, OSError):
+            continue
+        if not isinstance(d, dict) or d.get("object") != "list" or "total_usd" not in d or "month" not in d:
+            continue
+        key = (d["month"], day, float(d["total_usd"]))
+        if best is None or key > best[0]:
+            best = (key, {"path": f.relative_to(root).as_posix(), "month": d["month"], "date": day.isoformat(),
+                          "total_usd": float(d["total_usd"])})
+    return best[1] if best else None
+
+
+_USAGE = latest_usage_receipt()
+SPENT_USD = round(_USAGE["total_usd"], 2) if _USAGE else None
+
+
+def granted_credit_usd(billing: dict) -> float:
+    """Total credit granted for the billing receipt's month: every grant made by the end of that month that had not
+    expired before the month began (promo, top-ups), summed at its granted amount_usd (not what remains)."""
+    import datetime as dt
+
+    y, m = (int(x) for x in billing["month"].split("-"))
+    start = dt.datetime(y, m, 1, tzinfo=dt.timezone.utc)
+    end = dt.datetime(y + (m == 12), m % 12 + 1, 1, tzinfo=dt.timezone.utc)
+    total = 0.0
+    for g in billing.get("credit_grants", []):
+        granted = dt.datetime.fromisoformat(g["granted_at"])
+        expires = dt.datetime.fromisoformat(g["expires_at"]) if g.get("expires_at") else None
+        if granted < end and (expires is None or expires >= start):
+            total += float(g["amount_usd"])
+    return round(total, 2)
+
+
+def latest_billing_receipt(root: Path = ROOT) -> dict | None:
+    """The newest `autor billing --json` receipt (object "billing" with credit_grants): latest month, then latest
+    receipt-directory date, then the most grants. None when no receipt is shipped."""
+    import datetime as dt
+
+    best = None
+    for f in (root / "receipts").glob("*/*billing*.json"):
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+            day = dt.date.fromisoformat(f.parent.name[:10])
+        except (ValueError, OSError):
+            continue
+        if not isinstance(d, dict) or d.get("object") != "billing" or "credit_grants" not in d or "month" not in d:
+            continue
+        key = (d["month"], day, len(d["credit_grants"]))
+        if best is None or key > best[0]:
+            best = (key, {"path": f.relative_to(root).as_posix(), "month": d["month"], "date": day.isoformat(),
+                          "granted_usd": granted_credit_usd(d), "grants": [
+                              {k: g.get(k) for k in ("kind", "amount_usd", "granted_at", "expires_at")}
+                              for g in d["credit_grants"]]})
+    return best[1] if best else None
+
+
+_BILLING = latest_billing_receipt()
+#: total granted credit for the period (replaces the retired ENVELOPE_USD = 525.0)
+GRANTED_USD = _BILLING["granted_usd"] if _BILLING else None
 #: PLAN.md spend lines
 LINES = {"joint_gate": 75.0, "system1": 250.0, "language": 100.0, "reserve": 100.0}
 PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_params_c_only.json", "probe9b": "jobs/probe9b/job_params.json",
@@ -35,6 +127,7 @@ PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_par
           "clef_teacher_clef": "jobs/clef_baseline/job_params_teacher_clef.json",
           "clef_overlength_flash": "jobs/clef_baseline/job_params_overlength_flash.json",
           "full8": "jobs/full8/job_params.json",
+          "q9af_v2": "jobs/q9af_v2/job_params.json",
           "m2_first_cell": "jobs/m2_first_cell/job_params.json",
           **{f"q9_feature_cache_{p}": f"jobs/q9_feature_cache/job_params_{p}.json"
              for p in ("stock_dev", "stock_train", "conv1_dev", "conv1_train", "e5_dev", "e5_train")},
@@ -50,12 +143,16 @@ PARAMS["jev_host_scan_parity"] = "jobs/jev_host_scan/job_params_parity.json"  # 
 #: committed elsewhere in the envelope (worst-case ceilings from their specs), not built here. Clef baseline (JOB_SPEC):
 #: A ran as job-sgihj ($1.40, in SPENT_USD); C (27B, job A shape) is superseded for the Index by clef_index_subset +
 #: clef_index_full (PARAMS); B (Clef-flash GCG, $29.70 one-attempt ceiling) is still planned.
-OTHER = {"clef_baseline_B": 29.70}
+#: clef_baseline_B is a 600-min one-attempt ceiling: $29.70 at the pre-2026-10-08 $0.0495/min, re-priced at the current rate.
+OTHER = {"clef_baseline_B": round(600 * rates.BATCH_USD_PER_MIN, 2)}
 JOINT_GATE_JOBS = ("qual",)
 #: Clef-27B Index measurement (subset canary, full DEV, Clef-flash 32k over-length sensitivity): re-priced at the
 #: card's 5.39x latency ratio after the PR #98 review, which puts it past the $75 joint-gate line; the coordinator
-#: authorised that budget (2026-10-07, PR #98 review). Counted in the envelope, reported separately from the joint line.
-CLEF27B_INDEX_JOBS = ("clef_index_subset", "clef_index_full", "clef_overlength_flash")
+#: authorised that budget (2026-10-07, PR #98 review). Counted against granted credit, reported apart from the joint line.
+#: the full-DEV slot is clef_index_full_reference (GDN=reference, JOB_SPEC 4d): job-jxevr (index_full, fast GDN) failed
+#: kernel_path at S1 and the line moved to the reference job (job-zfexa), so the line counts its $49.90 worst case
+#: (PR #241 review B, 2026-10-10; it counted clef_index_full at $29.86 before)
+CLEF27B_INDEX_JOBS = ("clef_index_subset", "clef_index_full_reference", "clef_overlength_flash")
 #: optional m2 distillation teachers (System 1 line, only if a distillation cell is approved)
 TEACHER_JOBS = ("clef_teacher_flash", "clef_teacher_clef")
 FULL8_BUDGET = 150.0  # PLAN.md / DECISION_TREE branch A: ~$150 for the full conversion; priced in jobs/full8 (worst case)
@@ -74,16 +171,15 @@ def worst_case_usd(p: dict) -> float:
 
 
 def single_attempt_usd(p: dict) -> float:
-    """One running attempt at the billed rate. This WAS validate_job's max_cost_usd (2026-10-06: qual 180 min -> $8.91);
-    from 2026-10-08 the platform quotes at QUOTE_USD_PER_MIN instead (quoted_max_cost_usd)."""
+    """One running attempt at the billed rate. validate_job's max_cost_usd was this at $0.0495 (2026-10-06: qual 180 min
+    -> $8.91); from 2026-10-08 billed and quoted rates are both $0.063 (quoted_max_cost_usd)."""
     return round(p["max_duration_minutes"] * p["batch_usd_per_min"], 2)
 
 
-#: The platform's quoted max_cost_usd on 2026-10-08 is max_duration x $0.063/min with the build excluded, exact to the
-#: cent for both live jobs: job-i3buq 637 min -> $40.13, job-zpyis 828 min -> $52.16 (build-inclusive at ~$0.058 fits
-#: neither: 888 x 0.0576 = $51.13). The last billed receipt is still $0.0495/min (job-2xe5w, 2026-10-07: 26,341,700
-#: micro-$ / 31,930 s), so batch_usd_per_min stays; re-check against the first charged receipt priced after 2026-10-08.
-QUOTE_USD_PER_MIN = 0.063
+#: The platform's quoted max_cost_usd / preflight worst case = max_duration x QUOTE_USD_PER_MIN with the build excluded
+#: (job-i3buq 637 min -> $40.13, job-zpyis 828 min -> $52.16, job-a6vt6 742 min -> $46.75). From 2026-10-08 the billed
+#: batch rate equals it ($0.063/min, receipts 63,000 micro-$/GPU-min); before, the platform billed $0.0495. See rates.py.
+QUOTE_USD_PER_MIN = rates.QUOTE_USD_PER_MIN
 
 
 def quoted_max_cost_usd(p: dict) -> float:
@@ -201,27 +297,98 @@ def next_jobs_after_full8(verdict: str | None, exit_code: int | None = 0) -> lis
     return list(FULL8_TO_NEXT[verdict])
 
 
-def branch_ledger() -> dict:
-    """Worst-case $ per branch through the tree, against the envelope and the PLAN lines."""
+#: Every branch-ledger entry -> the SF job ids whose runs did that entry's committed work. An entry is RAN when every
+#: listed id is terminal in a committed job receipt (receipts/**/job-<id>.json, `autor job get --json`); a RAN entry
+#: counts 0 toward committed worst cases, because its actual cost is already inside SPENT_USD (the ledger reports that
+#: actual for reference). Usage receipts list top jobs without a status, so they cannot mark a job terminal on their
+#: own. An empty list = not run.
+LEDGER_JOB_IDS: dict[str, list[str]] = {
+    "qual": ["job-jbw22", "job-c4zkm", "job-4j3vu"],  # v1, v2 (A+B pass, C OOM), C-only re-run PASS
+    "clef_baseline_B": [],
+    "clef_index_subset": ["job-5mw9h", "job-d2u54"],  # failed canary, then the succeeded subset run
+    "clef_index_full_reference": ["job-jxevr", "job-zfexa"],  # index_full fast-GDN attempt (failed S1), reference run
+    "clef_overlength_flash": [],
+    "probe9b": ["job-5cmat"],
+    "full8": ["job-2xe5w"],
+    "rwkv7_readout": ["job-mhc3h", "job-tkfaj"],  # stage A v1 (rate guard stop), v2 succeeded
+    "rwkv7_lora": [],
+    "clef_teacher_flash": [],
+    "clef_teacher_clef": [],
+}
+TERMINAL_STATUSES = frozenset({"succeeded", "failed", "canceled", "cancelled", "build_failed", "self_terminated",
+                               "timed_out", "expired"})
+
+
+def job_receipts(root: Path = ROOT) -> dict[str, dict]:
+    """job id -> its newest committed `autor job get` receipt (receipts/**/job-*.json, object "job")."""
+    out: dict[str, tuple] = {}
+    for f in (root / "receipts").glob("**/job-*.json"):
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            continue
+        if not isinstance(d, dict) or d.get("object") != "job" or not d.get("job_id") or "status" not in d:
+            continue
+        key = (f.relative_to(root / "receipts").parts[0][:10], d.get("finished_at") or "")
+        if d["job_id"] not in out or key > out[d["job_id"]][0]:
+            out[d["job_id"]] = (key, dict(d, _path=f.relative_to(root).as_posix()))
+    return {k: v[1] for k, v in out.items()}
+
+
+def ran_entries(root: Path = ROOT, job_ids: dict[str, list[str]] | None = None) -> dict[str, dict]:
+    """Ledger entries whose every listed job is terminal in a committed job receipt, with their actual billed cost."""
+    rec = job_receipts(root)
+    out = {}
+    for name, ids in (LEDGER_JOB_IDS if job_ids is None else job_ids).items():
+        if ids and all(i in rec and rec[i]["status"] in TERMINAL_STATUSES for i in ids):
+            usd = sum(((rec[i].get("receipt") or {}).get("charged_usd_micros") or 0) for i in ids) / 1e6
+            out[name] = {"job_ids": list(ids), "statuses": {i: rec[i]["status"] for i in ids},
+                         "actual_usd": round(usd, 2), "receipts": [rec[i]["_path"] for i in ids]}
+    return out
+
+
+def branch_ledger(root: Path = ROOT, job_ids: dict[str, list[str]] | None = None) -> dict:
+    """Worst-case $ per branch through the tree: MTD spend + every committed worst case of work NOT yet run, against the
+    total granted credit for the period, and the PLAN lines. The line totals (joint gate, Clef-27B Index, teachers,
+    m1) stay full worst cases, as authorised; only the credit check drops RAN entries (their spend is in SPENT_USD)."""
+    if SPENT_USD is None:
+        raise RuntimeError("no usage receipt under receipts/ (autor usage --json): MTD spend unknown")
+    if GRANTED_USD is None:
+        raise RuntimeError("no billing receipt under receipts/ (autor billing --json): granted credit unknown")
     w = {k: worst_case_usd(load(k)) for k in PARAMS}
-    joint = sum(w[k] for k in JOINT_GATE_JOBS) + OTHER["clef_baseline_B"]
+    ran = ran_entries(root, job_ids)
+    ids = LEDGER_JOB_IDS if job_ids is None else job_ids
+
+    def worst(name: str) -> float:
+        return OTHER[name] if name in OTHER else w[name]
+
+    def committed(names) -> float:
+        return round(sum(0.0 if n in ran else worst(n) for n in names), 2)
+
+    joint_names = (*JOINT_GATE_JOBS, "clef_baseline_B")
+    joint = sum(worst(n) for n in joint_names)
     teachers = round(sum(w[k] for k in TEACHER_JOBS), 2)
     clef27b = round(sum(w[k] for k in CLEF27B_INDEX_JOBS), 2)
-    branches = {
-        "A: qual pass -> probe proceed -> full-8 (+rwkv7 readout comparator)":
-            {"m1": w["probe9b"] + w["full8"] + w["rwkv7_readout"]},
-        "B: qual pass/lean -> probe fail -> rwkv7 readout + lora": {"m1": w["probe9b"] + w["rwkv7_readout"] + w["rwkv7_lora"]},
-        "C: qual fold -> rwkv7 readout + lora": {"m1": w["rwkv7_readout"] + w["rwkv7_lora"]},
+    m1_names = {
+        "A: qual pass -> probe proceed -> full-8 (+rwkv7 readout comparator)": ("probe9b", "full8", "rwkv7_readout"),
+        "B: qual pass/lean -> probe fail -> rwkv7 readout + lora": ("probe9b", "rwkv7_readout", "rwkv7_lora"),
+        "C: qual fold -> rwkv7 readout + lora": ("rwkv7_readout", "rwkv7_lora"),
     }
-    for b in branches.values():
-        b["m1"] = round(b["m1"], 2)
+    committed_lines = {"joint_gate": committed(joint_names), "clef27b_index": committed(CLEF27B_INDEX_JOBS),
+                       "teachers": committed(TEACHER_JOBS)}
+    branches = {}
+    for label, names in m1_names.items():
+        b = branches[label] = {"m1": round(sum(w[n] for n in names), 2), "m1_committed": committed(names)}
         b["system1_left_for_m2"] = round(LINES["system1"] - b["m1"], 2)
         b["system1_left_after_teachers"] = round(b["system1_left_for_m2"] - teachers, 2)
-        b["envelope_total_worst"] = round(SPENT_USD + joint + clef27b + b["m1"] + teachers, 2)
-        b["fits_envelope"] = b["envelope_total_worst"] <= ENVELOPE_USD
+        b["spend_plus_worst"] = round(SPENT_USD + sum(committed_lines.values()) + b["m1_committed"], 2)
+        b["fits_granted_credit"] = b["spend_plus_worst"] <= GRANTED_USD
     return {"worst_case_usd": w, "joint_gate_worst": round(joint, 2), "joint_gate_fits": joint <= LINES["joint_gate"],
             "teachers_optional_worst": teachers, "clef27b_index_authorised_worst": clef27b,
-            "envelope": ENVELOPE_USD, "spent": SPENT_USD, "branches": branches}
+            "committed_worst_not_run": committed_lines, "job_ids": {k: list(v) for k, v in ids.items()},
+            "ran": ran, "ran_actual_usd_in_spent": round(sum(r["actual_usd"] for r in ran.values()), 2),
+            "granted_credit_usd": GRANTED_USD, "granted_source": _BILLING and {k: _BILLING[k] for k in ("path", "date", "month")},
+            "spent": SPENT_USD, "spent_source": _USAGE, "branches": branches}
 
 
 def main():

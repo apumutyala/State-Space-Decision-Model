@@ -224,7 +224,7 @@ def load_child(a, temperature: bool = True, readout: tuple[str, str] | None = No
     cohort = Cohort(expected_sha256=cfg["cohort_sha256"])
     guard = load_ready_guard(a.guard_readiness)
     parent = cfg.get("parent", "rwkv7")
-    enc = parent_encoder(parent, a.model_dir)
+    enc = parent_encoder(parent, a.model_dir, cfg)
     spec = G.unit_spec(cfg)
     pools = G.pool_dirs_arg(a.pool_dir)
     train_recs, recs, tr_ids, _, _ = load_cell_data(cfg, a.records, a.train_dir, cohort)
@@ -236,7 +236,7 @@ def load_child(a, temperature: bool = True, readout: tuple[str, str] | None = No
                    if len(x.row.ids) <= t_max]
     attach_order_views(cfg, train_items, train_recs, enc, guard, t_max)
     attach_teacher(cfg, train_items, a.teacher_dir, tr_ids)
-    bb = load_parent_backbone(parent, a.model_dir, cfg, None, device=a.device)
+    bb = load_parent_backbone(parent, a.model_dir, cfg, getattr(a, "gdn_ckpt", None), device=a.device)
     cuda = torch.cuda.is_available() and str(a.device).startswith("cuda")
     model = DecisionModel(bb, cfg["head"], cfg.get("head_kwargs"), pad_id=0, seed=cfg["seed"])
     model.to(bb.device)
@@ -435,7 +435,7 @@ def _sha(p: Path) -> str:
 
 
 def report(a) -> dict:
-    from jobs.common.costs import quoted_max_cost_usd, worst_case_usd
+    from jobs.common.costs import QUOTE_USD_PER_MIN, quoted_max_cost_usd, worst_case_usd
 
     d = Path(a.out_dir)
     params = json.loads(Path(a.params).read_text(encoding="utf-8"))
@@ -497,8 +497,8 @@ def report(a) -> dict:
         out["child_minus_parent"] = cmp.get("diff", cmp)
     usd = params["batch_usd_per_min"]
     out["cost"] = {"elapsed_min": a.elapsed_min, "runtime_usd_batch": round(a.elapsed_min * usd, 2),
-                   "usd_per_min_batch": usd, "runtime_usd_quoted": round(a.elapsed_min * 0.063, 2),
-                   "usd_per_min_quoted": 0.063, "build_minutes_not_included": True,
+                   "usd_per_min_batch": usd, "runtime_usd_quoted": round(a.elapsed_min * QUOTE_USD_PER_MIN, 2),
+                   "usd_per_min_quoted": QUOTE_USD_PER_MIN, "build_minutes_not_included": True,
                    "worst_case_usd": worst_case_usd(params), "quoted_max_cost_usd": quoted_max_cost_usd(params),
                    "hard_cap_usd": params["hard_cap_usd"]}
     out["checkpoint"] = {k: v for k, v in (params.get("checkpoint") or {}).items() if not k.startswith("_")}

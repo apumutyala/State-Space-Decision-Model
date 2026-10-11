@@ -1,0 +1,52 @@
+{
+ "version": "ssdm-dedup-v3",
+ "rows": 231,
+ "rows_by_catalog": {
+  "-77": 231
+ },
+ "segments_unique": 3945,
+ "segments_boilerplate_removed": 0,
+ "segments_indexed": 3945,
+ "ngram13_unique": 53655,
+ "ngram13_boilerplate_removed": 0,
+ "ngram13_indexed": 53655,
+ "minhash_segments": 3836,
+ "short_items": 2904,
+ "params": {
+  "boilerplate_rows": 100,
+  "ngram_n": 13,
+  "minhash_perms": 64,
+  "minhash_bands": 16,
+  "minhash_max_chars": 1000,
+  "minhash_threshold": 0.75,
+  "shingle": "byte 5-gram",
+  "min_segment_chars": 12,
+  "edit": {
+   "tokens": [
+    4,
+    30
+   ],
+   "max_edits": 2,
+   "max_ratio": 0.2,
+   "rule": "d <= 2 and d/max(len) <= 0.2"
+  },
+  "contain": {
+   "index_tokens": [
+    6,
+    30
+   ],
+   "query_max_tokens": 80
+  }
+ },
+ "source": "jevbench-public",
+ "repo": "github.com/fstandhartinger/jevbench",
+ "commit": "b6b8fff7e345b98c060ad26c13308860ddc67004",
+ "files": {
+  "original.jsonl": "5c2414edb3006b8bfcb70fda433f0f9ca015759433849f8d3104328a1f7c4180",
+  "easy.jsonl": "231df3c2c8e88a1a8c137ebe85de96ba70fabd330849098ac7b3c52c70b7172b",
+  "hard.jsonl": "89e9e6becb33ed88c1de7d42dcc87531b2fb64cfaef4e1986faf7c37b3f80ebb"
+ },
+ "n_template_segments": 83,
+ "template_items": 2,
+ "arrays_sha256": "211da3f1d3c68fbfc48fc3dbdd72cfd0c6dcf723f47e4628a7f6f5f506c2c55c"
+}

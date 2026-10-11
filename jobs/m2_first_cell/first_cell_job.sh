@@ -14,6 +14,9 @@
 #   12,104 rows, or params "rows": "smoke" = the pre-declared 250-row fulldev_smoke_rows.json; live rate guard, per-row
 #   resume from $CK/fulldev), optional parent_full (params "fulldev_parent_arm"),
 #   report (fulldev_eval report -> fulldev_eval_result.json). No heldout / parent g12+index / reprice / cell phase.
+#   Params with "chain" (train/chain.py; JOB_SPEC.md "Params chain") are one LINK of a training run spread over
+#   several jobs: cell = params cell_config (shared); link k >= 2 installs link k-1 (phase chain, exit 10); the cell
+#   trains to the job's deadline; an intermediate link (k < of) skips parent arm / evals and exports /output/chain.
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
 #        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
@@ -68,6 +71,11 @@ TRAIN_DIR=$DATA/m2-150k
 TEACHER_ARGS=()
 EVAL_ONLY=none
 STAGE=gates
+# train.chain (params "chain": one training run over several jobs): link K of N; an INTERMEDIATE link (K < N) runs the
+# guards, [K >= 2: installs link K-1], trains to the job's deadline and exports /output/chain; no parent arm / evals
+CHAIN_LINK=0 CHAIN_OF=0 INTERMEDIATE=0
+SIZE_CAP=4500000000
+CELL_TAIL_MIN=8  # chain links: minutes kept inside the cell phase after the training deadline (last step, card, save)
 RECORDS=$DATA/m2/records.jsonl.gz
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
@@ -106,12 +114,12 @@ finish() {
   # Terminal export and result validation share 60s + 30s KILL grace from the
   # existing seven-minute reserve. Export failure still reaches finalize (exit 6).
   export -f export_phase sample say
-  export CODE OUT WORK CK T0 META RESULT GATES EXPORT_FAIL MARKER VALIDATOR DECISION
+  export CODE OUT WORK CK T0 META RESULT GATES EXPORT_FAIL MARKER VALIDATOR DECISION SIZE_CAP
   export FINISH_RC=$rc
   timeout --kill-after=30s 60s bash -c '
     export_phase final
     # results always upload: rename-only here (no time to copy GBs); the mid-run call below already made room
-    python "$CODE/jobs/common/size_guard.py" --out "$OUT" --evict-dir "$CK/evicted" --rename-only || say "SIZE GUARD FAILED: /output still over the upload cap (see $OUT/SIZE_GUARD.json)"
+    python "$CODE/jobs/common/size_guard.py" --out "$OUT" --evict-dir "$CK/evicted" --rename-only --cap-bytes "$SIZE_CAP" || say "SIZE GUARD FAILED: /output still over the upload cap (see $OUT/SIZE_GUARD.json)"
     exec python "$CODE/jobs/common/finalize.py" "$RESULT" "$FINISH_RC" "$GATES" "$EXPORT_FAIL" "$(( ($(date +%s) - T0) / 60 ))" \
       "$DECISION" "$OUT" "$MARKER" "$VALIDATOR"
   '
@@ -138,7 +146,18 @@ def load(f, what):
         sys.exit(f"mode {mode}: no {what} {f}")
     except ValueError as e:
         sys.exit(f"mode {mode}: {what} {f} is not JSON ({e})")
-p, c = load(params, "job params"), load(cell, "cell config")
+p = load(params, "job params")
+ch = None
+if "chain" in p:  # train.chain link: the SHARED cell config of every link is the params' cell_config
+    sys.path.insert(0, ".")
+    from train.chain import ChainError, chain_block
+    try:
+        ch = chain_block(p)
+    except ChainError as e:
+        sys.exit(f"mode {mode}: {e}")
+    if not override:
+        cell = p["cell_config"]
+c = load(cell, "cell config")
 if p.get("mode", mode) != mode:
     sys.exit(f"mode {mode}: {params} says mode {p['mode']!r}")
 if not override and p.get("cell_config", cell) != cell:
@@ -159,15 +178,21 @@ if ev != "none":
 st = p.get("stage", "gates")
 if st not in ("gates", "screen") or (st == "screen" and ev != "none"):
     sys.exit(f"mode {mode}: stage {st!r} must be gates or screen (screen = a training mode's evals, not eval_only)")
-print(td, 1 if c.get("teacher") else 0, ev, st)
+print(td, 1 if c.get("teacher") else 0, ev, st, (ch or {}).get("link", 0), (ch or {}).get("of", 0), cell)
 EOF
   ) || fail 5 "$MODE_ENV"
-  read -r TRAIN_SUB TEACHER EVAL_ONLY STAGE <<< "$MODE_ENV"
+  read -r TRAIN_SUB TEACHER EVAL_ONLY STAGE CHAIN_LINK CHAIN_OF CELL <<< "$MODE_ENV"
   TRAIN_DIR=$DATA/$TRAIN_SUB
   [ "$TEACHER" = 1 ] && TEACHER_ARGS=(--teacher-dir "$DATA/teacher")
   say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}, eval-only $EVAL_ONLY"
   [ "$EVAL_ONLY" = fulldev ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_result DECISION=$WORK/out/fulldev_eval_result.json
   [ "$STAGE" = screen ] && VALIDATOR=jobs.m2_first_cell.screen:valid_result DECISION=$WORK/out/screen.json
+  if [ "$CHAIN_LINK" -gt 0 ]; then
+    [ "$CHAIN_LINK" -lt "$CHAIN_OF" ] && INTERMEDIATE=1
+    say "chain link $CHAIN_LINK of $CHAIN_OF (train.chain; intermediate=$INTERMEDIATE: guards + train + export, no evals)"
+    # an intermediate link's result is its export record; /output holds the full resumable state (r64 ~4.7 GB)
+    [ "$INTERMEDIATE" = 1 ] && VALIDATOR=train.chain:valid_result DECISION=$WORK/out/chain_link.json SIZE_CAP=5200000000
+  fi
 fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
 num "$TOK_S" || fail 4 "TOK_S=$TOK_S is not a number"
@@ -176,6 +201,19 @@ num "$CALL_S" || fail 4 "CALL_S=$CALL_S is not a number"
 
 # ------------------------------------------------------------------ setup: identities + eval preflights (exit 5 / 10 / 15)
 say "setup"
+# parent = the cell config's "parent" (default rwkv7). q9af (the attention-free Qwen3.5-9B, mode q9af_v2_v3w): the 9B
+# snapshot (sha-pinned), the converted GDN export from $DATA/gdn (gdn_q9af_v2.sha256 + the config's q9af pin, filled at
+# launch by scripts/fill_conversion_pins.py), --parent q9af --gdn-ckpt for every scoring / training step. rwkv7: unchanged.
+PARENT=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("parent", "rwkv7"))' "$CELL") || fail 5 "cell config parent"
+GDN_ARGS=()
+case "$PARENT" in rwkv7) ;; q9af) GDN_ARGS=(--gdn-ckpt "$DATA/gdn/gdn_converted.pt") ;; qwen35) ;;
+  *) fail 5 "cell parent $PARENT: rwkv7, q9af or qwen35" ;; esac
+[ "$PARENT" != rwkv7 ] && [ "$EVAL_ONLY" != none ] && fail 5 "eval_only modes are rwkv7-only"
+# params "parent_arm" (default in_job): "none" = no parent arm at all (A-PREREG-SIZECLIFF size-cliff arms, stage screen
+# only, screen_parent "none"): no arm seed, no parent g12 / index phases, the screen pairs child vs reference + comparators
+PARENT_ARM=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("parent_arm", "in_job"))' "$PARAMS") || fail 5 "job_params parent_arm"
+case "$PARENT_ARM" in in_job) ;; none) [ "$STAGE" = screen ] || fail 5 "parent_arm none needs stage screen" ;;
+  *) fail 5 "job_params parent_arm $PARENT_ARM: in_job or none" ;; esac
 cp "$CONTEXT_MANIFEST" "$WORK/out/" || fail 5 "no context manifest"
 nvidia-smi > "$WORK/out/nvidia-smi.txt" || fail 5 "nvidia-smi"
 # WKV = the fla name if EITHER rwkv7_wkv (scoring) or train_rwkv7_wkv (training steps only) is fla, else rwkv7_wkv
@@ -228,10 +266,43 @@ if [ ${#TEACHER_ARGS[@]} -gt 0 ]; then
 fi
 python -X utf8 -m train.cohort verify > "$WORK/out/cohort-verify.json" 2>&1 || fail 10 "cohort does not rebuild to its committed sha256"
 CAP_SETUP=$(cap setup) || fail 5 "job_params"
+if [ "$PARENT" = q9af ]; then
+  SNAP=$(timeout --kill-after=30s ${CAP_SETUP}m python -c 'from huggingface_hub import snapshot_download as s; print(s("Qwen/Qwen3.5-9B", revision="c202236235762e1c871ad0ccb60c8ee5ba337b9a"))'); r=$?
+  case $r in 0) ;; 124|137) fail 7 "download timeout" ;; *) fail 10 "download" ;; esac
+  ( cd "$SNAP" && sha256sum -c "$CODE/jobs/m2_first_cell/q9af_snapshot_v3w.sha256" ) > "$WORK/out/snapshot-verify.txt" 2>&1 || fail 10 "q9af snapshot sha256"
+  # the converted export: sha256 pinned in the context (gdn_q9af_v2.sha256) AND in the cell config's q9af block
+  # (export.json ok / final / attention_free; a partial export refuses unless hybrid), before any weight is loaded
+  ( cd "$DATA" && sha256sum -c "$CODE/jobs/m2_first_cell/gdn_q9af_v2.sha256" ) > "$WORK/out/gdn-verify.txt" 2>&1 \
+    || fail 10 "converted GDN export sha256 (gdn_q9af_v2.sha256 PENDING until scripts/fill_conversion_pins.py)"
+  python -m jobs.q9af_cell.pin check --config "$CELL" --export-json "$DATA/gdn/export.json" --gdn "$DATA/gdn/gdn_converted.pt" \
+    --out "$WORK/out/label.json" > "$WORK/logs/pin.log" 2>&1 || fail 10 "export pin: $(tail -1 "$WORK/logs/pin.log")"
+  python -c "import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if d['attention_free'] else 1)" "$WORK/out/label.json" \
+    || fail 10 "export is not attention-free (q9af_v2_v3w never runs a hybrid)"
+  say "export: $(python -c "import json,sys; print(json.load(open(sys.argv[1]))['label'])" "$WORK/out/label.json")"
+  # the generic v3w spec on THIS snapshot's tokenizer files == the pinned identity (decide.v3w_generic.PINNED_SPEC_SHA256)
+  python -X utf8 -c 'import json,sys; from decide.v3w_generic import bind_template; c=json.load(open(sys.argv[1])); print(json.dumps(bind_template(c["template"], sys.argv[2]).identity()))' \
+    "$CELL" "$SNAP" > "$WORK/out/v3w-spec.json" 2> "$WORK/logs/v3w-spec.log" || fail 10 "v3w spec identity: $(tail -1 "$WORK/logs/v3w-spec.log")"
+elif [ "$PARENT" = qwen35 ]; then
+  # a stock Qwen3.5 (heads.backbone.QWEN35_STOCK): repo@revision and the snapshot manifest from the cell's qwen35 block;
+  # the config.json pin (heads.backbone.qwen35_pin_check) and the generic v3w spec identity before any weight is loaded
+  read -r Q35_REPO Q35_REV Q35_SHA <<< "$(python -I -c 'import json,sys; q=json.load(open(sys.argv[1]))["qwen35"]; print(q["repo"], q["revision"], q["snapshot_sha256_file"])' "$CELL")" \
+    || fail 5 "cell config qwen35 block"
+  SNAP=$(timeout --kill-after=30s ${CAP_SETUP}m python -c 'import sys; from huggingface_hub import snapshot_download as s; print(s(sys.argv[1], revision=sys.argv[2]))' "$Q35_REPO" "$Q35_REV"); r=$?
+  case $r in 0) ;; 124|137) fail 7 "download timeout" ;; *) fail 10 "download" ;; esac
+  ( cd "$SNAP" && sha256sum -c "$CODE/$Q35_SHA" ) > "$WORK/out/snapshot-verify.txt" 2>&1 || fail 10 "qwen35 snapshot sha256 ($Q35_REPO@$Q35_REV)"
+  python -X utf8 -c 'import json,sys; from heads.backbone import qwen35_pin_check; c=json.load(open(sys.argv[1])); print(json.dumps(qwen35_pin_check(c["qwen35"], sys.argv[2])))' \
+    "$CELL" "$SNAP" > "$WORK/out/label.json" 2> "$WORK/logs/pin.log" || fail 10 "qwen35 pin: $(tail -1 "$WORK/logs/pin.log")"
+  say "parent: stock $Q35_REPO@$Q35_REV"
+  # the cell's template (H2O shim format or generic v3w) + every jevkit score-only template, bound to THIS snapshot's
+  # tokenizer files and checked against their pinned identities before any weight is loaded
+  python -X utf8 -c 'import json,sys; from decide import shim_format as S, v3w_generic as V; c=json.load(open(sys.argv[1])); p=json.load(open(sys.argv[3])).get("jevkit") or {}; ts=[c["template"]]+([p["lean_template"]] if p.get("lean_template") else [])+sorted((p.get("extra_templates") or {}).values()); print(json.dumps({t: (S.bind_template if S.is_shim_template(t) else V.bind_template)(t, sys.argv[2]).identity() for t in ts}))' \
+    "$CELL" "$SNAP" "$PARAMS" > "$WORK/out/readout-spec.json" 2> "$WORK/logs/readout-spec.log" || fail 10 "readout spec identity: $(tail -1 "$WORK/logs/readout-spec.log")"
+else
 SNAP=$(timeout --kill-after=30s ${CAP_SETUP}m python -c 'from huggingface_hub import snapshot_download as s; print(s("RWKV/RWKV7-G1k-13.3B-20260930", revision="ce3630b854cedbd673569f4600c6cf744bca9dba"))'); r=$?
 case $r in 0) ;; 124|137) fail 7 "download timeout" ;; *) fail 10 "download" ;; esac
 ( cd "$SNAP" && sha256sum -c "$CODE/jobs/rwkv7/snapshot.sha256" ) > "$WORK/out/snapshot-verify.txt" 2>&1 || fail 10 "snapshot sha256"
 python -c "import sys, third_party.rwkv7_hf as V; V.verify_snapshot_code(sys.argv[1])" "$SNAP" || fail 10 "vendored code != snapshot code"
+fi
 ( cd "$DATA" && sha256sum -c "$CODE/jobs/clef_baseline/data.sha256" ) > "$WORK/out/data-verify.txt" 2>&1 || fail 10 "DEV rows sha256"
 python -X utf8 -m jobs.common.dev_subset rows --rows "$DATA/slices/dev-rows.jsonl.gz" --out "$WORK/index-rows.jsonl.gz" \
   --subset jobs/common/dev_subset_m1.json > "$WORK/out/index-subset.json" || fail 10 "DEV subset rows"
@@ -245,9 +316,15 @@ for NAME in rwkv7_stock_tkfaj clef_flash; do  # optional comparison files, used 
   fi
 done
 python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag, jobs.m2_first_cell.fulldev_eval, jobs.m2_first_cell.checkpoint_loader" || fail 5 "drivers not importable"
+if [ "$CHAIN_LINK" -gt 0 ]; then  # the chain block + (intermediate links) the export fits the 5 GiB job artifact
+  python -X utf8 -m train.chain check --params "$PARAMS" --cell-config "$CELL" --out "$WORK/out/chain-check.json" \
+    > "$WORK/logs/chain-check.log" 2>&1 || fail 5 "$(tail -1 "$WORK/logs/chain-check.log")"
+fi
 if [ "$EVAL_ONLY" = fulldev ]; then  # full-DEV scoring priced from the committed row lengths x D1's measured child rate
   python -X utf8 -m jobs.m2_first_cell.fulldev_eval estimate --params "$PARAMS" > "$WORK/out/preflight-fulldev.json" \
     || fail 15 "fulldev projected past its cap at the measured D1 child rate"
+elif [ "$INTERMEDIATE" = 1 ]; then
+  say "chain link $CHAIN_LINK of $CHAIN_OF: no eval phase in this link, nothing to price"
 else
 # params "rows" (base / training modes): "subset" (default) = the child's Index stage on all 2,008 subset rows; "proxy600"
 # = a SCREEN on the pre-declared 644-row proxy (jobs/common/dev_proxy600.json, ids sha pinned in jobs.common.dev_proxy;
@@ -266,6 +343,7 @@ FIX_C=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fi
 EVAL_PRICES=("g12 parent parent_g12 $FIX_P" "index parent parent_index $FIX_P" "g12,index child evals $FIX_C")
 if [ "$STAGE" = screen ]; then  # params "stage": "screen": the child evals are ONE proxy600 Index pass (no G12 / fit / card)
   EVAL_PRICES=("${EVAL_PRICES[@]:0:2}")
+  [ "$PARENT_ARM" = none ] && EVAL_PRICES=()  # no parent arm phases to price
   python -X utf8 -m jobs.common.dev_proxy check --proxy proxy600 > "$WORK/out/index-proxy.json" || fail 10 "index proxy600 identity"
   python -X utf8 -m jobs.m2_first_cell.screen estimate --params "$PARAMS" > "$WORK/out/preflight-screen.json" \
     || fail 15 "screen projected past its cap at D1's measured proxy rate"
@@ -274,7 +352,7 @@ if [ "$STAGE" = screen ]; then  # params "stage": "screen": the child evals are 
     --out "$WORK/out/screen-reference.json" > "$WORK/logs/screen-reference.log" 2>&1 \
     || fail 10 "screen reference: $(tail -1 "$WORK/logs/screen-reference.log")"
 fi
-for P in "${EVAL_PRICES[@]}"; do
+for P in ${EVAL_PRICES[@]+"${EVAL_PRICES[@]}"}; do
   set -- $P
   python -X utf8 -m jobs.m2_parent_arm.score_parent estimate --tok-s "$TOK_S" --call-s "$CALL_S" --stages "$1" \
     --mode "$2" --cap-min "$(cap "$3")" --fixed-min "$4" > "$WORK/out/preflight-$3.json" || fail 15 "$3 projected past its cap at TOK_S=$TOK_S CALL_S=$CALL_S"
@@ -337,10 +415,31 @@ timeout --kill-after=30s $(cap heldout)m python -X utf8 -m train.train_set heldo
 gate "heldout" $r; export_phase heldout
 case $r in 0) ;; 124|137) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B fragment or eval attack template (train.attack_guard) outside the pinned exclusions" ;; 4) fail 34 "Index eval document text (train.doc_overlap_guard) outside the pinned doc_clean spec" ;; *) fail 5 "heldout rc=$r" ;; esac
 
+# ------------------------------------------------------------------ chain links >= 2: install link K-1's state (exit 10)
+# train.chain install: the artifact from $<chain.from.url_env>, its sha256 and CHAIN.json's pinned; chain id, link order
+# and the carried cell.json config checked; a restart of this link keeps its own newer checkpoint (CHAIN_INSTALLED.json)
+if [ "$CHAIN_LINK" -ge 2 ]; then
+  say "phase chain (install link $((CHAIN_LINK - 1)) of $CHAIN_OF into $CK/cell)"
+  mkdir -p "$CK/cell" "$WORK/chain"
+  timeout --kill-after=30s $(cap chain)m python -X utf8 -m train.chain install --params "$PARAMS" --cell-config "$CELL" \
+    --ck-dir "$CK/cell" --work "$WORK/chain" --cell-out "$WORK/out/cell.json" --out "$WORK/out/chain-install.json" \
+    > "$WORK/logs/chain.log" 2>&1; r=$?
+  gate "chain" $r; export_phase chain
+  case $r in 0) ;; 124|137) fail 7 "chain install timeout" ;; 10) fail 10 "chain identity: $(tail -1 "$WORK/logs/chain.log")" ;;
+    *) fail 5 "chain install rc=$r: $(tail -1 "$WORK/logs/chain.log")" ;; esac
+fi
+
+if [ "$INTERMEDIATE" = 1 ]; then
+  say "chain link $CHAIN_LINK of $CHAIN_OF: no parent arm (its evals run in link $CHAIN_OF)"
+else
 # ------------------------------------------------------------------ parent arm (stock readout) BEFORE training (review fix 1)
 # Its live weighted rate guard measures this box's scoring speed before any training spend; then the child evals are
 # re-priced from that measured speed (jobs.m2_first_cell.reprice, exit 15). Cached in $CK across restarts.
 ARM=$CK/parent_arm
+ARM_SHA=none
+if [ "${PARENT_ARM:-in_job}" = none ]; then
+  say "parent arm: none (params parent_arm none; the screen pairs the child with the reference and the comparators)"
+else
 # A RESUBMITTED job (empty checkpoint slot) seeds the cache from a pinned earlier export shipped as data/parent_arm_seed/
 # (job_params parent_arm_seed; LESSONS L-34): installed atomically (temp dir, checked, renamed), then verified BEFORE
 # any training (seed_verify: full units identity via read_arm_cache, guard, the parent's revision on this box and a
@@ -359,7 +458,7 @@ if python -c "import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get('v
   PROBE_N=$(python -c "import json,sys; print(int(json.load(open(sys.argv[1]))['parent_arm_seed']['probe_records']))" "$PARAMS") \
     || fail 5 "job_params parent_arm_seed"
   say "phase seed_verify (seeded parent arm: units identity, guard, revision + $PROBE_N-record re-score on this box)"
-  timeout --kill-after=30s $(cap parent_g12)m python -X utf8 -m jobs.m2_parent_arm.score_parent --verify-cache --parent rwkv7 \
+  timeout --kill-after=30s $(cap parent_g12)m python -X utf8 -m jobs.m2_parent_arm.score_parent --verify-cache --parent "$PARENT" "${GDN_ARGS[@]}" \
     --model-dir "$SNAP" --cell-config "$CELL" --records "$RECORDS" --guard-readiness "$WORK/out/guard/readiness.json" \
     --index-rows "$WORK/index-rows.jsonl.gz" --out-dir "$ARM" --arm-sha256 "$SEED_SHA" --probe-n "$PROBE_N" \
     --tok-s "$TOK_S" --call-s "$CALL_S" --verify-out "$WORK/out/seed-verify.json" > "$WORK/logs/seed-verify.log" 2>&1; r=$?
@@ -376,7 +475,7 @@ for PSTAGE in g12 index; do
   say "phase parent_$PSTAGE"
   python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/parent-$PSTAGE.progress.jsonl" \
     --cap-min "$(cap parent_$PSTAGE)" --report "$ARM/rate-parent-$PSTAGE.json" -- \
-    timeout --kill-after=30s $(cap parent_$PSTAGE)m python -X utf8 -m jobs.m2_parent_arm.score_parent --parent rwkv7 --model-dir "$SNAP" --cell-config "$CELL" \
+    timeout --kill-after=30s $(cap parent_$PSTAGE)m python -X utf8 -m jobs.m2_parent_arm.score_parent --parent "$PARENT" "${GDN_ARGS[@]}" --model-dir "$SNAP" --cell-config "$CELL" \
     --records "$RECORDS" --guard-readiness "$WORK/out/guard/readiness.json" --index-rows "$WORK/index-rows.jsonl.gz" \
     --out-dir "$ARM" --stage "$PSTAGE" --progress "$WORK/logs/parent-$PSTAGE.progress.jsonl" \
     > "$WORK/logs/parent-$PSTAGE.log" 2>&1; r=$?
@@ -391,7 +490,7 @@ ARM_SHA=$(sha256sum "$ARM/arm.json" | cut -d' ' -f1)
 mkdir -p "$WORK/out/parent_arm" && cp "$ARM"/*.json "$WORK/out/parent_arm/" || fail 6 "parent arm export copy"
 if [ ${#PROBE[@]} -eq 0 ]; then
   # A cache from this job also needs full identity validation BEFORE training, not just per-file hashes.
-  timeout --kill-after=30s $(cap parent_g12)m python -X utf8 -m jobs.m2_parent_arm.score_parent --verify-cache --parent rwkv7 \
+  timeout --kill-after=30s $(cap parent_g12)m python -X utf8 -m jobs.m2_parent_arm.score_parent --verify-cache --parent "$PARENT" "${GDN_ARGS[@]}" \
     --model-dir "$SNAP" --cell-config "$CELL" --records "$RECORDS" --guard-readiness "$WORK/out/guard/readiness.json" \
     --index-rows "$WORK/index-rows.jsonl.gz" --out-dir "$ARM" --arm-sha256 "$ARM_SHA" \
     --verify-out "$WORK/out/parent-cache-verify.json" > "$WORK/logs/parent-cache-verify.log" 2>&1; r=$?
@@ -399,6 +498,7 @@ if [ ${#PROBE[@]} -eq 0 ]; then
     10) fail 10 "parent cache failed verification: $(tail -1 "$WORK/logs/parent-cache-verify.log")" ;;
     *) fail 5 "parent cache verification rc=$r" ;; esac
 fi
+fi  # parent_arm in_job
 if [ "$STAGE" = screen ]; then
   say "stage screen: child evals priced in setup (D1 measured proxy rate); no re-price"
 else
@@ -409,17 +509,44 @@ gate "reprice" $r
 case $r in 0) ;; 15) fail 15 "child evals re-priced past their cap at the box's measured speed (before training)" ;;
   *) fail 5 "reprice rc=$r" ;; esac
 fi
+fi  # INTERMEDIATE
 
 # ------------------------------------------------------------------ cell: smoke -> ladder -> train (resumable; exit 26 = too slow)
 say "phase cell"
 mkdir -p "$CK/cell"
 [ -f "$CK/cell/cell.json" ] && cp "$CK/cell/cell.json" "$WORK/out/cell.json"
-timeout --kill-after=30s $(cap cell)m python -m train.run_cell --config "$CELL" --model-dir "$SNAP" --records "$RECORDS" \
+CELL_MIN=$(cap cell)
+CHAIN_ARGS=()
+if [ "$CHAIN_LINK" -gt 0 ]; then
+  # a chain link trains until the JOB's deadline: max_duration - time used - the caps of the phases after the cell -
+  # reserve (every minute the earlier phases left), stopping CELL_TAIL_MIN early for the last step / card / save
+  CELL_MIN=$(python -X utf8 -m train.chain cell-minutes --params "$PARAMS" --elapsed-s "$(( $(date +%s) - T0 ))") \
+    || fail 5 "chain cell-minutes"
+  [ "$CELL_MIN" -gt "$CELL_TAIL_MIN" ] || fail 7 "chain link: no time left to train ($CELL_MIN min)"
+  CHAIN_ARGS=(--chain-link "$CHAIN_LINK" --chain-of "$CHAIN_OF" --train-deadline "$(( $(date +%s) + 60 * (CELL_MIN - CELL_TAIL_MIN) ))")
+  say "chain link $CHAIN_LINK of $CHAIN_OF: cell phase $CELL_MIN min (training stops $CELL_TAIL_MIN min before its end)"
+fi
+timeout --kill-after=30s ${CELL_MIN}m python -m train.run_cell --config "$CELL" --model-dir "$SNAP" "${GDN_ARGS[@]}" --records "$RECORDS" \
   --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" --out "$WORK/out" --ckpt-dir "$CK/cell" --stage all \
-  --guard-readiness "$WORK/out/guard/readiness.json" > "$WORK/logs/cell.log" 2>&1; r=$?
+  --guard-readiness "$WORK/out/guard/readiness.json" "${CHAIN_ARGS[@]}" > "$WORK/logs/cell.log" 2>&1; r=$?
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
 case $r in 0) ;; 3) fail 33 "cell: eval attack template in the training rows (train.attack_guard)" ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|34|35|36) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
+
+# ------------------------------------------------------------------ intermediate chain link: export the resumable state, end
+if [ "$INTERMEDIATE" = 1 ]; then
+  say "phase chain_export (link $CHAIN_LINK of $CHAIN_OF: latest full checkpoint + best + cell.json -> $OUT/chain)"
+  timeout --kill-after=30s $(cap chain_export)m python -X utf8 -m train.chain export --params "$PARAMS" --cell-config "$CELL" \
+    --ck-dir "$CK/cell" --cell "$WORK/out/cell.json" --out-dir "$OUT/chain" --decision "$DECISION" \
+    > "$WORK/logs/chain-export.log" 2>&1; r=$?
+  gate "chain_export" $r; export_phase chain_export
+  case $r in 0) ;; 124|137) fail 7 "chain export timeout" ;; *) EXPORT_FAIL=1; fail 6 "chain export rc=$r: $(tail -1 "$WORK/logs/chain-export.log")" ;; esac
+  python -X utf8 jobs/common/size_guard.py --out "$OUT" --evict-dir "$CK/evicted" --cap-bytes "$SIZE_CAP" --reserve-final \
+    || { EXPORT_FAIL=1; say "SIZE GUARD FAILED: /output over the upload cap (see $OUT/SIZE_GUARD.json)"; }
+  sample "$DECISION" "chain-link"
+  RC=0
+  exit 0
+fi
 
 # ------------------------------------------------------------------ stage screen: ONE proxy600 Index pass, then screen.json
 if [ "$STAGE" = screen ]; then
@@ -427,7 +554,7 @@ if [ "$STAGE" = screen ]; then
   python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-screen.jsonl" --cap-min "$(cap screen)" \
     --report "$WORK/out/rate-screen.json" -- \
     timeout --kill-after=30s $(cap screen)m python -X utf8 -m jobs.m2_first_cell.screen score --cell "$WORK/out/cell.json" \
-    --ckpt-dir "$CK/cell" --model-dir "$SNAP" --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" \
+    --ckpt-dir "$CK/cell" --model-dir "$SNAP" "${GDN_ARGS[@]}" --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" \
     --guard-readiness "$WORK/out/guard/readiness.json" --index-rows "$WORK/index-rows.jsonl.gz" --resume-dir "$CK/screen" \
     --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --reference "$WORK/out/screen-reference.json" \
     --out-dir "$WORK/out/screen" --progress "$WORK/logs/progress-screen.jsonl" > "$WORK/logs/screen.log" 2>&1; r=$?
@@ -446,7 +573,7 @@ else
 say "phase evals (calibration fit; dev card; G12 dev + steer_dev; Index DEV subset + readout diagnostics)"
 python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress.jsonl" --cap-min "$(cap evals)" \
   --report "$WORK/out/rate-evals.json" -- \
-  timeout --kill-after=30s $(cap evals)m python -X utf8 -m train.m2_gates --cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --model-dir "$SNAP" \
+  timeout --kill-after=30s $(cap evals)m python -X utf8 -m train.m2_gates --cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --model-dir "$SNAP" "${GDN_ARGS[@]}" \
   --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json" \
   --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --anchor-arm "$ARM" --anchor-arm-sha256 "$ARM_SHA" \
   --index-rows "$WORK/index-rows.jsonl.gz" "${INDEX_PROXY[@]}" \

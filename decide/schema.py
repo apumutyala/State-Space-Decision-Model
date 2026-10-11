@@ -161,27 +161,44 @@ def validate_legacy(request: Any) -> None:
             )
 
 
-def wire_answer(question: dict[str, Any], probs: dict[str, float]) -> dict[str, Any]:
-    """SystemOne answer from full-precision per-option probabilities."""
+def wire_answer(question: dict[str, Any], probs: dict[str, float], tie: dict[str, Any] | None = None) -> dict[str, Any]:
+    """SystemOne answer from full-precision per-option probabilities.
+
+    ``tie`` (sym-fork rows, ``heads.symmetric.sym_tie_info``): content-based decisions. Exact-probability ties between
+    DIFFERENT options are broken by content hash (never position or id); exact duplicates (equal content) form the
+    ``tie_set`` -- the decision, invariant as a set (a single id among duplicates cannot be relabel-invariant; "choice"
+    then names the set's smallest id and ``tie_set`` says it is one of several equivalent ids). Probabilities are
+    written with ``tie["digits"]`` digits so wire rounding cannot create ties a reader breaks by id. None: unchanged."""
     qtype = question["type"]
+    r = WIRE_ROUND if tie is None else int(tie.get("digits", WIRE_ROUND))
     if qtype == "noul":
-        return {"type": "noul", "noul": round(probs["true"], WIRE_ROUND)}
+        return {"type": "noul", "noul": round(probs["true"], r)}
     if qtype == "choice":
         options = [str(o) for o in question["criteria"]]  # caller's order, as Clef
-        best = max(sorted(options), key=lambda o: probs[o])  # tie -> smallest id
+        if tie is None:
+            best = max(sorted(options), key=lambda o: probs[o])  # tie -> smallest id
+            extra: dict[str, Any] = {}
+        else:
+            pmax = max(probs[o] for o in options)
+            top = [o for o in options if probs[o] == pmax]
+            key = tie["content_key"]
+            k0 = min(key[o] for o in top)  # content-hash order among different near-tied options
+            tie_set = sorted(o for o in top if key[o] == k0)  # exact duplicates of the winning content
+            best, extra = tie_set[0], {"tie_set": tie_set}
         return {
             "type": "choice",
             "choice": best,
-            "confidence": round(probs[best], WIRE_ROUND),
-            "probabilities": {o: round(probs[o], WIRE_ROUND) for o in options},
+            "confidence": round(probs[best], r),
+            "probabilities": {o: round(probs[o], r) for o in options},
+            **extra,
         }
     levels = [str(i) for i in range(len(question["criteria"]))]
     return {
         "type": "score",
-        "score": round(sum(i * probs[lv] for i, lv in enumerate(levels)), WIRE_ROUND),
-        "confidence": round(max(probs[lv] for lv in levels), WIRE_ROUND),
+        "score": round(sum(i * probs[lv] for i, lv in enumerate(levels)), r),
+        "confidence": round(max(probs[lv] for lv in levels), r),
         "legend": dict(zip(levels, question["criteria"])),
-        "probabilities": {lv: round(probs[lv], WIRE_ROUND) for lv in levels},
+        "probabilities": {lv: round(probs[lv], r) for lv in levels},
     }
 
 

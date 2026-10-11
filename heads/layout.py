@@ -25,6 +25,12 @@ Two layouts, both "schema + options -> state -> question re-read" (JRT, arXiv 24
     (a token that straddles a segment boundary belongs to both neighbouring spans). Template must be
     ``jrt-rwkv-g1-v2``; the encoder must expose ``token_bytes(id)``.
 
+``sym-fork`` / ``sym-fork-ids`` (``heads.symmetric``)
+    Reorder AND relabel invariant by construction: the prefix holds state + question + the option COUNT, each option
+    is its own forked continuation rendering only its description (``sym-fork``; the id never enters the model), the
+    choice axis is content-canonical. Proof and caveats: docs/PROOF_INVARIANCE.md. ``sym-fork-ids`` is the ablation that
+    also renders the id (reorder-equivariant, not relabel-invariant).
+
 ``symmetric``
     The shared prefix lists every field but *not* its options (it says options
     are given separately). Each option of the target question is encoded in its
@@ -155,6 +161,18 @@ def resolve_template(template: Template | str) -> Template:
     identities, ``heads.decide_backend._template_identity``)."""
     if isinstance(template, Template):
         return template
+    from decide.shim_format import is_shim_template
+    from decide.v3w_generic import is_generic_template
+
+    if is_shim_template(template):  # the H2O shim format (decide.shim_format): its rows carry the whole prompt
+        from decide.shim_format import template_obj
+
+        return template_obj(template)
+    if is_generic_template(template):  # generic v3w (decide.v3w_generic): the bound spec's chat format
+        from decide.backends.v3w_generic import spec_template
+        from decide.v3w_generic import spec_for_template
+
+        return spec_template(spec_for_template(template))
     return G1_TRAIN_TEMPLATES.get(template) or TEMPLATES[template]
 
 
@@ -318,6 +336,27 @@ def build_row(
     prefix is unaffected (ordered layout keeps canonical rendering).
     """
     tpl = resolve_template(template)
+    from decide.shim_format import is_shim_template
+    from decide.v3w_generic import is_generic_template
+
+    from .symmetric import SYM_LAYOUTS
+
+    if layout in SYM_LAYOUTS:  # reorder + relabel invariant by construction (docs/PROOF_INVARIANCE.md)
+        from .symmetric import build_row_sym
+
+        return build_row_sym(request, qid, encode, tpl, layout, option_order, empty_state)
+    if is_shim_template(tpl):  # the trainable H2O shim format (decide.shim_format): ids == the shim's prompt ids
+        if layout != G1V2_LAYOUT:
+            raise ValueError(f"template {tpl.id} needs layout {G1V2_LAYOUT!r}, got {layout!r}")
+        from decide.shim_format import spec_for_template as shim_spec
+
+        return shim_spec(tpl.id).row(request, qid, option_order, empty_state)
+    if is_generic_template(tpl):  # a trained generic-v3w cell: the spec's rows (ids == its readout's prompt ids)
+        if layout != G1V2_LAYOUT:
+            raise ValueError(f"template {tpl.id} needs layout {G1V2_LAYOUT!r}, got {layout!r}")
+        from decide.v3w_generic import spec_for_template
+
+        return build_row_v3w_generic(request, qid, spec_for_template(tpl.id), option_order, empty_state)
     if layout == G1V2_LAYOUT:
         return _build_row_g1v2(request, qid, encode, tpl, option_order, empty_state)
     segs4 = _tagged_segments_paths(tpl, request, qid, layout)
@@ -501,6 +540,70 @@ def build_row_v3w_generic(request: dict[str, Any], qid: str, spec: Any, option_o
     return _build_row_g1v2(request, qid, spec.encode, resolve_template(G1V3W_ID), option_order, empty_state, spec)
 
 
+#: lean v3w (A-PREREG-SIZECLIFF lean template): the schema block opens with this text right after the chat head
+LEAN_SCHEMA_OPEN = "SCHEMA FIELDS:\n"
+LEAN_REREAD_PREFIX = "\nEND STATE\nQUESTION (re-read FIELD "
+
+
+def _opens_option(text: str) -> bool:
+    """A template segment that starts option line j (the same rule ``_g1v2_segments_paths`` walks the schema with)."""
+    return text.startswith("\n") and (text.endswith(". ") or text == "\n- ")
+
+
+def lean_segments(segs: list[tuple]) -> list[tuple]:
+    """The LEAN v3w layout from the full v3w segments (after the chat-format swap): the SCHEMA block is dropped (every
+    field; the asked field is the re-read below), the state comes first, then the asked question ONCE ("QUESTION:",
+    no re-read field number, no question id), its options and the reply line, unchanged. The re-read block takes over
+    the spans the schema field carried: "field" (the question block), "option:<j>" (option j's id + description),
+    and "reread_instr" (the instruction; empty-state evidence fallback). Same text pieces, same trust and paths."""
+    t0 = segs[0][0]
+    if not t0.endswith(LEAN_SCHEMA_OPEN):
+        raise ValueError("lean v3w: the first segment does not open the schema block")
+    try:
+        i_end = next(i for i, s in enumerate(segs) if s[1] and s[0] == "\nEND SCHEMA\nSTATE:\n")
+        rest = segs[i_end + 1:]
+        j = next(i for i, s in enumerate(rest) if s[1] and s[0].startswith(LEAN_REREAD_PREFIX))
+    except StopIteration:
+        raise ValueError("lean v3w: no schema end / re-read header in the v3w segments") from None
+    if not rest[j][0].endswith("\nID: ") or j + 1 >= len(rest) or rest[j + 1][1] or rest[j + 1][3] != ID_PATH:
+        raise ValueError("lean v3w: the re-read header is not followed by the question id")
+    out = [(t0[: len(t0) - len(LEAN_SCHEMA_OPEN)] + "STATE:\n",) + tuple(segs[0][1:])]
+    out += rest[:j]  # the state (data, its own path)
+    out.append(("\nEND STATE\nQUESTION:", True, "field", None))
+    opt = -1
+    for text, trusted, tag, path in rest[j + 2:]:
+        if trusted:
+            if _opens_option(text):
+                opt, new = opt + 1, "field"
+            elif text.startswith("\nReply with exactly one option"):
+                new = "reread"
+            elif opt >= 0 and text == ": ":
+                new = f"option:{opt}"
+            else:
+                new = "field"
+        elif tag == "reread_instr" or text.startswith("\nQUESTION AGAIN: "):
+            new = tag
+        else:
+            new = f"option:{opt}" if opt >= 0 else "field"
+        out.append((text, trusted, new, path))
+    return out
+
+
+def lean_v3w_render(request: dict[str, Any], qid: str, spec: Any, catalog_chars: int | None,
+                    words: frozenset[str]) -> str:
+    """The lean v3w prompt text for ``spec`` (``decide.v3w_generic.V3W`` with ``lean``): the lean segments joined, the
+    user body's blank lines collapsed as every v3w render (``g1_clean``)."""
+    from decide.prompt import g1_clean
+
+    ctx = {"words": words, "catalog_chars": catalog_chars, "first_token": spec.first_token}
+    g1_head = G1V2_TEMPLATE.head.format(system=G1V2_SYSTEM_PROMPT)
+    head, tail = spec.fmt.head_text(), spec.fmt.tail
+    segs = lean_segments(_swap_format(_g1v2_segments_paths(request, qid, spec.table, G1V3W_ID, ctx), g1_head,
+                                      G1V2_TEMPLATE.tail, head, tail))
+    raw = "".join(t for t, *_ in segs)
+    return head + g1_clean(raw[len(head):len(raw) - len(tail)]) + tail
+
+
 def _swap_format(segs: list[tuple], head_old: str, tail_old: str, head_new: str, tail_new: str) -> list[tuple]:
     """Replace the G1 head (first segment's prefix) and tail (last segment's suffix) by another chat format's."""
     t0, t1 = segs[0][0], segs[-1][0]
@@ -532,6 +635,8 @@ def _build_row_g1v2(request: dict[str, Any], qid: str, encode: EncodeFn, tpl: Te
         head, tail, bos = spec.fmt.head_text(), spec.fmt.tail, list(spec.fmt.bos)
         segs = _swap_format(_g1v2_segments_paths(request, qid, table, tpl.id, ctx), g1_head, G1V2_TEMPLATE.tail,
                             head, tail)
+        if getattr(spec, "lean", False):  # lean v3w: schema dropped, the asked question once (lean_segments)
+            segs = lean_segments(segs)
     else:
         table = _v3_code_table() if v3w else _g1v2_code_table()
         ctx = v3w_context(request, qid, encode, table) if v3w else None
@@ -671,23 +776,53 @@ class ByteEncoder:
         return bytes([i - 4])
 
 
-def hf_segment_encoder(tokenizer: Any) -> EncodeFn:
-    """Segment encoder for an HF tokenizer: trusted text verbatim, untrusted text via the
-    fail-closed untrusted encoder (no control/special tokens can be produced)."""
-    from decide.untrusted import UntrustedEncoder
+class HFSegmentEncoder:
+    """Segment encoder for an HF tokenizer: trusted text verbatim (``tokenizer.encode``, no specials added), untrusted
+    text via the fail-closed untrusted encoder (no control/special tokens can be produced).
 
-    untrusted = UntrustedEncoder(tokenizer)
+    PICKLABLE (job-rtg9e: the closure this replaced could not cross ``train.run_cell.cell_items``'s spawn
+    ProcessPoolExecutor): the pickled state is the tokenizer's source directory (``name_or_path``, the snapshot the
+    parent loaded it from) plus the encoder identity; a worker reloads the SAME files with
+    ``transformers.AutoTokenizer.from_pretrained`` and refuses (ValueError) unless its identity (vocab sha256, untrusted
+    encoder identity, source) equals the parent's. Same tokenizer class, same calls: outputs are identical."""
 
-    def encode(text: str, trusted: bool = True) -> list[int]:
+    def __init__(self, tokenizer: Any, source: str | None = None) -> None:
+        self._setup(tokenizer, source if source is not None else getattr(tokenizer, "name_or_path", None))
+
+    def _setup(self, tokenizer: Any, source: str | None) -> None:
+        import hashlib
+        import json
+
+        from decide.untrusted import UntrustedEncoder
+
+        self.tokenizer, self.source = tokenizer, source
+        self.untrusted = UntrustedEncoder(tokenizer)
+        vocab_sha = hashlib.sha256(json.dumps(sorted(tokenizer.get_vocab().items())).encode()).hexdigest()
+        self._ident = {"kind": "hf", "name_or_path": getattr(tokenizer, "name_or_path", None),
+                       "vocab_sha256": vocab_sha, "untrusted": self.untrusted.identity()}
+
+    def __call__(self, text: str, trusted: bool = True) -> list[int]:
         if trusted:
-            return tokenizer.encode(text, add_special_tokens=False)
-        return untrusted.encode(text)
+            return self.tokenizer.encode(text, add_special_tokens=False)
+        return self.untrusted.encode(text)
 
-    import hashlib
-    import json
+    def identity(self) -> dict[str, Any]:
+        return self._ident
 
-    vocab_sha = hashlib.sha256(json.dumps(sorted(tokenizer.get_vocab().items())).encode()).hexdigest()
-    ident = {"kind": "hf", "name_or_path": getattr(tokenizer, "name_or_path", None), "vocab_sha256": vocab_sha,
-             "untrusted": untrusted.identity()}
-    encode.identity = lambda: ident  # type: ignore[attr-defined]
-    return encode
+    def __getstate__(self) -> dict[str, Any]:
+        if not self.source:
+            raise TypeError("HFSegmentEncoder: no tokenizer source directory to reload from in a worker")
+        return {"source": str(self.source), "ident": self._ident}
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        from transformers import AutoTokenizer
+
+        self._setup(AutoTokenizer.from_pretrained(state["source"]), state["source"])
+        if self._ident != state["ident"]:
+            raise ValueError(f"HFSegmentEncoder: the tokenizer reloaded from {state['source']} has another identity "
+                             "than the parent's (files changed?)")
+
+
+def hf_segment_encoder(tokenizer: Any) -> EncodeFn:
+    """Segment encoder for an HF tokenizer (``HFSegmentEncoder``: picklable, so it crosses process pools)."""
+    return HFSegmentEncoder(tokenizer)

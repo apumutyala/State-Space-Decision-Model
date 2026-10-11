@@ -7,7 +7,7 @@
  "max_duration_minutes": 180, "build_timeout_minutes": 20,
  "max_restarts": 0, "assumed_restart_floor": 1, "queue_ttl_minutes": 1440,
  "resume": "none", "hf_cache": true,
- "batch_usd_per_min": 0.0495, "hard_cap_usd": 20.0,
+ "batch_usd_per_min": 0.063, "hard_cap_usd": 24.0,
  "phase_caps_minutes": {"setup": 15, "guard": 5, "preflight": 1, "g12": 60, "g13": 90, "report": 2},
  "reserve_minutes": 7,
  "parents": {"rwkv7": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",

@@ -81,5 +81,7 @@ class DecisionModel(nn.Module):
         for qid, q in request["questions"].items():
             row = build_row(request, qid, encode, template=template, layout=layout)
             lp = self.forward([row]).log_probs[0]
-            answers[qid] = to_wire(q, row.option_ids, lp)
+            from .symmetric import sym_tie_info
+
+            answers[qid] = to_wire(q, row.option_ids, lp, sym_tie_info(row))
         return answers

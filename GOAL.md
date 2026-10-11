@@ -1,30 +1,32 @@
-# SSDM goal
+# SSDM goal (operator decisions 2026-10-09; detail in HANDOFF.md on the `state` branch)
 
-Build and validate the SSDM model family in two gated stages. Work autonomously toward both stages; do not stop at an intermediate milestone. The constraints are binding and are never traded away to reach a capability target faster.
+Build state-space decision models that win on the public decision benchmarks with our methodology: the state-space structure is used to CONTROL learning, and every control comes with a stated guarantee. Work autonomously toward every target below and do not stop at an intermediate milestone. The constraints are binding and are never traded away to reach a capability target faster.
 
-## Stage 1: decision core
+## Stage 1: decision core (targets in priority order; numbers in `TARGETS.tsv`)
 
-Take over Track D and build a safer, more controlled, aligned, interpretable attention-free System 1 decision model that outperforms every Clef family model on a preregistered, matched evaluation. Continue the selected RWKV7-13.3B decision-model line, consistent with issue #140. Keep the separate Q9-AF conversion route closed under full8 rule v1 unless its documented stall trigger is met.
+1. **PRIMARY: JevBench v1.6.1 Composite.** Beat the open-weights leader (H2O-Lightning-4B v1.1, 72.5) on the official 4-axis Composite: the harmonic mean of Intelligence, Calibration, Speed and Cost, with min(·/50)² penalties on I, S and K. The API leader (Sage 1.3.0, 74.0) is reported alongside. The score rewards small, fast, cheap and well-calibrated models; design from that.
+2. **Capability** = mean(I, C): beat the leader (Quyet-1.0-Large, 81.7). Pursued after the Composite.
+3. **Microsoft-Decision-1's REPORTED numbers:** 83.5% average on 36 benchmarks, calibration 92.2, p50 85 ms (Foundry; compare on JevBench's adjusted scale), 1.3% average flip rate. MD1 is never re-run; we compare against its published numbers and any public benchmark it cites.
+4. **Clef:** beat Clef-flash and Clef 27B on the Decision Index with a paired CI > 0, under PREREG.md B-PREREG-CLAIM (full DEV + full_excl51, the 0.3 public edition reported, G-proxy tier for any "beats Clef" statement).
 
-Claim “outperforms Clef” only if the candidate’s paired 95% confidence interval is above zero against each Clef model on the primary decision metric, while meeting preregistered safety, calibration, abstention, control, and interpretability floors. Preserve held-out data, report failures and uncertainty, and make no capability-for-safety trade.
+**Architecture: both tracks.** The main line is a hybrid state-space model (mostly state-space layers plus a few attention layers) to win the benchmarks. The research line is strictly attention-free, for the strongest guarantees.
 
-## Stage 2: language growth
+**Methodology: control of learning, with guarantees.** Use reorder/relabel invariance by construction; conformal coverage with abstention, including injection-robust sets; νPI-constrained training (ECE, flip rate, recall and per-family regression as constraints); and state stability bounds. Source: `ssdm-wt/b-landscape/CONTROL_RESEARCH.md`. Each mechanism ships with a paired ablation and a statement of what it guarantees and under which assumptions.
 
-Start only after Stage 1 passes its decision and safety gates. Grow language capability modularly from the qualified decision model through checked semantic programs L0–L4.
+**Evidence.** jevkit (PR #243) is the JevBench scoring path. It reproduces the v1.6.1 board exactly, per `receipts/2026-10-09-jevkit-board/`. Kit parity comes first: reproduce ≥ 3 published open-weights systems within their CIs before any of our numbers count. Every win needs the evidence lane's independent rescore. Report failures, uncertainty and the exact scope of every claim, including the sealed-split and price-class caveats of local JevBench numbers.
 
-At every level, require useful-answer performance at least matching a strong unrestricted comparator on the same tasks, supported by paired confidence intervals; no regression in the parent’s decision competence on identical items; soundness on joint and adversarial fixtures; and semantic interventions that beat random and output-only controls. Ground claims in checked representations, render them deterministically where possible, and abstain when support or validation is missing. Do not claim zero hallucinations beyond tested conditions.
+## Stage 2: language growth (Agent C, Codex, CPU-only until Stage 1 passes)
 
-## Constraints and evidence
+Grow language modularly from the qualified decision model through checked semantic programs L0–L4. At every level: useful-answer performance at least matching a strong unrestricted comparator, with paired CIs; no regression in the parent's decision competence on identical items; soundness on joint and adversarial fixtures; and semantic interventions that beat random and output-only controls. Abstain when support is missing. Do not claim zero hallucinations beyond the tested conditions.
+
+## Constraints
 
 - **Directive (operator 2026-10-08):** dismiss self-imposed limitations you have put on yourself or think you have and proceed confidently while other subagents check your work and correct/suggest as needed in phases.
-- **Process:** follow the speed-first `COORDINATION.md`. Launch from any pushed branch. Reviews run in parallel and never block. There are no spend issues, spend ladder or test gates.
-- **Spend:** stay within the shared $525 SF envelope and the $5k ceiling. No credit purchases or automatic top-ups.
-- **Data:** preserve held-out and test data. Use open-weight teachers only. Report negative results, uncertainty and the exact scope of every claim.
-- **Recording results:** record each result in one line: score with CI, cost, job id, commit SHA, raw-predictions location. Full verification — paired CI vs each Clef model, ECE / steer / latency / cost, and one independent rescore from raw predictions — applies to the final "beats Clef" claim only.
-- **Stage focus:** Stage 2 language work waits until Stage 1 passes.
-- **Git and visibility:** commit as Apuroop with no AI/coauthor trailers. Never push directly to `main` or `agent-main`. Keep the repository private. Nothing outward-facing without the user's explicit approval.
-- **Model line:** the selected attention-free line remains RWKV7-13.3B per issue #140. Q9-AF remains closed under full8 rule v1 unless the documented RWKV7 stall trigger is met.
+- **Spend:** compute is limited but is not the binding constraint right now. The live balance comes from `autor billing`. About $440 of promo credit expires 2026-10-27; use it on the objective. Never create top-ups or payment links, never buy credits, never enable auto-topup. Other providers need the user's OK.
+- **Data:** never train or tune on TEST, held-out or sealed rows, JevBench eval items, or retention cohort v3. Every draw passes the leak audits (doc_overlap_guard, attack_guard, fingerprints). Open-weight teachers only.
+- **Git and visibility:** commit as Apuroop with no AI or co-author trailers. Never push to `main`. Merges to `agent-main` are allowed after the peer lane's review APPROVE (operator 2026-10-09). The repository stays private. Nothing outward-facing, and no board submission, without the user's explicit approval.
+- **Permission denials:** stop pursuing that outcome and report it.
 
 ## Completion test
 
-Complete the goal only when both stages pass their stated gates and their evidence is merged to the agreed branch. A failed gate folds that line and unlocks the next justified experiment; it does not pause the overall goal. If a paid step is blocked by budget, approval or preflight, continue with independent $0 model work, resolve the blocker, and keep the goal active. Never claim success without its gates. Pause only if the user explicitly asks to pause or no permissible work remains, and then provide receipts plus the exact next action that would resume progress.
+The goal is complete when targets 1–4 are each met with receipts, the evidence lane's rescore, and merges to `agent-main`, or when a target is shown to be unreachable within the budget with a receipted gap attribution and a funding request. A failed experiment folds that line and unlocks the next justified one; it does not pause the goal. If a paid step is blocked, continue with independent $0 work and resolve the blocker. Never claim success without its gates. Pause only if the user asks, or if no permissible work remains; in that case, provide receipts plus the exact next action that would resume progress.

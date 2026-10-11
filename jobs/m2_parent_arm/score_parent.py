@@ -27,6 +27,8 @@ import sys
 from pathlib import Path
 from typing import Any, Sequence
 
+from jobs.common.rates import BATCH_USD_PER_MIN
+
 #: Token volumes per stage, measured 2026-10-06 on cohort v2 (``VOLUME_COHORT_SHA256``) with the RWKV7-G1k tokenizer.
 #: Upper bounds: every question row of every role record (records whose rows the K/T filter drops still count), steer
 #: units = clean + D1 variants. Index DEV = the FULL DEV slice (issue #36): a PROJECTION, the EXACT 2,008-row-subset
@@ -65,7 +67,7 @@ VOLUME_CALLS = {"g12": {"dev_records": 2 * 835, "steer_dev_units": 9_000},
                         "index_dev_full": round(4_536 * 12_104 / 2_008)},
                 "index": {"index_dev_subset": 4_536, "order_diag": DIAG_CALLS}}
 CHILD_EXTRA_CALLS = {"calibration_fit": 2 * 1_000, "dev_card": 2 * 835}
-USD_PER_MIN = 0.0495  # SF H100 batch rate (jobs/DECISION_TREE.md)
+USD_PER_MIN = BATCH_USD_PER_MIN  # SF H100 batch rate, jobs/common/rates.py ($0.0495 before 2026-10-08)
 FIXED_MIN = 35  # build 15 + setup/download/verify 15 + finalize 5 (expected, rwkv7 stage-A measured shape)
 
 
@@ -145,9 +147,20 @@ def parent_decider(parent: str, model_dir: str, gdn_ckpt: str | None, cfg: dict,
         plug = load_converted_plugin(model_dir, gdn_ckpt, layers, device=device)  # every attention layer -> GDN
         ident = {"parent": "q9af", "repo": prov["base_repo"], "revision": prov["base_revision"],
                  "converted_sha256": prov["converted_sha256"], "converted_layers": layers}
+        if prov.get("conversion"):  # = train.m2_gates.expected_parent_identity's conversion block
+            ident["conversion"] = {k: prov["conversion"].get(k) for k in ("job", "mix_decontam")}
     else:
         raise ValueError(parent)
-    if cfg.get("layout") == "g1v2":  # D3 / R1: the parent's stock readout in the C1 v2 format (rwkv7 only)
+    from decide.v3w_generic import is_generic_template
+
+    if is_generic_template(cfg.get("template")):  # generic v3w (Q9-AF v2 cells): the spec bound to this snapshot
+        from decide.backends.v3w_generic import V3WGenericBackend
+        from decide.v3w_generic import bind_template
+
+        if parent != "q9af" or cfg.get("layout") != "g1v2":
+            raise ValueError(f"generic v3w template {cfg['template']} needs parent q9af and layout g1v2")
+        backend = V3WGenericBackend(plug, bind_template(cfg["template"], model_dir))
+    elif cfg.get("layout") == "g1v2":  # D3 / R1: the parent's stock readout in the C1 v2 format (rwkv7 only)
         from decide.backends.rwkv_g1_v2 import G1V2Backend
         from decide.prompt import G1V2_ID
         from decide.prompt_g1v3 import G1V2F_ID, G1V3W_ID
@@ -352,7 +365,7 @@ def main(argv=None) -> int:
     except (ValueError, KeyError, GuardNotReady) as e:
         print(f"identity: {e}", file=sys.stderr)
         return 10
-    enc = parent_encoder(a.parent, a.model_dir)
+    enc = parent_encoder(a.parent, a.model_dir, cfg)
     spec = G.unit_spec(cfg)
     recs = G._read_records(a.records)
     try:

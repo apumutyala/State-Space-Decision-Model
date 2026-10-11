@@ -30,17 +30,33 @@ from pathlib import Path
 EXIT = {"fork_mismatch": 21, "no_T_fits": 22, "nonfinite": 23, "memory": 24, "data": 25, "too_slow": 26,
         "guard": 27, "cohort": 28, "lineage": 29, "doc_overlap": 34, "config": 35, "fla_fallback": 36,
         "attack": 3}  # attack: an eval attack template in the training rows (train.attack_guard; jobs map 3 -> fail 33)
-PARENTS = ("rwkv7", "q9af")
+PARENTS = ("rwkv7", "q9af", "qwen35")  # qwen35: a stock Qwen3.5 (0.8B / 2B / 4B; heads.backbone.QWEN35_STOCK)
 
 
-def parent_encoder(parent: str, model_dir: str):
-    """The training-time segment encoder of each parent (the same one its decide backend serves with)."""
+def parent_encoder(parent: str, model_dir: str, cfg: dict | None = None):
+    """The training-time segment encoder of each parent (the same one its decide backend serves with). A cell whose
+    template is a generic v3w template (``decide.v3w_generic``) also binds that spec to ``model_dir``'s tokenizer files
+    (identity pinned; its rows are built from the spec, ids == the generic v3w readout's prompt ids)."""
+    if cfg is not None:
+        from decide.shim_format import bind_template as bind_shim
+        from decide.shim_format import is_shim_template
+        from decide.v3w_generic import bind_template, is_generic_template
+
+        if is_shim_template(cfg.get("template")):  # the trainable H2O shim format, bound to this snapshot's files
+            if parent != "qwen35":
+                raise ValueError(f"shim template {cfg['template']} is wired for parent qwen35 only, got {parent!r}")
+            bind_shim(cfg["template"], model_dir)
+        if is_generic_template(cfg.get("template")):
+            if parent not in ("q9af", "qwen35"):
+                raise ValueError(f"generic v3w template {cfg['template']} is wired for parents q9af / qwen35 only, "
+                                 f"got {parent!r}")
+            bind_template(cfg["template"], model_dir)
     if parent == "rwkv7":
         from third_party.rwkv7_hf.tokenization_rwkv7 import Rwkv7Tokenizer
 
         tok = Rwkv7Tokenizer.from_pretrained(model_dir)
         return RwkvSegmentEncoder(tok, set(tok.all_special_ids))
-    if parent == "q9af":
+    if parent in ("q9af", "qwen35"):
         from transformers import AutoTokenizer
 
         from heads.layout import hf_segment_encoder
@@ -63,8 +79,28 @@ def load_parent_backbone(parent: str, model_dir: str, cfg: dict, gdn_ckpt: str |
         return load_q9af_backbone(model_dir, gdn_ckpt, q, device=device, fork_mode="cache",
                                   dtype="bfloat16" if str(device).startswith("cuda") else "float32",
                                   hybrid=bool(q.get("hybrid")))
+    if parent == "qwen35":
+        from heads.backbone import load_qwen35_backbone
+
+        return load_qwen35_backbone(model_dir, cfg.get("qwen35") or {}, device=device, fork_mode="cache",
+                                    dtype="bfloat16" if str(device).startswith("cuda") else "float32")
     raise ValueError(f"parent must be one of {PARENTS}, got {parent!r}")
 CHECK_AFTER_STEPS = 10  # the in-training rate check uses the mean of the first steps actually run
+
+
+def choose_cont_chunk(candidates, run_step, limit_gb: float) -> dict:
+    """The option-chunk probe's choice (job-anx5y fix): candidates SMALLEST first; ``run_step(c)`` -> {"ok", "peak_gb",
+    ...} (the caller frees everything between candidates). A candidate passes when ok and peak <= ``limit_gb``; the
+    probe stops at the first that does not pass (a bigger chunk only needs more memory). ``chosen`` = the LARGEST
+    passing candidate, or None when even the smallest failed (the caller then refuses to train)."""
+    out = {"limit_gb": limit_gb, "candidates": sorted(set(int(c) for c in candidates)), "points": {}, "chosen": None}
+    for c in out["candidates"]:
+        pt = run_step(c)
+        out["points"][str(c)] = pt
+        if not (pt.get("ok") and pt.get("peak_gb", float("inf")) <= limit_gb):
+            break
+        out["chosen"] = c
+    return out
 
 
 # ----------------------------------------------------------------------------- data (CPU-testable)
@@ -569,7 +605,10 @@ def validate_head(cfg: dict) -> None:
 
 
 def keep_item(row, max_k: int, max_t: int) -> bool:
-    return row.n_options <= max_k and len(row.ids) <= max_t and max(len(c) for c in row.continuations) <= 16
+    from heads.symmetric import SYM_LAYOUTS, SYM_MAX_CONT
+
+    cap = SYM_MAX_CONT if row.layout in SYM_LAYOUTS else 16  # sym rows: the option text IS the continuation
+    return row.n_options <= max_k and len(row.ids) <= max_t and max(len(c) for c in row.continuations) <= cap
 
 
 class RwkvSegmentEncoder:
@@ -809,7 +848,18 @@ def _main(argv=None, ctx: dict | None = None):
     ap.add_argument("--device", default="cuda", help="cuda (paid runs); cpu only for the tiny-model dry run")
     ap.add_argument("--teacher-dir", default=None, help="KD cells (config 'teacher'): the pinned teacher export "
                     "(train.teacher.load_teacher); refused for a cell without a teacher block")
+    ap.add_argument("--chain-link", type=int, default=0, help="train.chain: this job is link K of --chain-of (0 = not "
+                    "chained); links >= 2 must resume link K-1's installed checkpoint")
+    ap.add_argument("--chain-of", type=int, default=0)
+    ap.add_argument("--train-deadline", type=float, default=None, help="train.chain: unix time the training loop "
+                    "stops by (the job's deadline); an intermediate link then saves and ends as 'link_end'")
     a = ap.parse_args(argv)
+    chain = None
+    if a.chain_link or a.chain_of:
+        if not (a.chain_of >= 2 and 1 <= a.chain_link <= a.chain_of):
+            print(f"config: --chain-link {a.chain_link} --chain-of {a.chain_of}", flush=True)
+            return EXIT["config"]
+        chain = {"link": a.chain_link, "of": a.chain_of}
 
     import torch
 
@@ -860,9 +910,13 @@ def _main(argv=None, ctx: dict | None = None):
         return torch.cuda.max_memory_allocated() / 1e9 if on_cuda else 0.0
 
     def reset_peak():
+        import gc
+
+        gc.collect()  # job-anx5y: free the previous candidate / rung's objects before measuring the next one
         if on_cuda:
-            torch.cuda.reset_peak_memory_stats()
+            torch.cuda.synchronize()
             torch.cuda.empty_cache()
+            torch.cuda.reset_peak_memory_stats()
 
     torch.manual_seed(cfg["seed"])
     parent = cfg.get("parent", "rwkv7")
@@ -889,7 +943,15 @@ def _main(argv=None, ctx: dict | None = None):
         except (LineageError, OSError) as e:
             print(f"q9af lineage: {e}", flush=True)
             return EXIT["lineage"]
-    enc = parent_encoder(parent, a.model_dir)
+    if parent == "qwen35":  # repo@revision + config.json pins, before tokenizer or weights are touched
+        try:
+            from heads.backbone import qwen35_pin_check
+
+            qwen35_pin_check(cfg.get("qwen35") or {}, a.model_dir)
+        except (LineageError, OSError) as e:
+            print(f"qwen35 lineage: {e}", flush=True)
+            return EXIT["lineage"]
+    enc = parent_encoder(parent, a.model_dir, cfg)
     from train.g16_card import make_hook as g16_hook
 
     # G16 cells: certify on the safety_eval DEV requests ONCE, after the training loop and the final card (outside
@@ -975,6 +1037,55 @@ def _main(argv=None, ctx: dict | None = None):
         return Trainer(model, with_execution(train_config(cfg, max_steps, ckpt_dir, cuda), cfg), train_items,
                        eval_items, guard=guard)
 
+    if cfg.get("cont_chunk") == "auto" and ("ladder" in stages or "train" in stages):
+        # job-w2t73 (Qwen3.5-4B OOM on its first step): the option-chunk probe. The worst step shape of the training set
+        # (the batch_size x grad_accum rows with the largest K x T, T <= the top ladder rung) runs one optimiser step
+        # per candidate chunk size, largest first; the largest whose peak stays <= cont_chunk_peak_frac x
+        # max_peak_gb is the cell's cont_chunk (an EXECUTION knob: same loss and gradients; the ladder then measures
+        # T_max with it). Cached in cell.json across restarts.
+        if "cont_chunk_probe" not in cell:
+            t_top = max(cfg["t_ladder"])
+            pool = sorted((x for x in train_items if len(x.row.ids) <= t_top),
+                          key=lambda x: (-x.row.n_options * len(x.row.ids), -x.row.n_options))
+            rows = pool[: cfg["batch_size"] * cfg["grad_accum"]]
+            limit = float(cfg.get("cont_chunk_peak_frac", 0.85)) * cfg["pass_rule"]["max_peak_gb"]
+            cands = [int(c) for c in cfg.get("cont_chunk_candidates", [64, 32, 16, 8])]
+            cfg_auto = cfg
+
+            def probe_step(cand):
+                nonlocal cfg
+                cfg = {**cfg_auto, "cont_chunk": cand}  # make_trainer reads cfg
+                reset_peak()
+                tr = None
+                try:
+                    tr = make_trainer(1)
+                    tr.train_items = list(rows)
+                    t0 = time.time()
+                    with fla_strict():
+                        loss = tr.train_step()
+                    if cuda:
+                        torch.cuda.synchronize()
+                    return {"ok": math.isfinite(loss), "peak_gb": peak(), "step_s": time.time() - t0}
+                except torch.OutOfMemoryError as e:
+                    return {"ok": False, "oom": str(e)[:200], "peak_gb": peak()}
+                finally:
+                    del tr
+                    bb.model.zero_grad(set_to_none=True)
+                    remove_lora(bb.model)
+                    cfg = cfg_auto
+                    reset_peak()
+
+            probe = choose_cont_chunk(cands, probe_step, limit)
+            probe["rows"] = [{"k": x.row.n_options, "t": len(x.row.ids)} for x in rows]
+            cell["cont_chunk_probe"] = probe
+            save()
+            if probe["chosen"] is None:  # fail closed: never train with a chunk size that did not pass
+                print(f"cont_chunk probe: no candidate passed ({probe['points']})", flush=True)
+                return EXIT["no_T_fits"]
+        cfg = {**cfg, "cont_chunk": int(cell["cont_chunk_probe"]["chosen"])}
+        print(f"cont_chunk probe: {cell['cont_chunk_probe']['chosen']} ({cell['cont_chunk_probe']['points']})",
+              flush=True)
+
     if "ladder" in stages and "ladder" not in cell:
         lad = {}
         order_active = bool(order_consistency_fields(cfg))
@@ -1037,7 +1148,23 @@ def _main(argv=None, ctx: dict | None = None):
         reset_peak()
         tr = make_trainer(cfg["max_steps"], a.ckpt_dir)
         keep = bool(cfg.get("pair"))  # paired cells write units-step*.json for train.g16_card.capability_cost
-        resumed = tr.resume()
+        if chain is None:
+            resumed = tr.resume()
+        else:  # train.chain: config hash + lineage of the carried checkpoint, and the link order, gate the resume
+            from train.chain import chain_id, resume_check
+
+            try:
+                resumed = tr.resume()
+                why = resume_check(chain, cell, cfg, resumed)
+            except ValueError as e:
+                why = str(e)
+            if why:
+                print(f"chain lineage: {why}", flush=True)
+                return EXIT["lineage"]
+            if resumed:  # the cards of earlier links (the step-0 card), so the final verdict sees the whole run
+                tr.cards = list(cell.get("train_cards") or [])
+            chain = {**chain, "chain_id": chain_id(cfg)}
+            cell["chain"] = chain
         dev_out = out / "dev_cards"
         n_events = len(tr.collapse_events)
 
@@ -1077,12 +1204,24 @@ def _main(argv=None, ctx: dict | None = None):
         # the max_minutes budget is cumulative over attempts: a restart resumes with what the checkpointed steps used
         used_before = train_seconds_used(cell, resumed)
         t_end = t_start + 60 * cfg["max_minutes"] - used_before
+        # train.chain: the loop also stops at the job's deadline (an intermediate link exports and the next continues)
+        t_stop = t_end if a.train_deadline is None else min(t_end, a.train_deadline)
         cell["train_clock_resume"] = {"resumed": resumed, "step": tr.step, "used_s_before": used_before,
-                                      "left_s": max(0.0, t_end - t_start)}
+                                      "left_s": max(0.0, t_end - t_start),
+                                      **({"chain": chain, "link_left_s": max(0.0, t_stop - t_start)} if chain else {})}
+        if chain:
+            cell["train_cards"] = tr.cards
         save()
         step0 = tr.step
+        if cfg.get("lr_horizon_steps") and tr.cfg.lr_schedule == "cosine":
+            # A-PREREG-SIZECLIFF Amendment 2 (step parity): the cosine horizon of the arm this one matches (its
+            # cell.json lr_horizon.step), fixed before the first step; warmup precedes the decay, so the LR at every
+            # step equals that arm's. The step-10 clock projection then leaves it alone (set_horizon is fixed once).
+            tr.set_horizon(int(cfg["lr_horizon_steps"]))
+            cell["lr_horizon"] = {"step": tr.horizon, "fixed_at_step": tr.step, "source": "lr_horizon_steps"}
+        stop_at = min(int(cfg["max_steps"]), int(cfg.get("stop_after_steps") or cfg["max_steps"]))
         logf = open(out / "train_log.jsonl", "a")
-        while tr.step < cfg["max_steps"] and time.time() < t_end:
+        while tr.step < stop_at and time.time() < t_stop:
             with fla_strict():
                 loss = tr.train_step()
             if tr.step - step0 == CHECK_AFTER_STEPS:  # measured stop condition 2: the real data mix's step time
@@ -1090,7 +1229,9 @@ def _main(argv=None, ctx: dict | None = None):
                 chk = too_slow(el / CHECK_AFTER_STEPS, (t_end - time.time()) / 60,
                                max(0, steps_needed(cfg["pass_rule"], cfg.get("min_steps")) - tr.step))
                 cell["train_rate_check"] = chk
-                if tr.cfg.lr_schedule == "cosine":  # horizon = min(max_steps, clock-projected final step); fixed once
+                # horizon = min(max_steps, clock-projected final step over the WHOLE max_minutes clock); fixed once,
+                # stored in the checkpoint (a resumed attempt or chain link keeps it, and its record)
+                if tr.cfg.lr_schedule == "cosine" and not tr.horizon_fixed:
                     tr.set_horizon(tr.step + int(chk["affordable_steps"]))
                     cell["lr_horizon"] = {"step": tr.horizon, "fixed_at_step": tr.step}
                 save()
@@ -1112,6 +1253,8 @@ def _main(argv=None, ctx: dict | None = None):
             if tr.step % cfg["ckpt_every"] == 0:
                 tr.save()
                 cell["train_clock"] = {"step": tr.step, "used_s": used_before + time.time() - t_start}
+                if chain:
+                    cell["train_cards"] = tr.cards
                 save()
                 _checkpoint_post()
             if tr.step % cfg["eval_every"] == 0:
@@ -1127,16 +1270,37 @@ def _main(argv=None, ctx: dict | None = None):
                 print(f"collapse_event {json.dumps(tr.collapse_events[-1], default=str)}", flush=True)
             if tr.stopped:  # collapse guard: max events reached -> stop; scoring uses the best checkpoint
                 break
-        if not tr.cards or tr.cards[-1]["step"] != tr.step:
+        link_end = False
+        if chain:
+            from train.chain import stop_reason
+
+            link_end = stop_reason(time.time(), t_end, a.train_deadline, tr.step, cfg["max_steps"], tr.stopped,
+                                   chain) == "link_end"
+        # an intermediate link writes no end-of-run card: the run is not over (an uninterrupted run has none here)
+        if not link_end and (not tr.cards or tr.cards[-1]["step"] != tr.step):
             # paired cells (cfg["pair"]) keep per-item units for train.g16_card.capability_cost
             tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(
                 tr.model, eval_items, tr.step, a.out, keep_units=keep))
             tr.cards[-1].pop("units", None)
         tr.save()
         cell["train_clock"] = {"step": tr.step, "used_s": used_before + time.time() - t_start}
+        if link_end:  # the next link resumes this checkpoint (train.chain export / install)
+            cell["train_cards"] = tr.cards
+            cell["train"] = {"stopped": "link_end", "steps": tr.step, "resumed": resumed, "T_max": t_max, **chain}
+            if tr.anti_collapse_on():
+                cell["dev_cards"], cell["collapse_events"], cell["best"] = tr.dev_cards, tr.collapse_events, tr.best
+            save()
+            _checkpoint_post()
+            print(f"chain link {chain['link']} of {chain['of']} ends at step {tr.step}", flush=True)
+            return 0
         _checkpoint_post()
         cell["train"] = {"steps": tr.step, "resumed": resumed, "T_max": t_max, "cards": tr.cards,
                          "lineage": tr.lineage, "verdict": pass_rule(tr.history, tr.cards, peak(), cfg["pass_rule"])}
+        if chain:  # the final link (or one whose global clock / max_steps ran out): did the job deadline cut the run?
+            cell["train_cards"] = tr.cards
+            cut = (a.train_deadline is not None and time.time() >= a.train_deadline and time.time() < t_end
+                   and tr.step < cfg["max_steps"] and not tr.stopped)
+            cell["train"]["chain"] = {**chain, "cut_by_job_deadline": cut}
         if tr.anti_collapse_on():
             cell["train"]["anti_collapse"] = tr.anti_collapse_state()
             cell["dev_cards"], cell["collapse_events"], cell["best"] = tr.dev_cards, tr.collapse_events, tr.best

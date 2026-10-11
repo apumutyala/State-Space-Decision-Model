@@ -789,8 +789,17 @@ def expected_parent_identity(parent: str, provenance: dict | None = None, wkv: s
         prov = provenance or {}
         if not prov.get("converted_sha256"):
             raise IdentityMismatch("q9af child has no converted_sha256 provenance")
-        return {"parent": "q9af", "repo": Q9AF_BASE_REPO, "revision": Q9AF_BASE_REVISION,
-                "converted_sha256": prov["converted_sha256"]}
+        ident = {"parent": "q9af", "repo": Q9AF_BASE_REPO, "revision": Q9AF_BASE_REVISION,
+                 "converted_sha256": prov["converted_sha256"]}
+        if prov.get("conversion"):  # which conversion job / decontam made the export (scripts/fill_conversion_pins.py)
+            ident["conversion"] = {k: prov["conversion"].get(k) for k in ("job", "mix_decontam")}
+        return ident
+    if parent == "qwen35":  # a stock Qwen3.5 (heads.backbone.QWEN35_STOCK): repo@revision + config.json sha256
+        prov = provenance or {}
+        if prov.get("kind") != "qwen35-stock" or not prov.get("config_sha256"):
+            raise IdentityMismatch("qwen35 child has no stock Qwen3.5 provenance")
+        return {"parent": "qwen35", "repo": prov["repo"], "revision": prov["revision"],
+                "config_sha256": prov["config_sha256"]}
     raise ValueError(parent)
 
 
@@ -903,7 +912,7 @@ def main(argv=None) -> int:
         print(f"identity: {e}", file=sys.stderr)
         return EXIT["identity"]
     parent = cfg.get("parent", "rwkv7")
-    enc = parent_encoder(parent, a.model_dir)
+    enc = parent_encoder(parent, a.model_dir, cfg)
     spec = unit_spec(cfg)
     try:
         pools = pool_dirs_arg(a.pool_dir)

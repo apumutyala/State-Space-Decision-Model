@@ -496,7 +496,7 @@ def test_job_params_cost_and_schedule():
     from jobs.common import costs
 
     p = json.loads((ROOT / "jobs/fla_rwkv7/job_params.json").read_text(encoding="utf-8"))
-    assert costs.worst_case_usd(p) <= 4.5 and costs.worst_case_usd(p) <= p["hard_cap_usd"]
+    assert costs.worst_case_usd(p) <= 5.73 and costs.worst_case_usd(p) <= p["hard_cap_usd"]  # $4.50 cap x 14/11 (2026-10-09)
     assert sum(p["phase_caps_minutes"].values()) + p["reserve_minutes"] == p["max_duration_minutes"]
     assert p["chip"] == "h100" and p["max_restarts"] == 0 and p["assumed_restart_floor"] >= 1
     spec = (ROOT / "jobs/fla_rwkv7/JOB_SPEC.md").read_text(encoding="utf-8")
@@ -1008,7 +1008,7 @@ def test_truth_v2_runner_and_params():
     from jobs.common import costs
 
     p = json.loads((ROOT / "jobs/fla_rwkv7/job_params_truth_v2.json").read_text(encoding="utf-8"))
-    assert costs.worst_case_usd(p) <= 6.0 and costs.worst_case_usd(p) <= p["hard_cap_usd"]
+    assert costs.worst_case_usd(p) <= 7.64 and costs.worst_case_usd(p) <= p["hard_cap_usd"]  # $6 cap x 14/11 (2026-10-09)
     assert sum(p["phase_caps_minutes"].values()) + p["reserve_minutes"] == p["max_duration_minutes"]
     for ph, exp in p["expected_minutes"].items():  # every cap >= 1.3x its projection
         assert p["phase_caps_minutes"][ph] >= 1.3 * exp, ph

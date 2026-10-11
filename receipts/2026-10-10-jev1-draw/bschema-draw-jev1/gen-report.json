@@ -1,0 +1,52 @@
+{
+ "n": 112550,
+ "by_family": {
+  "routing": 12619,
+  "adequacy": 13724,
+  "policy": 12700,
+  "intent": 17000,
+  "severity": 13300,
+  "enum": 13303,
+  "long_policy": 12700,
+  "state_tracking": 17204
+ },
+ "pool_uncompressed_sha256": "99a386e3fa8e4c6ac18e819cde5684ab77b4617a3651507da45d121beee27496",
+ "plan": {
+  "routing": {
+   "massive": 3900,
+   "ticket": 4400,
+   "model": 4400
+  },
+  "adequacy": {
+   "score": 3200,
+   "noul": 2600,
+   "pref": 3000,
+   "audit": 5600
+  },
+  "policy": {
+   "aegis": 7600,
+   "access": 5100
+  },
+  "intent": {
+   "massive": 3800,
+   "banking": 6400,
+   "clinc": 6800
+  },
+  "severity": {
+   "synth": 10200,
+   "sst": 3100
+  },
+  "enum": {
+   "massive": 3700,
+   "notice": 10800
+  },
+  "long_policy": {
+   "n": 12700
+  },
+  "state_tracking": {
+   "woz": 8400,
+   "events": 9600
+  }
+ },
+ "seed": 20261010
+}

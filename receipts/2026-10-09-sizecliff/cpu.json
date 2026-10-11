@@ -1,0 +1,929 @@
+{
+ "arms": {
+  "0p8b": {
+   "template": "jrt-h2o-shim:qwen3.5-0.8b",
+   "qwen35": {
+    "repo": "Qwen/Qwen3.5-0.8B",
+    "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+    "config_sha256": "b90b86f35c8e6925ef74ee04d0e758f0a845c83a42089ad82bbaa948de9b4204",
+    "snapshot_sha256_file": "jobs/m2_first_cell/qwen35_0p8b_snapshot.sha256",
+    "note": "heads.backbone.qwen35_pin_check (repo@revision in QWEN35_STOCK + config.json sha256) before the tokenizer or any weight; the runner checks the whole snapshot against the manifest"
+   },
+   "draw": {
+    "n_drawn": 94786,
+    "n_eval_dev": 835,
+    "drawn_ids_sha256": "6943d2fcb643ce913c6b765c7ed515c77cbad09681fd91f7917f2006ff89e4c9",
+    "train_set_identity": {
+     "attack_guard": {
+      "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+      "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+      "n_records": 100000,
+      "n_excluded": 5201,
+      "excluded_ids_sha256": "c6a667e5d38208ac739e65b66834f3b3a751919598cf7abeaece9b8c951257e8",
+      "per_set": {
+       "d1a_steer": 5201
+      },
+      "per_template": {
+       "d1a_steer:authority": 1322,
+       "d1a_steer:fake_correction": 1283,
+       "d1a_steer:system_note": 1275,
+       "d1a_steer:urgency": 1321
+      },
+      "n_heldout_excluded_overlap": 0,
+      "per_counts_include_heldout_excluded": true,
+      "check": "hits == pinned exclusions",
+      "drawn_hits": 0
+     },
+     "cohort": {
+      "cohort": "m2-dev-cohort-v2",
+      "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+      "n": {
+       "dev": 835,
+       "calibration": 1000,
+       "retention": 1670,
+       "steer_dev": 1800,
+       "steer_gate": 1000
+      }
+     },
+     "cohort_v3_excluded": {
+      "n": 0,
+      "rule": "id OR normalized content OR source item OR key-free text held out by the cohort (train.cohort_v3)",
+      "cohort": {
+       "cohort": "m2-dev-cohort-v3",
+       "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+       "n": {
+        "dev": 835,
+        "calibration": 1000,
+        "retention": 39872,
+        "steer_dev": 1800,
+        "steer_gate": 1000
+       }
+      },
+      "drawn_overlap": 0
+     },
+     "doc_overlap_guard": {
+      "n_records": 100000,
+      "n_fail": 14,
+      "per_source_fail": {
+       "anli": 2,
+       "glaive_fc": 2,
+       "hellaswag": 1,
+       "mmlu_aux": 2,
+       "when2call": 7
+      },
+      "per_reason": {
+       "E": 12,
+       "U": 12,
+       "R": 2
+      },
+      "eval_rows_attributed_by_split": {
+       "?": 1,
+       "HELDOUT": 3,
+       "TEST": 2
+      },
+      "eval_rows_union_covered_by_split": {
+       "TEST": 2
+      },
+      "secs": 28.0,
+      "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+      "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+      "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
+      "excluded_ids_sha256": "e277b794d365c2a3bfdd0a4576840c0a8612ae42e2534666b075d66d1b44850d",
+      "n_excluded": 14,
+      "allowlist_saved": {
+       "?": {
+        "b1fam_bfcl_synth": 30
+       },
+       "hover-wikipedia-evidence": {
+        "boolq": 2,
+        "clinc150": 2,
+        "glaive_fc": 7,
+        "gsm8k": 5,
+        "hellaswag": 1,
+        "humicroedit_s2": 2,
+        "mmlu_aux": 2,
+        "nq": 7,
+        "winogrande": 2
+       },
+       "anli-wikipedia-premise": {
+        "boolq": 1,
+        "clinc150": 1,
+        "glaive_fc": 3,
+        "gsm8k": 3,
+        "nq": 2
+       },
+       "toolret-public-tool-corpus": {
+        "glaive_fc": 34,
+        "toolace": 393,
+        "when2call": 138
+       },
+       "bright-retrieval-pool": {
+        "winogrande": 2
+       }
+      },
+      "n_heldout_excluded_overlap": 0,
+      "check": "fails == pinned exclusions",
+      "drawn_fails": 0,
+      "n_pool_removed": 13
+     },
+     "draw_seed": 0,
+     "drawn_heldout_scan": {
+      "n_texts": 94786,
+      "hits": 0,
+      "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5"
+     },
+     "drawn_ids_sha256": "87935ba527cf7d6964507083a265c1447a67abd6545debd8148d35e778792d5e",
+     "files_uncompressed_sha256": {
+      "records": "14dba0b089faf53046e433f5be9b561e2e397979021666f18b556ce90f3de7b6",
+      "manifest": "74ff754eadb32e0cea747e2cf8eedc2dd4b3bc901a59e406e620071bf0b143c7",
+      "content_map": "92ba1488484288daec0c1aa9ed3b4de10ca89f80c847173251c7b1bfccfed1e8"
+     },
+     "held_out_in_set": {
+      "by_id": 0,
+      "by_content": 0
+     },
+     "lines_manifest_verified": 100000,
+     "n_drawn": 94786,
+     "n_pool": 94786,
+     "pointer": "data/manifests/b1-draw100k-v2.pointer.json",
+     "pointer_sha256": "4b6dc94d6d78ba7e6e8192f62cb006be060d671e42854d001dd5828118834bb1",
+     "train_set": "b1-draw100k-v2 (python -X utf8 -I -m data.b1 draw; BOARD B1)"
+    },
+    "seconds": 165.2
+   },
+   "readout": {
+    "template": "jrt-h2o-shim:qwen3.5-0.8b",
+    "spec_identity": {
+     "id": "jrt-h2o-shim:qwen3.5-0.8b",
+     "sha256": "54ffc797cddbc15afc9b46712b3b0bb891d6fbe77e7da4c794dc5ca70d25f832"
+    },
+    "records_checked": 817,
+    "rows": 1303,
+    "mismatches": 0,
+    "mismatch_examples": [],
+    "strata": {
+     "k17-255": 278,
+     "k<=16": 1025,
+     "dict_instructions": 136
+    },
+    "refused_records": {},
+    "labels_equal_shim_probe": true,
+    "process_pool": {
+     "workers": 8,
+     "records": 2000,
+     "items": 3073,
+     "equal_serial": true,
+     "seconds_parallel": 35.4
+    },
+    "census": {
+     "records": 6000,
+     "items": 9200,
+     "kept_by_cell_filter": 9200,
+     "T_mean": 394.8,
+     "T_p50": 238,
+     "T_p90": 943,
+     "T_p99": 1397,
+     "over_max_t": 0
+    },
+    "ok": true
+   },
+   "jevbench_native": {
+    "template": "jrt-h2o-shim:qwen3.5-0.8b",
+    "items": 231,
+    "mismatches": 0,
+    "input_tokens_mean": 653.6,
+    "input_tokens_p50": 157,
+    "input_tokens_max": 3952,
+    "ok": true
+   },
+   "jevbench_v3w": {
+    "template": "jrt-v3w-generic:qwen3.5-0.8b",
+    "items": 231,
+    "mismatches": 0,
+    "input_tokens_mean": 783.0,
+    "input_tokens_p50": 308,
+    "input_tokens_max": 4245,
+    "ok": true
+   },
+   "smoke": {
+    "stand_in": {
+     "layer_types": [
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention"
+     ],
+     "config_sha256": "6b2552c6d09689d81e9c1918c403d27babc8da5b255bad2d59c9861d788539f3"
+    },
+    "lora_groups": {
+     "gdn": [
+      9,
+      9
+     ],
+     "attn": [
+      4,
+      4
+     ],
+     "mlp": [
+      12,
+      12
+     ]
+    },
+    "lora_groups_ok": true,
+    "provenance": {
+     "kind": "qwen35-stock",
+     "repo": "Qwen/Qwen3.5-0.8B",
+     "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+     "config_sha256": "6b2552c6d09689d81e9c1918c403d27babc8da5b255bad2d59c9861d788539f3",
+     "attention_free": false
+    },
+    "items": 389,
+    "smoke_stage": {
+     "rows": 3,
+     "rel_feature_diff": 1.3577405866271874e-07,
+     "grad_cos": 0.9999998807907104,
+     "pass": true,
+     "peak_gb": 0.0,
+     "lora_modules": {
+      "gdn": 9,
+      "attn": 4,
+      "mlp": 12
+     },
+     "pass_rule": {
+      "rows": 3,
+      "max_k": 6,
+      "max_t": 512,
+      "lora_rank": 4,
+      "max_rel_feature_diff": 0.03,
+      "min_grad_cos": 0.99
+     },
+     "act_ckpt": true
+    },
+    "train_steps": {
+     "losses": [
+      1.630107581615448,
+      1.5323284566402435
+     ],
+     "finite": true
+    },
+    "jevkit_decide": {
+     "native": {
+      "status": {
+       "ok": 6
+      },
+      "valid": 6,
+      "input_tokens": [
+       135,
+       138,
+       124,
+       123,
+       126,
+       125
+      ]
+     },
+     "v3w": {
+      "status": {
+       "ok": 6
+      },
+      "valid": 6,
+      "input_tokens": [
+       242,
+       245,
+       231,
+       230,
+       233,
+       232
+      ]
+     }
+    },
+    "ok": true
+   },
+   "ok": true
+  },
+  "2b": {
+   "template": "jrt-h2o-shim:qwen3.5-2b",
+   "qwen35": {
+    "repo": "Qwen/Qwen3.5-2B",
+    "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+    "config_sha256": "ed1c1723241f23f7f4e23430759cbd7dcfb4103cbdfe052bfe7626b57c2615b4",
+    "snapshot_sha256_file": "jobs/m2_first_cell/qwen35_2b_snapshot.sha256",
+    "note": "heads.backbone.qwen35_pin_check (repo@revision in QWEN35_STOCK + config.json sha256) before the tokenizer or any weight; the runner checks the whole snapshot against the manifest"
+   },
+   "draw": {
+    "n_drawn": 94786,
+    "n_eval_dev": 835,
+    "drawn_ids_sha256": "6943d2fcb643ce913c6b765c7ed515c77cbad09681fd91f7917f2006ff89e4c9",
+    "train_set_identity": {
+     "attack_guard": {
+      "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+      "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+      "n_records": 100000,
+      "n_excluded": 5201,
+      "excluded_ids_sha256": "c6a667e5d38208ac739e65b66834f3b3a751919598cf7abeaece9b8c951257e8",
+      "per_set": {
+       "d1a_steer": 5201
+      },
+      "per_template": {
+       "d1a_steer:authority": 1322,
+       "d1a_steer:fake_correction": 1283,
+       "d1a_steer:system_note": 1275,
+       "d1a_steer:urgency": 1321
+      },
+      "n_heldout_excluded_overlap": 0,
+      "per_counts_include_heldout_excluded": true,
+      "check": "hits == pinned exclusions",
+      "drawn_hits": 0
+     },
+     "cohort": {
+      "cohort": "m2-dev-cohort-v2",
+      "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+      "n": {
+       "dev": 835,
+       "calibration": 1000,
+       "retention": 1670,
+       "steer_dev": 1800,
+       "steer_gate": 1000
+      }
+     },
+     "cohort_v3_excluded": {
+      "n": 0,
+      "rule": "id OR normalized content OR source item OR key-free text held out by the cohort (train.cohort_v3)",
+      "cohort": {
+       "cohort": "m2-dev-cohort-v3",
+       "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+       "n": {
+        "dev": 835,
+        "calibration": 1000,
+        "retention": 39872,
+        "steer_dev": 1800,
+        "steer_gate": 1000
+       }
+      },
+      "drawn_overlap": 0
+     },
+     "doc_overlap_guard": {
+      "n_records": 100000,
+      "n_fail": 14,
+      "per_source_fail": {
+       "anli": 2,
+       "glaive_fc": 2,
+       "hellaswag": 1,
+       "mmlu_aux": 2,
+       "when2call": 7
+      },
+      "per_reason": {
+       "E": 12,
+       "U": 12,
+       "R": 2
+      },
+      "eval_rows_attributed_by_split": {
+       "?": 1,
+       "HELDOUT": 3,
+       "TEST": 2
+      },
+      "eval_rows_union_covered_by_split": {
+       "TEST": 2
+      },
+      "secs": 28.6,
+      "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+      "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+      "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
+      "excluded_ids_sha256": "e277b794d365c2a3bfdd0a4576840c0a8612ae42e2534666b075d66d1b44850d",
+      "n_excluded": 14,
+      "allowlist_saved": {
+       "?": {
+        "b1fam_bfcl_synth": 30
+       },
+       "hover-wikipedia-evidence": {
+        "boolq": 2,
+        "clinc150": 2,
+        "glaive_fc": 7,
+        "gsm8k": 5,
+        "hellaswag": 1,
+        "humicroedit_s2": 2,
+        "mmlu_aux": 2,
+        "nq": 7,
+        "winogrande": 2
+       },
+       "anli-wikipedia-premise": {
+        "boolq": 1,
+        "clinc150": 1,
+        "glaive_fc": 3,
+        "gsm8k": 3,
+        "nq": 2
+       },
+       "toolret-public-tool-corpus": {
+        "glaive_fc": 34,
+        "toolace": 393,
+        "when2call": 138
+       },
+       "bright-retrieval-pool": {
+        "winogrande": 2
+       }
+      },
+      "n_heldout_excluded_overlap": 0,
+      "check": "fails == pinned exclusions",
+      "drawn_fails": 0,
+      "n_pool_removed": 13
+     },
+     "draw_seed": 0,
+     "drawn_heldout_scan": {
+      "n_texts": 94786,
+      "hits": 0,
+      "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5"
+     },
+     "drawn_ids_sha256": "87935ba527cf7d6964507083a265c1447a67abd6545debd8148d35e778792d5e",
+     "files_uncompressed_sha256": {
+      "records": "14dba0b089faf53046e433f5be9b561e2e397979021666f18b556ce90f3de7b6",
+      "manifest": "74ff754eadb32e0cea747e2cf8eedc2dd4b3bc901a59e406e620071bf0b143c7",
+      "content_map": "92ba1488484288daec0c1aa9ed3b4de10ca89f80c847173251c7b1bfccfed1e8"
+     },
+     "held_out_in_set": {
+      "by_id": 0,
+      "by_content": 0
+     },
+     "lines_manifest_verified": 100000,
+     "n_drawn": 94786,
+     "n_pool": 94786,
+     "pointer": "data/manifests/b1-draw100k-v2.pointer.json",
+     "pointer_sha256": "4b6dc94d6d78ba7e6e8192f62cb006be060d671e42854d001dd5828118834bb1",
+     "train_set": "b1-draw100k-v2 (python -X utf8 -I -m data.b1 draw; BOARD B1)"
+    },
+    "seconds": 161.6
+   },
+   "readout": {
+    "template": "jrt-h2o-shim:qwen3.5-2b",
+    "spec_identity": {
+     "id": "jrt-h2o-shim:qwen3.5-2b",
+     "sha256": "97fc6954c0d05de5149fb4f74eed974c268f64efb6b97b42cebfb318cc592896"
+    },
+    "records_checked": 817,
+    "rows": 1303,
+    "mismatches": 0,
+    "mismatch_examples": [],
+    "strata": {
+     "k17-255": 278,
+     "k<=16": 1025,
+     "dict_instructions": 136
+    },
+    "refused_records": {},
+    "labels_equal_shim_probe": true,
+    "process_pool": {
+     "workers": 8,
+     "records": 2000,
+     "items": 3073,
+     "equal_serial": true,
+     "seconds_parallel": 44.3
+    },
+    "census": {
+     "records": 6000,
+     "items": 9200,
+     "kept_by_cell_filter": 9200,
+     "T_mean": 394.8,
+     "T_p50": 238,
+     "T_p90": 943,
+     "T_p99": 1397,
+     "over_max_t": 0
+    },
+    "ok": true
+   },
+   "jevbench_native": {
+    "template": "jrt-h2o-shim:qwen3.5-2b",
+    "items": 231,
+    "mismatches": 0,
+    "input_tokens_mean": 653.6,
+    "input_tokens_p50": 157,
+    "input_tokens_max": 3952,
+    "ok": true
+   },
+   "jevbench_v3w": {
+    "template": "jrt-v3w-generic:qwen3.5-2b",
+    "items": 231,
+    "mismatches": 0,
+    "input_tokens_mean": 783.0,
+    "input_tokens_p50": 308,
+    "input_tokens_max": 4245,
+    "ok": true
+   },
+   "smoke": {
+    "stand_in": {
+     "layer_types": [
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention"
+     ],
+     "config_sha256": "6b2552c6d09689d81e9c1918c403d27babc8da5b255bad2d59c9861d788539f3"
+    },
+    "lora_groups": {
+     "gdn": [
+      9,
+      9
+     ],
+     "attn": [
+      4,
+      4
+     ],
+     "mlp": [
+      12,
+      12
+     ]
+    },
+    "lora_groups_ok": true,
+    "provenance": {
+     "kind": "qwen35-stock",
+     "repo": "Qwen/Qwen3.5-2B",
+     "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+     "config_sha256": "6b2552c6d09689d81e9c1918c403d27babc8da5b255bad2d59c9861d788539f3",
+     "attention_free": false
+    },
+    "items": 389,
+    "smoke_stage": {
+     "rows": 3,
+     "rel_feature_diff": 1.3577405866271874e-07,
+     "grad_cos": 0.9999998807907104,
+     "pass": true,
+     "peak_gb": 0.0,
+     "lora_modules": {
+      "gdn": 9,
+      "attn": 4,
+      "mlp": 12
+     },
+     "pass_rule": {
+      "rows": 3,
+      "max_k": 6,
+      "max_t": 512,
+      "lora_rank": 4,
+      "max_rel_feature_diff": 0.03,
+      "min_grad_cos": 0.99
+     },
+     "act_ckpt": true
+    },
+    "train_steps": {
+     "losses": [
+      1.630107581615448,
+      1.5323284566402435
+     ],
+     "finite": true
+    },
+    "jevkit_decide": {
+     "native": {
+      "status": {
+       "ok": 6
+      },
+      "valid": 6,
+      "input_tokens": [
+       135,
+       138,
+       124,
+       123,
+       126,
+       125
+      ]
+     },
+     "v3w": {
+      "status": {
+       "ok": 6
+      },
+      "valid": 6,
+      "input_tokens": [
+       242,
+       245,
+       231,
+       230,
+       233,
+       232
+      ]
+     }
+    },
+    "ok": true
+   },
+   "ok": true
+  },
+  "4b": {
+   "template": "jrt-h2o-shim:qwen3.5-4b",
+   "qwen35": {
+    "repo": "Qwen/Qwen3.5-4B",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "config_sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+    "snapshot_sha256_file": "jobs/m2_first_cell/qwen35_4b_snapshot.sha256",
+    "note": "heads.backbone.qwen35_pin_check (repo@revision in QWEN35_STOCK + config.json sha256) before the tokenizer or any weight; the runner checks the whole snapshot against the manifest"
+   },
+   "draw": {
+    "n_drawn": 94786,
+    "n_eval_dev": 835,
+    "drawn_ids_sha256": "6943d2fcb643ce913c6b765c7ed515c77cbad09681fd91f7917f2006ff89e4c9",
+    "train_set_identity": {
+     "attack_guard": {
+      "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+      "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+      "n_records": 100000,
+      "n_excluded": 5201,
+      "excluded_ids_sha256": "c6a667e5d38208ac739e65b66834f3b3a751919598cf7abeaece9b8c951257e8",
+      "per_set": {
+       "d1a_steer": 5201
+      },
+      "per_template": {
+       "d1a_steer:authority": 1322,
+       "d1a_steer:fake_correction": 1283,
+       "d1a_steer:system_note": 1275,
+       "d1a_steer:urgency": 1321
+      },
+      "n_heldout_excluded_overlap": 0,
+      "per_counts_include_heldout_excluded": true,
+      "check": "hits == pinned exclusions",
+      "drawn_hits": 0
+     },
+     "cohort": {
+      "cohort": "m2-dev-cohort-v2",
+      "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+      "n": {
+       "dev": 835,
+       "calibration": 1000,
+       "retention": 1670,
+       "steer_dev": 1800,
+       "steer_gate": 1000
+      }
+     },
+     "cohort_v3_excluded": {
+      "n": 0,
+      "rule": "id OR normalized content OR source item OR key-free text held out by the cohort (train.cohort_v3)",
+      "cohort": {
+       "cohort": "m2-dev-cohort-v3",
+       "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+       "n": {
+        "dev": 835,
+        "calibration": 1000,
+        "retention": 39872,
+        "steer_dev": 1800,
+        "steer_gate": 1000
+       }
+      },
+      "drawn_overlap": 0
+     },
+     "doc_overlap_guard": {
+      "n_records": 100000,
+      "n_fail": 14,
+      "per_source_fail": {
+       "anli": 2,
+       "glaive_fc": 2,
+       "hellaswag": 1,
+       "mmlu_aux": 2,
+       "when2call": 7
+      },
+      "per_reason": {
+       "E": 12,
+       "U": 12,
+       "R": 2
+      },
+      "eval_rows_attributed_by_split": {
+       "?": 1,
+       "HELDOUT": 3,
+       "TEST": 2
+      },
+      "eval_rows_union_covered_by_split": {
+       "TEST": 2
+      },
+      "secs": 28.7,
+      "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+      "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+      "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
+      "excluded_ids_sha256": "e277b794d365c2a3bfdd0a4576840c0a8612ae42e2534666b075d66d1b44850d",
+      "n_excluded": 14,
+      "allowlist_saved": {
+       "?": {
+        "b1fam_bfcl_synth": 30
+       },
+       "hover-wikipedia-evidence": {
+        "boolq": 2,
+        "clinc150": 2,
+        "glaive_fc": 7,
+        "gsm8k": 5,
+        "hellaswag": 1,
+        "humicroedit_s2": 2,
+        "mmlu_aux": 2,
+        "nq": 7,
+        "winogrande": 2
+       },
+       "anli-wikipedia-premise": {
+        "boolq": 1,
+        "clinc150": 1,
+        "glaive_fc": 3,
+        "gsm8k": 3,
+        "nq": 2
+       },
+       "toolret-public-tool-corpus": {
+        "glaive_fc": 34,
+        "toolace": 393,
+        "when2call": 138
+       },
+       "bright-retrieval-pool": {
+        "winogrande": 2
+       }
+      },
+      "n_heldout_excluded_overlap": 0,
+      "check": "fails == pinned exclusions",
+      "drawn_fails": 0,
+      "n_pool_removed": 13
+     },
+     "draw_seed": 0,
+     "drawn_heldout_scan": {
+      "n_texts": 94786,
+      "hits": 0,
+      "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5"
+     },
+     "drawn_ids_sha256": "87935ba527cf7d6964507083a265c1447a67abd6545debd8148d35e778792d5e",
+     "files_uncompressed_sha256": {
+      "records": "14dba0b089faf53046e433f5be9b561e2e397979021666f18b556ce90f3de7b6",
+      "manifest": "74ff754eadb32e0cea747e2cf8eedc2dd4b3bc901a59e406e620071bf0b143c7",
+      "content_map": "92ba1488484288daec0c1aa9ed3b4de10ca89f80c847173251c7b1bfccfed1e8"
+     },
+     "held_out_in_set": {
+      "by_id": 0,
+      "by_content": 0
+     },
+     "lines_manifest_verified": 100000,
+     "n_drawn": 94786,
+     "n_pool": 94786,
+     "pointer": "data/manifests/b1-draw100k-v2.pointer.json",
+     "pointer_sha256": "4b6dc94d6d78ba7e6e8192f62cb006be060d671e42854d001dd5828118834bb1",
+     "train_set": "b1-draw100k-v2 (python -X utf8 -I -m data.b1 draw; BOARD B1)"
+    },
+    "seconds": 161.7
+   },
+   "readout": {
+    "template": "jrt-h2o-shim:qwen3.5-4b",
+    "spec_identity": {
+     "id": "jrt-h2o-shim:qwen3.5-4b",
+     "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+    },
+    "records_checked": 817,
+    "rows": 1303,
+    "mismatches": 0,
+    "mismatch_examples": [],
+    "strata": {
+     "k17-255": 278,
+     "k<=16": 1025,
+     "dict_instructions": 136
+    },
+    "refused_records": {},
+    "labels_equal_shim_probe": true,
+    "process_pool": {
+     "workers": 8,
+     "records": 2000,
+     "items": 3073,
+     "equal_serial": true,
+     "seconds_parallel": 39.9
+    },
+    "census": {
+     "records": 6000,
+     "items": 9200,
+     "kept_by_cell_filter": 9200,
+     "T_mean": 394.8,
+     "T_p50": 238,
+     "T_p90": 943,
+     "T_p99": 1397,
+     "over_max_t": 0
+    },
+    "ok": true
+   },
+   "jevbench_native": {
+    "template": "jrt-h2o-shim:qwen3.5-4b",
+    "items": 231,
+    "mismatches": 0,
+    "input_tokens_mean": 653.6,
+    "input_tokens_p50": 157,
+    "input_tokens_max": 3952,
+    "ok": true
+   },
+   "jevbench_lean": {
+    "template": "jrt-h2o-shim:qwen3.5-4b-lean",
+    "items": 231,
+    "mismatches": 0,
+    "input_tokens_mean": 456.8,
+    "input_tokens_p50": 124,
+    "input_tokens_max": 1729,
+    "ok": true
+   },
+   "jevbench_v3w": {
+    "template": "jrt-v3w-generic:qwen3.5-4b",
+    "items": 231,
+    "mismatches": 0,
+    "input_tokens_mean": 783.0,
+    "input_tokens_p50": 308,
+    "input_tokens_max": 4245,
+    "ok": true
+   },
+   "smoke": {
+    "stand_in": {
+     "layer_types": [
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention"
+     ],
+     "config_sha256": "6b2552c6d09689d81e9c1918c403d27babc8da5b255bad2d59c9861d788539f3"
+    },
+    "lora_groups": {
+     "gdn": [
+      9,
+      9
+     ],
+     "attn": [
+      4,
+      4
+     ],
+     "mlp": [
+      12,
+      12
+     ]
+    },
+    "lora_groups_ok": true,
+    "provenance": {
+     "kind": "qwen35-stock",
+     "repo": "Qwen/Qwen3.5-4B",
+     "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+     "config_sha256": "6b2552c6d09689d81e9c1918c403d27babc8da5b255bad2d59c9861d788539f3",
+     "attention_free": false
+    },
+    "items": 389,
+    "smoke_stage": {
+     "rows": 3,
+     "rel_feature_diff": 1.3577405866271874e-07,
+     "grad_cos": 0.9999998807907104,
+     "pass": true,
+     "peak_gb": 0.0,
+     "lora_modules": {
+      "gdn": 9,
+      "attn": 4,
+      "mlp": 12
+     },
+     "pass_rule": {
+      "rows": 3,
+      "max_k": 6,
+      "max_t": 512,
+      "lora_rank": 4,
+      "max_rel_feature_diff": 0.03,
+      "min_grad_cos": 0.99
+     },
+     "act_ckpt": true
+    },
+    "train_steps": {
+     "losses": [
+      1.630107581615448,
+      1.5323284566402435
+     ],
+     "finite": true
+    },
+    "jevkit_decide": {
+     "native": {
+      "status": {
+       "ok": 6
+      },
+      "valid": 6,
+      "input_tokens": [
+       135,
+       138,
+       124,
+       123,
+       126,
+       125
+      ]
+     },
+     "lean": {
+      "status": {
+       "ok": 6
+      },
+      "valid": 6,
+      "input_tokens": [
+       102,
+       105,
+       91,
+       90,
+       93,
+       92
+      ]
+     },
+     "v3w": {
+      "status": {
+       "ok": 6
+      },
+      "valid": 6,
+      "input_tokens": [
+       242,
+       245,
+       231,
+       230,
+       233,
+       232
+      ]
+     }
+    },
+    "ok": true
+   },
+   "ok": true
+  }
+ },
+ "same_draw_every_arm": true,
+ "ok": true
+}

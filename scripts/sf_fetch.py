@@ -4,6 +4,7 @@ python -I scripts/sf_fetch.py --stage first   # Qwen3.5-0.8B + wikitext + MMLU (
 python -I scripts/sf_fetch.py --stage rest    # RWKV7-0.1B, Mamba-3-187M + tokenizer, Qwen3.5-9B (background)
 python -I scripts/sf_fetch.py --stage probe9b # wikitext + MMLU + Qwen3.5-9B (jobs/probe9b)
 python -I scripts/sf_fetch.py --stage q9      # Qwen3.5-9B only (jobs/q9_feature_cache)
+python -I scripts/sf_fetch.py --stage q9af_v2 # probe9b items + the q9af_v2 distillation mixture (jobs/q9af_v2)
 The paid job runs this inside its container (jobs/qual/qual_job.sh).
 
 Writes $SSDM_DATA_ROOT/paths.env (shell `export NAME=path` lines) and DONE_<stage> markers.
@@ -48,6 +49,21 @@ ITEMS = {
     "q9": [
         ("Q9B_DIR", "Qwen/Qwen3.5-9B", "model", ["*.json", "*.safetensors", "*.txt", "*.jinja"],
          "c202236235762e1c871ad0ccb60c8ee5ba337b9a"),
+    ],
+    # jobs/q9af_v2: the probe9b items + the generic distillation mixture (convert/mixdata.py), one file per source
+    "q9af_v2": [
+        ("WIKITEXT_DIR", "Salesforce/wikitext", "dataset", ["wikitext-103-raw-v1/*", "wikitext-2-raw-v1/*"],
+         "b08601e04326c79dfdd32d625aee71d232d685c3"),
+        ("MMLU_DIR", "cais/mmlu", "dataset", ["all/test-*", "all/dev-*"], "c30699e8356da336a370243923dbaf21066bb9fe"),
+        ("Q9B_DIR", "Qwen/Qwen3.5-9B", "model", ["*.json", "*.safetensors", "*.txt", "*.jinja"],
+         "c202236235762e1c871ad0ccb60c8ee5ba337b9a"),
+        ("FINEWEB_EDU_DIR", "HuggingFaceFW/fineweb-edu", "dataset", ["sample/10BT/000_00000.parquet"],
+         "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9"),
+        ("ULTRACHAT_DIR", "HuggingFaceH4/ultrachat_200k", "dataset",
+         ["data/train_sft-00000-of-00003-*.parquet", "data/train_sft-00001-of-00003-*.parquet", "data/test_sft-*.parquet"],
+         "8049631c405ae6576f93f445c6b8166f76f5505a"),
+        ("FINEMATH_DIR", "HuggingFaceTB/finemath", "dataset", ["finemath-4plus/train-00000-of-00064.parquet"],
+         "e92b25a616738fe95dc186b64dfb19f9c8525594"),
     ],
 }
 
