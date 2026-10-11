@@ -1,11 +1,11 @@
 # Reorder and relabel invariance by construction (`sym-fork` layout)
 
 Code: `heads/symmetric.py` (row builder), `heads/features.py` (e from the fork), `heads/heads.py` `FinalStateFork`.
-Tests: `tests/test_sym_invariance.py`, `tests/test_sym_perturb_eval.py`. Branch `stack/qwen35/sym-invariant`, cut
+Tests: `tests/test_sym_invariance.py`, `tests/test_sym_perturb_eval.py`, `tests/test_sym_g15_bpe.py`. Branch `stack/qwen35/sym-invariant`, cut
 from `stack/qwen35/jev1-4b`. The default behaviour is unchanged: you opt in with `"layout": "sym-fork"` in the cell
 config.
 
-Layouts (renderer version `sym-fork-v2`):
+Layouts (renderer version `sym-fork-v3`; v3 = v2 + trust-segment tokenization, see "Trust segments" below):
 - `sym-fork` is the default. Each option continuation is `" " + description` plus the user-turn terminator: Qwen
   `<|im_end|>` (one token), or the RWKV7-G1 `"\n\n"`. The head reads the fork feature at that terminator.
 - `sym-fork-chat` appends the full answer turn instead (+10 tokens per option on Qwen).
@@ -70,6 +70,24 @@ Under A1 the two sides are bit-identical, not merely within 1e-6.
   and the padding width (`max len`, `MIN_CONT_WIDTH`) are functions of the content multiset (step 2), so they are
   invariant. Across rows, the shared-prefix eval path and `row_batch` group rows by request. A different
   co-batched request can change float rounding under A1-violating kernels only.
+- **A6, content normalisation: leading and trailing whitespace is stripped.** A description is `.strip()`ped before
+  it is rendered (`option_text`), so `" yes"`, `"yes"` and `"yes \n"` are ONE content: bit-equal probability and one
+  `tie_set` (exact duplicates). Inner whitespace is content (`"a b"`, `"a  b"`, `"a\tb"`, NBSP all differ). The
+  instructions are stripped too (`_instr_text`). "Content" in the statement means the stripped description.
+
+## Trust segments (G15 under a real BPE tokenizer)
+
+The protected stream of G15 reads only TRUSTED tokens. With whole-string tokenization a BPE merge can cross a trust
+boundary: under Qwen, an undeclared description `"Refund the customer."` absorbed the template space before it
+while `"123 refund"` left it a separate trusted token, and a raw-string state ending in `"\n"` merged with the trusted
+`"\nquestion"` (trusted prefix 79 → 78 tokens). The trusted token list then depended on untrusted text
+(claude/ev-sym-check `SYM_CHECK.md` section 5). Since v3 the row is tokenized SEGMENT BY SEGMENT and the ids are
+concatenated: the prefix is cut at the state and question boundaries, and each continuation into its request part
+`" " + description` and its template tail. Each request segment carries the one template space right before it
+(so BPE still sees the natural `" word"` token, and the template text left over is fixed). No token crosses a trust
+boundary, so every template token is the same whatever the request text is. Test:
+`tests/test_sym_g15_bpe.py` (real Qwen3.5-4B tokenizer, fuzzed boundary texts; plus a teeth test that the v2
+whole-string tokenization leaks on the same tokenizer). Byte-level encoders never merge, so their ids are unchanged.
 
 
 ## Decisions: ties, duplicates, empty descriptions
@@ -90,6 +108,9 @@ path is unchanged (smallest id).
 - **Wire rounding.** At 4 digits, near-ties become exact ties on the wire, and jevkit's frozen `argmax_label` then
   breaks them by smallest id: a relabel leak at the wire. Sym answers are therefore written with 12 digits
   (`SYM_WIRE_DIGITS`).
+- **Host action boundary.** `decide.adapter.select_actions` uses the same rule: the sym Decider puts the content
+  keys on each policy-conditioned stage (`content_key`), exact ties among the allowed options go by content hash, and
+  duplicates come back as `tie_set`. Without keys (non-sym rows) it keeps the smallest id.
 - **Softmax order.** The adapter's softmax over a sym row runs in content order (`content_order`), so the sum order
   cannot depend on the ids.
 - **Empty descriptions.** Such an option is rendered by its id, which then is its content (A2, `id_as_content`).
@@ -135,7 +156,10 @@ path is unchanged (smallest id).
   baseline. It runs jevkit perturb operators 4–6 through `SystemOneAdapter` and writes the files
   `jevkit perturb score` reads, plus `perturb_report.json`. That report holds `g1_pass`, the per-operator flip
   report, `duplicate_tie_items`, and the row-identity check (every perturbation must yield the same ids and
-  continuations).
+  continuations). The verdict (`g1_verdict`) FAILS CLOSED: every requested operator must be present with n > 0 (an
+  operator that yields no perturbation, e.g. `key_relabel` on noul-only items, fails instead of passing vacuously),
+  with 0 flips, 0 invalid and max |Δp| ≤ `--max-dp`, default 0 (bitwise, as the proof claims; the observed max
+  |Δp| is reported apart as `max_abs_dp_observed`), AND `rows_all_identical` (no row check = no pass).
 - **CPU tests.** sym-fork gives 0 flips with max |Δp| = 0, and every row is identical. The `ordered` layout moves
   under `key_relabel`. `jevkit perturb score` reproduces the report.
 - **Independent harness.** This is the evidence lane's `tests/guarantees/test_reorder_invariance.py`
@@ -188,7 +212,8 @@ to K×~12 tokens, still one call. The estimate is ±3 ms raw, below 0.2 S-points
 - **Comparator.** The JEV1-4B native arm. Use the same jevkit public items and the same paired stratified resamples
   (`screen.paired_vs`).
 - **G1, guarantee (must hold).** `jobs.sym_eval.perturb_eval` runs jevkit perturb operators 4–6. It must give 0 flips,
-  max |Δp| ≤ 1e-3 (bf16 jitter, A1), `rows_all_identical`, and no `duplicate_tie_items` among the flips.
+  max |Δp| = 0 (bitwise; deterministic kernels on, A1; `max_abs_dp_observed` reported), every operator present
+  with n > 0, `rows_all_identical`, and no `duplicate_tie_items` among the flips.
 - **G2, non-inferiority.** Paired ΔI 95 % CI lower bound > −2.0, and ΔComposite point estimate ≥ −0.3 (the token
   cost is now neutral).
 - **Keep if G1 ∧ G2. Claim "better" only if** the paired ΔComposite CI is > 0. Also report operators 1–3 and 7–8,

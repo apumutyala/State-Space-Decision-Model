@@ -88,6 +88,31 @@ def test_stale_or_missing_host_policy_defers(change):
     assert select_actions(request, response)["action"] == "defer"
 
 
+class Tied(OracleBackend):
+    def score(self, request, check_deadline):
+        result = super().score(request, check_deadline)
+        result.logits["q"] = {"a": 0.0, "b": 0.0, "forbidden": 10.0}  # exact tie between the allowed a and b
+        return result
+
+
+def test_exact_ties_use_the_content_hash_rule_when_the_stage_carries_content_keys():
+    """select_actions breaks exact ties as decide.schema.wire_answer does on sym rows: by content hash among DIFFERENT
+    contents (never by id), exact duplicates (equal content key) form a tie_set; without keys: smallest id."""
+    request, _ = pair()
+    response = Decider(Tied()).decide(request)
+    assert select_actions(request, response)["actions"] == {"q": "a"}  # no content keys: smallest id
+    stage = response["ssdm"]["policy_conditioned_probabilities"]["q"]
+    stage["content_key"] = {"a": "ff", "b": "00", "forbidden": "11"}
+    sel = select_actions(request, response)
+    assert sel["actions"] == {"q": "b"} and sel["answers"]["q"]["tie_set"] == ["b"]  # content order, not id order
+    stage["content_key"] = {"a": "00", "b": "00", "forbidden": "11"}  # duplicates
+    sel = select_actions(request, response)
+    assert sel["actions"] == {"q": "a"} and sel["answers"]["q"]["tie_set"] == ["a", "b"]
+    for bad in ({"a": "00", "b": "00"}, {"a": 1, "b": "00", "forbidden": "11"}, "00"):
+        stage["content_key"] = bad
+        assert select_actions(request, response)["action"] == "defer"
+
+
 def test_one_unavailable_question_defers_the_whole_request():
     request, _ = pair()
     request["questions"]["q2"] = deepcopy(request["questions"]["q"])

@@ -14,7 +14,9 @@ GPU / any checkpoint (the screen's own loader, ``jobs.m2_first_cell.fulldev_eval
         --guard-readiness G --records R --train-dir T --pool-dir P --device cuda --out-dir OUT [--layout sym-fork]
 
 ``--layout`` scores a checkpoint under another layout (e.g. the JEV1-4B g1v2 checkpoint, for its flip-rate baseline).
-Gate verdict: ``g1_pass`` = zero flips and max |dp| <= ``--max-dp`` (default 1e-3, bf16 jitter) on every operator.
+Gate verdict (``g1_verdict``, fail closed): ``g1_pass`` = every requested operator present with n > 0, zero flips,
+zero invalid, max |dp| <= ``--max-dp`` (default 0: bit-identity, as the proof claims; ``max_abs_dp_observed`` is
+reported apart) on every operator, AND ``rows_all_identical`` (the rows themselves; no row check = no pass).
 """
 from __future__ import annotations
 
@@ -55,7 +57,7 @@ def row_identity(items, perturbed, row_fn: Callable[[dict], Any]) -> dict:
 
 
 def run(decider: Any, items: list, out_dir: str | Path, ops: Iterable[str] = REORDER_RELABEL_OPS,
-        seeds: Iterable[int] = (0,), row_fn: Callable[[dict], Any] | None = None, max_dp: float = 1e-3,
+        seeds: Iterable[int] = (0,), row_fn: Callable[[dict], Any] | None = None, max_dp: float = 0.0,
         kind: str = "decider") -> dict:
     from jevkit import perturb
     from jevkit.systemone import SystemOneAdapter, preds_to_answers, run_items
@@ -73,16 +75,47 @@ def run(decider: Any, items: list, out_dir: str | Path, ops: Iterable[str] = REO
         fh.writelines(json.dumps(p.to_dict(), ensure_ascii=False, sort_keys=True) + "\n" for p in ps)
     rep = perturb.flip_report(items, ps, preds_to_answers(base), preds_to_answers(pert))
     ties = [r["id"] for r in base if isinstance(r.get("answer"), dict) and len(r["answer"].get("tie_set") or []) > 1]
-    per = rep["per_operator"]
-    g1 = all((v["flips"] == 0 and (v["max_abs_dp"] or 0.0) <= max_dp and v["invalid"] == 0) for v in per.values())
     report = {"ops": ops, "seeds": list(seeds), "n_base": len(items), "n_perturbed": len(ps), "flip_report": rep,
-              "duplicate_tie_items": ties, "max_dp_bound": max_dp, "g1_pass": bool(g1 and per),
+              "duplicate_tie_items": ties, "max_dp_bound": max_dp,
               "status": {"base": _count(r["status"] for r in base), "perturbed": _count(r["status"] for r in pert)}}
     if row_fn is not None:
         report["row_identity"] = row_identity(items, ps, row_fn)
-        report["rows_all_identical"] = all(v["identical"] == v["n"] for v in report["row_identity"].values())
+    report.update(g1_verdict(ops, rep["per_operator"], report.get("row_identity"), max_dp))
     (out / "perturb_report.json").write_text(json.dumps(report, indent=1, default=str), encoding="utf-8")
     return report
+
+
+def g1_verdict(ops: Iterable[str], per: dict, rows: dict | None, max_dp: float = 0.0) -> dict:
+    """The G1 gate, FAIL CLOSED: every requested operator must be present with n > 0 (an operator that produced no
+    perturbation would make its check vacuous), with zero flips, zero invalid answers and max |dp| <= ``max_dp``
+    (default 0: bit-identity, as the proof claims; the observed max |dp| is reported apart), AND the rows themselves
+    must be bit-identical for every operator (``rows`` from ``row_identity``; no row check = no pass)."""
+    ops = list(ops)
+    fails: list[str] = []
+    if not ops:
+        fails.append("no operators requested")
+    for op in ops:
+        v = per.get(op)
+        if not v or not v.get("n"):
+            fails.append(f"{op}: no perturbations (vacuous)")
+            continue
+        dp = v.get("max_abs_dp")
+        if v.get("flips") != 0:
+            fails.append(f"{op}: {v.get('flips')} flips")
+        if v.get("invalid") != 0:
+            fails.append(f"{op}: {v.get('invalid')} invalid")
+        if dp is None or dp > max_dp:
+            fails.append(f"{op}: max|dp| {dp} > {max_dp}")
+    if rows is None:
+        fails.append("rows not checked (row_fn missing)")
+        rows_ok = None
+    else:
+        rows_ok = all(op in rows and rows[op]["n"] > 0 and rows[op]["identical"] == rows[op]["n"] for op in ops)
+        if not rows_ok:
+            fails.append("rows not bit-identical (or an operator has no row check)")
+    seen = [v.get("max_abs_dp") for v in per.values() if v.get("max_abs_dp") is not None]
+    return {"g1_pass": not fails, "g1_failures": fails, "rows_all_identical": rows_ok,
+            "max_abs_dp_observed": max(seen) if seen else None}
 
 
 def _count(xs) -> dict:
@@ -102,7 +135,7 @@ def main(argv=None) -> int:  # pragma: no cover - GPU path (load_child needs a t
     ap.add_argument("--layout", default=None, help="score under this layout instead of the cell's (same model)")
     ap.add_argument("--ops", default=",".join(REORDER_RELABEL_OPS))
     ap.add_argument("--seeds", default="0")
-    ap.add_argument("--max-dp", dest="max_dp", type=float, default=1e-3)
+    ap.add_argument("--max-dp", dest="max_dp", type=float, default=0.0)
     a = ap.parse_args(argv)
     from heads.layout import build_row
     from jevkit.items import load_public
@@ -116,7 +149,9 @@ def main(argv=None) -> int:  # pragma: no cover - GPU path (load_child needs a t
               row_fn=lambda req: build_row(req, "q", be.encode, template=be.template, layout=be.layout),
               max_dp=a.max_dp)
     (Path(a.out_dir) / "identity.json").write_text(json.dumps(ident, indent=1, default=str), encoding="utf-8")
-    print(json.dumps({"g1_pass": rep["g1_pass"], "rows_all_identical": rep.get("rows_all_identical"),
+    print(json.dumps({"g1_pass": rep["g1_pass"], "g1_failures": rep["g1_failures"],
+                      "max_abs_dp_observed": rep["max_abs_dp_observed"],
+                      "rows_all_identical": rep.get("rows_all_identical"),
                       "per_operator": {k: {x: v[x] for x in ("n", "flips", "max_abs_dp")}
                                        for k, v in rep["flip_report"]["per_operator"].items()}}, indent=1))
     return 0 if rep["g1_pass"] else 1

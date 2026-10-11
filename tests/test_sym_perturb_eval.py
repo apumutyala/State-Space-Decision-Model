@@ -66,6 +66,64 @@ def test_perturb_eval_sym_fork_passes_g1_with_identical_rows(tmp_path):
                      str(tmp_path / "perturbed.preds.jsonl"), "--out", str(tmp_path / "cli.json")]) == 0
 
 
+def test_g1_verdict_fails_closed():
+    """Every requested operator must be present with n > 0, the dp bound defaults to 0 (bitwise), and the rows must
+    be checked and identical (SYM_CHECK.md section 3)."""
+    from jobs.sym_eval.perturb_eval import REORDER_RELABEL_OPS, g1_verdict
+
+    ok = {"n": 4, "flips": 0, "invalid": 0, "max_abs_dp": 0.0}
+    per = {op: dict(ok) for op in REORDER_RELABEL_OPS}
+    rows = {op: {"n": 4, "identical": 4} for op in REORDER_RELABEL_OPS}
+    assert g1_verdict(REORDER_RELABEL_OPS, per, rows)["g1_pass"]
+    # an operator that produced no perturbation (e.g. key_relabel on a noul-only item set) -> vacuous -> FAIL
+    part = {k: v for k, v in per.items() if k != "key_relabel"}
+    v = g1_verdict(REORDER_RELABEL_OPS, part, rows)
+    assert not v["g1_pass"] and any("key_relabel" in f for f in v["g1_failures"])
+    assert not g1_verdict(REORDER_RELABEL_OPS, {**per, "key_relabel": {**ok, "n": 0}}, rows)["g1_pass"]
+    # bitwise by default; the observed max |dp| is reported apart
+    jit = {**per, "option_shuffle": {**ok, "max_abs_dp": 1e-9}}
+    v = g1_verdict(REORDER_RELABEL_OPS, jit, rows)
+    assert not v["g1_pass"] and v["max_abs_dp_observed"] == 1e-9
+    assert g1_verdict(REORDER_RELABEL_OPS, jit, rows, max_dp=1e-3)["g1_pass"]
+    # rows: missing check, one differing row, or a missing operator -> FAIL
+    assert not g1_verdict(REORDER_RELABEL_OPS, per, None)["g1_pass"]
+    assert not g1_verdict(REORDER_RELABEL_OPS, per, {**rows, "option_reverse": {"n": 4, "identical": 3}})["g1_pass"]
+    assert not g1_verdict(REORDER_RELABEL_OPS, per, {k: v for k, v in rows.items() if k != "key_relabel"})["g1_pass"]
+    assert not g1_verdict([], {}, {})["g1_pass"]
+
+
+def test_perturb_eval_noul_only_items_fail_g1_as_vacuous(tmp_path):
+    """The SYM_CHECK repro: noul items only -> key_relabel yields nothing -> G1 must not pass."""
+    from jobs.sym_eval.perturb_eval import run
+
+    rep = run(_decider(SYM_LAYOUT), _items(0), tmp_path, row_fn=_row_fn(SYM_LAYOUT))
+    assert "key_relabel" not in rep["flip_report"]["per_operator"]
+    assert not rep["g1_pass"] and any("key_relabel" in f for f in rep["g1_failures"])
+
+
+def test_select_actions_on_sym_rows_uses_content_ties_invariant_under_relabel():
+    """The sym Decider puts the content keys on the policy-conditioned stage; select_actions then decides duplicates as
+    a tie_set (invariant as a set under reorder + relabel) and never by id."""
+    from decide import select_actions
+
+    dec = _decider(SYM_LAYOUT)
+    rng = random.Random(11)
+    for t in range(3):
+        req = make_request(rng, 4)
+        crit = req["questions"]["q"]["criteria"]
+        a, b = list(crit)[:2]
+        crit[b] = crit[a]
+        req["ssdm"] = {"policy_ref": "p1", "context_ref": "c1", "request_id": f"r{t}",
+                       "policy_restriction": {"q": sorted(crit)}}
+        sel = select_actions(req, dec.decide(req))
+        assert sel["action"] == "execute", sel
+        new, m = transform({k: v for k, v in req.items() if k != "ssdm"}, rng, relabel=True, reorder=True)
+        new["ssdm"] = {**req["ssdm"], "policy_restriction": {"q": sorted(new["questions"]["q"]["criteria"])}}
+        sel2 = select_actions(new, dec.decide(new))
+        assert sorted(m[o] for o in sel["answers"]["q"]["tie_set"]) == sel2["answers"]["q"]["tie_set"]
+        assert all(sel2["answers"]["q"]["probabilities"][m[o]] == p for o, p in sel["answers"]["q"]["probabilities"].items())
+
+
 def test_perturb_eval_teeth_ordered_layout_moves_under_key_relabel(tmp_path):
     from jobs.sym_eval.perturb_eval import run
 
