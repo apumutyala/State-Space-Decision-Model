@@ -57,9 +57,22 @@ def rank(seed: int, rid: str) -> str:
     return hashlib.sha256(f"{seed}:{rid}".encode()).hexdigest()
 
 
+def _empty_levels(q: dict) -> bool:
+    """A score question whose level criteria are all empty (no rubric text: the model sees bare level numbers)."""
+    crit = q.get("criteria")
+    vals = list(crit.values()) if isinstance(crit, dict) else list(crit or [])
+    return q.get("type") == "score" and not any(str(v).strip() for v in vals if v is not None)
+
+
+def _request_key(r: dict) -> str:
+    return hashlib.sha256(canonical(r.get("state")).encode()).hexdigest()[:24]
+
+
 def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
          family_src: dict[str, str] | None = None, exclude: set[tuple[str, str]] | None = None,
-         family_cap: dict[str, int] | None = None, score_share: float | None = None) -> tuple[dict, dict]:
+         family_cap: dict[str, int] | None = None, score_share: float | None = None,
+         pool_exclude: dict[str, set[str]] | None = None, dedupe_sources: set[str] | None = None,
+         deprioritize_empty_score: bool = False, stats: dict | None = None) -> tuple[dict, dict]:
     """Pass 1: per family the (n_train_f + n_calib) smallest-rank ids; returns ({id: (family, role)}, family counts).
     ``family_src`` {family: source dir name}: that family is drawn ONLY from that source. ``exclude`` {(family, source
     dir name)}: that family's rows of that source are never drawn (e.g. jev1's long_policy). ``family_cap`` {family:
@@ -71,12 +84,22 @@ def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
     counts = collections.Counter()
     family_src = family_src or {}
     exclude = exclude or set()
+    pool_exclude = pool_exclude or {}
+    dedupe_sources = dedupe_sources or set()
+    stats = stats if stats is not None else {}
+    stats.setdefault("pool_rows_after_exclude", collections.Counter())
+    stats.setdefault("pool_excluded", collections.Counter())
+    stats.setdefault("deduped", collections.Counter())
     for d in srcs:
         for line in _lines(d / "records.jsonl.gz"):
             r = json.loads(line)
             rid, fam = r["id"], family_of(r)
             if fam is None:
                 raise SystemExit(f"{d}: {rid} has no aug.<draw>.family8 / family")
+            if rid in pool_exclude.get(d.name, ()):  # per-pool verbatim-leaf / leak exclusion (sha-pinned file)
+                stats["pool_excluded"][d.name] += 1
+                continue
+            stats["pool_rows_after_exclude"][d.name] += 1
             if (fam in family_src and family_src[fam] != d.name) or (fam, d.name) in exclude:
                 continue
             keep = min(n_train, family_cap.get(fam, n_train)) + n_calib
@@ -85,7 +108,9 @@ def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
             seen.add(rid)
             counts[fam] += 1
             if score_share is not None:  # per-type quota: keep every (rank, id, type) of the family (ids only, small)
-                full[fam].append((int(rank(seed, rid)[:16], 16), rid, (r["questions"]["q"].get("type") or "choice")))
+                q = r["questions"]["q"]
+                full[fam].append((int(rank(seed, rid)[:16], 16), rid, (q.get("type") or "choice"), _empty_levels(q),
+                                  _request_key(r) if r.get("source") in dedupe_sources else None))
                 continue
             item = (-int(rank(seed, rid)[:16], 16), rid)  # max-heap of the smallest ranks
             h = heaps[fam]
@@ -95,17 +120,38 @@ def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
                 heapq.heapreplace(h, item)
     roles = {}
     if score_share is not None:
+        for fam in list(full):  # dedupe: at most one row per request text (dedupe sources), the lowest rank wins
+            rows, keys = sorted(full[fam]), set()
+            kept = []
+            for x in rows:
+                if x[4] is not None:
+                    if x[4] in keys:
+                        stats["deduped"][fam] += 1
+                        continue
+                    keys.add(x[4])
+                kept.append(x)
+            full[fam] = kept
         nts = {fam: min(n_train, family_cap.get(fam, n_train)) for fam in full}
         quota = score_quotas({f: sum(1 for x in v if x[2] == "score") for f, v in full.items()}, nts, score_share,
                              n_calib, {f: sum(1 for x in v if x[2] != "score") for f, v in full.items()})
         for fam, rows in full.items():
             rows.sort()
-            sc = [x for x in rows if x[2] == "score"]
+            # score rows with rubric text first; empty-level rows (bare numbers) only if needed
+            sc = sorted((x for x in rows if x[2] == "score"), key=lambda x: (x[3] and deprioritize_empty_score, x[0]))
             ns = [x for x in rows if x[2] != "score"]
             q = quota[fam]
-            train = sc[:q] + ns[: nts[fam] - q]
+            if deprioritize_empty_score:  # down-weight: empty-level rows fill at most half of the family's score quota
+                full_lv = [x for x in sc if not x[3]]
+                empty = [x for x in sc if x[3]]
+                take = full_lv[:q] + empty[: max(0, min(q - len(full_lv[:q]), q // 2))]
+                ts = set(take)
+                rest_sc = [x for x in sc if x not in ts]
+                stats.setdefault("empty_score_capped", collections.Counter())[fam] += max(0, q - len(take))
+            else:
+                take, rest_sc = sc[:q], sc[q:]
+            train = take + ns[: nts[fam] - len(take)]
             if len(train) < nts[fam]:  # not enough non-score rows: top up with more score rows
-                train += sc[q: q + nts[fam] - len(train)]
+                train += rest_sc[: nts[fam] - len(train)]
             chosen = {x[1] for x in train}
             calib = [x for x in rows if x[1] not in chosen][:n_calib]  # natural type mix, by rank
             for x in train:
@@ -157,6 +203,13 @@ def main(argv=None) -> int:
                     help="FAMILY=SRC_DIR_NAME: draw FAMILY only from that source (repeatable)")
     ap.add_argument("--exclude", action="append", default=[],
                     help="FAMILY=SRC_DIR_NAME: never draw FAMILY from that source (repeatable)")
+    ap.add_argument("--pool-exclude", action="append", default=[], help="SRC_DIR_NAME=PATH: ids to drop from that pool")
+    ap.add_argument("--pool-exclude-sha", action="append", default=[], help="SRC_DIR_NAME=SHA256 of that exclusion file")
+    ap.add_argument("--pool-rows", action="append", default=[], help="SRC_DIR_NAME=N: assert N rows after exclusion")
+    ap.add_argument("--dedupe-source", action="append", default=[],
+                    help="record source (e.g. glaive): at most one row per request text (state) in the draw")
+    ap.add_argument("--deprioritize-empty-score", action="store_true",
+                    help="score rows with empty level criteria fill at most half of a family's score quota, last")
     ap.add_argument("--score-share", type=float, default=None,
                     help="target share of SCORE-type rows among the train rows (per-family quotas; total unchanged)")
     ap.add_argument("--family-cap", action="append", default=[],
@@ -170,7 +223,27 @@ def main(argv=None) -> int:
         raise SystemExit(f"--family-src names a source that is not a --src: {fsrc}")
     excl = {tuple(x.split("=", 1)) for x in a.exclude}
     caps = {k: int(v) for k, v in (x.split("=", 1) for x in a.family_cap)}
-    roles, counts = plan(srcs, a.train_per_family, a.calib_per_family, a.seed, fsrc, excl, caps, a.score_share)
+    # per-pool exclusion files (verbatim-leaf / leak rule), each pinned by sha256; fail closed on any mismatch
+    pex, pex_rec = {}, {}
+    shas_given = dict(x.split("=", 1) for x in a.pool_exclude_sha)
+    for name, path in (x.split("=", 1) for x in a.pool_exclude):
+        b = Path(path).read_bytes()
+        got = hashlib.sha256(b).hexdigest()
+        if name not in shas_given or got != shas_given[name]:
+            raise SystemExit(f"pool exclusion file for {name}: sha256 {got} != pinned {shas_given.get(name)}")
+        ids_ = {ln.strip() for ln in b.decode("utf-8").splitlines() if ln.strip()}
+        pex[name] = ids_
+        pex_rec[name] = {"file": str(path), "sha256": got, "n_ids": len(ids_)}
+    stats: dict = {}
+    roles, counts = plan(srcs, a.train_per_family, a.calib_per_family, a.seed, fsrc, excl, caps, a.score_share,
+                         pex, set(a.dedupe_source), a.deprioritize_empty_score, stats)
+    for name, n in (x.split("=", 1) for x in a.pool_rows):
+        if stats["pool_rows_after_exclude"][name] != int(n):
+            raise SystemExit(f"pool {name}: {stats['pool_rows_after_exclude'][name]} rows after exclusion != expected {n}")
+    for name, rec in pex_rec.items():
+        rec["excluded_found"] = stats["pool_excluded"][name]
+        if rec["excluded_found"] != rec["n_ids"]:
+            raise SystemExit(f"pool {name}: {rec['excluded_found']} of {rec['n_ids']} exclusion ids found in the pool")
     short = {f: n for f, n in counts.items()
              if n < min(a.train_per_family, caps.get(f, a.train_per_family)) + a.calib_per_family}
     if short and not a.allow_short:
@@ -217,6 +290,10 @@ def main(argv=None) -> int:
         raise SystemExit(f"{len(clash)} content hash(es) in both train and calib (rebuild with another seed)")
     rep = {"name": a.name, "seed": a.seed, "sources": [str(s) for s in srcs], "family_src": fsrc,
            "exclude": sorted("=".join(x) for x in excl), "family_cap": caps, "score_share_target": a.score_share,
+           "pool_exclusions": pex_rec, "pool_rows_after_exclude": dict(stats["pool_rows_after_exclude"]),
+           "dedupe_sources": sorted(a.dedupe_source), "deduped_by_family": dict(stats["deduped"]),
+           "deprioritize_empty_score": a.deprioritize_empty_score,
+           "empty_score_short_by_family": dict(stats.get("empty_score_capped", {})),
            "train_type_mix": {t: round(n / max(1, sum(types["train"].values())), 4) for t, n in types["train"].items()},
            "train_type_counts": dict(types["train"]), "calib_type_counts": dict(types["calib"]),
            "source_family_rows": counts,

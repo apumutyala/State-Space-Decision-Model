@@ -45,6 +45,36 @@ def test_noul_rows_unsmoothed_choice_rows_smoothed():
     assert "label_smoothing_noul" not in LossConfig(arm="clef").identity()  # old config hashes unchanged
 
 
+def test_regate_exclusion_pinned_and_no_truncation():
+    import hashlib
+    ex = CELL["train_set"]["pools"]["jev2a"]["exclude"]
+    assert hashlib.sha256((ROOT / ex["file"]).read_bytes()).hexdigest() == ex["sha256"]
+    assert ex["n_ids"] == 105 and ex["rows_after"] == 29895
+    assert CELL["assert_no_truncation"] is True and PARAMS["jevkit"]["assert_no_truncation"] is True
+
+
+def test_pool_exclude_fails_closed_and_dedupe(tmp_path):
+    from scripts.jev12_balanced_draw import main
+    a = _src(tmp_path, "jev1", {"intent": 40})
+    ex = tmp_path / "ex.txt"
+    ex.write_bytes(b"jev1:intent:0\njev1:intent:1\n")
+    good = hashlib_sha(ex)
+    base = ["--src", str(a), "--train-per-family", "10", "--calib-per-family", "5", "--score-share", "0.25",
+            "--pool-exclude", f"jev1={ex}", "--out", str(tmp_path / "o")]
+    with pytest.raises(SystemExit):  # wrong sha: refused
+        main(base + ["--pool-exclude-sha", "jev1=" + "0" * 64, "--name", "x1"])
+    with pytest.raises(SystemExit):  # wrong expected row count: refused
+        main(base + ["--pool-exclude-sha", f"jev1={good}", "--pool-rows", "jev1=40", "--name", "x2"])
+    assert main(base + ["--pool-exclude-sha", f"jev1={good}", "--pool-rows", "jev1=38", "--name", "x3"]) == 0
+    rep = json.loads((tmp_path / "o/x3/draw-report.json").read_text(encoding="utf-8"))
+    assert rep["pool_exclusions"]["jev1"]["excluded_found"] == 2
+
+
+def hashlib_sha(p):
+    import hashlib
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+
 def test_score_quota_hits_share_with_rating_only_family():
     from scripts.jev12_balanced_draw import score_quotas
     nts = {"severity": 100, "intent": 100, "fact": 100, "policy": 100}

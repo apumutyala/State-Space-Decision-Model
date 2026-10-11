@@ -284,7 +284,9 @@
    "jobs/m2_first_cell/m2_first_cell_rwkv7_jev2_q35_4b.json",
    "heads/symmetric.py",
    "heads/decide_backend.py",
-   "jobs/sym_eval/perturb_eval.py"
+   "jobs/sym_eval/perturb_eval.py",
+   "receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt",
+   "data/manifests/bschema-draw-jev2c.pointer.json"
   ]
  },
  "mode": "jev2_q35_4b",
@@ -320,7 +322,7 @@
    "records": "m2-jev2mix-calib/records.jsonl.gz",
    "lo": 0.25,
    "hi": 4.0,
-   "ids_sha256": "1607d869ff299e08f9af1aa3bd704baa6b2fabea096405bb881c6de2b118f66c"
+   "ids_sha256": "56cc795228bae6dfb686fccad751c98eb2a27ae9b08ce37d5206ff36e8ab1a28"
   },
   "perturb_ops": [
    "option_reverse",
@@ -336,7 +338,8 @@
    "routing",
    "severity",
    "state_tracking"
-  ]
+  ],
+  "assert_no_truncation": true
  },
  "cohort_note": "pins cohort v2 deliberately (no G13 here); the training draw excludes cohort v3 regardless (#105). The G13 gate of this checkpoint is a separate job on v3 (~16-17 H100-h at job-tkfaj rates).",
  "jevkit_note": "covered_families = the jev1 families (r2's 120-item coverage); by_coverage reads jev1-covered vs the rest. native_shimcal kept. G1: 0 flips, 0 invalid, max |dp| <= 1e-3 per op (jobs.sym_eval.perturb_eval.run in the screen process, with the row bit-identity check)."

@@ -637,3 +637,5 @@ The text below is ready to paste.
   native_shimcal, the calibration slice (200 per family, ids sha256 pinned at the build), the row-cache speed fix.
 
 - **Amendment 2 addendum (score-type weighting, 2026-10-10, before any JEV2 run):** score-type rows (4-5-level ratings) are ~25% of the train rows via per-family score quotas in the balanced sampler (`--score-share 0.25`); total rows, steps and cost are unchanged. Provisional 12-family type mix: choice 41.0% / noul 34.0% / score 25.1%.
+
+- **Amendment 2 addendum 2 (data re-gate, 2026-10-10, before any JEV2 run):** jev2a excludes the 105 re-gate ids (claude/ev-jev2a-regate @97d55f2e, file sha256 aeb8027a..., asserted at build with 29,895 rows after). jev2c is cleared (empty list) and wired as the only long_policy pool (b9f82ab1). Glaive rows are deduped to one per request text. Score rows with empty level criteria are used last and capped at half a family score quota. The build and the cell fail closed on any truncated training row or any JevBench item refused for length. Provisional 13-family mix: choice 40.5% / noul 34.5% / score 25.1%. Only jev2b remains.

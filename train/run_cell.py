@@ -1003,6 +1003,14 @@ def _main(argv=None, ctx: dict | None = None):
     t_tok = time.time()
     train_items = cell_items(train_recs, tr_ids, cfg, enc, guard, t_cap)
     eval_items = cell_items(eval_recs, ev_ids, cfg, enc, guard, t_cap, max_k=cfg["max_k"])  # eval cap unchanged
+    if cfg.get("assert_no_truncation"):  # JEV2-4B: every drawn question must survive the K / T filter (fail closed)
+        want = sum(len((train_recs[i].get("labels") or {})) for i in tr_ids)
+        if len(train_items) != want:
+            print(f"assert_no_truncation: {want - len(train_items)} of {want} training rows dropped by the K / T "
+                  f"filter (T cap {t_cap}); refusing to train on a silently truncated draw", flush=True)
+            return EXIT["data"]
+        cell.setdefault("data_checks", {})["no_truncation_tokenize"] = {
+            "rows": want, "max_row_tokens": max((len(x.row.ids) for x in train_items), default=0), "t_cap": t_cap}
     try:
         order_views = attach_order_views(cfg, train_items, train_recs, enc, guard, t_cap)
         if order_views is not None and order_views["with_view"] == 0:
@@ -1181,7 +1189,12 @@ def _main(argv=None, ctx: dict | None = None):
 
     if "train" in stages:
         t_max = cell["ladder"]["T_max"]
+        n_before = len(train_items)
         train_items[:] = [x for x in train_items if len(x.row.ids) <= t_max]
+        if cfg.get("assert_no_truncation") and len(train_items) != n_before:
+            print(f"assert_no_truncation: {n_before - len(train_items)} training rows longer than the measured T_max "
+                  f"{t_max}; refusing to train on a truncated draw", flush=True)
+            return EXIT["data"]
         view_t_max = restrict_order_views_to_tmax(cfg, train_items, t_max)
         if view_t_max is not None:
             cell["data"]["order_consistency_t_max"] = view_t_max

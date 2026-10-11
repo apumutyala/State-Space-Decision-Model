@@ -74,7 +74,7 @@
     "dir": "m2/build/bschema-draw-jev2a",
     "pointer": "data/manifests/bschema-draw-jev2a.pointer.json",
     "pointer_sha256": "53416094f957a6aebb6514dceaaef11b18473da1a6a910c89057639865c24eda",
-    "status": "gated",
+    "status": "gated + re-gated (claude/ev-jev2a-regate @97d55f2e)",
     "branch": "claude/ev-jev2-draw@77065b1c",
     "families": [
      "multi_hop",
@@ -82,7 +82,14 @@
      "temporal_numeric",
      "fact",
      "tool_selection"
-    ]
+    ],
+    "exclude": {
+     "file": "receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt",
+     "sha256": "aeb8027aaaebdb6fad2b24f8b5bee9d37c4e176fcc4e18ad0d366acf1b579705",
+     "n_ids": 105,
+     "rows_after": 29895,
+     "rule": "97 Glaive rows whose tool descriptions are verbatim in JevBench easy tool_selection items + 8 MuSiQue rows; asserted at build (sha + count)"
+    }
    },
    "jev2b": {
     "dir": "m2/build/bschema-draw-jev2b",
@@ -95,13 +102,18 @@
      "ambiguous",
      "tradeoff",
      "adversarial"
-    ]
+    ],
+    "exclude": {
+     "file": null,
+     "sha256": null,
+     "note": "PLACEHOLDER: the verbatim-leaf re-gate list"
+    }
    },
    "jev2c": {
     "dir": "m2/build/bschema-draw-jev2c",
     "pointer": "data/manifests/bschema-draw-jev2c.pointer.json",
     "pointer_sha256": "b9f82ab18c140b4221d017248503b7f8d3620c4737e2028b067242bf94c514fc",
-    "status": "gated",
+    "status": "gated + re-gated (claude/ev-jev2a-regate @cad1506a: empty exclusion list)",
     "branch": "claude/ev-jev2-draw@12461fff",
     "families": [
      "long_policy"
@@ -109,9 +121,9 @@
     "note": "1,500 long_policy rows, prose states, explicit criteria, 2,001-3,347 tokens; the ONLY long_policy source (jev1 long_policy excluded). A jev2c-v2 replaces it by swapping dir / pointer / pointer_sha256 here (and the --src in the build command)."
    }
   },
-  "note": "scripts/jev12_balanced_draw.py --src <each gated pool dir: jev1, jev2a, jev2c, jev2b> --exclude long_policy=bschema-draw-jev1 --family-cap adequacy=293 --score-share 0.25 --score-share 0.25 --train-per-family 586 --calib-per-family 200 --name bschema-draw-jev2-mix. jev1's long_policy is NEVER drawn (r2 rescore: its templates / label priors, not length, caused the long_policy loss); long_policy comes only from jev2c once it gates (absent until then). jev1 adequacy at half weight (293 train rows). n_train_records == its n_train: the whole balanced draw once. Wire a pool the moment it gates: fill its pointer_sha256 + status, rebuild the mix, refill data_jev2.sha256 and the calib ids sha; with fewer than 18 gated families the same steps give more rows per family (re-run the generator).",
+  "note": "build: python -X utf8 -I scripts/jev12_balanced_draw.py --src <data>/m2/build/bschema-draw-jev1 --src <data>/m2/build/bschema-draw-jev2a --src <data>/m2/build/bschema-draw-jev2c [--src <data>/m2/build/bschema-draw-jev2b] --exclude long_policy=bschema-draw-jev1 --family-cap adequacy=293 --score-share 0.25 --pool-exclude bschema-draw-jev2a=receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt --pool-exclude-sha bschema-draw-jev2a=aeb8027aaaebdb6fad2b24f8b5bee9d37c4e176fcc4e18ad0d366acf1b579705 --pool-rows bschema-draw-jev2a=29895 [--pool-exclude/--pool-exclude-sha/--pool-rows for jev2b once its re-gate list exists] --dedupe-source glaive_fc --deprioritize-empty-score --train-per-family 586 --calib-per-family 200 --name bschema-draw-jev2-mix --out <data>/m2/build. jev1 long_policy is never drawn; long_policy only from jev2c; jev1 adequacy at half weight; score rows ~25% via per-family quotas; Glaive (glaive_fc) rows deduped to one per request text (1,838 duplicates dropped from tool_selection in the provisional build); score rows with empty level criteria fill at most half a family's score quota and only after rubric rows (0 needed in the provisional build). n_train_records == its n_train: the whole balanced draw once.",
   "score_share": 0.25,
-  "type_mix_note": "score-type rows (4-5 level ratings) weighted to ~25% of the train rows (jevkit score items are 7.8% of public items but ~1/3 of Intelligence): per-family score quotas inside the balanced sampler, total rows / steps / cost unchanged. PROVISIONAL 13-family mix (with jev2c): choice 40.5% / noul 34.5% / score 25.1% (draw-report train_type_mix)."
+  "type_mix_note": "score-type rows weighted to ~25% (jevkit score items 7.8% of public items, ~1/3 of Intelligence); PROVISIONAL 13-family mix after the jev2a re-gate: choice 40.5% / noul 34.5% / score 25.1% (2,963 / 2,527 / 1,835 of 7,325)"
  },
  "act_ckpt": true,
  "row_batch": 1,
@@ -167,9 +179,11 @@
   "records": "m2-jev2mix-calib/records.jsonl.gz",
   "per_family": 200,
   "n": 3600,
-  "ids_sha256": "1607d869ff299e08f9af1aa3bd704baa6b2fabea096405bb881c6de2b118f66c",
+  "ids_sha256": "56cc795228bae6dfb686fccad751c98eb2a27ae9b08ce37d5206ff36e8ab1a28",
   "rule": "per JevBench family, ascending sha256('<seed>:<id>'), the next 200 after the train rows (scripts/jev12_balanced_draw.py); id AND content disjoint from training; never JevBench items",
   "use": "EV-PREREG-AREA-TEMP addendum: T_J / per-family T_f fitted on this slice only (never public-231); the screen exports every slice decision's per-option probabilities (calib_probs.jsonl) and fits the scalar native_tfit T in job (tfit.json)",
   "ids_note": "PROVISIONAL (13 gated families x 200): refill from the final draw-report"
- }
+ },
+ "assert_no_truncation": true,
+ "assert_no_truncation_note": "fail closed (run_cell exit 25 'data') if ANY drawn training question is dropped by the K / T filter at tokenization or by the measured T_max; jev2c has 1,448 / 1,500 rows > 2,048 tokens (max 3,347), all inside 4,096. The screen fails (9) if any JevBench item is refused for input length (jevkit.assert_no_truncation)."
 }

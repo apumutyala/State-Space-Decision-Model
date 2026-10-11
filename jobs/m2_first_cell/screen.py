@@ -475,7 +475,8 @@ def jevkit_block(params: dict, template: str) -> dict | None:
         if not pops or any(o not in OPERATORS for o in pops):
             raise ScreenError(f"jevkit.perturb_ops {pops!r}: names from jevkit.perturb.OPERATORS", 5)
     extra_keys = (({"tfit": tfit} if tfit is not None else {}) | ({"perturb_ops": list(pops)} if pops else {})
-                  | ({"covered_families": sorted(jk["covered_families"])} if jk.get("covered_families") else {}))
+                  | ({"covered_families": sorted(jk["covered_families"])} if jk.get("covered_families") else {})
+                  | ({"assert_no_truncation": True} if jk.get("assert_no_truncation") else {}))
     return {**extra_keys, "price": jk["price"], "price_parsed": price, "lean_template": lean, "extra_templates": extra,
             "shim_calibration": bool(jk.get("shim_calibration")), "stock_shim": bool(stock),
             "paired_primary": jk.get("paired_primary"),
@@ -1030,6 +1031,10 @@ def jevkit_report(jk: dict, d: Path) -> dict:
             raise ScreenError(f"jevkit score {name} failed", 9)
         rep = json.loads(rep_path.read_text(encoding="utf-8"))
         preds = [json.loads(x) for x in pf.read_text(encoding="utf-8").splitlines() if x.strip()]
+        if jk.get("assert_no_truncation"):  # JEV2-4B: no JevBench item may be refused / cut for length (fail closed)
+            cut = [p["id"] for p in preds if "input_tokens_exceeded" in str(p.get("error") or "")]
+            if cut:
+                raise ScreenError(f"jevkit {name}: {len(cut)} item(s) refused for input length, e.g. {cut[:3]}", 9)
         toks = [(p.get("usage") or {}).get("input_tokens") for p in preds]
         toks = [t for t in toks if isinstance(t, (int, float)) and not isinstance(t, bool)]
         ci = rep.get("ci95") or {}
