@@ -1,0 +1,313 @@
+{
+ "baseline": "h2o-lightning-4b",
+ "arms": [
+  {
+   "label": "h2o-lightning-4b",
+   "system": "H2O-Lightning-4B v1.1 (pinned 193ad740), own shim",
+   "job": "job-zbtbj",
+   "arm": "h2o-lightning-4b/h2o_shim",
+   "preds": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/h2o-lightning-4b/h2o_shim/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/h2o-lightning-4b/price.json",
+   "price_class": "qwen35_4b",
+   "in_job_report": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/h2o-lightning-4b/h2o_shim/report.json",
+   "note": null
+  },
+  {
+   "label": "qwen3.5-4b+h2o_shim",
+   "system": "stock Qwen3.5-4B + H2O shim readout (lead stock 4B + shim arm)",
+   "job": "job-zbtbj",
+   "arm": "qwen3.5-4b/h2o_shim",
+   "preds": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-4b/h2o_shim/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-4b/price.json",
+   "price_class": "qwen35_4b",
+   "in_job_report": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-4b/h2o_shim/report.json",
+   "note": null
+  },
+  {
+   "label": "qwen3.5-4b+v3w",
+   "system": "stock Qwen3.5-4B, v3w readout",
+   "job": "job-zbtbj",
+   "arm": "qwen3.5-4b/v3w",
+   "preds": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-4b/v3w/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-4b/price.json",
+   "price_class": "qwen35_4b",
+   "in_job_report": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-4b/v3w/report.json",
+   "note": null
+  },
+  {
+   "label": "qwen3.5-4b+m0",
+   "system": "stock Qwen3.5-4B, m0 readout",
+   "job": "job-zbtbj",
+   "arm": "qwen3.5-4b/m0",
+   "preds": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-4b/m0/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-4b/price.json",
+   "price_class": "qwen35_4b",
+   "in_job_report": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-4b/m0/report.json",
+   "note": null
+  },
+  {
+   "label": "qwen3.5-2b+v3w",
+   "system": "stock Qwen3.5-2B, v3w readout",
+   "job": "job-zbtbj",
+   "arm": "qwen3.5-2b/v3w",
+   "preds": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-2b/v3w/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-2b/price.json",
+   "price_class": "ref_0p02",
+   "in_job_report": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-2b/v3w/report.json",
+   "note": null
+  },
+  {
+   "label": "qwen3.5-2b+m0",
+   "system": "stock Qwen3.5-2B, m0 readout",
+   "job": "job-zbtbj",
+   "arm": "qwen3.5-2b/m0",
+   "preds": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-2b/m0/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-2b/price.json",
+   "price_class": "ref_0p02",
+   "in_job_report": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/qwen3.5-2b/m0/report.json",
+   "note": null
+  },
+  {
+   "label": "d1-3b",
+   "system": "stock LiquidAI d1-3B, own readout",
+   "job": "job-zbtbj",
+   "arm": "d1-3b/d1",
+   "preds": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/d1-3b/d1/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/d1-3b/price.json",
+   "price_class": "d1_list",
+   "in_job_report": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/d1-3b/d1/report.json",
+   "note": null
+  },
+  {
+   "label": "lfm2.5-2.6b+v3w",
+   "system": "stock LFM2.5-2.6B, v3w",
+   "job": "job-zbtbj",
+   "arm": "lfm2.5-2.6b/v3w",
+   "preds": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/lfm2.5-2.6b/v3w/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/lfm2.5-2.6b/price.json",
+   "price_class": "le4b",
+   "in_job_report": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/lfm2.5-2.6b/v3w/report.json",
+   "note": null
+  },
+  {
+   "label": "gemma-4-e4b+v3w",
+   "system": "stock gemma-4-E4B-it, v3w",
+   "job": "job-zbtbj",
+   "arm": "gemma-4-e4b-it/v3w",
+   "preds": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/gemma-4-e4b-it/v3w/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/gemma-4-e4b-it/price.json",
+   "price_class": "ref_0p02",
+   "in_job_report": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/gemma-4-e4b-it/v3w/report.json",
+   "note": null
+  },
+  {
+   "label": "nemotron-3-nano-4b+v3w",
+   "system": "stock Nemotron-3-Nano-4B, v3w",
+   "job": "job-zbtbj",
+   "arm": "nemotron-3-nano-4b/v3w",
+   "preds": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/nemotron-3-nano-4b/v3w/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/nemotron-3-nano-4b/price.json",
+   "price_class": "le4b",
+   "in_job_report": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/nemotron-3-nano-4b/v3w/report.json",
+   "note": null
+  },
+  {
+   "label": "rwkv7-g1i-2.9b+v3w",
+   "system": "stock RWKV7 G1i 2.9B, v3w",
+   "job": "job-zbtbj",
+   "arm": "rwkv7-g1i-2.9b/v3w",
+   "preds": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/rwkv7-g1i-2.9b/v3w/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/rwkv7-g1i-2.9b/price.json",
+   "price_class": "le4b",
+   "in_job_report": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/rwkv7-g1i-2.9b/v3w/report.json",
+   "note": null
+  },
+  {
+   "label": "rwkv7-g1k-13.3b+v3w",
+   "system": "stock RWKV7-G1k-13.3B, v3w (host scan run)",
+   "job": "job-zbtbj",
+   "arm": "rwkv7-g1k-13.3b/v3w",
+   "preds": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/rwkv7-g1k-13.3b/v3w/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/rwkv7-g1k-13.3b/price.json",
+   "price_class": "le13b",
+   "in_job_report": "C:/Users/apumu/art/job-zbtbj/sc/ph/final/out/cand/rwkv7-g1k-13.3b/v3w/report.json",
+   "note": null
+  },
+  {
+   "label": "D19 (rwkv7-13.3b+joint)",
+   "system": "D19: RWKV7-13.3B attention-free + joint head, best ckpt step 2800, v3w untempered",
+   "job": "job-9j3uu",
+   "arm": "child",
+   "preds": "C:/Users/apumu/art/job-9j3uu/sc/ph/final/out/jevbench/child/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-9j3uu/sc/ph/final/out/jevbench/price.json",
+   "price_class": "le13b",
+   "in_job_report": "C:/Users/apumu/art/job-9j3uu/sc/ph/final/out/jevbench/child/report.json",
+   "note": null
+  },
+  {
+   "label": "rwkv7-g1k-13.3b+v3w (9j3uu)",
+   "system": "stock RWKV7-G1k-13.3B, v3w (D19 in-job parent)",
+   "job": "job-9j3uu",
+   "arm": "parent",
+   "preds": "C:/Users/apumu/art/job-9j3uu/sc/ph/final/out/jevbench/parent/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-9j3uu/sc/ph/final/out/jevbench/price.json",
+   "price_class": "le13b",
+   "in_job_report": "C:/Users/apumu/art/job-9j3uu/sc/ph/final/out/jevbench/parent/report.json",
+   "note": null
+  },
+  {
+   "label": "sizecliff-4B native",
+   "system": "Qwen3.5-4B + D16 recipe sizecliff cell (H2O shim train/serve), native arm",
+   "job": "job-27anq",
+   "arm": "native",
+   "preds": "C:/Users/apumu/art/job-27anq/sc/ph/final/out/screen/jevkit/native.preds.jsonl",
+   "price": "C:/Users/apumu/research/CHLabs/ssdm-wt/ev-scorecard/receipts/2026-10-10-ev-scorecard/prices/job-27anq.price.json",
+   "price_class": "sizecliff_4B",
+   "in_job_report": "C:/Users/apumu/art/job-27anq/sc/ph/final/out/screen/jevkit/native.jevkit.json",
+   "note": null
+  },
+  {
+   "label": "sizecliff-4B lean",
+   "system": "Qwen3.5-4B + D16 recipe sizecliff cell (H2O shim train/serve), lean arm",
+   "job": "job-27anq",
+   "arm": "lean",
+   "preds": "C:/Users/apumu/art/job-27anq/sc/ph/final/out/screen/jevkit/lean.preds.jsonl",
+   "price": "C:/Users/apumu/research/CHLabs/ssdm-wt/ev-scorecard/receipts/2026-10-10-ev-scorecard/prices/job-27anq.price.json",
+   "price_class": "sizecliff_4B",
+   "in_job_report": "C:/Users/apumu/art/job-27anq/sc/ph/final/out/screen/jevkit/lean.jevkit.json",
+   "note": null
+  },
+  {
+   "label": "sizecliff-4B v3w",
+   "system": "Qwen3.5-4B + D16 recipe sizecliff cell (H2O shim train/serve), v3w arm",
+   "job": "job-27anq",
+   "arm": "v3w",
+   "preds": "C:/Users/apumu/art/job-27anq/sc/ph/final/out/screen/jevkit/v3w.preds.jsonl",
+   "price": "C:/Users/apumu/research/CHLabs/ssdm-wt/ev-scorecard/receipts/2026-10-10-ev-scorecard/prices/job-27anq.price.json",
+   "price_class": "sizecliff_4B",
+   "in_job_report": "C:/Users/apumu/art/job-27anq/sc/ph/final/out/screen/jevkit/v3w.jevkit.json",
+   "note": null
+  },
+  {
+   "label": "sizecliff-4B native_shimcal",
+   "system": "Qwen3.5-4B + D16 recipe sizecliff cell (H2O shim train/serve), native_shimcal arm",
+   "job": "job-27anq",
+   "arm": "native_shimcal",
+   "preds": "C:/Users/apumu/art/job-27anq/sc/ph/final/out/screen/jevkit/native_shimcal.preds.jsonl",
+   "price": "C:/Users/apumu/research/CHLabs/ssdm-wt/ev-scorecard/receipts/2026-10-10-ev-scorecard/prices/job-27anq.price.json",
+   "price_class": "sizecliff_4B",
+   "in_job_report": "C:/Users/apumu/art/job-27anq/sc/ph/final/out/screen/jevkit/native_shimcal.jevkit.json",
+   "note": null
+  },
+  {
+   "label": "sizecliff-2B native",
+   "system": "Qwen3.5-2B + D16 recipe sizecliff cell (H2O shim train/serve), native arm",
+   "job": "job-haxmm",
+   "arm": "native",
+   "preds": "C:/Users/apumu/art/job-haxmm/sc/ph/final/out/screen/jevkit/native.preds.jsonl",
+   "price": "C:/Users/apumu/research/CHLabs/ssdm-wt/ev-scorecard/receipts/2026-10-10-ev-scorecard/prices/job-haxmm.price.json",
+   "price_class": "sizecliff_2B",
+   "in_job_report": "C:/Users/apumu/art/job-haxmm/sc/ph/final/out/screen/jevkit/native.jevkit.json",
+   "note": null
+  },
+  {
+   "label": "sizecliff-2B v3w",
+   "system": "Qwen3.5-2B + D16 recipe sizecliff cell (H2O shim train/serve), v3w arm",
+   "job": "job-haxmm",
+   "arm": "v3w",
+   "preds": "C:/Users/apumu/art/job-haxmm/sc/ph/final/out/screen/jevkit/v3w.preds.jsonl",
+   "price": "C:/Users/apumu/research/CHLabs/ssdm-wt/ev-scorecard/receipts/2026-10-10-ev-scorecard/prices/job-haxmm.price.json",
+   "price_class": "sizecliff_2B",
+   "in_job_report": "C:/Users/apumu/art/job-haxmm/sc/ph/final/out/screen/jevkit/v3w.jevkit.json",
+   "note": null
+  },
+  {
+   "label": "sizecliff-2B native_shimcal",
+   "system": "Qwen3.5-2B + D16 recipe sizecliff cell (H2O shim train/serve), native_shimcal arm",
+   "job": "job-haxmm",
+   "arm": "native_shimcal",
+   "preds": "C:/Users/apumu/art/job-haxmm/sc/ph/final/out/screen/jevkit/native_shimcal.preds.jsonl",
+   "price": "C:/Users/apumu/research/CHLabs/ssdm-wt/ev-scorecard/receipts/2026-10-10-ev-scorecard/prices/job-haxmm.price.json",
+   "price_class": "sizecliff_2B",
+   "in_job_report": "C:/Users/apumu/art/job-haxmm/sc/ph/final/out/screen/jevkit/native_shimcal.jevkit.json",
+   "note": null
+  },
+  {
+   "label": "sizecliff-0.8B native",
+   "system": "Qwen3.5-0.8B + D16 recipe sizecliff cell (H2O shim train/serve), native arm",
+   "job": "job-reknq",
+   "arm": "native",
+   "preds": "C:/Users/apumu/art/job-reknq/sc/ph/final/out/screen/jevkit/native.preds.jsonl",
+   "price": "C:/Users/apumu/research/CHLabs/ssdm-wt/ev-scorecard/receipts/2026-10-10-ev-scorecard/prices/job-reknq.price.json",
+   "price_class": "sizecliff_0.8B",
+   "in_job_report": "C:/Users/apumu/art/job-reknq/sc/ph/final/out/screen/jevkit/native.jevkit.json",
+   "note": null
+  },
+  {
+   "label": "sizecliff-0.8B v3w",
+   "system": "Qwen3.5-0.8B + D16 recipe sizecliff cell (H2O shim train/serve), v3w arm",
+   "job": "job-reknq",
+   "arm": "v3w",
+   "preds": "C:/Users/apumu/art/job-reknq/sc/ph/final/out/screen/jevkit/v3w.preds.jsonl",
+   "price": "C:/Users/apumu/research/CHLabs/ssdm-wt/ev-scorecard/receipts/2026-10-10-ev-scorecard/prices/job-reknq.price.json",
+   "price_class": "sizecliff_0.8B",
+   "in_job_report": "C:/Users/apumu/art/job-reknq/sc/ph/final/out/screen/jevkit/v3w.jevkit.json",
+   "note": null
+  },
+  {
+   "label": "sizecliff-0.8B native_shimcal",
+   "system": "Qwen3.5-0.8B + D16 recipe sizecliff cell (H2O shim train/serve), native_shimcal arm",
+   "job": "job-reknq",
+   "arm": "native_shimcal",
+   "preds": "C:/Users/apumu/art/job-reknq/sc/ph/final/out/screen/jevkit/native_shimcal.preds.jsonl",
+   "price": "C:/Users/apumu/research/CHLabs/ssdm-wt/ev-scorecard/receipts/2026-10-10-ev-scorecard/prices/job-reknq.price.json",
+   "price_class": "sizecliff_0.8B",
+   "in_job_report": "C:/Users/apumu/art/job-reknq/sc/ph/final/out/screen/jevkit/native_shimcal.jevkit.json",
+   "note": null
+  },
+  {
+   "label": "decider-12b v2",
+   "system": "decider-12b v2 (decider-ai 1.8.0 system_one)",
+   "job": "job-r3uc4",
+   "arm": "decider-12b/decider",
+   "preds": "C:/Users/apumu/art/job-r3uc4/x/final/out/cand/decider-12b/decider/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-r3uc4/x/final/out/cand/decider-12b/price.json",
+   "price_class": "gemma12b_ref",
+   "in_job_report": "C:/Users/apumu/art/job-r3uc4/x/final/out/cand/decider-12b/decider/report.json",
+   "note": "kit parity PASS"
+  },
+  {
+   "label": "decider-12b-v1",
+   "system": "decider-12b-v1 (decider-ai 1.8.0 system_one)",
+   "job": "job-r3uc4",
+   "arm": "decider-12b-v1/decider",
+   "preds": "C:/Users/apumu/art/job-r3uc4/x/final/out/cand/decider-12b-v1/decider/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-r3uc4/x/final/out/cand/decider-12b-v1/price.json",
+   "price_class": "gemma12b_ref",
+   "in_job_report": "C:/Users/apumu/art/job-r3uc4/x/final/out/cand/decider-12b-v1/decider/report.json",
+   "note": "kit parity PASS"
+  },
+  {
+   "label": "torchcast-decision-12b (double-bos)",
+   "system": "torchcast-decision-12b own shim, double-bos (primary arm)",
+   "job": "job-r3uc4",
+   "arm": "torchcast-decision-12b/torchcast_shim_double_bos",
+   "preds": "C:/Users/apumu/art/job-r3uc4/x/final/out/cand/torchcast-decision-12b/torchcast_shim_double_bos/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-r3uc4/x/final/out/cand/torchcast-decision-12b/price.json",
+   "price_class": "gemma12b_ref",
+   "in_job_report": "C:/Users/apumu/art/job-r3uc4/x/final/out/cand/torchcast-decision-12b/torchcast_shim_double_bos/report.json",
+   "note": "kit parity FAIL 198 vs 203 (raw vs post-mask logprobs)"
+  },
+  {
+   "label": "torchcast-decision-12b (plain)",
+   "system": "torchcast-decision-12b own shim, plain",
+   "job": "job-r3uc4",
+   "arm": "torchcast-decision-12b/torchcast_shim",
+   "preds": "C:/Users/apumu/art/job-r3uc4/x/final/out/cand/torchcast-decision-12b/torchcast_shim/preds.jsonl",
+   "price": "C:/Users/apumu/art/job-r3uc4/x/final/out/cand/torchcast-decision-12b/price.json",
+   "price_class": "gemma12b_ref",
+   "in_job_report": "C:/Users/apumu/art/job-r3uc4/x/final/out/cand/torchcast-decision-12b/torchcast_shim/report.json",
+   "note": "kit parity FAIL (secondary arm)"
+  }
+ ]
+}

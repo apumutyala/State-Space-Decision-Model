@@ -1,0 +1,36 @@
+4400efec4d41fd5a349c8a2c672ab3b7a11088cccce04b6497a26ac6d75ef0fd *./arms.json
+461a9050a5cb1da3216cd1e725af69e899af43a6e57315a279c496e02496a03c *./prices/job-27anq.price.json
+b11a81ad9b8e0e425fb79556f6a6859270e27d1410764926c8e55cdd9586f89e *./prices/job-haxmm.price.json
+8b465ead922d934b868c81141fe1eebf66e401b963e4b19c8e27506046fcd912 *./prices/job-reknq.price.json
+895242b418fb952de97c5c95671ca75223a967a361ab5cc87f3c029895d7c4b5 *./reports/d1-3b.jevkit.json
+2da4a2e7b21ff745e3ec691af69b8629b9c0ff9e188c68e3c454861722efd22a *./reports/D19 (rwkv7-13.3b+joint).jevkit.json
+9f323954016d8be013301d5fd9d5a56500b864020e9921e34b70c1330a884f18 *./reports/decider-12b v2.jevkit.json
+c442141abb5da07d3054390e00d30718b9e86f71dbe74cb3f9b2f34638558584 *./reports/decider-12b-v1.jevkit.json
+87565c2375a337abc34b8eb23b96110903f920b23e69c2cf1c008eee37177cef *./reports/gemma-4-e4b+v3w.jevkit.json
+3141a9da57c55c9df5656a235fe1043d29830b6831895283894a6cc07a1cbaa1 *./reports/h2o-lightning-4b.jevkit.json
+5d3089463dcd7a466cc548dffdf7c3a5288d5492ae9c3541e686d283f6173e28 *./reports/lfm2.5-2.6b+v3w.jevkit.json
+58326703fe8dd9a171fc6210de10a9b989a57d304a3722959343f17bacabb14a *./reports/nemotron-3-nano-4b+v3w.jevkit.json
+4c1fb8ea8672a398cf2159e6e1adf6c4faf41c0c5c8f0500573a8b2bc61d05d5 *./reports/qwen3.5-2b+m0.jevkit.json
+e41e604f2419dc1fde0a9bc2984a4b66dc6bd02d5cc95c2cd0fd963ba85ebf0f *./reports/qwen3.5-2b+v3w.jevkit.json
+76c91b98153d8064023cee9b7e5298ea62456ae4a5d1b40f65bea8b34e543dc4 *./reports/qwen3.5-4b+h2o_shim.jevkit.json
+6a1eda0164cf24df2ba27fbc129c5f0d62d05727701e6cf675f23346d824395b *./reports/qwen3.5-4b+m0.jevkit.json
+9cae617fac275f19ebfb8ef3d2a4953b0e564098e69da1c6e8a83289fd45fc2c *./reports/qwen3.5-4b+v3w.jevkit.json
+284e986d8241c5beae010a6189198c18ee705a28fe3b7dfbe4a60ef987d86bf6 *./reports/rwkv7-g1i-2.9b+v3w.jevkit.json
+50bc40dc8dbdcc69383b7657ed8c77d56505fe48b079cf121f55ba5a0a587d7a *./reports/rwkv7-g1k-13.3b+v3w (9j3uu).jevkit.json
+053ae74cf37880a9fd64aaa0c717ede135943d4a3fe1060e212ba33a441b5832 *./reports/rwkv7-g1k-13.3b+v3w.jevkit.json
+b4809008b36921bc3aed9ea7679847a2dce73a90197708be1d328a1001e81f56 *./reports/sizecliff-0.8B native.jevkit.json
+325e5abbd26fb65007b020c9da5f4421fb7768bad6ef81ac92bb7eeae0daeb16 *./reports/sizecliff-0.8B native_shimcal.jevkit.json
+9b253bcf270219710cddf8be456be92de891afa76b4a3988d2116471a52702cb *./reports/sizecliff-0.8B v3w.jevkit.json
+28cadb8299d6f1a3cf469fdc4d0cb5aa5772815c225f2693565eaa6e91013fc7 *./reports/sizecliff-2B native.jevkit.json
+46efb5b1834df7f482ddc63886cda377f180f91d73338546cbe8e9ee864bc9cf *./reports/sizecliff-2B native_shimcal.jevkit.json
+b0b31acda075530ebcd4a18771f602cee655fd6e4b7372ac355c2072360efec4 *./reports/sizecliff-2B v3w.jevkit.json
+fe87630cdf06d1d09d363f45fc2296b4e0a36d10bd4261ab75da49fb22022c76 *./reports/sizecliff-4B lean.jevkit.json
+c2493f8b923c2c81df0372be9006a18b806368568c14806ac53ee71a6c9797a0 *./reports/sizecliff-4B native.jevkit.json
+2e2ac9a4281e20cda79f4eae6f109608b5ca82cfe89ec7b4a058940b6f7c45e7 *./reports/sizecliff-4B native_shimcal.jevkit.json
+1497206f91f8e01c3e5bd28cc15de1d5de5f713c44f9d9978fa57abac921be6d *./reports/sizecliff-4B v3w.jevkit.json
+ab851cd2661ca628a873f67484aee6f5d073462db9b2764358da38c03e34878d *./reports/torchcast-decision-12b (double-bos).jevkit.json
+969d9237acc0a1b7fcbd6a3aed983472b0f42819b2ab4c8d0534ec2990397a21 *./reports/torchcast-decision-12b (plain).jevkit.json
+cb12db7944e26ec5b3ba72ca995f234bd72f6ac915faa8ea42e01048ebac83df *./run.log
+6dc71649160b6e14aead0b67f80cfc6b0610df9d348b721b2b3f6c3532962eb0 *./SCORECARD.json
+2d3cb7c0e786c554f901a8cb0ddffb9cdbadeb3bbcce73c3751d52ef32d2b49b *./SCORECARD.md
+cfc997b1a66b8429e1cf14783116c07163c0f5c323177693f63826c0a3ce9685 *./scorecard.png

@@ -1,0 +1,36 @@
+scored h2o-lightning-4b: A 76.64
+scored qwen3.5-4b+h2o_shim: A 67.26
+scored qwen3.5-4b+v3w: A 53.66
+scored qwen3.5-4b+m0: A 43.10
+scored qwen3.5-2b+v3w: A 23.00
+scored qwen3.5-2b+m0: A 20.08
+scored d1-3b: A 37.20
+scored lfm2.5-2.6b+v3w: A 20.99
+scored gemma-4-e4b+v3w: A 65.57
+scored nemotron-3-nano-4b+v3w: A 29.40
+scored rwkv7-g1i-2.9b+v3w: A 18.16
+scored rwkv7-g1k-13.3b+v3w: A 45.65
+scored D19 (rwkv7-13.3b+joint): A 62.25
+scored rwkv7-g1k-13.3b+v3w (9j3uu): A 45.57
+scored sizecliff-4B native: A 62.06
+scored sizecliff-4B lean: A 60.56
+scored sizecliff-4B v3w: A 60.34
+scored sizecliff-4B native_shimcal: A 61.58
+scored sizecliff-2B native: A 26.83
+scored sizecliff-2B v3w: A 20.61
+scored sizecliff-2B native_shimcal: A 43.33
+scored sizecliff-0.8B native: A 26.84
+scored sizecliff-0.8B v3w: A 20.24
+scored sizecliff-0.8B native_shimcal: A 35.19
+scored decider-12b v2: A 71.02
+scored decider-12b-v1: A 72.35
+scored torchcast-decision-12b (double-bos): A 73.07
+scored torchcast-decision-12b (plain): A 72.82
+{
+ "flags": [
+  "torchcast-decision-12b (double-bos): non-ok statuses {'ok': 226, 'error': 5} (scored as invalid answers)",
+  "torchcast-decision-12b (plain): non-ok statuses {'ok': 225, 'error': 6} (scored as invalid answers)"
+ ],
+ "max_abs_diff": 0.0
+}
+rc=3

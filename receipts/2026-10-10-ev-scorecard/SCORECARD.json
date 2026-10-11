@@ -1,0 +1,5799 @@
+{
+ "schema": "ev-scorecard/1",
+ "rule": "EV-PREREG-COMPOSITE-LOCAL",
+ "manifest": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\ev-scorecard\\receipts\\2026-10-10-ev-scorecard\\arms.json",
+ "manifest_sha256": "4400efec4d41fd5a349c8a2c672ab3b7a11088cccce04b6497a26ac6d75ef0fd",
+ "checkout": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\ev-scorecard",
+ "baseline": "h2o-lightning-4b",
+ "n_items": 231,
+ "protocol": "jevkit CLI per arm (--public, own declared price); paired stratified bootstrap B=1000 seed 16 (strata of the baseline table) on the same 231 ids; S/K held at each arm's own axes (composite_A) or S held at the baseline's S (composite_A_commonS)",
+ "caveat": "open public items only; the board's sealed split may rank differently (open->board I gap measured on H2O: -17.6)",
+ "arms": {
+  "h2o-lightning-4b": {
+   "system": "H2O-Lightning-4B v1.1 (pinned 193ad740), own shim",
+   "job": "job-zbtbj",
+   "arm": "h2o-lightning-4b/h2o_shim",
+   "price_class": "qwen35_4b",
+   "note": null,
+   "preds_sha256": "60a06842d512be4647ff9874cd2b0cef761e6925482f79a18a40994de08853cc",
+   "price_file_sha256": "457db52faa6152c6a8af6e555580167f9bc43c5068c6390779e4c0810676b487",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "base_model_reference",
+    "model": "Qwen/Qwen3.5-4B",
+    "usd_per_m_input": 0.03,
+    "usd_per_m_output": 0.15,
+    "source": "JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1): deepinfra:Qwen/Qwen3.5-4B (0.03 / 0.15 per 1M) frozen 25 Sep 2026, the price basis of every Qwen3.5-4B row incl. h2o-lightning-4b"
+   },
+   "I": 77.5603847645343,
+   "C": 83.41923077717074,
+   "S": 91.31349814410956,
+   "K": 61.12776195066701,
+   "capability": 80.48980777085252,
+   "composite": {
+    "A": 76.6411466741207,
+    "B": 76.82324699526193,
+    "C": 76.6411466741207
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     69.11929417535765,
+     85.1687159014883
+    ],
+    "C": [
+     75.4247377194568,
+     85.24691702485397
+    ],
+    "capability": [
+     72.55268229721543,
+     84.1481911540112
+    ],
+    "composite": {
+     "A": [
+      72.83220219491777,
+      78.30508868386835
+     ],
+     "B": [
+      72.03627202507593,
+      79.55413394542667
+     ],
+     "C": [
+      72.83220219491777,
+      78.30508868386835
+     ]
+    }
+   },
+   "usd_per_1000": 0.019757922077922076,
+   "tokens_per_decision": {
+    "mean": 653.5974025974026,
+    "p50": 157.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.05324539000139339,
+    "p95_s_raw": 0.06906166559710983,
+    "p50_s_adjusted": 0.2564907800027868,
+    "adjustment": "x2 + 0.15 s",
+    "score": 91.31349814410956
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "3141a9da57c55c9df5656a235fe1043d29830b6831895283894a6cc07a1cbaa1"
+  },
+  "qwen3.5-4b+h2o_shim": {
+   "system": "stock Qwen3.5-4B + H2O shim readout (lead stock 4B + shim arm)",
+   "job": "job-zbtbj",
+   "arm": "qwen3.5-4b/h2o_shim",
+   "price_class": "qwen35_4b",
+   "note": null,
+   "preds_sha256": "edbffa95e5472cc3344ea6f6d231a916c53092e3c674d24e6e6a31df7312f6d4",
+   "price_file_sha256": "457db52faa6152c6a8af6e555580167f9bc43c5068c6390779e4c0810676b487",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "base_model_reference",
+    "model": "Qwen/Qwen3.5-4B",
+    "usd_per_m_input": 0.03,
+    "usd_per_m_output": 0.15,
+    "source": "JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1): deepinfra:Qwen/Qwen3.5-4B (0.03 / 0.15 per 1M) frozen 25 Sep 2026, the price basis of every Qwen3.5-4B row incl. h2o-lightning-4b"
+   },
+   "I": 56.26555841767086,
+   "C": 69.34201707338669,
+   "S": 91.5973041844533,
+   "K": 61.12776195066701,
+   "capability": 62.80378774552877,
+   "composite": {
+    "A": 67.26005335724983,
+    "B": 64.7303443713543,
+    "C": 59.147987668677345
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     46.05125127406261,
+     65.19849884007188
+    ],
+    "C": [
+     58.667487013868936,
+     76.02921324626665
+    ],
+    "capability": [
+     53.31842570148642,
+     70.14903822287225
+    ],
+    "composite": {
+     "A": [
+      52.01003441297536,
+      71.46289961216961
+     ],
+     "B": [
+      48.575371140731775,
+      70.16122624836049
+     ],
+     "C": [
+      36.11807945345511,
+      71.46289961216961
+     ]
+    }
+   },
+   "usd_per_1000": 0.019757922077922076,
+   "tokens_per_decision": {
+    "mean": 653.5974025974026,
+    "p50": 157.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.05145119699591305,
+    "p95_s_raw": 0.061863185957918176,
+    "p50_s_adjusted": 0.2529023939918261,
+    "adjustment": "x2 + 0.15 s",
+    "score": 91.5973041844533
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "76c91b98153d8064023cee9b7e5298ea62456ae4a5d1b40f65bea8b34e543dc4"
+  },
+  "qwen3.5-4b+v3w": {
+   "system": "stock Qwen3.5-4B, v3w readout",
+   "job": "job-zbtbj",
+   "arm": "qwen3.5-4b/v3w",
+   "price_class": "qwen35_4b",
+   "note": null,
+   "preds_sha256": "f4936a3c677679b25052dd1cc4460c21d5a592ddf90798685c3fc1ee46128ea6",
+   "price_file_sha256": "457db52faa6152c6a8af6e555580167f9bc43c5068c6390779e4c0810676b487",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "base_model_reference",
+    "model": "Qwen/Qwen3.5-4B",
+    "usd_per_m_input": 0.03,
+    "usd_per_m_output": 0.15,
+    "source": "JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1): deepinfra:Qwen/Qwen3.5-4B (0.03 / 0.15 per 1M) frozen 25 Sep 2026, the price basis of every Qwen3.5-4B row incl. h2o-lightning-4b"
+   },
+   "I": 46.066087905749875,
+   "C": 73.25192390808563,
+   "S": 91.6609748392274,
+   "K": 58.79007481142123,
+   "capability": 59.659005906917756,
+   "composite": {
+    "A": 53.656668132863366,
+    "B": 49.939126973814,
+    "C": 37.26157509226623
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     33.611498719076096,
+     56.08859982635439
+    ],
+    "C": [
+     60.34247809281389,
+     77.34296434904086
+    ],
+    "capability": [
+     48.60585857757676,
+     65.11382224454981
+    ],
+    "composite": {
+     "A": [
+      24.511664956955826,
+      67.40278940915246
+     ],
+     "B": [
+      21.784994905594342,
+      64.6622545904259
+     ],
+     "C": [
+      17.021989553441543,
+      58.921666019774804
+     ]
+    }
+   },
+   "usd_per_1000": 0.02364090909090909,
+   "tokens_per_decision": {
+    "mean": 783.030303030303,
+    "p50": 308.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.049661197495879605,
+    "p95_s_raw": 0.061807916950056094,
+    "p50_s_adjusted": 0.2493223949917592,
+    "adjustment": "x2 + 0.15 s",
+    "score": 91.6609748392274
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "9cae617fac275f19ebfb8ef3d2a4953b0e564098e69da1c6e8a83289fd45fc2c"
+  },
+  "qwen3.5-4b+m0": {
+   "system": "stock Qwen3.5-4B, m0 readout",
+   "job": "job-zbtbj",
+   "arm": "qwen3.5-4b/m0",
+   "price_class": "qwen35_4b",
+   "note": null,
+   "preds_sha256": "762f0d38b5c59dc4156328cdb233702cfe2a718b5983124c407489a8165c36e9",
+   "price_file_sha256": "457db52faa6152c6a8af6e555580167f9bc43c5068c6390779e4c0810676b487",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "base_model_reference",
+    "model": "Qwen/Qwen3.5-4B",
+    "usd_per_m_input": 0.03,
+    "usd_per_m_output": 0.15,
+    "source": "JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1): deepinfra:Qwen/Qwen3.5-4B (0.03 / 0.15 per 1M) frozen 25 Sep 2026, the price basis of every Qwen3.5-4B row incl. h2o-lightning-4b"
+   },
+   "I": 42.30135981465575,
+   "C": 68.85790362449421,
+   "S": 89.20787939340704,
+   "K": 58.631153385201614,
+   "capability": 55.57963171957498,
+   "composite": {
+    "A": 43.09994490003908,
+    "B": 39.73452764464239,
+    "C": 29.930517291693803
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     32.06717661973948,
+     53.23589896199938
+    ],
+    "C": [
+     56.804624872708345,
+     74.3001545517379
+    ],
+    "capability": [
+     46.12201185382657,
+     62.06474128927964
+    ],
+    "composite": {
+     "A": [
+      21.864312411759144,
+      65.06312913742221
+     ],
+     "B": [
+      19.458195958803174,
+      62.30970820935123
+     ],
+     "C": [
+      15.183550285943848,
+      51.07991391982911
+     ]
+    }
+   },
+   "usd_per_1000": 0.023931038961038962,
+   "tokens_per_decision": {
+    "mean": 792.7012987012987,
+    "p50": 324.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.053874529505264945,
+    "p95_s_raw": 0.1578010723969783,
+    "p50_s_adjusted": 0.2577490590105299,
+    "adjustment": "x2 + 0.15 s",
+    "score": 89.20787939340704
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "6a1eda0164cf24df2ba27fbc129c5f0d62d05727701e6cf675f23346d824395b"
+  },
+  "qwen3.5-2b+v3w": {
+   "system": "stock Qwen3.5-2B, v3w readout",
+   "job": "job-zbtbj",
+   "arm": "qwen3.5-2b/v3w",
+   "price_class": "ref_0p02",
+   "note": null,
+   "preds_sha256": "61e545bf7ee034d962a99e9e0ce4d5a93a7c7f399daf7344036d2b8d8554c9b9",
+   "price_file_sha256": "d0b6c4e4d5d6b9cbc175267a387b2ca85662c9467f0657b21e0d1c44c36cb918",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "base_model_reference",
+    "model": "Qwen/Qwen3.5-2B",
+    "usd_per_m_input": 0.02,
+    "usd_per_m_output": 0.15,
+    "source": "coordinator-declared reference input price 0.02 per 1M (Qwen3.5-2B / gemma-4-E4B, 2026-10-09 backbone research); output price not stated there: the board's small-model 0.15 per 1M is used (1 output token per decision, < 1 % of the cost)"
+   },
+   "I": 32.280483572549386,
+   "C": 66.24523030392238,
+   "S": 92.58898982008837,
+   "K": 64.03154446421188,
+   "capability": 49.262856938235885,
+   "composite": {
+    "A": 22.999174313913787,
+    "B": 20.1416587719144,
+    "C": 15.9716488291068
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     25.92057578049837,
+     39.9125430881043
+    ],
+    "C": [
+     48.35667874043339,
+     68.28867609527492
+    ],
+    "capability": [
+     38.738340628646945,
+     51.86368611429197
+    ],
+    "composite": {
+     "A": [
+      12.961165507827918,
+      37.29828956635793
+     ],
+     "B": [
+      11.038332469790742,
+      34.12427103398997
+     ],
+     "C": [
+      9.000809380436056,
+      25.90158997663745
+     ]
+    }
+   },
+   "usd_per_1000": 0.01581060606060606,
+   "tokens_per_decision": {
+    "mean": 783.030303030303,
+    "p50": 308.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.037924475502222776,
+    "p95_s_raw": 0.046969977747357915,
+    "p50_s_adjusted": 0.22584895100444555,
+    "adjustment": "x2 + 0.15 s",
+    "score": 92.58898982008837
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "e41e604f2419dc1fde0a9bc2984a4b66dc6bd02d5cc95c2cd0fd963ba85ebf0f"
+  },
+  "qwen3.5-2b+m0": {
+   "system": "stock Qwen3.5-2B, m0 readout",
+   "job": "job-zbtbj",
+   "arm": "qwen3.5-2b/m0",
+   "price_class": "ref_0p02",
+   "note": null,
+   "preds_sha256": "14c01a2a0a65fb4668656fe1e7a8700c238b206020d29d82d9554f19dcbe4e94",
+   "price_file_sha256": "d0b6c4e4d5d6b9cbc175267a387b2ca85662c9467f0657b21e0d1c44c36cb918",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "base_model_reference",
+    "model": "Qwen/Qwen3.5-2B",
+    "usd_per_m_input": 0.02,
+    "usd_per_m_output": 0.15,
+    "source": "coordinator-declared reference input price 0.02 per 1M (Qwen3.5-2B / gemma-4-E4B, 2026-10-09 backbone research); output price not stated there: the board's small-model 0.15 per 1M is used (1 output token per decision, < 1 % of the cost)"
+   },
+   "I": 30.68825748419232,
+   "C": 63.645439590319796,
+   "S": 90.30986491483642,
+   "K": 63.87312257338944,
+   "capability": 47.16684853725606,
+   "composite": {
+    "A": 20.0838922240566,
+    "B": 17.502956855289423,
+    "C": 13.947147377817078
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     24.607104447750533,
+     37.83029470869584
+    ],
+    "C": [
+     47.775539012791334,
+     67.76979070790132
+    ],
+    "capability": [
+     37.61203753085492,
+     51.55559400554875
+    ],
+    "composite": {
+     "A": [
+      11.227337987175728,
+      33.18350029987985
+     ],
+     "B": [
+      9.56187006885934,
+      30.045152015024506
+     ],
+     "C": [
+      7.796762491094256,
+      23.04409743047212
+     ]
+    }
+   },
+   "usd_per_1000": 0.016004025974025973,
+   "tokens_per_decision": {
+    "mean": 792.7012987012987,
+    "p50": 324.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.04321515899937367,
+    "p95_s_raw": 0.12191570130526089,
+    "p50_s_adjusted": 0.23643031799874734,
+    "adjustment": "x2 + 0.15 s",
+    "score": 90.30986491483642
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "4c1fb8ea8672a398cf2159e6e1adf6c4faf41c0c5c8f0500573a8b2bc61d05d5"
+  },
+  "d1-3b": {
+   "system": "stock LiquidAI d1-3B, own readout",
+   "job": "job-zbtbj",
+   "arm": "d1-3b/d1",
+   "price_class": "d1_list",
+   "note": null,
+   "preds_sha256": "4a4336e39c713d7602e8d6010fa7a462e5ffeec93ee0bf1d808599703f1a5b4a",
+   "price_file_sha256": "f9063d5f29db031d25132f19b46981606998b744a39c8d961e73280da5645481",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "LiquidAI/d1-3B",
+    "usd_per_m_input": 0.04,
+    "usd_per_m_output": 0.15,
+    "source": "coordinator-declared d1 list price 0.04 per 1M input (2026-10-09); d1-3B was released 2026-10-05, so it cannot be a board list tariff yet (30-day rule) and is recorded as an estimate; output 0.15 per 1M as the small-model class (d1 reads zero output tokens; 1 counted)"
+   },
+   "I": 39.737216343802054,
+   "C": 66.22603686575202,
+   "S": 94.27466338608332,
+   "K": 58.67984250527217,
+   "capability": 52.981626604777034,
+   "composite": {
+    "A": 37.20104855828253,
+    "B": 33.92902469797278,
+    "C": 25.834061498807316
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     30.342584469926198,
+     50.13028385237589
+    ],
+    "C": [
+     53.989069798868265,
+     71.46518359140273
+    ],
+    "capability": [
+     43.936797564499976,
+     58.95058411563618
+    ],
+    "composite": {
+     "A": [
+      18.676214387184004,
+      62.56530641719495
+     ],
+     "B": [
+      16.46534174195683,
+      59.59660576960794
+     ],
+     "C": [
+      12.969593324433337,
+      43.95843600481235
+     ]
+    }
+   },
+   "usd_per_1000": 0.023841774891774893,
+   "tokens_per_decision": {
+    "mean": 592.2943722943722,
+    "p50": 106.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.014298918991698883,
+    "p95_s_raw": 0.029623072150570806,
+    "p50_s_adjusted": 0.17859783798339776,
+    "adjustment": "x2 + 0.15 s",
+    "score": 94.27466338608332
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "895242b418fb952de97c5c95671ca75223a967a361ab5cc87f3c029895d7c4b5"
+  },
+  "lfm2.5-2.6b+v3w": {
+   "system": "stock LFM2.5-2.6B, v3w",
+   "job": "job-zbtbj",
+   "arm": "lfm2.5-2.6b/v3w",
+   "price_class": "le4b",
+   "note": null,
+   "preds_sha256": "18534393e41f5295f0b934fdca8c21639e73aff6212a75d341f73cf026818a3d",
+   "price_file_sha256": "a46449bd28681bce99bca7eb01d7b622e0638dd2d07b7f38b3009bc3ba9660c3",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "LiquidAI/LFM2.5-2.6B",
+    "usd_per_m_input": 0.03,
+    "usd_per_m_output": 0.15,
+    "source": "size class <= ~4.7B params with no listing (LFM2.5-2.6B, Nemotron-3-Nano-4B, RWKV7 2.9B): the board's <= 4B reference, deepinfra:Qwen/Qwen3.5-4B (JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1)); ESTIMATE"
+   },
+   "I": 31.773377960101357,
+   "C": 55.64858793420098,
+   "S": 94.0361798793241,
+   "K": 59.2316367744008,
+   "capability": 43.710982947151166,
+   "composite": {
+    "A": 20.988549555698935,
+    "B": 18.62071098010538,
+    "C": 14.575381635902035
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     24.378924108034326,
+     40.34544387617258
+    ],
+    "C": [
+     41.9721824705879,
+     62.50090223296036
+    ],
+    "capability": [
+     34.00817300860023,
+     50.42829098662554
+    ],
+    "composite": {
+     "A": [
+      10.331828204798878,
+      37.599137396601044
+     ],
+     "B": [
+      8.91159828112224,
+      34.693121501892165
+     ],
+     "C": [
+      7.174880697776999,
+      26.110512080972942
+     ]
+    }
+   },
+   "usd_per_1000": 0.02285311688311688,
+   "tokens_per_decision": {
+    "mean": 756.7705627705627,
+    "p50": 315.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.018630256003234535,
+    "p95_s_raw": 0.030415824501687897,
+    "p50_s_adjusted": 0.18726051200646907,
+    "adjustment": "x2 + 0.15 s",
+    "score": 94.0361798793241
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "5d3089463dcd7a466cc548dffdf7c3a5288d5492ae9c3541e686d283f6173e28"
+  },
+  "gemma-4-e4b+v3w": {
+   "system": "stock gemma-4-E4B-it, v3w",
+   "job": "job-zbtbj",
+   "arm": "gemma-4-e4b-it/v3w",
+   "price_class": "ref_0p02",
+   "note": null,
+   "preds_sha256": "0bcd854f989d3a9338870c5341db94b954d0339adc45526c35c3c8521bcd7126",
+   "price_file_sha256": "1303d3117b81fcf2f259127f4847eae27b9864f2ec4f7b0ed4b50df6f1a63ebc",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "base_model_reference",
+    "model": "google/gemma-4-E4B-it",
+    "usd_per_m_input": 0.02,
+    "usd_per_m_output": 0.15,
+    "source": "coordinator-declared reference input price 0.02 per 1M (Qwen3.5-2B / gemma-4-E4B, 2026-10-09 backbone research); output price not stated there: the board's small-model 0.15 per 1M is used (1 output token per decision, < 1 % of the cost)"
+   },
+   "I": 58.94339041956991,
+   "C": 57.365591337096724,
+   "S": 91.00587532295893,
+   "K": 64.03182985490864,
+   "capability": 58.15449087833332,
+   "composite": {
+    "A": 65.57052684323597,
+    "B": 64.12850477174358,
+    "C": 63.28144653055118
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     43.35819706866675,
+     71.62523788804488
+    ],
+    "C": [
+     46.0403045633872,
+     66.17205333570317
+    ],
+    "capability": [
+     45.62462348101439,
+     67.90995336768478
+    ],
+    "composite": {
+     "A": [
+      42.30480933173957,
+      71.2911734458064
+     ],
+     "B": [
+      39.908458260513825,
+      71.29750466924186
+     ],
+     "C": [
+      29.378339813708028,
+      71.2911734458064
+     ]
+    }
+   },
+   "usd_per_1000": 0.015810259740259743,
+   "tokens_per_decision": {
+    "mean": 783.012987012987,
+    "p50": 313.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.05999314799555577,
+    "p95_s_raw": 0.0719064118406095,
+    "p50_s_adjusted": 0.26998629599111157,
+    "adjustment": "x2 + 0.15 s",
+    "score": 91.00587532295893
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "87565c2375a337abc34b8eb23b96110903f920b23e69c2cf1c008eee37177cef"
+  },
+  "nemotron-3-nano-4b+v3w": {
+   "system": "stock Nemotron-3-Nano-4B, v3w",
+   "job": "job-zbtbj",
+   "arm": "nemotron-3-nano-4b/v3w",
+   "price_class": "le4b",
+   "note": null,
+   "preds_sha256": "f5f83ccdfccf6b3b400a48d2ff85d5949560b99fe1204777230d8a2201282320",
+   "price_file_sha256": "89e655ef0db98485adddf96b8495bc6928f12476ca8bc2fd695a2b58263b00ab",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16",
+    "usd_per_m_input": 0.03,
+    "usd_per_m_output": 0.15,
+    "source": "size class <= ~4.7B params with no listing (LFM2.5-2.6B, Nemotron-3-Nano-4B, RWKV7 2.9B): the board's <= 4B reference, deepinfra:Qwen/Qwen3.5-4B (JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1)); ESTIMATE"
+   },
+   "I": 36.29254266928402,
+   "C": 66.28139108508539,
+   "S": 83.4723055874322,
+   "K": 58.627194477920376,
+   "capability": 51.2869668771847,
+   "composite": {
+    "A": 29.401454627560103,
+    "B": 26.54688423257032,
+    "C": 20.417676824694514
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     25.92410813040012,
+     45.7754030304965
+    ],
+    "C": [
+     51.91751866967541,
+     70.43740655574095
+    ],
+    "capability": [
+     40.60467247840174,
+     56.857554434865044
+    ],
+    "composite": {
+     "A": [
+      12.725698856492265,
+      50.49778428213471
+     ],
+     "B": [
+      10.921397832456297,
+      47.44117496351304
+     ],
+     "C": [
+      8.837290872564074,
+      35.06790575148243
+     ]
+    }
+   },
+   "usd_per_1000": 0.02393831168831169,
+   "tokens_per_decision": {
+    "mean": 792.943722943723,
+    "p50": 316.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.18277500349358888,
+    "p95_s_raw": 0.36098208955081645,
+    "p50_s_adjusted": 0.5155500069871778,
+    "adjustment": "x2 + 0.15 s",
+    "score": 83.4723055874322
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "58326703fe8dd9a171fc6210de10a9b989a57d304a3722959343f17bacabb14a"
+  },
+  "rwkv7-g1i-2.9b+v3w": {
+   "system": "stock RWKV7 G1i 2.9B, v3w",
+   "job": "job-zbtbj",
+   "arm": "rwkv7-g1i-2.9b/v3w",
+   "price_class": "le4b",
+   "note": null,
+   "preds_sha256": "fa04a0f4730b64cf7268990062dda8cc774dc87f7da22c6ec0bfa354f84daeef",
+   "price_file_sha256": "76915c9454b70196c9b63dbc97d0d277267cc456b6f84d5f4f66afe9812feba0",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "RWKV/RWKV7-2.9B-20260805",
+    "usd_per_m_input": 0.03,
+    "usd_per_m_output": 0.15,
+    "source": "size class <= ~4.7B params with no listing (LFM2.5-2.6B, Nemotron-3-Nano-4B, RWKV7 2.9B): the board's <= 4B reference, deepinfra:Qwen/Qwen3.5-4B (JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1)); ESTIMATE"
+   },
+   "I": 29.5489064038798,
+   "C": 67.19120108798414,
+   "S": 88.55779326965722,
+   "K": 59.1985826311992,
+   "capability": 48.37005374593197,
+   "composite": {
+    "A": 18.1644835512659,
+    "B": 15.767490665350252,
+    "C": 12.6142246883791
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     23.346249205084263,
+     37.48573455897344
+    ],
+    "C": [
+     53.589615049341376,
+     70.94992717000702
+    ],
+    "capability": [
+     39.814170809965574,
+     52.308545256971854
+    ],
+    "composite": {
+     "A": [
+      9.929494020017197,
+      31.410781505516407
+     ],
+     "B": [
+      8.366625427723724,
+      28.523316876390783
+     ],
+     "C": [
+      6.895481958345275,
+      21.813042712164176
+     ]
+    }
+   },
+   "usd_per_1000": 0.02291116883116883,
+   "tokens_per_decision": {
+    "mean": 758.7056277056278,
+    "p50": 325.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.09456267899804516,
+    "p95_s_raw": 0.1305087947002903,
+    "p50_s_adjusted": 0.33912535799609034,
+    "adjustment": "x2 + 0.15 s",
+    "score": 88.55779326965722
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "284e986d8241c5beae010a6189198c18ee705a28fe3b7dfbe4a60ef987d86bf6"
+  },
+  "rwkv7-g1k-13.3b+v3w": {
+   "system": "stock RWKV7-G1k-13.3B, v3w (host scan run)",
+   "job": "job-zbtbj",
+   "arm": "rwkv7-g1k-13.3b/v3w",
+   "price_class": "le13b",
+   "note": null,
+   "preds_sha256": "60a8e9d406102850dd3c8aa20d18a4f047ce5fc47011a35432edcc32eb6ec134",
+   "price_file_sha256": "a8ea274912e8168c43bc8b0d0df3b4c3be7fde3c5f88cc22880c666f7aeeeeb0",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "RWKV/RWKV7-G1k-13.3B-20260930",
+    "usd_per_m_input": 0.05,
+    "usd_per_m_output": 0.15,
+    "source": "size class 7-13B params with no listing (RWKV7-G1k-13.3B): the board's 12B reference, OpenRouter google/gemma-3-12b-it 0.05 / 0.15 (JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1)); ESTIMATE"
+   },
+   "I": 43.35936642674208,
+   "C": 81.98433843895295,
+   "S": 86.08798363384042,
+   "K": 52.57728494089414,
+   "capability": 62.671852432847516,
+   "composite": {
+    "A": 45.648416104160674,
+    "B": 42.26733193898666,
+    "C": 31.700288961222686
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     38.58562353677016,
+     49.56140101276879
+    ],
+    "C": [
+     66.95769285025432,
+     81.52542713748423
+    ],
+    "capability": [
+     54.67934038731253,
+     63.21461104176995
+    ],
+    "composite": {
+     "A": [
+      33.935374910020926,
+      61.08521082487191
+     ],
+     "B": [
+      30.956672141155185,
+      58.09063189395118
+     ],
+     "C": [
+      23.56623257640342,
+      42.42028529504993
+     ]
+    }
+   },
+   "usd_per_1000": 0.03808528138528139,
+   "tokens_per_decision": {
+    "mean": 758.7056277056278,
+    "p50": 325.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.16243820400268305,
+    "p95_s_raw": 0.1841737703529361,
+    "p50_s_adjusted": 0.4748764080053661,
+    "adjustment": "x2 + 0.15 s",
+    "score": 86.08798363384042
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "053ae74cf37880a9fd64aaa0c717ede135943d4a3fe1060e212ba33a441b5832"
+  },
+  "D19 (rwkv7-13.3b+joint)": {
+   "system": "D19: RWKV7-13.3B attention-free + joint head, best ckpt step 2800, v3w untempered",
+   "job": "job-9j3uu",
+   "arm": "child",
+   "price_class": "le13b",
+   "note": null,
+   "preds_sha256": "a07aea1147b70e1f1ef5eddefbfd912f94f513f8e588cea17bc5a3b109993095",
+   "price_file_sha256": "27cf3922693cd28309a299003990d1f382f1f16fab6eee6ea5fd8e7e4070b1d2",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "RWKV/RWKV7-G1k-13.3B-20260930 (+ D19 LoRA / joint head)",
+    "usd_per_m_input": 0.05,
+    "usd_per_m_output": 0.15,
+    "source": "size class 7-13B params with no listing (RWKV7-G1k-13.3B, trained or stock): the JevBench v1.6.1 board's 12B reference, OpenRouter google/gemma-3-12b-it 0.05 / 0.15 per 1M (api_v161.json sha256 5cd8c133...c83c1), as the stock RWKV7-13.3B row of jobs/jev_host_scan; ESTIMATE"
+   },
+   "I": 52.63795436878247,
+   "C": 74.00792254880501,
+   "S": 78.59823457369691,
+   "K": 52.57728494089414,
+   "capability": 63.32293845879374,
+   "composite": {
+    "A": 62.25456323389367,
+    "B": 60.06004790352373,
+    "C": 47.91447084659824
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     44.355193722702005,
+     60.960713214662746
+    ],
+    "C": [
+     58.82627604948835,
+     76.9632451757635
+    ],
+    "capability": [
+     52.42204024611654,
+     67.86624885041954
+    ],
+    "composite": {
+     "A": [
+      44.083936781052486,
+      64.8563983636878
+     ],
+     "B": [
+      41.83567368469697,
+      63.941010296820316
+     ],
+     "C": [
+      30.613844986842008,
+      64.64439569288703
+     ]
+    }
+   },
+   "usd_per_1000": 0.03808528138528139,
+   "tokens_per_decision": {
+    "mean": 758.7056277056278,
+    "p50": 325.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.5020360915004858,
+    "p95_s_raw": 0.5232925207485095,
+    "p50_s_adjusted": 1.1540721830009715,
+    "adjustment": "x2 + 0.15 s",
+    "score": 78.59823457369691
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "2da4a2e7b21ff745e3ec691af69b8629b9c0ff9e188c68e3c454861722efd22a"
+  },
+  "rwkv7-g1k-13.3b+v3w (9j3uu)": {
+   "system": "stock RWKV7-G1k-13.3B, v3w (D19 in-job parent)",
+   "job": "job-9j3uu",
+   "arm": "parent",
+   "price_class": "le13b",
+   "note": null,
+   "preds_sha256": "82b0746d88f137358ba056bd27a4c65d6acf26967d4c032cd1e764afd247b795",
+   "price_file_sha256": "27cf3922693cd28309a299003990d1f382f1f16fab6eee6ea5fd8e7e4070b1d2",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "RWKV/RWKV7-G1k-13.3B-20260930 (+ D19 LoRA / joint head)",
+    "usd_per_m_input": 0.05,
+    "usd_per_m_output": 0.15,
+    "source": "size class 7-13B params with no listing (RWKV7-G1k-13.3B, trained or stock): the JevBench v1.6.1 board's 12B reference, OpenRouter google/gemma-3-12b-it 0.05 / 0.15 per 1M (api_v161.json sha256 5cd8c133...c83c1), as the stock RWKV7-13.3B row of jobs/jev_host_scan; ESTIMATE"
+   },
+   "I": 43.39988726007542,
+   "C": 82.78857864388362,
+   "S": 83.38245830354434,
+   "K": 52.560191343244924,
+   "capability": 63.09423295197952,
+   "composite": {
+    "A": 45.56569945534468,
+    "B": 42.24117597142636,
+    "C": 31.642846843989357
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     38.77526383832335,
+     49.23845282288768
+    ],
+    "C": [
+     67.68819673083676,
+     82.09389350021624
+    ],
+    "capability": [
+     54.87945812293127,
+     63.525263210937105
+    ],
+    "composite": {
+     "A": [
+      34.307758729571496,
+      59.9444124375534
+     ],
+     "B": [
+      31.33831996349351,
+      57.0026809909552
+     ],
+     "C": [
+      23.82483245109132,
+      41.62806419274542
+     ]
+    }
+   },
+   "usd_per_1000": 0.03813528138528139,
+   "tokens_per_decision": {
+    "mean": 759.7056277056278,
+    "p50": 326.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.2567021750001004,
+    "p95_s_raw": 0.27089625430307934,
+    "p50_s_adjusted": 0.6634043500002008,
+    "adjustment": "x2 + 0.15 s",
+    "score": 83.38245830354434
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "50bc40dc8dbdcc69383b7657ed8c77d56505fe48b079cf121f55ba5a0a587d7a"
+  },
+  "sizecliff-4B native": {
+   "system": "Qwen3.5-4B + D16 recipe sizecliff cell (H2O shim train/serve), native arm",
+   "job": "job-27anq",
+   "arm": "native",
+   "price_class": "sizecliff_4B",
+   "note": null,
+   "preds_sha256": "0bd1eadc38d57084538fa8bb6af9619718109dcec62733a9b9497bc8f27287a1",
+   "price_file_sha256": "461a9050a5cb1da3216cd1e725af69e899af43a6e57315a279c496e02496a03c",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "Qwen/Qwen3.5-4B",
+    "usd_per_m_input": 0.03,
+    "usd_per_m_output": 0.0,
+    "source": "declared reference price for Qwen3.5-4B (A-PREREG-SIZECLIFF operator brief 2026-10-09; size-class reference: no list tariff)"
+   },
+   "I": 50.990786744861545,
+   "C": 59.64542353958249,
+   "S": 85.17966144946814,
+   "K": 61.227052829294564,
+   "capability": 55.31810514222202,
+   "composite": {
+    "A": 62.06393017972883,
+    "B": 59.480573596817834,
+    "C": 44.824989711583974
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     42.89848209334771,
+     59.426900947718785
+    ],
+    "C": [
+     46.33703822817093,
+     66.38798115224738
+    ],
+    "capability": [
+     45.74682514934175,
+     61.139815481807986
+    ],
+    "composite": {
+     "A": [
+      41.16531643073537,
+      65.68862377541542
+     ],
+     "B": [
+      38.44204159603356,
+      64.24131499159299
+     ],
+     "C": [
+      28.58702529912178,
+      64.16567920025551
+     ]
+    }
+   },
+   "usd_per_1000": 0.019607922077922082,
+   "tokens_per_decision": {
+    "mean": 653.5974025974026,
+    "p50": 157.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.19716246600728482,
+    "p95_s_raw": 0.20370555979898197,
+    "p50_s_adjusted": 0.5443249320145697,
+    "adjustment": "x2 + 0.15 s",
+    "score": 85.17966144946814
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "c2493f8b923c2c81df0372be9006a18b806368568c14806ac53ee71a6c9797a0"
+  },
+  "sizecliff-4B lean": {
+   "system": "Qwen3.5-4B + D16 recipe sizecliff cell (H2O shim train/serve), lean arm",
+   "job": "job-27anq",
+   "arm": "lean",
+   "price_class": "sizecliff_4B",
+   "note": null,
+   "preds_sha256": "7b9eb97ca4af1df9a2df752fa7514babae29d4eb21783ea56b9e7e7206294732",
+   "price_file_sha256": "461a9050a5cb1da3216cd1e725af69e899af43a6e57315a279c496e02496a03c",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "Qwen/Qwen3.5-4B",
+    "usd_per_m_input": 0.03,
+    "usd_per_m_output": 0.0,
+    "source": "declared reference price for Qwen3.5-4B (A-PREREG-SIZECLIFF operator brief 2026-10-09; size-class reference: no list tariff)"
+   },
+   "I": 49.655419014163364,
+   "C": 55.19568623966908,
+   "S": 85.39427114906188,
+   "K": 65.89517217900277,
+   "capability": 52.42555262691622,
+   "composite": {
+    "A": 60.5607406663995,
+    "B": 57.82442337332036,
+    "C": 42.05606990722187
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     40.42128063087779,
+     60.22640266318173
+    ],
+    "C": [
+     42.76495093032283,
+     61.59178647874913
+    ],
+    "capability": [
+     43.33886126900305,
+     59.1651567516985
+    ],
+    "composite": {
+     "A": [
+      36.01292895866618,
+      65.88211764854574
+     ],
+     "B": [
+      33.66995362600588,
+      64.32623925285644
+     ],
+     "C": [
+      25.00897844351818,
+      64.78998686541726
+     ]
+    }
+   },
+   "usd_per_1000": 0.013703376623376624,
+   "tokens_per_decision": {
+    "mean": 456.7792207792208,
+    "p50": 124.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.19142975300201215,
+    "p95_s_raw": 0.19597559065296083,
+    "p50_s_adjusted": 0.5328595060040243,
+    "adjustment": "x2 + 0.15 s",
+    "score": 85.39427114906188
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "fe87630cdf06d1d09d363f45fc2296b4e0a36d10bd4261ab75da49fb22022c76"
+  },
+  "sizecliff-4B v3w": {
+   "system": "Qwen3.5-4B + D16 recipe sizecliff cell (H2O shim train/serve), v3w arm",
+   "job": "job-27anq",
+   "arm": "v3w",
+   "price_class": "sizecliff_4B",
+   "note": null,
+   "preds_sha256": "622d4e5bb2d52d964e0f49cbd06876be273d42073de26cf9288261e29581f7bd",
+   "price_file_sha256": "461a9050a5cb1da3216cd1e725af69e899af43a6e57315a279c496e02496a03c",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "Qwen/Qwen3.5-4B",
+    "usd_per_m_input": 0.03,
+    "usd_per_m_output": 0.0,
+    "source": "declared reference price for Qwen3.5-4B (A-PREREG-SIZECLIFF operator brief 2026-10-09; size-class reference: no list tariff)"
+   },
+   "I": 48.84816900555169,
+   "C": 71.01468627926559,
+   "S": 85.22739959921319,
+   "K": 58.87300527505536,
+   "capability": 59.931427642408636,
+   "composite": {
+    "A": 60.33974757039419,
+    "B": 56.98674165100114,
+    "C": 41.90260247944041
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     40.641363535393914,
+     57.74173245199295
+    ],
+    "C": [
+     55.64011866691871,
+     74.13340387162009
+    ],
+    "capability": [
+     49.84707017389054,
+     64.0490664684876
+    ],
+    "composite": {
+     "A": [
+      38.10921734154716,
+      66.00546544450091
+     ],
+     "B": [
+      35.160717307893975,
+      63.997372589749666
+     ],
+     "C": [
+      26.4647342649633,
+      60.67513377688025
+     ]
+    }
+   },
+   "usd_per_1000": 0.023490909090909087,
+   "tokens_per_decision": {
+    "mean": 783.030303030303,
+    "p50": 308.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.19683562548016198,
+    "p95_s_raw": 0.2009902094505378,
+    "p50_s_adjusted": 0.543671250960324,
+    "adjustment": "x2 + 0.15 s",
+    "score": 85.22739959921319
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "1497206f91f8e01c3e5bd28cc15de1d5de5f713c44f9d9978fa57abac921be6d"
+  },
+  "sizecliff-4B native_shimcal": {
+   "system": "Qwen3.5-4B + D16 recipe sizecliff cell (H2O shim train/serve), native_shimcal arm",
+   "job": "job-27anq",
+   "arm": "native_shimcal",
+   "price_class": "sizecliff_4B",
+   "note": null,
+   "preds_sha256": "fba8d7504004e3697b45a2bc6afb94217525037f1ae5d82c84832eabfcd83fcb",
+   "price_file_sha256": "461a9050a5cb1da3216cd1e725af69e899af43a6e57315a279c496e02496a03c",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "Qwen/Qwen3.5-4B",
+    "usd_per_m_input": 0.03,
+    "usd_per_m_output": 0.0,
+    "source": "declared reference price for Qwen3.5-4B (A-PREREG-SIZECLIFF operator brief 2026-10-09; size-class reference: no list tariff)"
+   },
+   "I": 53.625752771738796,
+   "C": 54.842852852769816,
+   "S": 85.17966144946814,
+   "K": 61.227052829294564,
+   "capability": 54.234302812254306,
+   "composite": {
+    "A": 61.581839140771635,
+    "B": 59.80720199366367,
+    "C": 49.1922806182975
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     44.66753124716476,
+     62.18440070690822
+    ],
+    "C": [
+     42.717773066098076,
+     63.24648372523442
+    ],
+    "capability": [
+     44.44324297505287,
+     61.030446351623716
+    ],
+    "composite": {
+     "A": [
+      44.25499462063408,
+      65.72026641149033
+     ],
+     "B": [
+      42.386615363040114,
+      64.67813313987021
+     ],
+     "C": [
+      30.732635153218112,
+      65.4284539756454
+     ]
+    }
+   },
+   "usd_per_1000": 0.019607922077922082,
+   "tokens_per_decision": {
+    "mean": 653.5974025974026,
+    "p50": 157.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.19716246600728482,
+    "p95_s_raw": 0.20370555979898197,
+    "p50_s_adjusted": 0.5443249320145697,
+    "adjustment": "x2 + 0.15 s",
+    "score": 85.17966144946814
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "2e2ac9a4281e20cda79f4eae6f109608b5ca82cfe89ec7b4a058940b6f7c45e7"
+  },
+  "sizecliff-2B native": {
+   "system": "Qwen3.5-2B + D16 recipe sizecliff cell (H2O shim train/serve), native arm",
+   "job": "job-haxmm",
+   "arm": "native",
+   "price_class": "sizecliff_2B",
+   "note": null,
+   "preds_sha256": "fbbc7b774088e82fa43ecdf648e8fa4e88180953059ba5b2e961d6d4fd181ad4",
+   "price_file_sha256": "b11a81ad9b8e0e425fb79556f6a6859270e27d1410764926c8e55cdd9586f89e",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "Qwen/Qwen3.5-2B",
+    "usd_per_m_input": 0.02,
+    "usd_per_m_output": 0.0,
+    "source": "declared reference price for Qwen3.5-2B (A-PREREG-SIZECLIFF operator brief 2026-10-09; size-class reference: no list tariff)"
+   },
+   "I": 34.94950884924197,
+   "C": 56.30724597340251,
+   "S": 87.47751931660511,
+   "K": 66.509790600965,
+   "capability": 45.62837741132224,
+   "composite": {
+    "A": 26.830970766380197,
+    "B": 24.0797250009592,
+    "C": 18.632618587764025
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     28.43004804559236,
+     45.2040454975498
+    ],
+    "C": [
+     42.81166772622227,
+     63.6878963771063
+    ],
+    "capability": [
+     37.7395082053918,
+     52.13343829186914
+    ],
+    "composite": {
+     "A": [
+      16.002943590975473,
+      49.304946027150095
+     ],
+     "B": [
+      14.053211875149369,
+      45.920879346092185
+     ],
+     "C": [
+      11.113155271510749,
+      34.23954585218756
+     ]
+    }
+   },
+   "usd_per_1000": 0.013071948051948053,
+   "tokens_per_decision": {
+    "mean": 653.5974025974026,
+    "p50": 157.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.1357712344979518,
+    "p95_s_raw": 0.13701995489973343,
+    "p50_s_adjusted": 0.42154246899590364,
+    "adjustment": "x2 + 0.15 s",
+    "score": 87.47751931660511
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "28cadb8299d6f1a3cf469fdc4d0cb5aa5772815c225f2693565eaa6e91013fc7"
+  },
+  "sizecliff-2B v3w": {
+   "system": "Qwen3.5-2B + D16 recipe sizecliff cell (H2O shim train/serve), v3w arm",
+   "job": "job-haxmm",
+   "arm": "v3w",
+   "price_class": "sizecliff_2B",
+   "note": null,
+   "preds_sha256": "5edf95391ff51e7909d939cc65faf6563cb8603066a016ce71d9629d57a8dbf9",
+   "price_file_sha256": "b11a81ad9b8e0e425fb79556f6a6859270e27d1410764926c8e55cdd9586f89e",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "Qwen/Qwen3.5-2B",
+    "usd_per_m_input": 0.02,
+    "usd_per_m_output": 0.0,
+    "source": "declared reference price for Qwen3.5-2B (A-PREREG-SIZECLIFF operator brief 2026-10-09; size-class reference: no list tariff)"
+   },
+   "I": 30.95192741995002,
+   "C": 66.58575837407868,
+   "S": 87.35898451896017,
+   "K": 64.1557430467258,
+   "capability": 48.76884289701435,
+   "composite": {
+    "A": 20.613568943285237,
+    "B": 17.962575553291835,
+    "C": 14.31497843283697
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     24.400268248465892,
+     38.338846715288426
+    ],
+    "C": [
+     50.818793233243206,
+     70.14637151132868
+    ],
+    "capability": [
+     39.95877843752746,
+     51.91335915596517
+    ],
+    "composite": {
+     "A": [
+      11.214330405845937,
+      33.90248853410952
+     ],
+     "B": [
+      9.455786676436844,
+      30.896508318962493
+     ],
+     "C": [
+      7.7877294485041215,
+      23.54339481535384
+     ]
+    }
+   },
+   "usd_per_1000": 0.01566060606060606,
+   "tokens_per_decision": {
+    "mean": 783.030303030303,
+    "p50": 308.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.1381835409993073,
+    "p95_s_raw": 0.14042092439776752,
+    "p50_s_adjusted": 0.4263670819986146,
+    "adjustment": "x2 + 0.15 s",
+    "score": 87.35898451896017
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "b0b31acda075530ebcd4a18771f602cee655fd6e4b7372ac355c2072360efec4"
+  },
+  "sizecliff-2B native_shimcal": {
+   "system": "Qwen3.5-2B + D16 recipe sizecliff cell (H2O shim train/serve), native_shimcal arm",
+   "job": "job-haxmm",
+   "arm": "native_shimcal",
+   "price_class": "sizecliff_2B",
+   "note": null,
+   "preds_sha256": "93a11cfd73e1817a5413e10b5be169845b2043899ae0bc5935dc6cfb9cc7148d",
+   "price_file_sha256": "b11a81ad9b8e0e425fb79556f6a6859270e27d1410764926c8e55cdd9586f89e",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "Qwen/Qwen3.5-2B",
+    "usd_per_m_input": 0.02,
+    "usd_per_m_output": 0.0,
+    "source": "declared reference price for Qwen3.5-2B (A-PREREG-SIZECLIFF operator brief 2026-10-09; size-class reference: no list tariff)"
+   },
+   "I": 42.99062197283872,
+   "C": 53.99561778910422,
+   "S": 87.47751931660511,
+   "K": 66.509790600965,
+   "capability": 48.49311988097147,
+   "composite": {
+    "A": 43.32901342742342,
+    "B": 40.39384004492394,
+    "C": 30.08959265793293
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     33.02358781957124,
+     52.62745838306774
+    ],
+    "C": [
+     39.90007753184269,
+     61.57219495000671
+    ],
+    "capability": [
+     37.3822307966217,
+     56.13136512936579
+    ],
+    "composite": {
+     "A": [
+      21.72137502599203,
+      64.2379347861114
+     ],
+     "B": [
+      19.765397429966207,
+      61.38584221908235
+     ],
+     "C": [
+      15.084288212494469,
+      49.01254118105682
+     ]
+    }
+   },
+   "usd_per_1000": 0.013071948051948053,
+   "tokens_per_decision": {
+    "mean": 653.5974025974026,
+    "p50": 157.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.1357712344979518,
+    "p95_s_raw": 0.13701995489973343,
+    "p50_s_adjusted": 0.42154246899590364,
+    "adjustment": "x2 + 0.15 s",
+    "score": 87.47751931660511
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "46efb5b1834df7f482ddc63886cda377f180f91d73338546cbe8e9ee864bc9cf"
+  },
+  "sizecliff-0.8B native": {
+   "system": "Qwen3.5-0.8B + D16 recipe sizecliff cell (H2O shim train/serve), native arm",
+   "job": "job-reknq",
+   "arm": "native",
+   "price_class": "sizecliff_0.8B",
+   "note": null,
+   "preds_sha256": "81d9ba9f33dc2c7dbdd4c4b10b21339edc987116b49de248761f030f0c111dff",
+   "price_file_sha256": "8b465ead922d934b868c81141fe1eebf66e401b963e4b19c8e27506046fcd912",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "Qwen/Qwen3.5-0.8B",
+    "usd_per_m_input": 0.01,
+    "usd_per_m_output": 0.0,
+    "source": "declared reference price for Qwen3.5-0.8B (A-PREREG-SIZECLIFF operator brief 2026-10-09; size-class reference: no list tariff)"
+   },
+   "I": 34.28106001410921,
+   "C": 61.82512387246762,
+   "S": 87.24199663099921,
+   "K": 75.54069047088444,
+   "capability": 48.053091943288415,
+   "composite": {
+    "A": 26.84404293955319,
+    "B": 23.689505682442434,
+    "C": 18.641696485800825
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     28.32012551605019,
+     40.023890375718885
+    ],
+    "C": [
+     45.105668610884145,
+     66.35143205746503
+    ],
+    "capability": [
+     38.413947532363565,
+     51.73786925141937
+    ],
+    "composite": {
+     "A": [
+      15.852974526075402,
+      38.43415128748107
+     ],
+     "B": [
+      13.787224366827092,
+      34.82478283703841
+     ],
+     "C": [
+      11.009010087552362,
+      26.69038283852853
+     ]
+    }
+   },
+   "usd_per_1000": 0.006535974025974027,
+   "tokens_per_decision": {
+    "mean": 653.5974025974026,
+    "p50": 157.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.13953286199102877,
+    "p95_s_raw": 0.14491078004575683,
+    "p50_s_adjusted": 0.42906572398205756,
+    "adjustment": "x2 + 0.15 s",
+    "score": 87.24199663099921
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "b4809008b36921bc3aed9ea7679847a2dce73a90197708be1d328a1001e81f56"
+  },
+  "sizecliff-0.8B v3w": {
+   "system": "Qwen3.5-0.8B + D16 recipe sizecliff cell (H2O shim train/serve), v3w arm",
+   "job": "job-reknq",
+   "arm": "v3w",
+   "price_class": "sizecliff_0.8B",
+   "note": null,
+   "preds_sha256": "667ee034e6539db392fcc2f28c69c345523304f0b5bcd33cda2a6ace20fa1958",
+   "price_file_sha256": "8b465ead922d934b868c81141fe1eebf66e401b963e4b19c8e27506046fcd912",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "Qwen/Qwen3.5-0.8B",
+    "usd_per_m_input": 0.01,
+    "usd_per_m_output": 0.0,
+    "source": "declared reference price for Qwen3.5-0.8B (A-PREREG-SIZECLIFF operator brief 2026-10-09; size-class reference: no list tariff)"
+   },
+   "I": 30.57952418724891,
+   "C": 62.198244393648,
+   "S": 87.12676714711458,
+   "K": 73.18664291664523,
+   "capability": 46.38888429044845,
+   "composite": {
+    "A": 20.240289219941758,
+    "B": 17.54059218454629,
+    "C": 14.05575640273733
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     24.754455941392767,
+     36.19915874323981
+    ],
+    "C": [
+     45.56567313850748,
+     64.58131499242589
+    ],
+    "capability": [
+     36.50062386047928,
+     48.70841813254247
+    ],
+    "composite": {
+     "A": [
+      11.588833330107848,
+      29.879407277443725
+     ],
+     "B": [
+      9.804594179029417,
+      26.848541796724923
+     ],
+     "C": [
+      8.047800923686006,
+      20.7495883871137
+     ]
+    }
+   },
+   "usd_per_1000": 0.00783030303030303,
+   "tokens_per_decision": {
+    "mean": 783.030303030303,
+    "p50": 308.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.14242269099486293,
+    "p95_s_raw": 0.14782218434920652,
+    "p50_s_adjusted": 0.4348453819897259,
+    "adjustment": "x2 + 0.15 s",
+    "score": 87.12676714711458
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "9b253bcf270219710cddf8be456be92de891afa76b4a3988d2116471a52702cb"
+  },
+  "sizecliff-0.8B native_shimcal": {
+   "system": "Qwen3.5-0.8B + D16 recipe sizecliff cell (H2O shim train/serve), native_shimcal arm",
+   "job": "job-reknq",
+   "arm": "native_shimcal",
+   "price_class": "sizecliff_0.8B",
+   "note": null,
+   "preds_sha256": "b23aabff6b87ea33708b7de4dbe174e87fa56e1d72cb444277a9216745f2649c",
+   "price_file_sha256": "8b465ead922d934b868c81141fe1eebf66e401b963e4b19c8e27506046fcd912",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "size_class_estimate",
+    "model": "Qwen/Qwen3.5-0.8B",
+    "usd_per_m_input": 0.01,
+    "usd_per_m_output": 0.0,
+    "source": "declared reference price for Qwen3.5-0.8B (A-PREREG-SIZECLIFF operator brief 2026-10-09; size-class reference: no list tariff)"
+   },
+   "I": 39.110501288537016,
+   "C": 51.87039647320742,
+   "S": 87.24199663099921,
+   "K": 75.54069047088444,
+   "capability": 45.49044888087222,
+   "composite": {
+    "A": 35.190397799659976,
+    "B": 32.16340715336222,
+    "C": 24.437776249763875
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     30.641023068831508,
+     48.04104021424437
+    ],
+    "C": [
+     36.98429505863803,
+     58.235952414501895
+    ],
+    "capability": [
+     35.065819819769025,
+     51.89864509361424
+    ],
+    "composite": {
+     "A": [
+      18.533943145751365,
+      57.37912184915076
+     ],
+     "B": [
+      16.522899868078177,
+      53.78132222858185
+     ],
+     "C": [
+      12.870793851216229,
+      39.84661239524358
+     ]
+    }
+   },
+   "usd_per_1000": 0.006535974025974027,
+   "tokens_per_decision": {
+    "mean": 653.5974025974026,
+    "p50": 157.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.13953286199102877,
+    "p95_s_raw": 0.14491078004575683,
+    "p50_s_adjusted": 0.42906572398205756,
+    "adjustment": "x2 + 0.15 s",
+    "score": 87.24199663099921
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "325e5abbd26fb65007b020c9da5f4421fb7768bad6ef81ac92bb7eeae0daeb16"
+  },
+  "decider-12b v2": {
+   "system": "decider-12b v2 (decider-ai 1.8.0 system_one)",
+   "job": "job-r3uc4",
+   "arm": "decider-12b/decider",
+   "price_class": "gemma12b_ref",
+   "note": "kit parity PASS",
+   "preds_sha256": "4e518cc231f08b838e26f8b7b269cedc3e0a67bd1a20a3aa34dfb80e3ccc5a5c",
+   "price_file_sha256": "bbfa7431542bd86bf610ac4c8390a52a64e035e0dcdcd2060bb976d53b9bfd71",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "base_model_reference",
+    "model": "google/gemma-3-12b-it",
+    "usd_per_m_input": 0.05,
+    "usd_per_m_output": 0.15,
+    "source": "JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1), torchcast-decision-12b cost basis: OpenRouter google/gemma-3-12b-it list price $0.05/M input, $0.15/M output (gemma-4-12b-it not listed), the board's reference for the Gemma-4-12B rows"
+   },
+   "I": 70.76504341675701,
+   "C": 77.93035150588649,
+   "S": 90.11060447609488,
+   "K": 54.757844499055544,
+   "capability": 74.34769746132176,
+   "composite": {
+    "A": 71.01902200376252,
+    "B": 70.96808054467776,
+    "C": 71.01902200376252
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     62.07687529408896,
+     80.80790755389316
+    ],
+    "C": [
+     68.32221221448957,
+     81.83687992002211
+    ],
+    "capability": [
+     65.9837917100088,
+     80.3319717394931
+    ],
+    "composite": {
+     "A": [
+      66.90833970939848,
+      73.71200429989669
+     ],
+     "B": [
+      65.8334773129503,
+      74.8857915265191
+     ],
+     "C": [
+      66.90636279465204,
+      73.71200429989669
+     ]
+    }
+   },
+   "usd_per_1000": 0.032216017316017316,
+   "tokens_per_decision": {
+    "mean": 641.3203463203463,
+    "p50": 138.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.07447769850114128,
+    "p95_s_raw": 0.08804337574401876,
+    "p50_s_adjusted": 0.2989553970022826,
+    "adjustment": "x2 + 0.15 s",
+    "score": 90.11060447609488
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "9f323954016d8be013301d5fd9d5a56500b864020e9921e34b70c1330a884f18"
+  },
+  "decider-12b-v1": {
+   "system": "decider-12b-v1 (decider-ai 1.8.0 system_one)",
+   "job": "job-r3uc4",
+   "arm": "decider-12b-v1/decider",
+   "price_class": "gemma12b_ref",
+   "note": "kit parity PASS",
+   "preds_sha256": "81ce3c5608c226f8db9228da6049589e59e646ee4337b46e0c8f16f597b9af49",
+   "price_file_sha256": "bbfa7431542bd86bf610ac4c8390a52a64e035e0dcdcd2060bb976d53b9bfd71",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 231
+    },
+    "choice_with_probs": 139,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "base_model_reference",
+    "model": "google/gemma-3-12b-it",
+    "usd_per_m_input": 0.05,
+    "usd_per_m_output": 0.15,
+    "source": "JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1), torchcast-decision-12b cost basis: OpenRouter google/gemma-3-12b-it list price $0.05/M input, $0.15/M output (gemma-4-12b-it not listed), the board's reference for the Gemma-4-12B rows"
+   },
+   "I": 72.53211552818215,
+   "C": 80.91590829498466,
+   "S": 91.95017141836351,
+   "K": 54.757844499055544,
+   "capability": 76.7240119115834,
+   "composite": {
+    "A": 72.35473196559134,
+    "B": 72.39013923504832,
+    "C": 72.35473196559134
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     64.08667521188156,
+     79.75078053627506
+    ],
+    "C": [
+     71.46559551576425,
+     84.20545964266678
+    ],
+    "capability": [
+     68.80116722805694,
+     81.22099285555359
+    ],
+    "composite": {
+     "A": [
+      68.61115289311846,
+      74.39436489592788
+     ],
+     "B": [
+      67.72489088703576,
+      75.36587344243512
+     ],
+     "C": [
+      68.61115289311846,
+      74.39436489592788
+     ]
+    }
+   },
+   "usd_per_1000": 0.032216017316017316,
+   "tokens_per_decision": {
+    "mean": 641.3203463203463,
+    "p50": 138.0,
+    "n": 231
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.05071433699777117,
+    "p95_s_raw": 0.05192233625202789,
+    "p50_s_adjusted": 0.25142867399554236,
+    "adjustment": "x2 + 0.15 s",
+    "score": 91.95017141836351
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "c442141abb5da07d3054390e00d30718b9e86f71dbe74cb3f9b2f34638558584"
+  },
+  "torchcast-decision-12b (double-bos)": {
+   "system": "torchcast-decision-12b own shim, double-bos (primary arm)",
+   "job": "job-r3uc4",
+   "arm": "torchcast-decision-12b/torchcast_shim_double_bos",
+   "price_class": "gemma12b_ref",
+   "note": "kit parity FAIL 198 vs 203 (raw vs post-mask logprobs)",
+   "preds_sha256": "af415290da3a0c796d002248583751fd581219f33e28d4f7723a7ee9bad09491",
+   "price_file_sha256": "bbfa7431542bd86bf610ac4c8390a52a64e035e0dcdcd2060bb976d53b9bfd71",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 226,
+     "error": 5
+    },
+    "choice_with_probs": 136,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "base_model_reference",
+    "model": "google/gemma-3-12b-it",
+    "usd_per_m_input": 0.05,
+    "usd_per_m_output": 0.15,
+    "source": "JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1), torchcast-decision-12b cost basis: OpenRouter google/gemma-3-12b-it list price $0.05/M input, $0.15/M output (gemma-4-12b-it not listed), the board's reference for the Gemma-4-12B rows"
+   },
+   "I": 76.42779706333643,
+   "C": 82.5593838440987,
+   "S": 92.07041860811302,
+   "K": 53.52884364235243,
+   "capability": 79.49359045371756,
+   "composite": {
+    "A": 73.0733654971944,
+    "B": 73.72048693190173,
+    "C": 73.0733654971944
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     67.92946000453965,
+     83.55617575617767
+    ],
+    "C": [
+     73.60078787520585,
+     86.60652116391017
+    ],
+    "capability": [
+     71.42120862118405,
+     84.47678680887513
+    ],
+    "composite": {
+     "A": [
+      69.36000905291952,
+      75.13127720721057
+     ],
+     "B": [
+      69.13704543824791,
+      76.671265227316
+     ],
+     "C": [
+      69.36000905291952,
+      75.13127720721057
+     ]
+    }
+   },
+   "usd_per_1000": 0.03540287610619469,
+   "tokens_per_decision": {
+    "mean": 705.0575221238938,
+    "p50": 192.0,
+    "n": 226
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.04357692699704785,
+    "p95_s_raw": 0.05588743494663504,
+    "p50_s_adjusted": 0.2371538539940957,
+    "adjustment": "x2 + 0.15 s",
+    "score": 92.07041860811302
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "ab851cd2661ca628a873f67484aee6f5d073462db9b2764358da38c03e34878d"
+  },
+  "torchcast-decision-12b (plain)": {
+   "system": "torchcast-decision-12b own shim, plain",
+   "job": "job-r3uc4",
+   "arm": "torchcast-decision-12b/torchcast_shim",
+   "price_class": "gemma12b_ref",
+   "note": "kit parity FAIL (secondary arm)",
+   "preds_sha256": "1ae0e6b7426ba114c4424a6f9882c9c4a43c979e8318b25d4214f43ebca987e1",
+   "price_file_sha256": "bbfa7431542bd86bf610ac4c8390a52a64e035e0dcdcd2060bb976d53b9bfd71",
+   "checks": {
+    "n_records": 231,
+    "n_unique_ids": 231,
+    "duplicated_ids": [],
+    "n_duplicated": 0,
+    "unknown_ids": [],
+    "missing_ids": [],
+    "status": {
+     "ok": 225,
+     "error": 6
+    },
+    "choice_with_probs": 134,
+    "choice_keyset_mismatch": [],
+    "choice_order_not_criteria_order": [],
+    "n_order_not_criteria_order": 0,
+    "preds_without_latency": 0
+   },
+   "price": {
+    "kind": "base_model_reference",
+    "model": "google/gemma-3-12b-it",
+    "usd_per_m_input": 0.05,
+    "usd_per_m_output": 0.15,
+    "source": "JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1), torchcast-decision-12b cost basis: OpenRouter google/gemma-3-12b-it list price $0.05/M input, $0.15/M output (gemma-4-12b-it not listed), the board's reference for the Gemma-4-12B rows"
+   },
+   "I": 76.0039630639103,
+   "C": 82.04477806736396,
+   "S": 91.66412223379957,
+   "K": 53.55036520995884,
+   "capability": 79.02437056563713,
+   "composite": {
+    "A": 72.82117565406608,
+    "B": 73.43622753027755,
+    "C": 72.82117565406608
+   },
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     68.21671470074214,
+     82.77591955015163
+    ],
+    "C": [
+     73.3563215552826,
+     86.2590188213843
+    ],
+    "capability": [
+     71.25211352452094,
+     83.79303012619457
+    ],
+    "composite": {
+     "A": [
+      69.34060771708994,
+      74.82117269440701
+     ],
+     "B": [
+      69.14396486291925,
+      76.24547136120572
+     ],
+     "C": [
+      69.34060771708994,
+      74.82117269440701
+     ]
+    }
+   },
+   "usd_per_1000": 0.03534444444444445,
+   "tokens_per_decision": {
+    "mean": 703.8888888888889,
+    "p50": 188.0,
+    "n": 225
+   },
+   "lane": "self-hosted (x2 + 0.15 s)",
+   "latency": {
+    "source": "pred latency_s on open standard+judge items",
+    "n": 72,
+    "p50_s_raw": 0.04517016249883454,
+    "p95_s_raw": 0.06681792830349878,
+    "p50_s_adjusted": 0.24034032499766908,
+    "adjustment": "x2 + 0.15 s",
+    "score": 91.66412223379957
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "report_sha256": "969d9237acc0a1b7fcbd6a3aed983472b0f42819b2ab4c8d0534ec2990397a21"
+  }
+ },
+ "pairs_vs_baseline": {
+  "qwen3.5-4b+h2o_shim": {
+   "B": 1000,
+   "seed": 16,
+   "a": "qwen3.5-4b+h2o_shim",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -21.294826346863445,
+    "ci95": [
+     -33.21117312968653,
+     -9.960888326034233
+    ],
+    "a": 56.26555841767086,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -14.077213703784054,
+    "ci95": [
+     -22.154325158266243,
+     -4.716907325527025
+    ],
+    "a": 69.34201707338669,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -17.68602002532375,
+    "ci95": [
+     -26.51080111870379,
+     -8.225570962568089
+    ],
+    "a": 62.80378774552877,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -9.381093316870874,
+    "ci95": [
+     -23.050713162372304,
+     -4.205712625953836
+    ],
+    "a": 67.26005335724983,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -9.419447316984886,
+    "ci95": [
+     -23.077122297512766,
+     -4.2474303558156805
+    ],
+    "a": 67.22169935713582,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -23.050713162372304,
+    -4.205712625953836
+   ]
+  },
+  "qwen3.5-4b+v3w": {
+   "B": 1000,
+   "seed": 16,
+   "a": "qwen3.5-4b+v3w",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -31.49429685878443,
+    "ci95": [
+     -43.87316833306003,
+     -20.27838645397419
+    ],
+    "a": 46.066087905749875,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -10.16730686908511,
+    "ci95": [
+     -20.11265255036711,
+     -2.988008939529784
+    ],
+    "a": 73.25192390808563,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -20.830801863934767,
+    "ci95": [
+     -29.985656561559047,
+     -13.33476779083122
+    ],
+    "a": 59.659005906917756,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -22.98447854125734,
+    "ci95": [
+     -50.0068116018041,
+     -8.485406999857291
+    ],
+    "a": 53.656668132863366,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -23.019657756998576,
+    "ci95": [
+     -50.020351175786246,
+     -8.531278941627944
+    ],
+    "a": 53.62148891712213,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -50.0068116018041,
+    -8.485406999857291
+   ]
+  },
+  "qwen3.5-4b+m0": {
+   "B": 1000,
+   "seed": 16,
+   "a": "qwen3.5-4b+m0",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -35.25902494987856,
+    "ci95": [
+     -46.4212500792289,
+     -23.364365297964326
+    ],
+    "a": 42.30135981465575,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -14.561327152676526,
+    "ci95": [
+     -23.6722767119881,
+     -5.436131654883803
+    ],
+    "a": 68.85790362449421,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -24.910176051277546,
+    "ci95": [
+     -33.329213044777006,
+     -16.451211717637925
+    ],
+    "a": 55.57963171957498,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -33.54120177408163,
+    "ci95": [
+     -54.16255942589508,
+     -10.918991066023208
+    ],
+    "a": 43.09994490003908,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -33.372833763439544,
+    "ci95": [
+     -54.0831050462733,
+     -10.654048618608504
+    ],
+    "a": 43.26831291068116,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -54.16255942589508,
+    -10.918991066023208
+   ]
+  },
+  "qwen3.5-2b+v3w": {
+   "B": 1000,
+   "seed": 16,
+   "a": "qwen3.5-2b+v3w",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -45.27990119198492,
+    "ci95": [
+     -55.32624278890326,
+     -34.3860584382028
+    ],
+    "a": 32.280483572549386,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -17.174000473248356,
+    "ci95": [
+     -33.390559619208446,
+     -11.257876978029552
+    ],
+    "a": 66.24523030392238,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -31.226950832616637,
+    "ci95": [
+     -41.7864387081723,
+     -25.263621811537348
+    ],
+    "a": 49.262856938235885,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -53.64197236020692,
+    "ci95": [
+     -63.59080536948676,
+     -38.344527599921626
+    ],
+    "a": 22.999174313913787,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -53.68973681985278,
+    "ci95": [
+     -63.618120207902045,
+     -38.432209308556054
+    ],
+    "a": 22.95140985426792,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -63.59080536948676,
+    -38.344527599921626
+   ]
+  },
+  "qwen3.5-2b+m0": {
+   "B": 1000,
+   "seed": 16,
+   "a": "qwen3.5-2b+m0",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -46.872127280341985,
+    "ci95": [
+     -56.49223254564889,
+     -35.07938061232664
+    ],
+    "a": 30.68825748419232,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -19.773791186850943,
+    "ci95": [
+     -34.17177475969394,
+     -11.638188069721796
+    ],
+    "a": 63.645439590319796,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -33.322959233596464,
+    "ci95": [
+     -43.040626714244574,
+     -25.76271501506979
+    ],
+    "a": 47.16684853725606,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -56.55725445006411,
+    "ci95": [
+     -65.35423500471644,
+     -42.05103853895554
+    ],
+    "a": 20.0838922240566,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -56.52462263432331,
+    "ci95": [
+     -65.33562482769545,
+     -41.991590592949706
+    ],
+    "a": 20.116524039797394,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -65.35423500471644,
+    -42.05103853895554
+   ]
+  },
+  "d1-3b": {
+   "B": 1000,
+   "seed": 16,
+   "a": "d1-3b",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -37.82316842073225,
+    "ci95": [
+     -49.23501652426052,
+     -24.525944556775254
+    ],
+    "a": 39.737216343802054,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -17.193193911418717,
+    "ci95": [
+     -25.95417227576597,
+     -8.778177035282667
+    ],
+    "a": 66.22603686575202,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -27.508181166075488,
+    "ci95": [
+     -35.68745284821419,
+     -19.092933124540547
+    ],
+    "a": 52.981626604777034,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -39.440098115838175,
+    "ci95": [
+     -57.019836734484485,
+     -13.212008615155064
+    ],
+    "a": 37.20104855828253,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -39.627569097352804,
+    "ci95": [
+     -57.099022909888554,
+     -13.546077799961962
+    ],
+    "a": 37.0135775767679,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -57.019836734484485,
+    -13.212008615155064
+   ]
+  },
+  "lfm2.5-2.6b+v3w": {
+   "B": 1000,
+   "seed": 16,
+   "a": "lfm2.5-2.6b+v3w",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -45.78700680443295,
+    "ci95": [
+     -56.62152254705558,
+     -33.94863018430924
+    ],
+    "a": 31.773377960101357,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -27.770642842969757,
+    "ci95": [
+     -38.931929286690625,
+     -18.125928321881794
+    ],
+    "a": 55.64858793420098,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -36.778824823701356,
+    "ci95": [
+     -46.20704810246391,
+     -27.806564561153603
+    ],
+    "a": 43.710982947151166,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -55.65259711842177,
+    "ci95": [
+     -66.11074502342747,
+     -38.88728799951466
+    ],
+    "a": 20.988549555698935,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -55.73871619680162,
+    "ci95": [
+     -66.14331806524478,
+     -39.06572746107936
+    ],
+    "a": 20.90243047731909,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -66.11074502342747,
+    -38.88728799951466
+   ]
+  },
+  "gemma-4-e4b+v3w": {
+   "B": 1000,
+   "seed": 16,
+   "a": "gemma-4-e4b+v3w",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -18.616994344964397,
+    "ci95": [
+     -34.81546641384052,
+     -4.491565412827691
+    ],
+    "a": 58.94339041956991,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -26.053639440074015,
+    "ci95": [
+     -34.78551715132123,
+     -13.464188521972293
+    ],
+    "a": 57.365591337096724,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -22.335316892519202,
+    "ci95": [
+     -33.59976557876196,
+     -10.092330866883252
+    ],
+    "a": 58.15449087833332,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -11.070619830884738,
+    "ci95": [
+     -33.52999866880574,
+     -4.399419258132459
+    ],
+    "a": 65.57052684323597,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -11.030805894865964,
+    "ci95": [
+     -33.507788268797945,
+     -4.353729449337172
+    ],
+    "a": 65.61034077925474,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -33.52999866880574,
+    -4.399419258132459
+   ]
+  },
+  "nemotron-3-nano-4b+v3w": {
+   "B": 1000,
+   "seed": 16,
+   "a": "nemotron-3-nano-4b+v3w",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -41.26784209525029,
+    "ci95": [
+     -53.66049564678754,
+     -27.615367267770733
+    ],
+    "a": 36.29254266928402,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -17.13783969208535,
+    "ci95": [
+     -29.664099690730175,
+     -9.573504232648924
+    ],
+    "a": 66.28139108508539,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -29.20284089366782,
+    "ci95": [
+     -38.87755600596672,
+     -20.176782696782634
+    ],
+    "a": 51.2869668771847,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -47.239692046560606,
+    "ci95": [
+     -63.254024838281325,
+     -24.51944722112009
+    ],
+    "a": 29.401454627560103,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -46.81157173116408,
+    "ci95": [
+     -63.110936501520946,
+     -23.728104765957784
+    ],
+    "a": 29.82957494295663,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -63.254024838281325,
+    -24.51944722112009
+   ]
+  },
+  "rwkv7-g1i-2.9b+v3w": {
+   "B": 1000,
+   "seed": 16,
+   "a": "rwkv7-g1i-2.9b+v3w",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -48.01147836065451,
+    "ci95": [
+     -58.41478133157305,
+     -35.8023807718571
+    ],
+    "a": 29.5489064038798,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -16.2280296891866,
+    "ci95": [
+     -28.552280562291948,
+     -7.4419858694086765
+    ],
+    "a": 67.19120108798414,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -32.11975402492055,
+    "ci95": [
+     -41.60029001013615,
+     -23.504654365282967
+    ],
+    "a": 48.37005374593197,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -58.4766631228548,
+    "ci95": [
+     -66.75039557654723,
+     -44.33255998172609
+    ],
+    "a": 18.1644835512659,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -58.39582004725786,
+    "ci95": [
+     -66.70912112200384,
+     -44.19044078959557
+    ],
+    "a": 18.245326626862845,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -66.75039557654723,
+    -44.33255998172609
+   ]
+  },
+  "rwkv7-g1k-13.3b+v3w": {
+   "B": 1000,
+   "seed": 16,
+   "a": "rwkv7-g1k-13.3b+v3w",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -34.20101833779223,
+    "ci95": [
+     -43.82672126846298,
+     -22.074906129689648
+    ],
+    "a": 43.35936642674208,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -1.434892338217793,
+    "ci95": [
+     -14.519335432553916,
+     2.9021379874120807
+    ],
+    "a": 81.98433843895295,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": false
+   },
+   "capability": {
+    "point": -17.817955338005007,
+    "ci95": [
+     -26.634337029443007,
+     -12.429518771895415
+    ],
+    "a": 62.671852432847516,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -30.99273056996003,
+    "ci95": [
+     -42.495603051900176,
+     -14.898262908585583
+    ],
+    "a": 45.648416104160674,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -30.52755124739572,
+    "ci95": [
+     -42.20140615819456,
+     -14.271990639656984
+    ],
+    "a": 46.113595426724984,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -42.495603051900176,
+    -14.898262908585583
+   ]
+  },
+  "D19 (rwkv7-13.3b+joint)": {
+   "B": 1000,
+   "seed": 16,
+   "a": "D19 (rwkv7-13.3b+joint)",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -24.92243039575184,
+    "ci95": [
+     -35.88011624423265,
+     -13.486396824900984
+    ],
+    "a": 52.63795436878247,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -9.411308228365726,
+    "ci95": [
+     -22.416270984136325,
+     -3.3959549950183363
+    ],
+    "a": 74.00792254880501,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -17.16686931205878,
+    "ci95": [
+     -26.61035398122689,
+     -10.720072248101099
+    ],
+    "a": 63.32293845879374,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -14.386583440227035,
+    "ci95": [
+     -31.67372560416717,
+     -10.634474998598098
+    ],
+    "a": 62.25456323389367,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -12.621346076062665,
+    "ci95": [
+     -30.445090107994066,
+     -8.757680287285856
+    ],
+    "a": 64.01980059805804,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -31.67372560416717,
+    -10.634474998598098
+   ]
+  },
+  "rwkv7-g1k-13.3b+v3w (9j3uu)": {
+   "B": 1000,
+   "seed": 16,
+   "a": "rwkv7-g1k-13.3b+v3w (9j3uu)",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -34.16049750445889,
+    "ci95": [
+     -43.76102737184702,
+     -21.970446131951327
+    ],
+    "a": 43.39988726007542,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -0.6306521332871142,
+    "ci95": [
+     -13.974564709140076,
+     3.1519736999069146
+    ],
+    "a": 82.78857864388362,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": false
+   },
+   "capability": {
+    "point": -17.395574818873,
+    "ci95": [
+     -26.343332163813017,
+     -11.85565855106293
+    ],
+    "a": 63.09423295197952,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -31.075447218776027,
+    "ci95": [
+     -42.39256227099654,
+     -15.601202932461302
+    ],
+    "a": 45.56569945534468,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -30.346336266872584,
+    "ci95": [
+     -41.86602852031698,
+     -14.563648371367186
+    ],
+    "a": 46.29481040724812,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -42.39256227099654,
+    -15.601202932461302
+   ]
+  },
+  "sizecliff-4B native": {
+   "B": 1000,
+   "seed": 16,
+   "a": "sizecliff-4B native",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -26.56959801967276,
+    "ci95": [
+     -37.20319548277287,
+     -16.505465801004167
+    ],
+    "a": 50.990786744861545,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -23.77380723758825,
+    "ci95": [
+     -34.02631482304737,
+     -14.358578690099657
+    ],
+    "a": 59.64542353958249,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -25.171702628630506,
+    "ci95": [
+     -32.72183969035241,
+     -17.401796285920675
+    ],
+    "a": 55.31810514222202,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -14.577216494391877,
+    "ci95": [
+     -34.164680077687635,
+     -10.135940296860232
+    ],
+    "a": 62.06393017972883,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -13.808392913386655,
+    "ci95": [
+     -33.69648218028191,
+     -9.276647879041247
+    ],
+    "a": 62.83275376073405,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -34.164680077687635,
+    -10.135940296860232
+   ]
+  },
+  "sizecliff-4B lean": {
+   "B": 1000,
+   "seed": 16,
+   "a": "sizecliff-4B lean",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -27.90496575037094,
+    "ci95": [
+     -40.20356669126371,
+     -14.261994096037137
+    ],
+    "a": 49.655419014163364,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -28.22354453750166,
+    "ci95": [
+     -38.134605301867964,
+     -18.20533319506101
+    ],
+    "a": 55.19568623966908,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -28.0642551439363,
+    "ci95": [
+     -36.051202257971546,
+     -19.06549767480648
+    ],
+    "a": 52.42555262691622,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -16.08040600772121,
+    "ci95": [
+     -39.8988208971868,
+     -10.102158669865544
+    ],
+    "a": 60.5607406663995,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -15.366368676596423,
+    "ci95": [
+     -39.50146868224128,
+     -9.287256381934451
+    ],
+    "a": 61.27477799752428,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -39.8988208971868,
+    -10.102158669865544
+   ]
+  },
+  "sizecliff-4B v3w": {
+   "B": 1000,
+   "seed": 16,
+   "a": "sizecliff-4B v3w",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -28.712215758982616,
+    "ci95": [
+     -39.071152079452084,
+     -17.49680348638203
+    ],
+    "a": 48.84816900555169,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -12.40454449790515,
+    "ci95": [
+     -26.194306139308505,
+     -5.913154440932574
+    ],
+    "a": 71.01468627926559,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -20.558380128443886,
+    "ci95": [
+     -29.351422156444187,
+     -14.800383795977977
+    ],
+    "a": 59.931427642408636,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -16.301399103726517,
+    "ci95": [
+     -37.738605224994124,
+     -9.777846605245687
+    ],
+    "a": 60.33974757039419,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -15.546278322555615,
+    "ci95": [
+     -37.30587421822161,
+     -8.96942267642403
+    ],
+    "a": 61.09486835156509,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -37.738605224994124,
+    -9.777846605245687
+   ]
+  },
+  "sizecliff-4B native_shimcal": {
+   "B": 1000,
+   "seed": 16,
+   "a": "sizecliff-4B native_shimcal",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -23.93463199279551,
+    "ci95": [
+     -34.123741913143284,
+     -14.280629661709755
+    ],
+    "a": 53.625752771738796,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -28.576377924400923,
+    "ci95": [
+     -38.488131078747834,
+     -17.62970470111281
+    ],
+    "a": 54.842852852769816,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -26.255504958598216,
+    "ci95": [
+     -33.73028131932885,
+     -17.606358546800347
+    ],
+    "a": 54.234302812254306,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -15.05930753334907,
+    "ci95": [
+     -30.473708569853187,
+     -10.188588262625826
+    ],
+    "a": 61.581839140771635,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -14.30245429942019,
+    "ci95": [
+     -30.029859401212914,
+     -9.345807616218252
+    ],
+    "a": 62.338692374700514,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -30.473708569853187,
+    -10.188588262625826
+   ]
+  },
+  "sizecliff-2B native": {
+   "B": 1000,
+   "seed": 16,
+   "a": "sizecliff-2B native",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -42.61087591529233,
+    "ci95": [
+     -53.51017498542356,
+     -28.204639133218972
+    ],
+    "a": 34.94950884924197,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -27.11198480376823,
+    "ci95": [
+     -37.300936435086534,
+     -17.044996308105507
+    ],
+    "a": 56.30724597340251,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -34.86143035953028,
+    "ci95": [
+     -42.52121924340521,
+     -25.521395409017245
+    ],
+    "a": 45.62837741132224,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -49.81017590774051,
+    "ci95": [
+     -61.05373701879432,
+     -26.864556055202428
+    ],
+    "a": 26.830970766380197,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -49.63210697537652,
+    "ci95": [
+     -60.96039008533588,
+     -26.5021250435748
+    ],
+    "a": 27.009039698744182,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -61.05373701879432,
+    -26.864556055202428
+   ]
+  },
+  "sizecliff-2B v3w": {
+   "B": 1000,
+   "seed": 16,
+   "a": "sizecliff-2B v3w",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -46.60845734458428,
+    "ci95": [
+     -57.03825618591451,
+     -33.849149538508115
+    ],
+    "a": 30.95192741995002,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -16.83347240309206,
+    "ci95": [
+     -29.704206735803705,
+     -10.183558395913632
+    ],
+    "a": 66.58575837407868,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -31.72096487383817,
+    "ci95": [
+     -40.31646455226126,
+     -25.50020354708917
+    ],
+    "a": 48.76884289701435,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -56.02757773083547,
+    "ci95": [
+     -65.13401962346379,
+     -41.013454724348755
+    ],
+    "a": 20.613568943285237,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -55.88923176250762,
+    "ci95": [
+     -65.06627359006868,
+     -40.79379869228724
+    ],
+    "a": 20.75191491161309,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -65.13401962346379,
+    -41.013454724348755
+   ]
+  },
+  "sizecliff-2B native_shimcal": {
+   "B": 1000,
+   "seed": 16,
+   "a": "sizecliff-2B native_shimcal",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -34.56976279169559,
+    "ci95": [
+     -47.79270269532734,
+     -20.057261311538376
+    ],
+    "a": 42.99062197283872,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -29.423612988066516,
+    "ci95": [
+     -41.081006426519686,
+     -18.49839618925428
+    ],
+    "a": 53.99561778910422,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -31.996687889881052,
+    "ci95": [
+     -42.99277379709404,
+     -21.696280611786356
+    ],
+    "a": 48.49311988097147,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -33.312133246697286,
+    "ci95": [
+     -54.390507278957664,
+     -11.53144500335288
+    ],
+    "a": 43.32901342742342,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -33.00508852569137,
+    "ci95": [
+     -54.26410031601774,
+     -11.047099583543535
+    ],
+    "a": 43.636058148429335,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -54.390507278957664,
+    -11.53144500335288
+   ]
+  },
+  "sizecliff-0.8B native": {
+   "B": 1000,
+   "seed": 16,
+   "a": "sizecliff-0.8B native",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -43.2793247504251,
+    "ci95": [
+     -53.31826184845473,
+     -32.485696394956655
+    ],
+    "a": 34.28106001410921,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -21.594106904703118,
+    "ci95": [
+     -35.865390180227195,
+     -14.257917321635018
+    ],
+    "a": 61.82512387246762,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -32.43671582756411,
+    "ci95": [
+     -42.221733226588206,
+     -25.333810636161946
+    ],
+    "a": 48.053091943288415,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -49.797103734567514,
+    "ci95": [
+     -59.976201456695314,
+     -36.70548530522995
+    ],
+    "a": 26.84404293955319,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -49.59979702926103,
+    "ci95": [
+     -59.87659538842451,
+     -36.40214701268586
+    ],
+    "a": 27.04134964485967,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -59.976201456695314,
+    -36.70548530522995
+   ]
+  },
+  "sizecliff-0.8B v3w": {
+   "B": 1000,
+   "seed": 16,
+   "a": "sizecliff-0.8B v3w",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -46.9808605772854,
+    "ci95": [
+     -56.51585940053992,
+     -37.041207135334496
+    ],
+    "a": 30.57952418724891,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -21.220986383522742,
+    "ci95": [
+     -36.44568958962961,
+     -15.571405686779219
+    ],
+    "a": 62.198244393648,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -34.10092348040407,
+    "ci95": [
+     -43.813883917379385,
+     -28.356888376913684
+    ],
+    "a": 46.38888429044845,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -56.40085745417895,
+    "ci95": [
+     -64.86820097697496,
+     -45.56152974653917
+    ],
+    "a": 20.240289219941758,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -56.25573209426372,
+    "ci95": [
+     -64.79466610020808,
+     -45.33915077780255
+    ],
+    "a": 20.385414579856985,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -64.86820097697496,
+    -45.56152974653917
+   ]
+  },
+  "sizecliff-0.8B native_shimcal": {
+   "B": 1000,
+   "seed": 16,
+   "a": "sizecliff-0.8B native_shimcal",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -38.44988347599729,
+    "ci95": [
+     -49.71169998116775,
+     -27.100649858850286
+    ],
+    "a": 39.110501288537016,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "C": {
+    "point": -31.548834303963318,
+    "ci95": [
+     -43.62178066915461,
+     -22.118405758580593
+    ],
+    "a": 51.87039647320742,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "capability": {
+    "point": -34.9993588899803,
+    "ci95": [
+     -44.92385356774183,
+     -25.987791074994117
+    ],
+    "a": 45.49044888087222,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A": {
+    "point": -41.45074887446073,
+    "ci95": [
+     -57.54200788461929,
+     -18.111539792935595
+    ],
+    "a": 35.190397799659976,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -41.19023016402319,
+    "ci95": [
+     -57.436461871828044,
+     -17.659616308392337
+    ],
+    "a": 35.450916510097514,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -57.54200788461929,
+    -18.111539792935595
+   ]
+  },
+  "decider-12b v2": {
+   "B": 1000,
+   "seed": 16,
+   "a": "decider-12b v2",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -6.7953413477772955,
+    "ci95": [
+     -16.791284489904466,
+     4.143578393737513
+    ],
+    "a": 70.76504341675701,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": false
+   },
+   "C": {
+    "point": -5.488879271284247,
+    "ci95": [
+     -13.35564988631513,
+     2.019075042237428
+    ],
+    "a": 77.93035150588649,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": false
+   },
+   "capability": {
+    "point": -6.142110309530764,
+    "ci95": [
+     -14.110740344163991,
+     1.9333652766104568
+    ],
+    "a": 74.34769746132176,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": false
+   },
+   "composite_A": {
+    "point": -5.62212467035819,
+    "ci95": [
+     -9.304911026466185,
+     -1.9184016756535103
+    ],
+    "a": 71.01902200376252,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -5.437310851355832,
+    "ci95": [
+     -9.14454413064275,
+     -1.7190999000014793
+    ],
+    "a": 71.20383582276487,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -9.304911026466185,
+    -1.9184016756535103
+   ]
+  },
+  "decider-12b-v1": {
+   "B": 1000,
+   "seed": 16,
+   "a": "decider-12b-v1",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -5.028269236352159,
+    "ci95": [
+     -14.248567582664267,
+     3.4156413949585676
+    ],
+    "a": 72.53211552818215,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": false
+   },
+   "C": {
+    "point": -2.5033224821860784,
+    "ci95": [
+     -10.390423951199491,
+     4.3486428124888254
+    ],
+    "a": 80.91590829498466,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": false
+   },
+   "capability": {
+    "point": -3.7657958592691188,
+    "ci95": [
+     -11.151740774808232,
+     2.9912798794385393
+    ],
+    "a": 76.7240119115834,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": false
+   },
+   "composite_A": {
+    "point": -4.286414708529364,
+    "ci95": [
+     -7.796155327048025,
+     -1.0619821345060336
+    ],
+    "a": 72.35473196559134,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -4.385522477748353,
+    "ci95": [
+     -7.887860972775838,
+     -1.1634628176375166
+    ],
+    "a": 72.25562419637235,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -7.796155327048025,
+    -1.0619821345060336
+   ]
+  },
+  "torchcast-decision-12b (double-bos)": {
+   "B": 1000,
+   "seed": 16,
+   "a": "torchcast-decision-12b (double-bos)",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -1.1325877011978775,
+    "ci95": [
+     -10.158675535239844,
+     6.048893539466592
+    ],
+    "a": 76.42779706333643,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": false
+   },
+   "C": {
+    "point": -0.8598469330720349,
+    "ci95": [
+     -7.2236019317653195,
+     6.608889210707282
+    ],
+    "a": 82.5593838440987,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": false
+   },
+   "capability": {
+    "point": -0.9962173171349633,
+    "ci95": [
+     -7.703861570936817,
+     5.198247814986892
+    ],
+    "a": 79.49359045371756,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": false
+   },
+   "composite_A": {
+    "point": -3.567781176926303,
+    "ci95": [
+     -6.566196219809916,
+     -0.8246716333806154
+    ],
+    "a": 73.0733654971944,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -3.6877696888149387,
+    "ci95": [
+     -6.684246582872371,
+     -0.9497681940194553
+    ],
+    "a": 72.95337698530577,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -6.566196219809916,
+    -0.8246716333806154
+   ]
+  },
+  "torchcast-decision-12b (plain)": {
+   "B": 1000,
+   "seed": 16,
+   "a": "torchcast-decision-12b (plain)",
+   "b": "h2o-lightning-4b",
+   "I": {
+    "point": -1.556421700624,
+    "ci95": [
+     -10.290395648351799,
+     6.051172634248232
+    ],
+    "a": 76.0039630639103,
+    "b": 77.5603847645343,
+    "ci_gt_0": false,
+    "ci_lt_0": false
+   },
+   "C": {
+    "point": -1.374452709806775,
+    "ci95": [
+     -8.25246907424442,
+     6.014338178289499
+    ],
+    "a": 82.04477806736396,
+    "b": 83.41923077717074,
+    "ci_gt_0": false,
+    "ci_lt_0": false
+   },
+   "capability": {
+    "point": -1.4654372052153946,
+    "ci95": [
+     -8.177543530436536,
+     4.86461382293465
+    ],
+    "a": 79.02437056563713,
+    "b": 80.48980777085252,
+    "ci_gt_0": false,
+    "ci_lt_0": false
+   },
+   "composite_A": {
+    "point": -3.8199710200546235,
+    "ci95": [
+     -6.774481839594984,
+     -0.9333382015449481
+    ],
+    "a": 72.82117565406608,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "composite_A_commonS": {
+    "point": -3.8754631882870285,
+    "ci95": [
+     -6.827793368314314,
+     -0.9891324959902804
+    ],
+    "a": 72.76568348583368,
+    "b": 76.6411466741207,
+    "ci_gt_0": false,
+    "ci_lt_0": true
+   },
+   "jevkit_bootstrap_composite_A_diff_ci95": [
+    -6.774481839594984,
+    -0.9333382015449481
+   ]
+  }
+ },
+ "diffs": [
+  {
+   "where": "h2o-lightning-4b.I vs in-job report",
+   "rescore": 77.5603847645343,
+   "screen": 77.5603847645343,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "h2o-lightning-4b.C vs in-job report",
+   "rescore": 83.41923077717074,
+   "screen": 83.41923077717074,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "h2o-lightning-4b.S vs in-job report",
+   "rescore": 91.31349814410956,
+   "screen": 91.31349814410956,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "h2o-lightning-4b.K vs in-job report",
+   "rescore": 61.12776195066701,
+   "screen": 61.12776195066701,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "h2o-lightning-4b.capability vs in-job report",
+   "rescore": 80.48980777085252,
+   "screen": 80.48980777085252,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "h2o-lightning-4b.A vs in-job report",
+   "rescore": 76.6411466741207,
+   "screen": 76.6411466741207,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+h2o_shim.I vs in-job report",
+   "rescore": 56.26555841767086,
+   "screen": 56.26555841767086,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+h2o_shim.C vs in-job report",
+   "rescore": 69.34201707338669,
+   "screen": 69.34201707338669,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+h2o_shim.S vs in-job report",
+   "rescore": 91.5973041844533,
+   "screen": 91.5973041844533,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+h2o_shim.K vs in-job report",
+   "rescore": 61.12776195066701,
+   "screen": 61.12776195066701,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+h2o_shim.capability vs in-job report",
+   "rescore": 62.80378774552877,
+   "screen": 62.80378774552877,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+h2o_shim.A vs in-job report",
+   "rescore": 67.26005335724983,
+   "screen": 67.26005335724983,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+v3w.I vs in-job report",
+   "rescore": 46.066087905749875,
+   "screen": 46.066087905749875,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+v3w.C vs in-job report",
+   "rescore": 73.25192390808563,
+   "screen": 73.25192390808563,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+v3w.S vs in-job report",
+   "rescore": 91.6609748392274,
+   "screen": 91.6609748392274,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+v3w.K vs in-job report",
+   "rescore": 58.79007481142123,
+   "screen": 58.79007481142123,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+v3w.capability vs in-job report",
+   "rescore": 59.659005906917756,
+   "screen": 59.659005906917756,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+v3w.A vs in-job report",
+   "rescore": 53.656668132863366,
+   "screen": 53.656668132863366,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+m0.I vs in-job report",
+   "rescore": 42.30135981465575,
+   "screen": 42.30135981465575,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+m0.C vs in-job report",
+   "rescore": 68.85790362449421,
+   "screen": 68.85790362449421,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+m0.S vs in-job report",
+   "rescore": 89.20787939340704,
+   "screen": 89.20787939340704,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+m0.K vs in-job report",
+   "rescore": 58.631153385201614,
+   "screen": 58.631153385201614,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+m0.capability vs in-job report",
+   "rescore": 55.57963171957498,
+   "screen": 55.57963171957498,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-4b+m0.A vs in-job report",
+   "rescore": 43.09994490003908,
+   "screen": 43.09994490003908,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-2b+v3w.I vs in-job report",
+   "rescore": 32.280483572549386,
+   "screen": 32.280483572549386,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-2b+v3w.C vs in-job report",
+   "rescore": 66.24523030392238,
+   "screen": 66.24523030392238,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-2b+v3w.S vs in-job report",
+   "rescore": 92.58898982008837,
+   "screen": 92.58898982008837,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-2b+v3w.K vs in-job report",
+   "rescore": 64.03154446421188,
+   "screen": 64.03154446421188,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-2b+v3w.capability vs in-job report",
+   "rescore": 49.262856938235885,
+   "screen": 49.262856938235885,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-2b+v3w.A vs in-job report",
+   "rescore": 22.999174313913787,
+   "screen": 22.999174313913787,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-2b+m0.I vs in-job report",
+   "rescore": 30.68825748419232,
+   "screen": 30.68825748419232,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-2b+m0.C vs in-job report",
+   "rescore": 63.645439590319796,
+   "screen": 63.645439590319796,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-2b+m0.S vs in-job report",
+   "rescore": 90.30986491483642,
+   "screen": 90.30986491483642,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-2b+m0.K vs in-job report",
+   "rescore": 63.87312257338944,
+   "screen": 63.87312257338944,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-2b+m0.capability vs in-job report",
+   "rescore": 47.16684853725606,
+   "screen": 47.16684853725606,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "qwen3.5-2b+m0.A vs in-job report",
+   "rescore": 20.0838922240566,
+   "screen": 20.0838922240566,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "d1-3b.I vs in-job report",
+   "rescore": 39.737216343802054,
+   "screen": 39.737216343802054,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "d1-3b.C vs in-job report",
+   "rescore": 66.22603686575202,
+   "screen": 66.22603686575202,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "d1-3b.S vs in-job report",
+   "rescore": 94.27466338608332,
+   "screen": 94.27466338608332,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "d1-3b.K vs in-job report",
+   "rescore": 58.67984250527217,
+   "screen": 58.67984250527217,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "d1-3b.capability vs in-job report",
+   "rescore": 52.981626604777034,
+   "screen": 52.981626604777034,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "d1-3b.A vs in-job report",
+   "rescore": 37.20104855828253,
+   "screen": 37.20104855828253,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "lfm2.5-2.6b+v3w.I vs in-job report",
+   "rescore": 31.773377960101357,
+   "screen": 31.773377960101357,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "lfm2.5-2.6b+v3w.C vs in-job report",
+   "rescore": 55.64858793420098,
+   "screen": 55.64858793420098,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "lfm2.5-2.6b+v3w.S vs in-job report",
+   "rescore": 94.0361798793241,
+   "screen": 94.0361798793241,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "lfm2.5-2.6b+v3w.K vs in-job report",
+   "rescore": 59.2316367744008,
+   "screen": 59.2316367744008,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "lfm2.5-2.6b+v3w.capability vs in-job report",
+   "rescore": 43.710982947151166,
+   "screen": 43.710982947151166,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "lfm2.5-2.6b+v3w.A vs in-job report",
+   "rescore": 20.988549555698935,
+   "screen": 20.988549555698935,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "gemma-4-e4b+v3w.I vs in-job report",
+   "rescore": 58.94339041956991,
+   "screen": 58.94339041956991,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "gemma-4-e4b+v3w.C vs in-job report",
+   "rescore": 57.365591337096724,
+   "screen": 57.365591337096724,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "gemma-4-e4b+v3w.S vs in-job report",
+   "rescore": 91.00587532295893,
+   "screen": 91.00587532295893,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "gemma-4-e4b+v3w.K vs in-job report",
+   "rescore": 64.03182985490864,
+   "screen": 64.03182985490864,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "gemma-4-e4b+v3w.capability vs in-job report",
+   "rescore": 58.15449087833332,
+   "screen": 58.15449087833332,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "gemma-4-e4b+v3w.A vs in-job report",
+   "rescore": 65.57052684323597,
+   "screen": 65.57052684323597,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "nemotron-3-nano-4b+v3w.I vs in-job report",
+   "rescore": 36.29254266928402,
+   "screen": 36.29254266928402,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "nemotron-3-nano-4b+v3w.C vs in-job report",
+   "rescore": 66.28139108508539,
+   "screen": 66.28139108508539,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "nemotron-3-nano-4b+v3w.S vs in-job report",
+   "rescore": 83.4723055874322,
+   "screen": 83.4723055874322,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "nemotron-3-nano-4b+v3w.K vs in-job report",
+   "rescore": 58.627194477920376,
+   "screen": 58.627194477920376,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "nemotron-3-nano-4b+v3w.capability vs in-job report",
+   "rescore": 51.2869668771847,
+   "screen": 51.2869668771847,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "nemotron-3-nano-4b+v3w.A vs in-job report",
+   "rescore": 29.401454627560103,
+   "screen": 29.401454627560103,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1i-2.9b+v3w.I vs in-job report",
+   "rescore": 29.5489064038798,
+   "screen": 29.5489064038798,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1i-2.9b+v3w.C vs in-job report",
+   "rescore": 67.19120108798414,
+   "screen": 67.19120108798414,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1i-2.9b+v3w.S vs in-job report",
+   "rescore": 88.55779326965722,
+   "screen": 88.55779326965722,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1i-2.9b+v3w.K vs in-job report",
+   "rescore": 59.1985826311992,
+   "screen": 59.1985826311992,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1i-2.9b+v3w.capability vs in-job report",
+   "rescore": 48.37005374593197,
+   "screen": 48.37005374593197,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1i-2.9b+v3w.A vs in-job report",
+   "rescore": 18.1644835512659,
+   "screen": 18.1644835512659,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1k-13.3b+v3w.I vs in-job report",
+   "rescore": 43.35936642674208,
+   "screen": 43.35936642674208,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1k-13.3b+v3w.C vs in-job report",
+   "rescore": 81.98433843895295,
+   "screen": 81.98433843895295,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1k-13.3b+v3w.S vs in-job report",
+   "rescore": 86.08798363384042,
+   "screen": 86.08798363384042,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1k-13.3b+v3w.K vs in-job report",
+   "rescore": 52.57728494089414,
+   "screen": 52.57728494089414,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1k-13.3b+v3w.capability vs in-job report",
+   "rescore": 62.671852432847516,
+   "screen": 62.671852432847516,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1k-13.3b+v3w.A vs in-job report",
+   "rescore": 45.648416104160674,
+   "screen": 45.648416104160674,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "D19 (rwkv7-13.3b+joint).I vs in-job report",
+   "rescore": 52.63795436878247,
+   "screen": 52.63795436878247,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "D19 (rwkv7-13.3b+joint).C vs in-job report",
+   "rescore": 74.00792254880501,
+   "screen": 74.00792254880501,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "D19 (rwkv7-13.3b+joint).S vs in-job report",
+   "rescore": 78.59823457369691,
+   "screen": 78.59823457369691,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "D19 (rwkv7-13.3b+joint).K vs in-job report",
+   "rescore": 52.57728494089414,
+   "screen": 52.57728494089414,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "D19 (rwkv7-13.3b+joint).capability vs in-job report",
+   "rescore": 63.32293845879374,
+   "screen": 63.32293845879374,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "D19 (rwkv7-13.3b+joint).A vs in-job report",
+   "rescore": 62.25456323389367,
+   "screen": 62.25456323389367,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1k-13.3b+v3w (9j3uu).I vs in-job report",
+   "rescore": 43.39988726007542,
+   "screen": 43.39988726007542,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1k-13.3b+v3w (9j3uu).C vs in-job report",
+   "rescore": 82.78857864388362,
+   "screen": 82.78857864388362,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1k-13.3b+v3w (9j3uu).S vs in-job report",
+   "rescore": 83.38245830354434,
+   "screen": 83.38245830354434,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1k-13.3b+v3w (9j3uu).K vs in-job report",
+   "rescore": 52.560191343244924,
+   "screen": 52.560191343244924,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1k-13.3b+v3w (9j3uu).capability vs in-job report",
+   "rescore": 63.09423295197952,
+   "screen": 63.09423295197952,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "rwkv7-g1k-13.3b+v3w (9j3uu).A vs in-job report",
+   "rescore": 45.56569945534468,
+   "screen": 45.56569945534468,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B native.I vs in-job report",
+   "rescore": 50.990786744861545,
+   "screen": 50.990786744861545,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B native.C vs in-job report",
+   "rescore": 59.64542353958249,
+   "screen": 59.64542353958249,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B native.S vs in-job report",
+   "rescore": 85.17966144946814,
+   "screen": 85.17966144946814,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B native.K vs in-job report",
+   "rescore": 61.227052829294564,
+   "screen": 61.227052829294564,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B native.capability vs in-job report",
+   "rescore": 55.31810514222202,
+   "screen": 55.31810514222202,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B native.A vs in-job report",
+   "rescore": 62.06393017972883,
+   "screen": 62.06393017972883,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B lean.I vs in-job report",
+   "rescore": 49.655419014163364,
+   "screen": 49.655419014163364,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B lean.C vs in-job report",
+   "rescore": 55.19568623966908,
+   "screen": 55.19568623966908,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B lean.S vs in-job report",
+   "rescore": 85.39427114906188,
+   "screen": 85.39427114906188,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B lean.K vs in-job report",
+   "rescore": 65.89517217900277,
+   "screen": 65.89517217900277,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B lean.capability vs in-job report",
+   "rescore": 52.42555262691622,
+   "screen": 52.42555262691622,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B lean.A vs in-job report",
+   "rescore": 60.5607406663995,
+   "screen": 60.5607406663995,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B v3w.I vs in-job report",
+   "rescore": 48.84816900555169,
+   "screen": 48.84816900555169,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B v3w.C vs in-job report",
+   "rescore": 71.01468627926559,
+   "screen": 71.01468627926559,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B v3w.S vs in-job report",
+   "rescore": 85.22739959921319,
+   "screen": 85.22739959921319,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B v3w.K vs in-job report",
+   "rescore": 58.87300527505536,
+   "screen": 58.87300527505536,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B v3w.capability vs in-job report",
+   "rescore": 59.931427642408636,
+   "screen": 59.931427642408636,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B v3w.A vs in-job report",
+   "rescore": 60.33974757039419,
+   "screen": 60.33974757039419,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B native_shimcal.I vs in-job report",
+   "rescore": 53.625752771738796,
+   "screen": 53.625752771738796,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B native_shimcal.C vs in-job report",
+   "rescore": 54.842852852769816,
+   "screen": 54.842852852769816,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B native_shimcal.S vs in-job report",
+   "rescore": 85.17966144946814,
+   "screen": 85.17966144946814,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B native_shimcal.K vs in-job report",
+   "rescore": 61.227052829294564,
+   "screen": 61.227052829294564,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B native_shimcal.capability vs in-job report",
+   "rescore": 54.234302812254306,
+   "screen": 54.234302812254306,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-4B native_shimcal.A vs in-job report",
+   "rescore": 61.581839140771635,
+   "screen": 61.581839140771635,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B native.I vs in-job report",
+   "rescore": 34.94950884924197,
+   "screen": 34.94950884924197,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B native.C vs in-job report",
+   "rescore": 56.30724597340251,
+   "screen": 56.30724597340251,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B native.S vs in-job report",
+   "rescore": 87.47751931660511,
+   "screen": 87.47751931660511,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B native.K vs in-job report",
+   "rescore": 66.509790600965,
+   "screen": 66.509790600965,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B native.capability vs in-job report",
+   "rescore": 45.62837741132224,
+   "screen": 45.62837741132224,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B native.A vs in-job report",
+   "rescore": 26.830970766380197,
+   "screen": 26.830970766380197,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B v3w.I vs in-job report",
+   "rescore": 30.95192741995002,
+   "screen": 30.95192741995002,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B v3w.C vs in-job report",
+   "rescore": 66.58575837407868,
+   "screen": 66.58575837407868,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B v3w.S vs in-job report",
+   "rescore": 87.35898451896017,
+   "screen": 87.35898451896017,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B v3w.K vs in-job report",
+   "rescore": 64.1557430467258,
+   "screen": 64.1557430467258,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B v3w.capability vs in-job report",
+   "rescore": 48.76884289701435,
+   "screen": 48.76884289701435,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B v3w.A vs in-job report",
+   "rescore": 20.613568943285237,
+   "screen": 20.613568943285237,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B native_shimcal.I vs in-job report",
+   "rescore": 42.99062197283872,
+   "screen": 42.99062197283872,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B native_shimcal.C vs in-job report",
+   "rescore": 53.99561778910422,
+   "screen": 53.99561778910422,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B native_shimcal.S vs in-job report",
+   "rescore": 87.47751931660511,
+   "screen": 87.47751931660511,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B native_shimcal.K vs in-job report",
+   "rescore": 66.509790600965,
+   "screen": 66.509790600965,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B native_shimcal.capability vs in-job report",
+   "rescore": 48.49311988097147,
+   "screen": 48.49311988097147,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-2B native_shimcal.A vs in-job report",
+   "rescore": 43.32901342742342,
+   "screen": 43.32901342742342,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B native.I vs in-job report",
+   "rescore": 34.28106001410921,
+   "screen": 34.28106001410921,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B native.C vs in-job report",
+   "rescore": 61.82512387246762,
+   "screen": 61.82512387246762,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B native.S vs in-job report",
+   "rescore": 87.24199663099921,
+   "screen": 87.24199663099921,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B native.K vs in-job report",
+   "rescore": 75.54069047088444,
+   "screen": 75.54069047088444,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B native.capability vs in-job report",
+   "rescore": 48.053091943288415,
+   "screen": 48.053091943288415,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B native.A vs in-job report",
+   "rescore": 26.84404293955319,
+   "screen": 26.84404293955319,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B v3w.I vs in-job report",
+   "rescore": 30.57952418724891,
+   "screen": 30.57952418724891,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B v3w.C vs in-job report",
+   "rescore": 62.198244393648,
+   "screen": 62.198244393648,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B v3w.S vs in-job report",
+   "rescore": 87.12676714711458,
+   "screen": 87.12676714711458,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B v3w.K vs in-job report",
+   "rescore": 73.18664291664523,
+   "screen": 73.18664291664523,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B v3w.capability vs in-job report",
+   "rescore": 46.38888429044845,
+   "screen": 46.38888429044845,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B v3w.A vs in-job report",
+   "rescore": 20.240289219941758,
+   "screen": 20.240289219941758,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B native_shimcal.I vs in-job report",
+   "rescore": 39.110501288537016,
+   "screen": 39.110501288537016,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B native_shimcal.C vs in-job report",
+   "rescore": 51.87039647320742,
+   "screen": 51.87039647320742,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B native_shimcal.S vs in-job report",
+   "rescore": 87.24199663099921,
+   "screen": 87.24199663099921,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B native_shimcal.K vs in-job report",
+   "rescore": 75.54069047088444,
+   "screen": 75.54069047088444,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B native_shimcal.capability vs in-job report",
+   "rescore": 45.49044888087222,
+   "screen": 45.49044888087222,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "sizecliff-0.8B native_shimcal.A vs in-job report",
+   "rescore": 35.190397799659976,
+   "screen": 35.190397799659976,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "decider-12b v2.I vs in-job report",
+   "rescore": 70.76504341675701,
+   "screen": 70.76504341675701,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "decider-12b v2.C vs in-job report",
+   "rescore": 77.93035150588649,
+   "screen": 77.93035150588649,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "decider-12b v2.S vs in-job report",
+   "rescore": 90.11060447609488,
+   "screen": 90.11060447609488,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "decider-12b v2.K vs in-job report",
+   "rescore": 54.757844499055544,
+   "screen": 54.757844499055544,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "decider-12b v2.capability vs in-job report",
+   "rescore": 74.34769746132176,
+   "screen": 74.34769746132176,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "decider-12b v2.A vs in-job report",
+   "rescore": 71.01902200376252,
+   "screen": 71.01902200376252,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "decider-12b-v1.I vs in-job report",
+   "rescore": 72.53211552818215,
+   "screen": 72.53211552818215,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "decider-12b-v1.C vs in-job report",
+   "rescore": 80.91590829498466,
+   "screen": 80.91590829498466,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "decider-12b-v1.S vs in-job report",
+   "rescore": 91.95017141836351,
+   "screen": 91.95017141836351,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "decider-12b-v1.K vs in-job report",
+   "rescore": 54.757844499055544,
+   "screen": 54.757844499055544,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "decider-12b-v1.capability vs in-job report",
+   "rescore": 76.7240119115834,
+   "screen": 76.7240119115834,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "decider-12b-v1.A vs in-job report",
+   "rescore": 72.35473196559134,
+   "screen": 72.35473196559134,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "torchcast-decision-12b (double-bos).I vs in-job report",
+   "rescore": 76.42779706333643,
+   "screen": 76.42779706333643,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "torchcast-decision-12b (double-bos).C vs in-job report",
+   "rescore": 82.5593838440987,
+   "screen": 82.5593838440987,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "torchcast-decision-12b (double-bos).S vs in-job report",
+   "rescore": 92.07041860811302,
+   "screen": 92.07041860811302,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "torchcast-decision-12b (double-bos).K vs in-job report",
+   "rescore": 53.52884364235243,
+   "screen": 53.52884364235243,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "torchcast-decision-12b (double-bos).capability vs in-job report",
+   "rescore": 79.49359045371756,
+   "screen": 79.49359045371756,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "torchcast-decision-12b (double-bos).A vs in-job report",
+   "rescore": 73.0733654971944,
+   "screen": 73.0733654971944,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "torchcast-decision-12b (plain).I vs in-job report",
+   "rescore": 76.0039630639103,
+   "screen": 76.0039630639103,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "torchcast-decision-12b (plain).C vs in-job report",
+   "rescore": 82.04477806736396,
+   "screen": 82.04477806736396,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "torchcast-decision-12b (plain).S vs in-job report",
+   "rescore": 91.66412223379957,
+   "screen": 91.66412223379957,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "torchcast-decision-12b (plain).K vs in-job report",
+   "rescore": 53.55036520995884,
+   "screen": 53.55036520995884,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "torchcast-decision-12b (plain).capability vs in-job report",
+   "rescore": 79.02437056563713,
+   "screen": 79.02437056563713,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "torchcast-decision-12b (plain).A vs in-job report",
+   "rescore": 72.82117565406608,
+   "screen": 72.82117565406608,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.qwen3.5-4b+h2o_shim.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -23.050713162372304,
+   "screen": -23.050713162372304,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.qwen3.5-4b+h2o_shim.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -4.205712625953836,
+   "screen": -4.205712625953836,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.qwen3.5-4b+v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -50.0068116018041,
+   "screen": -50.0068116018041,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.qwen3.5-4b+v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -8.485406999857291,
+   "screen": -8.485406999857291,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.qwen3.5-4b+m0.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -54.16255942589508,
+   "screen": -54.16255942589508,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.qwen3.5-4b+m0.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -10.918991066023208,
+   "screen": -10.918991066023208,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.qwen3.5-2b+v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -63.59080536948676,
+   "screen": -63.59080536948676,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.qwen3.5-2b+v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -38.344527599921626,
+   "screen": -38.344527599921626,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.qwen3.5-2b+m0.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -65.35423500471644,
+   "screen": -65.35423500471644,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.qwen3.5-2b+m0.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -42.05103853895554,
+   "screen": -42.05103853895554,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.d1-3b.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -57.019836734484485,
+   "screen": -57.019836734484485,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.d1-3b.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -13.212008615155064,
+   "screen": -13.212008615155064,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.lfm2.5-2.6b+v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -66.11074502342747,
+   "screen": -66.11074502342747,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.lfm2.5-2.6b+v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -38.88728799951466,
+   "screen": -38.88728799951466,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.gemma-4-e4b+v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -33.52999866880574,
+   "screen": -33.52999866880574,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.gemma-4-e4b+v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -4.399419258132459,
+   "screen": -4.399419258132459,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.nemotron-3-nano-4b+v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -63.254024838281325,
+   "screen": -63.254024838281325,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.nemotron-3-nano-4b+v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -24.51944722112009,
+   "screen": -24.51944722112009,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.rwkv7-g1i-2.9b+v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -66.75039557654723,
+   "screen": -66.75039557654723,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.rwkv7-g1i-2.9b+v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -44.33255998172609,
+   "screen": -44.33255998172609,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.rwkv7-g1k-13.3b+v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -42.495603051900176,
+   "screen": -42.495603051900176,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.rwkv7-g1k-13.3b+v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -14.898262908585583,
+   "screen": -14.898262908585583,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.D19 (rwkv7-13.3b+joint).composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -31.67372560416717,
+   "screen": -31.67372560416717,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.D19 (rwkv7-13.3b+joint).composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -10.634474998598098,
+   "screen": -10.634474998598098,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.rwkv7-g1k-13.3b+v3w (9j3uu).composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -42.39256227099654,
+   "screen": -42.39256227099654,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.rwkv7-g1k-13.3b+v3w (9j3uu).composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -15.601202932461302,
+   "screen": -15.601202932461302,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-4B native.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -34.164680077687635,
+   "screen": -34.164680077687635,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-4B native.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -10.135940296860232,
+   "screen": -10.135940296860232,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-4B lean.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -39.8988208971868,
+   "screen": -39.8988208971868,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-4B lean.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -10.102158669865544,
+   "screen": -10.102158669865544,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-4B v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -37.738605224994124,
+   "screen": -37.738605224994124,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-4B v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -9.777846605245687,
+   "screen": -9.777846605245687,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-4B native_shimcal.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -30.473708569853187,
+   "screen": -30.473708569853187,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-4B native_shimcal.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -10.188588262625826,
+   "screen": -10.188588262625826,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-2B native.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -61.05373701879432,
+   "screen": -61.05373701879432,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-2B native.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -26.864556055202428,
+   "screen": -26.864556055202428,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-2B v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -65.13401962346379,
+   "screen": -65.13401962346379,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-2B v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -41.013454724348755,
+   "screen": -41.013454724348755,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-2B native_shimcal.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -54.390507278957664,
+   "screen": -54.390507278957664,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-2B native_shimcal.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -11.53144500335288,
+   "screen": -11.53144500335288,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-0.8B native.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -59.976201456695314,
+   "screen": -59.976201456695314,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-0.8B native.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -36.70548530522995,
+   "screen": -36.70548530522995,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-0.8B v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -64.86820097697496,
+   "screen": -64.86820097697496,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-0.8B v3w.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -45.56152974653917,
+   "screen": -45.56152974653917,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-0.8B native_shimcal.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -57.54200788461929,
+   "screen": -57.54200788461929,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.sizecliff-0.8B native_shimcal.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -18.111539792935595,
+   "screen": -18.111539792935595,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.decider-12b v2.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -9.304911026466185,
+   "screen": -9.304911026466185,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.decider-12b v2.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -1.9184016756535103,
+   "screen": -1.9184016756535103,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.decider-12b-v1.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -7.796155327048025,
+   "screen": -7.796155327048025,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.decider-12b-v1.composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -1.0619821345060336,
+   "screen": -1.0619821345060336,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.torchcast-decision-12b (double-bos).composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -6.566196219809916,
+   "screen": -6.566196219809916,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.torchcast-decision-12b (double-bos).composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -0.8246716333806154,
+   "screen": -0.8246716333806154,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.torchcast-decision-12b (plain).composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[0]",
+   "rescore": -6.774481839594984,
+   "screen": -6.774481839594984,
+   "abs_diff": 0.0
+  },
+  {
+   "where": "pairs.torchcast-decision-12b (plain).composite_A.ci95 (own loop vs jevkit.scoring.bootstrap)[1]",
+   "rescore": -0.9333382015449481,
+   "screen": -0.9333382015449481,
+   "abs_diff": 0.0
+  }
+ ],
+ "max_abs_diff": 0.0,
+ "flags": [
+  "torchcast-decision-12b (double-bos): non-ok statuses {'ok': 226, 'error': 5} (scored as invalid answers)",
+  "torchcast-decision-12b (plain): non-ok statuses {'ok': 225, 'error': 6} (scored as invalid answers)"
+ ]
+}

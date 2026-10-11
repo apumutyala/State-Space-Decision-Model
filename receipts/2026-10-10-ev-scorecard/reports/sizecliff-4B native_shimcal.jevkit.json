@@ -1,0 +1,223 @@
+{
+ "n_items": 231,
+ "intelligence": {
+  "I_open": 53.625752771738796,
+  "I_sealed": null,
+  "base": 53.625752771738796,
+  "gap": null,
+  "excess": null,
+  "penalty": 1.0,
+  "I": 53.625752771738796,
+  "basis": "open only (no sealed items; no gap penalty)",
+  "per_type_split": {
+   "open|choice": {
+    "cc": 66.94528875379937,
+    "cc_unclipped": 66.94528875379937,
+    "n": {
+     "easy": 36,
+     "standard": 36,
+     "hard": 67
+    },
+    "tiers": {
+     "easy": 100.0,
+     "standard": 100.0,
+     "hard": 42.15425531914893
+    }
+   },
+   "open|noul": {
+    "cc": 36.34085213032581,
+    "cc_unclipped": 36.34085213032581,
+    "n": {
+     "easy": 12,
+     "standard": 24,
+     "hard": 38
+    },
+    "tiers": {
+     "easy": 100.0,
+     "standard": 66.66666666666667,
+     "hard": 5.263157894736836
+    }
+   },
+   "open|score": {
+    "cc": 57.59111743109119,
+    "cc_unclipped": 57.59111743109119,
+    "n": {
+     "standard": 12,
+     "hard": 6
+    },
+    "tiers": {
+     "standard": 68.00193933382454,
+     "hard": 52.385706479724526
+    }
+   }
+  }
+ },
+ "calibration": {
+  "parts": {
+   "choice": {
+    "ece_hard": 0.2451356855557582,
+    "n": 139,
+    "n_ece_hard": 67,
+    "ece_basis": "hard tier",
+    "score": 50.97286288884836
+   },
+   "noul": {
+    "ece": 0.24166385045530078,
+    "n": 74,
+    "brier": 0.24968128365876732,
+    "abstention_rate": 0.0,
+    "score": 51.66722990893984
+   },
+   "score": {
+    "top_ece": 0.34289594571764104,
+    "nrps": 0.07643879335429338,
+    "n": 18,
+    "score": 61.88846576052123
+   }
+  },
+  "score": 54.842852852769816
+ },
+ "speed": {
+  "p50_s_raw": 0.19716246600728482,
+  "p95_s_raw": 0.20370555979898197,
+  "p50_s_adjusted": 0.5443249320145697,
+  "p95_s_adjusted": 0.557411119597964,
+  "adjustment": "x2 + 0.15 s",
+  "score": 85.17966144946814,
+  "n": 72,
+  "source": "pred latency_s on open standard+judge items"
+ },
+ "cost": {
+  "usd_per_1000": 0.019607922077922082,
+  "score": 61.227052829294564,
+  "price": {
+   "kind": "size_class_estimate",
+   "usd_per_m_input": 0.03,
+   "usd_per_m_output": 0.0,
+   "source": "declared reference price for Qwen3.5-4B (A-PREREG-SIZECLIFF operator brief 2026-10-09; size-class reference: no list tariff)",
+   "as_of": "2026-10-09",
+   "listed_since": null,
+   "model": "Qwen/Qwen3.5-4B"
+  },
+  "price_rule": "as declared",
+  "declared_price": {
+   "kind": "size_class_estimate",
+   "usd_per_m_input": 0.03,
+   "usd_per_m_output": 0.0,
+   "source": "declared reference price for Qwen3.5-4B (A-PREREG-SIZECLIFF operator brief 2026-10-09; size-class reference: no list tariff)",
+   "as_of": "2026-10-09",
+   "listed_since": null,
+   "model": "Qwen/Qwen3.5-4B"
+  },
+  "reference_price": null,
+  "kind": "estimate",
+  "n_decisions": 231,
+  "n_missing_usage": 0,
+  "n_excluded": 0,
+  "mean_input_tokens": 653.5974025974026,
+  "mean_output_tokens": 0.0
+ },
+ "axes": {
+  "intelligence": 53.625752771738796,
+  "calibration": 54.842852852769816,
+  "speed": 85.17966144946814,
+  "cost": 61.227052829294564
+ },
+ "capability": 54.234302812254306,
+ "scores": {
+  "A": 61.581839140771635,
+  "B": 59.80720199366367,
+  "C": 49.1922806182975
+ },
+ "views": {
+  "Balanced 33:33:33": 64.21191895902899,
+  "Emphasis on Accuracy 60:20:20": 59.512607036913245,
+  "Emphasis on Cost 20:20:60": 62.9837170126765,
+  "Emphasis on Speed 20:60:20": 71.22498847238676,
+  "Intelligence only": 53.625752771738796
+ },
+ "eligibility": {
+  "capability_ranked": true,
+  "within_cost_cap": true,
+  "within_latency_cap": true,
+  "cap_usd_per_1000": 0.0645947,
+  "cap_p50_adjusted_s": 1.2329566
+ },
+ "validity": {
+  "choice": {
+   "n": 139,
+   "invalid_rate": 0.0,
+   "renormalized": 0,
+   "label_only": 0
+  },
+  "noul": {
+   "n": 74,
+   "invalid_rate": 0.0,
+   "renormalized": 0,
+   "label_only": 0
+  },
+  "score": {
+   "n": 18,
+   "invalid_rate": 0.0,
+   "renormalized": 0,
+   "label_only": 0
+  },
+  "noul_decisive": {
+   "valid": 74,
+   "decisive_rate": 1.0,
+   "acc_among_decisive": 0.7027027027027027
+  }
+ },
+ "support": {
+  "choice": "native",
+  "noul": "native",
+  "score": "native"
+ },
+ "g_med_used": 2.573387642438244,
+ "ci95": {
+  "B": 1000,
+  "seed": 16,
+  "I": [
+   44.66753124716476,
+   62.18440070690822
+  ],
+  "C": [
+   42.717773066098076,
+   63.24648372523442
+  ],
+  "capability": [
+   44.44324297505287,
+   61.030446351623716
+  ],
+  "composite": {
+   "A": [
+    44.25499462063408,
+    65.72026641149033
+   ],
+   "B": [
+    42.386615363040114,
+    64.67813313987021
+   ],
+   "C": [
+    30.732635153218112,
+    65.4284539756454
+   ]
+  }
+ },
+ "inputs": {
+  "pred": "C:\\Users\\apumu\\art\\job-27anq\\sc\\ph\\final\\out\\screen\\jevkit\\native_shimcal.preds.jsonl",
+  "pred_sha256": "fba8d7504004e3697b45a2bc6afb94217525037f1ae5d82c84832eabfcd83fcb",
+  "items": null,
+  "public": true,
+  "n_pred_records": 231,
+  "n_pred_unknown_ids": 0,
+  "n_items_without_pred": 0,
+  "lane": "self-hosted (x2 + 0.15 s)"
+ },
+ "spec": "JevBench v1.6.1 (reverse-derived; jevkit/README.md)",
+ "approximations": [
+  "Intelligence basis: open only (no sealed items; no gap penalty). The board's I averages open and sealed (1,200 unpublished items) and applies the gap penalty; a local run cannot reproduce the sealed half.",
+  "Latency is in-process wall time (no evaluator network hop); the self-hosted x2 + 0.15 s adjustment is the board's own assumption.",
+  "Bootstrap is over the scored items only (B and seed as published), so CIs are local, not the board's."
+ ]
+}
