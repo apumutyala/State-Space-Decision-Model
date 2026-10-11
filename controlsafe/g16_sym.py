@@ -199,31 +199,42 @@ class G16SymHead(nn.Module):
         if getattr(row, "layout", None) not in SYM_FORK_LAYOUTS:
             raise ValueError(f"G16-sym needs sym-fork rows, got layout {getattr(row, 'layout', None)!r}")
 
-    def streams(self, row) -> tuple[torch.Tensor, torch.Tensor]:
-        """(h_P [K, d], h_D [K, d]) at the end of each option continuation."""
+    def streams_unique(self, row) -> tuple[torch.Tensor, torch.Tensor, list[int]]:
+        """(h_P [U, d], h_D [U, d], idx): the streams of each DISTINCT (continuation tokens, trust mask), and for each
+        option on the row axis the index of its distinct row. Exact duplicates are computed ONCE and copied: a
+        batched forward rounds by batch row, so two identical rows in one batch can differ in the last bits (SYM_CHECK
+        round 2: E of duplicates up to 1.5e-5 apart at hidden 128, so a relabel among duplicates changed the served
+        decision). Copying makes duplicates bitwise equal by construction (and saves their compute)."""
         self._check_row(row)
         pol = self.gated.trust_policy
         tr = row_trust(row, pol)
         ctr = [sym_continuation_trust(row, k, pol, self.option_trust) for k in range(row.n_options)]
-        # Batch order = a function of the TRUSTED token lists only. The sym-fork axis is sorted by the full
-        # continuation (which may hold untrusted descriptions), so without this an untrusted edit could reorder the
-        # P batch and move the last bits of h_P (G15 is bitwise only for a host-controlled batch shape).
         conts = row.continuations
-        tkey = [tuple(t for t, ok in zip(list(row.ids) + list(c), tr + ct) if ok) for c, ct in zip(conts, ctr)]
-        order = sorted(range(row.n_options), key=lambda k: tkey[k])
-        inv = torch.tensor(sorted(range(len(order)), key=lambda i: order[i]))
-        conts_o, ctr_o = [conts[k] for k in order], [ctr[k] for k in order]
+        full = [(tuple(int(t) for t in c), tuple(bool(x) for x in ct)) for c, ct in zip(conts, ctr)]
+        # Batch order = a function of the TRUSTED token lists first (so an untrusted edit cannot reorder the P batch:
+        # G15 is bitwise only for a host-controlled batch shape), then of the full key (content: reorder/relabel-free)
+        tkey = {k: tuple(t for t, ok in zip(list(row.ids) + list(k[0]), tr + list(k[1])) if ok) for k in set(full)}
+        uniq = sorted(set(full), key=lambda k: (tkey[k], k))
+        pos = {k: i for i, k in enumerate(uniq)}
+        idx = [pos[k] for k in full]
+        conts_u, ctr_u = [list(k[0]) for k in uniq], [list(k[1]) for k in uniq]
         if self.stream_mode == "cache":
-            _, hP, hD = self.gated.fork_streams(row.ids, conts_o, tr, ctr_o)
-            return hP.float()[inv], hD.float()[inv]
-        seqs = [list(row.ids) + list(c) for c in conts_o]
+            _, hP, hD = self.gated.fork_streams(row.ids, conts_u, tr, ctr_u)
+            return hP.float(), hD.float(), idx
+        seqs = [list(row.ids) + c for c in conts_u]
         ids, mask = pad_batch(seqs, self.gated.pad_id, device=self.gated.device)
-        tmask, _ = pad_batch([[int(x) for x in tr + t] for t in ctr_o], 0, device=self.gated.device)
+        tmask, _ = pad_batch([[int(x) for x in tr + t] for t in ctr_u], 0, device=self.gated.device)
         hD = self.gated.features(ids, mask, tmask.bool())
         hP = self.gated.last_protected_final
         last = mask.sum(-1) - 1
         ar = torch.arange(ids.shape[0], device=ids.device)
-        return hP[ar, last].float()[inv], hD[ar, last].float()[inv]
+        return hP[ar, last].float(), hD[ar, last].float(), idx
+
+    def streams(self, row) -> tuple[torch.Tensor, torch.Tensor]:
+        """(h_P [K, d], h_D [K, d]) at the end of each option continuation (row axis order)."""
+        hP, hD, idx = self.streams_unique(row)
+        sel = torch.tensor(idx, dtype=torch.long)
+        return hP[sel], hD[sel]
 
     # -------------------------------------------------------------- judge (trusted-only)
     def judge(self, hP: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -239,9 +250,11 @@ class G16SymHead(nn.Module):
         return a, b
 
     def forward(self, row, host_allowed_ids: Iterable[str] | None = None) -> G16SymOutput:
-        hP, hD = self.streams(row)
-        a, b = self.judge(hP)
-        E = self.evidence(hD)
+        hP_u, hD_u, idx = self.streams_unique(row)
+        sel = torch.tensor(idx, dtype=torch.long)
+        a_u, b_u = self.judge(hP_u)
+        E_u = torch.cat([self.evidence(hD_u[i:i + 1]) for i in range(hD_u.shape[0])], 0)  # per row, as the judge
+        a, b, E = a_u[sel], b_u[sel], E_u[sel]  # duplicates: copies of one computation, bitwise equal
         allowed = torch.tensor([True] * row.n_options if host_allowed_ids is None else
                                [o in set(host_allowed_ids) for o in row.option_ids], dtype=torch.bool)
         if not bool(allowed.any()):
