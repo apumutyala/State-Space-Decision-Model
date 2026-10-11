@@ -264,3 +264,64 @@ def test_gate_identity_accepts_only_pinned_hosts():
     assert G.expected_parent_identity("qwen35", provenance=host)["weights_sha256"] == host["weights_sha256"]
     with pytest.raises(G.IdentityMismatch):
         G.expected_parent_identity("qwen35", provenance={**host, "weights_sha256": None})
+
+
+def test_tiny_host_lm_label_forward_backward(tmp_path):
+    """A tiny tied Qwen3.5 saved as a pinned HOST snapshot: the host loader (weights sha + no missing text weights), the
+    lm_label head == the LM head's label logits at the answer slot at step 0, and a few LoRA steps of the clef loss on
+    that readout (finite, LoRA gets gradients, the loss falls)."""
+    torch = pytest.importorskip("torch")
+    tf = pytest.importorskip("transformers")
+    from heads.backbone import QWEN35_HOSTS, load_qwen35_backbone
+    from heads.layout import G1V2_LAYOUT, LayoutRow
+    from heads.model import DecisionModel
+    from train.lora import apply_lora
+    from train.losses import LossConfig, arm_loss
+
+    torch.manual_seed(0)
+    cfg = tf.Qwen3_5TextConfig(vocab_size=300, hidden_size=32, intermediate_size=64, num_hidden_layers=4,
+                               num_attention_heads=2, num_key_value_heads=1, head_dim=16, linear_num_key_heads=2,
+                               linear_num_value_heads=2, linear_key_head_dim=8, linear_value_head_dim=8,
+                               layer_types=["linear_attention"] * 3 + ["full_attention"], tie_word_embeddings=True)
+    rev = QWEN35_HOSTS["h2oai/h2o-lightning-4b"]
+    d = tmp_path / rev
+    ref = tf.Qwen3_5ForCausalLM(cfg)
+    ref.save_pretrained(str(d))
+    sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()  # noqa: E731
+    pin = {"repo": "h2oai/h2o-lightning-4b", "revision": rev, "host": True, "config_sha256": sha(d / "config.json"),
+           "weights_sha256": {p.name: sha(p) for p in d.glob("*.safetensors")}}
+    bb = load_qwen35_backbone(str(d), pin, device="cpu", dtype="float32")
+    assert bb.provenance["kind"] == "qwen35-host" and bb.provenance["missing_text_keys"] == 0
+    model = DecisionModel(bb, "lm_label", seed=0)
+    rows, labels = [], [[11, 12, 13], [21, 22]]
+    for i, labs in enumerate(labels):
+        ids = list(range(5 + i, 40 + i))
+        rows.append(LayoutRow(qid="q", qtype="choice" if len(labs) > 2 else "noul",
+                              option_ids=["a", "b", "c"][: len(labs)] if len(labs) > 2 else ["true", "false"], ids=ids,
+                              state_span=(2, 10), field_span=(10, 12), option_spans=[(12, 13)] * len(labs),
+                              option_seqs=[], continuations=[[t] for t in labs], layout=G1V2_LAYOUT))
+    ref.eval()
+    with torch.no_grad():
+        lp0 = model(rows).log_probs
+        for i, r in enumerate(rows):
+            want = torch.log_softmax(ref(torch.tensor([r.ids])).logits[0, -1, labels[i]], -1)
+            assert torch.allclose(lp0[i, : len(labels[i])], want, atol=1e-4)  # step 0 == the host's LM-head readout
+    apply_lora(bb.model, bb.spec.lora_groups, rank=4, generator=torch.Generator().manual_seed(1))
+    with torch.no_grad():
+        assert torch.allclose(model(rows).log_probs, lp0, atol=1e-6)  # LoRA B = 0: still the host
+    params = [p for n, p in bb.model.named_parameters() if "lora_" in n] + list(model.head.parameters())
+    opt = torch.optim.AdamW(params, lr=1e-2)
+    lcfg = LossConfig(arm="clef", label_smoothing=0.05, label_smoothing_noul=0.0, rps_weight=0.0)
+    y = torch.tensor([2, 1])
+    losses = []
+    for _ in range(4):
+        lp = model(rows).log_probs
+        loss = sum(arm_loss(lp[i:i + 1, : r.n_options], y[i:i + 1], [r.qtype], lcfg).mean()
+                   for i, r in enumerate(rows)) / len(rows)
+        opt.zero_grad()
+        loss.backward()
+        assert all(torch.isfinite(p.grad).all() for p in params if p.grad is not None)
+        assert any(p.grad is not None and p.grad.abs().sum() > 0 for n, p in bb.model.named_parameters() if "lora_B" in n)
+        opt.step()
+        losses.append(float(loss))
+    assert losses[-1] < losses[0]
