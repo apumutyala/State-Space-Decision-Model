@@ -691,22 +691,28 @@ with v1, so it is not reused.) Used for: dev-card checkpoint selection (`dev_car
 **Anti-forgetting guards and LR.** LoRA **r16** (alpha = rank, scale 1; r2 / JEV2 used r64), `lr_lora` **4e-5** = 0.4x
 r2's 1e-4: H2O's features already carry its 77.6 open-I, so the LoRA should be a small correction (4k long_policy, the
 noul band, score rows, the jev2 families); a full-rate update on a tuned init is the forgetting regime, and r2 at the
-full rate did not beat its own untrained control. `lr_head` stays 3e-4 because the fork head is NEW on any host. Fixed
+full rate did not beat its own untrained control. `lr_head` 3e-4 (shim mode: only the head's scalar scale). Fixed
 small budget: max 333 steps (shim) / 320 (sym), min 200, the step-10 measured-rate plan unchanged (plan = min(max,
 affordable), horizon 0.6717 x plan, exit 26 below 200).
 
-**Readout.** Default `jev2_h2o_shim`: layout g1v2 under the H2O shim template = H2O's own single-pass prompt; the PRIMARY
-arm is `native_shimcal` = the trained arm under H2O's own post-processing (T 0.8 + the yes/no floor 0.801), the SAME
-readout as the control (the eval showed the raw readout without the floor collapses noul I 76.6 -> 8.1). G1 is reported
-there, not gated. Secondary `jev2_h2o_sym`: sym-fork (invariance by construction, G1 gated; ~2.9x slower readout).
+**Readout and loss (train == score).** Default `jev2_h2o_shim`: layout g1v2 under the H2O shim template (H2O's own
+single-pass prompt) with head **`lm_label`** (`heads.heads.LMLabelHead`): logit_k = s x <W_emb[label_k], q_end>, the
+shim's label-token log-likelihood at the "Answer:" slot (tied LM head; q_end = the final-norm hidden state, which
+transformers ties to `hidden_states[-1]`), a softmax over the option labels for every type (no ordinal link), s = 1 at
+init. Step 0 IS the untrained H2O readout. The training loss (clef arm: LS-CE 0.05 on choice / score, 0 on noul, +
+Brier) is on exactly this distribution; the PRIMARY arm `native_shimcal` scores it after H2O's own post-processing (T 0.8
++ the yes/no floor 0.801), the SAME readout as the control (the eval showed the raw readout without the floor collapses
+noul I 76.6 -> 8.1). No fork pass; run_cell refuses lm_label unless config.json declares a tied LM head and the layout is
+g1v2. G1 is reported there, not gated. Secondary `jev2_h2o_sym`: sym-fork with the (new) fork head (invariance by
+construction, G1 gated; ~2.9x slower readout).
 
 **Step-0 floor (in job, `jevkit.slice_floor`, `screen.slice_floor`):** after training, the selected checkpoint (native
 probabilities on every slice decision, `calib_probs.jsonl`) and step 0 = the untrained H2O (the same weights with every
 LoRA off, its own shim prompt and LM head) are both scored top-1 on the whole selection slice (the shim T and floor
 never change an arg-max). If the trained arm is not strictly better, the report says "step 0 = no change" and the
 primary is NEGATIVE whatever the public delta. Per-family deltas on the slice (`slice_floor.json`) and on public-231
-(`jevkit.by_family`) are logged. Note: the fork head is random at step 0, so the floor is H2O's own readout, not the
-step-0 fork head.
+(`jevkit.by_family`) are logged. In shim mode the step-0 trained model and the floor are the same readout (the dev
+card at step 0 is the first "best"), so a run that never improves the slice NLL selects step 0 and reports no change.
 
 **Schedule and cost** (jobs/common/rates.py, $0.063/min; worst = (build 60 + 2 x max_duration) x rate; hard cap $38):
 
@@ -736,6 +742,10 @@ ONE mode (default shim).
     noul; max_len 4,096 with 0 truncation asserted.
   - **Anti-forgetting guards:** LoRA r16, lr_lora 4e-5 (<= r2's 1e-4), a fixed small budget (max 333 steps shim / 320
     sym, min 200, the step-10 measured-rate plan).
+  - **Amendment 1 (before any submission): train == score.** In the default `jev2_h2o_shim` the head is `lm_label`: the
+    trained readout IS the shim's label-token distribution in H2O's own prompt format (tied LM head at the answer slot,
+    softmax over the option labels), step 0 == the untrained H2O, and the loss (LS-CE + Brier, LS 0 on noul) is on
+    that distribution. The fork head is used only in the `jev2_h2o_sym` secondary.
   - **PRIMARY:** the paired delta Composite A of the trained arm vs the IN-JOB H2O v1.1 control (rev 193ad740, the same
     231 public items, the same B = 1,000 seed-16 bootstrap draws, the same shim readout: native_shimcal vs stock_shim,
     both T 0.8 + floor 0.801). SUCCESS iff the 95% CI excludes 0 on the positive side AND the step-0 floor passes.

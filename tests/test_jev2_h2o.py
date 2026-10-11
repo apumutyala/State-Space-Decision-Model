@@ -25,7 +25,7 @@ EXCL = {"receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt": "c0c175f50a
 REV = "193ad740925b176a3b70a5a13a7cff2f2fadd01e"
 H2O_SLICE_SHA = "204e9bfe20d29ca95bd895ff368cf26f7b282635d615aeb85df47e69fcba2a9c"
 #: recipe keys that must equal JEV2-4B's (loss, smoothing, lengths, head, template, optimiser schedule shape)
-SAME = ("template", "head", "loss_arm", "lr_head", "warmup_steps", "batch_size", "grad_accum", "max_k", "t_ladder",
+SAME = ("template", "loss_arm", "lr_head", "warmup_steps", "batch_size", "grad_accum", "max_k", "t_ladder",
         "eval_max_t", "require_t_max", "ladder_probe_longest", "label_smoothing", "label_smoothing_noul",
         "lr_schedule", "lr_min_frac", "lr_horizon_frac", "train_max_k", "row_options", "act_ckpt", "best_ckpt",
         "collapse_guard", "assert_no_truncation", "cohort_sha256", "parent", "seed")
@@ -49,6 +49,37 @@ def test_recipe_kept(mode):
     assert {k: c.get(k) for k in SAME} == {k: JEV2.get(k) for k in SAME}
     assert c["layout"] == MODES[mode][0] and c["template"] == "jrt-h2o-shim:qwen3.5-4b"
     assert max(c["t_ladder"]) == 4096 and c["assert_no_truncation"] and c["label_smoothing_noul"] == 0.0
+    # the primary (shim) mode trains the SAME readout it is scored with; the fork head only for the sym secondary
+    assert c["head"] == ("lm_label" if c["layout"] == "g1v2" else "fork")
+    if c["head"] == "lm_label":
+        assert c["cont_chunk"] == 0 and params(mode)["jevkit"]["paired_primary"] == "native_shimcal"
+
+
+def test_lm_label_head_is_the_shim_readout():
+    torch = pytest.importorskip("torch")
+    from heads.features import HeadInput
+    from heads.heads import LMLabelHead
+
+    class BB:
+        def __init__(self):
+            self.model = torch.nn.Module()
+            self.model.emb = torch.nn.Embedding(50, 8)
+            self.model.get_input_embeddings = lambda: self.model.emb
+
+    bb = BB()
+    h = LMLabelHead(8)
+    h.bind_backbone(bb)
+    assert [n for n, _ in h.named_parameters()] == ["scale"]  # the embedding is NOT a head parameter
+    q = torch.randn(2, 8)
+    ids = torch.tensor([[3, 7, 9], [11, 4, -1]])
+    om = ids >= 0
+    x = HeadInput(h=torch.zeros(2, 1, 8), token_mask=torch.ones(2, 1, dtype=torch.bool), evidence_mask=torch.zeros(2, 1, dtype=torch.bool),
+                  q_pre=q, q_end=q, e=torch.zeros(2, 3, 8), option_mask=om, ks=[3, 2], cont_ids=ids)
+    z = h(x).logits
+    W = bb.model.emb.weight
+    want = torch.stack([W[[3, 7, 9]] @ q[0], torch.cat([W[[11, 4]] @ q[1], torch.tensor([float("-inf")])])])
+    assert torch.allclose(z[0], want[0], atol=1e-5) and torch.allclose(z[1, :2], want[1, :2], atol=1e-5)
+    assert torch.isinf(z[1, 2]) and z[1, 2] < 0
 
 
 @pytest.mark.parametrize("mode", MODES)

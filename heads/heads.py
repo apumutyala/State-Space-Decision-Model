@@ -395,7 +395,48 @@ class ClefCrossAttentionControl(DecisionHead):
                 "attention_free": False, "note": "keys/values grow with T: softmax over positions"}
 
 
+class LMLabelHead(DecisionHead):
+    """The host's OWN readout as the trained head (JEV2-H2O primary): logit_k = s * <W_emb[label_k], q_end>, where
+    ``q_end`` is the final-norm hidden state at the answer slot ("Answer:" prefill; transformers ties
+    ``hidden_states[-1]`` to ``last_hidden_state``) and ``label_k`` the first (only) token of option k's continuation =
+    the shim label token in g1v2 shim rows. With a tied LM head this IS the shim's label-token log-likelihood readout
+    (``screen.StockShimEngine``), so step 0 == the untrained host and training (LoRA + the scalar ``s``, init 1) moves
+    exactly the distribution that is scored. ``plain_softmax``: every question type (score included) is a softmax over
+    the labels, as the shim reads it (no CumulativeLink). The embedding matrix is the backbone's (frozen, NOT a head
+    parameter: bound by DecisionModel, never saved with the head)."""
+
+    name = "lm_label"
+    needs_fork = False
+    plain_softmax = True
+
+    def __init__(self, d_model: int) -> None:
+        super().__init__()
+        self.scale = nn.Parameter(torch.ones(()))
+        self._emb = None
+
+    def bind_backbone(self, backbone) -> None:
+        # the snapshot's config.json must declare a tied LM head (checked by train.run_cell before any weight is read)
+        emb = backbone.model.get_input_embeddings()
+        object.__setattr__(self, "_emb", emb)  # a plain reference: not a submodule, not in state_dict
+
+    def forward(self, x: HeadInput, return_attribution: bool = False) -> HeadOutput:
+        if self._emb is None:
+            raise ValueError("lm_label head is not bound to a backbone (DecisionModel binds it)")
+        if x.cont_ids is None:
+            raise ValueError("lm_label head needs HeadInput.cont_ids")
+        ids = x.cont_ids.clamp_min(0)
+        w = self._emb.weight.index_select(0, ids.reshape(-1)).reshape(*ids.shape, -1).float()  # [B, K, D]
+        z = torch.einsum("bkd,bd->bk", w, x.q_end.float()) * self.scale
+        z = z.masked_fill(x.cont_ids < 0, float("-inf"))
+        return HeadOutput(_masked(z, x.option_mask))
+
+    def cost(self, T: int, K: int) -> dict:
+        d = self._emb.weight.shape[1] if self._emb is not None else 0
+        return {"flops": 2 * K * d, "accumulator_scalars": 0, "attention_free": True, "streaming_implemented": False}
+
+
 HEADS = {
+    "lm_label": LMLabelHead,
     "qend_axes": QEndSemanticAxes,
     "integrator": IntegratorBank,
     "fork": FinalStateFork,

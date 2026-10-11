@@ -982,6 +982,17 @@ def _main(argv=None, ctx: dict | None = None):
         except (LineageError, OSError) as e:
             print(f"qwen35 lineage: {e}", flush=True)
             return EXIT["lineage"]
+    if cfg.get("head") == "lm_label":  # JEV2-H2O primary: the host's own label readout needs a tied LM head + g1v2
+        try:
+            mc = json.loads((Path(a.model_dir) / "config.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            print(f"lm_label: config.json: {e}", flush=True)
+            return EXIT["config"]
+        tied = mc.get("tie_word_embeddings", (mc.get("text_config") or {}).get("tie_word_embeddings"))
+        if tied is not True or cfg.get("layout") != "g1v2":
+            print(f"lm_label head needs a tied LM head (config tie_word_embeddings={tied!r}) and layout g1v2 "
+                  f"(got {cfg.get('layout')!r})", flush=True)
+            return EXIT["config"]
     j1 = cfg.get("jev1") or {}
     if j1.get("enabled") and (j1.get("exclusion") or {}).get("status") != "landed":  # JEV2-H2O jev1 switch (fail closed)
         print("jev1 is ON but its verbatim-leaf exclusion list has not landed (jev1.exclusion.status != landed); "

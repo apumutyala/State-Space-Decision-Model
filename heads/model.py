@@ -45,6 +45,8 @@ class DecisionModel(nn.Module):
             else:
                 self.head = make_head(head, d, **(head_kwargs or {})) if isinstance(head, str) else head
             self.typed = TypedOutput(d)
+        if hasattr(self.head, "bind_backbone"):  # lm_label: reads the backbone's (frozen) embedding rows
+            self.head.bind_backbone(backbone)
         if self.row_head:
             for p in self.typed.parameters():  # unused: G16 decides by softmax over its logits for every qtype
                 p.requires_grad_(False)
@@ -70,7 +72,13 @@ class DecisionModel(nn.Module):
         x = build_head_input(self.backbone, rows, need_fork=self.head.needs_fork, pad_id=self.pad_id,
                              shared_prefix=shared_prefix)
         out = self.head(x, return_attribution=return_attribution)
-        lp = self.typed(out.logits, [r.qtype for r in rows], x.ks, x.e)
+        if getattr(self.head, "plain_softmax", False):  # lm_label: the shim's softmax over labels for every type
+            for r in rows:
+                if r.qtype == "noul" and r.n_options != 2:
+                    raise ValueError("noul questions have exactly two options (true, false)")
+            lp = torch.log_softmax(out.logits, -1)
+        else:
+            lp = self.typed(out.logits, [r.qtype for r in rows], x.ks, x.e)
         return Forward(lp, out, x)
 
     @torch.no_grad()

@@ -1,5 +1,5 @@
 {
- "_comment": "Mode jev2_h2o_shim (A-PREREG-JEV2-H2O, NOT submitted): H2O-Lightning-4B v1.1 @193ad740 + SSDM jev2 data (2,664 rows = 148 per family x 18 from the cleared bschema-mix-jev1-jev2 components (jev1 gated build minus long_policy, jev2a-v2 minus 127 excluded ids, jev2b minus prob_indep, jev2c-v2)), layout g1v2, LoRA r16 LR 4e-5, max 333 steps; primary native_shimcal vs stock_shim (= H2O v1.1 untrained + its shim) on public-231, B 1000 seed 16; step-0 floor + selection on the held-out slice (3,600 rows, 142a593a). Schedule: setup 20 + guard 5 + heldout 10 + screen 55 + report 5 + cell 165 + reserve 7 = 267. Quoted hold $16.82; worst case (60 + 2 x 267) x 0.063 = $37.42 <= $38. Expected ~185 min = $11.65.",
+ "_comment": "Mode jev2_h2o_shim (A-PREREG-JEV2-H2O, NOT submitted): H2O-Lightning-4B v1.1 @193ad740 + SSDM jev2 data (2,664 rows = 148 per family x 18 from the cleared bschema-mix-jev1-jev2 components (jev1 gated build minus long_policy, jev2a-v2 minus 127 excluded ids, jev2b minus prob_indep, jev2c-v2)), layout g1v2, head lm_label (trains the shim label readout that is scored), LoRA r16 LR 4e-5, max 333 steps; primary native_shimcal vs stock_shim (= H2O v1.1 untrained + its shim) on public-231, B 1000 seed 16; step-0 floor + selection on the held-out slice (3,600 rows, 142a593a). Schedule: setup 20 + guard 5 + heldout 10 + screen 55 + report 5 + cell 165 + reserve 7 = 267. Quoted hold $16.82; worst case (60 + 2 x 267) x 0.063 = $37.42 <= $38. Expected ~185 min = $11.65.",
  "test_env": {
   "transformers": "5.17.0",
   "with": [
@@ -90,7 +90,7 @@
   },
   "key": "m2-first-cell-jev2-h2o-shim-r1",
   "clock_lock": true,
-  "label": "A-PREREG-JEV2-H2O jev2_h2o_shim: H2O-Lightning-4B v1.1 + SSDM jev2 data (final cleared mix), g1v2, r16 LR 4e-5, 333 steps, clock 130 [paired vs H2O v1.1 + shim; step-0 floor on the held-out slice]",
+  "label": "A-PREREG-JEV2-H2O jev2_h2o_shim: H2O-Lightning-4B v1.1 + SSDM jev2 data (final cleared mix), g1v2, head lm_label (trains the scored shim readout), r16 LR 4e-5, 333 steps, clock 130 [paired vs H2O v1.1 + shim; step-0 floor on the held-out slice]",
   "checks": {
    "success": {
     "check": {
