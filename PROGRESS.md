@@ -1,5 +1,10 @@
 # PROGRESS: rolling, 3–5 lines per session (did / learned / next). Older entries roll into history/.
 
+## 2026-10-11: evidence independent rescore of JEV2-H2O (job-x7c42)
+- Did: self-downloaded art-cwk49 (0c538a61 = job record) + 9fy9p + zbtbj artifacts; jevkit CLI rescore + scripts/ev_rescore_x7c42.py (Holm CI/p, floor bootstrap, overlap, order, determinism, transfer); claude/ev-x7c42-rescore @bf706854.
+- Learned: AGREES (max |d| 0). PRIMARY flat: dCompA -0.41 [-1.75,+1.39] (97.5% [-2.06,+1.58], p 0.565) -> x7c42 not claimable under Holm whatever L does. Floor beaten +4.44pp [+3.47,+5.31]. Training is run-to-run nondeterministic (vs 9fy9p) but reselects step 200. Slice gains (tradeoff/adversarial/trap/adequacy/ambiguous/policy) land where public is already 83-100%; public errors (temporal_numeric, judge_hard, long_policy, multi_hop) see ~0 slice gain; slice shapes differ (state type, K, type mix, public states 2-6x longer).
+- Next: JEV2-H2O-L rescore on landing (same scripts); lead: target data at temporal_numeric/judge_hard/long_policy shapes, not more of the saturated families.
+
 ## 2026-10-11: evidence independent rescore of the H2O-HOST eval-only job (job-4g6m8)
 - Did: self-downloaded art-jrasm (sha 8feba886 = job record), scripts/ev_rescore_h2o_eval.py re-derives every arm from raw_public through the pinned shim, refits T from slice_raw, re-selects the slice, jevkit CLI + paired B1000 seed16 + secondary axes, G1 recomputed from in-memory perturbations; claude/ev-h2o-eval-rescore @536fae54 receipts/2026-10-11-ev-h2o-eval-rescore/.
 - Learned: AGREES on all 235 numbers; no contender CI>0 (best a_Tfam +0.51 [-0.21,+1.35], gains are C only, top-1 unchanged). T-fit provenance compliant. G1: c_symfork invariant by construction (PASS) but weak (121/231); control FAILS on real choice reorders (6/139, 5/139); noul reorders are no-ops for the H2O shim. perturb_eval.py writes perturbed.jsonl with sort_keys (receipt-only, requests were in-memory) -> fix so reruns from file are not no-ops.
