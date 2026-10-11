@@ -1,5 +1,8 @@
 # PROGRESS: rolling, 3–5 lines per session (did / learned / next). Older entries roll into history/.
 
+## 2026-10-11: evidence consolidated EVIDENCE_REPORT (every target, receipt-linked)
+- Did: claude/ev-evidence-report @ae7575f7 docs/EVIDENCE_REPORT.md (+3 charts in docs/evidence_report/): kit parity, Composite/Capability vs H2O, JEV1-4B r2, MD1 flip rate, Index vs Clef, guarantee suite, data audits, per-target gap attribution; all cited shas = branch tips, numbers re-read from receipts. Note: EV_JEV_QA's 0940cbd7 pin advice is superseded by H2O-HOST amendment 1 (193ad740).
+
 ## 2026-10-11: evidence cluster-robust ratio LTT (B-PREREG-GUAR-CRR, prereg state 033906aa)
 - Did: opt-in jevkit ltt_select(cluster_test="crr") = Waudby-Smith-Ramdas betting on per-cluster Y_r = w_r(L_r - eps n_r)/c, w_r = min(1, c/s_r), cap c=8 (answer-free p95 rule); sim test (shared-fate clusters, 120 seeds): CRR 0 violations/107 certified, naive per-decision binomial 16/120 violations; full-DEV rerun @01738528 receipts/2026-10-10-ev-guar-crr/GUARANTEES_CRR.md.
 - Learned: CRR c=8 certifies NOTHING for any model (D19, D13, Clef-flash, Clef 27B; both configs, both alpha, marginal + per-area). Real cause, not just power: TEST R_8 at the published lambda is 8.7/5.1/6.3/6.5% > eps (big rows are the easy ones). At high lambda (R_8 1-2%) the Clefs reach ~6.5 of the 6.92 nats Bonferroni needs; D19 peaks at 4.3. c=1 secondary reproduces the one-per-row Clef certificates (0.490/0.559). No cluster-valid test certifies D19.
