@@ -35,7 +35,7 @@ CATALOG = 59
 #: B-PREREG-CLAIM addendum 2 lineage exclusions (D17/D18/D19 lineage), matched by run_id substring
 #: (run_ids look like "37:Amazon-ESCI:Amazon-ESCI:test:2163000"; each pair must all appear; exactly 4 DEV rows match)
 LINEAGE4 = (("SATA", "test:1427"), ("BRIGHT", "earth_science:54"), ("Amazon-ESCI", "test:2163000"),
-            ("HoVer", "candidates-v3:61:461ff029"))
+            ("candidates-v3:61:461ff029",))  # HoVer: run_id "candidates-v3:61:461ff029-0177-..." (no benchmark prefix)
 
 
 def lineage4(rid):
