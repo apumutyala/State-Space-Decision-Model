@@ -1134,8 +1134,22 @@ def generate(families=STAGE_A) -> Iterator[dict]:
         yield from generate_b(fb)
 
 
-# stage b generators (data/jev2b.py) register their specs and plan here; imported last (jev2b imports this module)
+def generate_stage(stage: str) -> Iterator[dict]:
+    if stage == "c":
+        from data.jev2c import generate_c
+        yield from generate_c(STAGE_C)
+    else:
+        yield from generate(STAGE_A if stage == "a" else STAGE_B)
+
+
+#: stage c = long_policy at eval length (JEV1_AUDIT.md); its family name matches jev1's long_policy
+STAGE_C = ("long_policy",)
+
+# stage b / c generators register their specs and plan here; imported last (they import this module)
 from data.jev2b import GEN_SPECS_B, PLAN_B  # noqa: E402
+from data.jev2c import GEN_SPECS_C, PLAN_C  # noqa: E402
 
 GEN_SPECS.update(GEN_SPECS_B)
+GEN_SPECS.update(GEN_SPECS_C)
 PLAN.update(PLAN_B)
+PLAN.update(PLAN_C)

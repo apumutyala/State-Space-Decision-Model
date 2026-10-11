@@ -29,13 +29,18 @@ import jev1_build as JB  # noqa: E402  (shared helpers + the identical check sta
 T_MAX = JB.T_MAX
 #: per-family row target: the brief (evidence, 2026-10-10) asks ~6,000 rows per missing family (60k over 10)
 TARGET = 6000
-STAGES = {"a": "bschema-draw-jev2a", "b": "bschema-draw-jev2b"}
+STAGES = {"a": "bschema-draw-jev2a", "b": "bschema-draw-jev2b", "c": "bschema-draw-jev2c"}
+#: token window per stage: stage c (long_policy at eval length, JEV1_AUDIT.md) keeps 2,000 <= t <= 4,096
+T_WIN = {"a": (0, 2048), "b": (0, 2048), "c": (2000, 4096)}
+#: per-family targets: stage a 6,000 (brief); b and c 1,500 (coordinator 2026-10-10: the trainer samples ~600 per
+#: family, so >= 1,000 audit-compliant rows per family; quality over count)
+TARGETS = {"a": 6000, "b": 1500, "c": 1500}
 RECEIPT_ROOT = "receipts/2026-10-10-jev2-draw"
 
 
 def fams_of(stage: str):
     from data import jev2
-    return jev2.STAGE_A if stage == "a" else jev2.STAGE_B
+    return {"a": jev2.STAGE_A, "b": jev2.STAGE_B, "c": jev2.STAGE_C}[stage]
 
 
 def cmd_gen(a) -> int:
@@ -45,7 +50,7 @@ def cmd_gen(a) -> int:
     ids, c = set(), collections.Counter()
     h = hashlib.sha256()
     with JB._gz(w / "pool.jsonl.gz") as fo:
-        for r in jev2.generate(fams_of(a.stage)):
+        for r in jev2.generate_stage(a.stage):
             A.validate(r)
             if r["id"] in ids:
                 raise SystemExit(f"duplicate id {r['id']}")
@@ -68,6 +73,8 @@ def cmd_final(a) -> int:
 
     BUILD = STAGES[a.stage]
     FAMS = fams_of(a.stage)
+    T_MIN, T_MAX = T_WIN[a.stage]
+    TARGET = TARGETS[a.stage]
     w = Path(a.work)
     lens, ident = {}, None
     for f in a.lens:
@@ -92,7 +99,10 @@ def cmd_final(a) -> int:
             st[fam]["shim_row_refused"] += 1
             continue
         if d["t_shim"] > T_MAX:
-            st[fam]["over_2048"] += 1
+            st[fam][f"over_{T_MAX}"] += 1
+            continue
+        if d["t_shim"] < T_MIN:
+            st[fam][f"under_{T_MIN}"] += 1
             continue
         if r["id"] in drop:
             st[fam]["dropped_by_draw_gate"] += 1
@@ -155,8 +165,14 @@ def cmd_final(a) -> int:
 
     def tq(xs):
         xs = sorted(xs)
-        return {"n": len(xs), "p50": xs[len(xs) // 2], "p99": xs[int(0.99 * (len(xs) - 1))], "max": xs[-1],
-                "n_over_2048": sum(1 for x in xs if x > T_MAX)} if xs else None
+        if not xs:
+            return None
+        hist = collections.Counter(min(x // 500, 9) * 500 for x in xs)
+        return {"n": len(xs), "min": xs[0], "p10": xs[int(0.1 * (len(xs) - 1))], "p50": xs[len(xs) // 2],
+                "p90": xs[int(0.9 * (len(xs) - 1))], "p99": xs[int(0.99 * (len(xs) - 1))], "max": xs[-1],
+                "t_window": [T_MIN, T_MAX], "n_over_cap": sum(1 for x in xs if x > T_MAX),
+                "n_over_2048": sum(1 for x in xs if x > 2048),
+                "histogram_500": {f"{k}-{k + 499}": v for k, v in sorted(hist.items())}}
 
     fam_rep = {}
     for fam in FAMS:
@@ -182,7 +198,7 @@ def cmd_final(a) -> int:
     chk_rep = json.loads((w / "check-report.json").read_text(encoding="utf-8"))
     rep = {"build": BUILD, "n_records": n, "type_mix": {k: round(v / n, 4) for k, v in sorted(types.items())},
            "families": fam_rep, "gold_once_fail": gold_fail, "gold_position_gate_p_ge_0.001": gate_pos,
-           "token_template": {"template": "jrt-h2o-shim:qwen3.5-4b", "identity": ident, "t_max": T_MAX},
+           "token_template": {"template": "jrt-h2o-shim:qwen3.5-4b", "identity": ident, "t_min": T_MIN, "t_max": T_MAX},
            "uncompressed_sha256": shas, "pool": gen_rep, "check": {k: chk_rep[k] for k in (
                "n_pool", "n_kept", "checked_uncompressed_sha256", "reasons")},
            "drop_ids_files": {str(f): hashlib.sha256(Path(f).read_bytes()).hexdigest() for f in a.drop_ids or []},
@@ -206,7 +222,7 @@ def cmd_final(a) -> int:
                               "public items (eval-only)",
            "builder": {"module": "scripts/jev2_build.py", "generator": "data/jev2.py", "commit": commit},
            "receipt": f"{RECEIPT_ROOT}/{BUILD}/",
-           "templates_verified": ["jrt-h2o-shim:qwen3.5-4b"],
+           "templates_verified": ["jrt-h2o-shim:qwen3.5-4b"], "token_window": [T_MIN, T_MAX],
            "target_provenance": {"path": f"{RECEIPT_ROOT}/{BUILD}/target_provenance.json",
                                  "sha256": hashlib.sha256((rd / "target_provenance.json").read_bytes()).hexdigest()}}
     pp = config.MANIFEST_DIR / f"{BUILD}.pointer.json"
@@ -232,7 +248,7 @@ def target_provenance(fam_rep: dict, stage: str) -> dict:
                 "family follows the family's public FORMAT (type counts of the public items are format, not labels). "
                 "Option presentation order is a seeded per-row shuffle. A family short of T after the gates is "
                 "reported short, never topped up from another family.",
-        "target_rows_per_family": TARGET, "stage": stage, "plan": {f: jev2.PLAN.get(f) for f in fam_rep},
+        "target_rows_per_family": TARGETS[stage], "stage": stage, "plan": {f: jev2.PLAN.get(f) for f in fam_rep},
         "seed": jev2.SEED,
         "families": {f: {"rows": v["rows"], "sources": v["sources"], "licenses": v["licenses"],
                          "label_rates": v["label_rates"], "types": v["types"]} for f, v in fam_rep.items()},
