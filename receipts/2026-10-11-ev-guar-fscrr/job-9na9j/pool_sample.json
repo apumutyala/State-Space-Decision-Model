@@ -1,0 +1,361 @@
+{
+ "prereg": "B-PREREG-GUAR-FSCRR",
+ "salt": "B-PREREG-GUAR-FSCRR|pool",
+ "case_share": 0.25,
+ "edition": "0.2.1",
+ "dev_manifest_sha256": "1362c23ebe810cccf8f2ec87533d454cc3aacd6ba6dc6086e14ad36211c8073a",
+ "test_manifest_sha256": "76a6b135cfcc11ab3448dd80409567ad86e6edbc4593da2c33d1f67f6f0abe12",
+ "pool_rows": 95961,
+ "pool_ids_sha256": "10573bb81fca2ce7c28a45047bfcc83d721c929f1c9494d003b4cdb5472c21a8",
+ "sample_rows": 10365,
+ "sample_cases": 6780,
+ "sample_ids_sha256": "990b591123c8992ae50c81d2ef34ced675416611306f01a9be9af0d17538e04b",
+ "manifest_text_sha256": "c1c9e3c2d9172d213a461900c3a8211e345b3267c5ecf0c65baa756906b8d5cb",
+ "rows_file_sha256": "a500a31ab5f98f9d23b44d5a40f94014440c23f931f2829009a7cf81961bef83",
+ "manifest_file_sha256": "6f68a03b19cfda2c2cc35802456ff8b0579786e42207303fe1d3925f52751e9c",
+ "dev_quota_total": 12104,
+ "by_benchmark": {
+  "1": {
+   "pool_rows": 171,
+   "pool_rows_with_gold": 171,
+   "dev_quota": 761,
+   "max_case_rows": 190,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 171,
+   "taken_cases": 171
+  },
+  "2": {
+   "pool_rows": 69,
+   "pool_rows_with_gold": 69,
+   "dev_quota": 308,
+   "max_case_rows": 77,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 69,
+   "taken_cases": 69
+  },
+  "3": {
+   "pool_rows": 52,
+   "pool_rows_with_gold": 52,
+   "dev_quota": 228,
+   "max_case_rows": 57,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 52,
+   "taken_cases": 51
+  },
+  "4": {
+   "pool_rows": 2160,
+   "pool_rows_with_gold": 2160,
+   "dev_quota": 460,
+   "max_case_rows": 115,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 460,
+   "taken_cases": 460
+  },
+  "5": {
+   "pool_rows": 4580,
+   "pool_rows_with_gold": 4580,
+   "dev_quota": 460,
+   "max_case_rows": 115,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 460,
+   "taken_cases": 363
+  },
+  "9": {
+   "pool_rows": 10,
+   "pool_rows_with_gold": 10,
+   "dev_quota": 39,
+   "max_case_rows": 9,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 10,
+   "taken_cases": 10
+  },
+  "11": {
+   "pool_rows": 13,
+   "pool_rows_with_gold": 13,
+   "dev_quota": 55,
+   "max_case_rows": 13,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 13,
+   "taken_cases": 13
+  },
+  "12": {
+   "pool_rows": 2678,
+   "pool_rows_with_gold": 2678,
+   "dev_quota": 261,
+   "max_case_rows": 65,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 261,
+   "taken_cases": 261
+  },
+  "20": {
+   "pool_rows": 4273,
+   "pool_rows_with_gold": 4273,
+   "dev_quota": 366,
+   "max_case_rows": 91,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 376,
+   "taken_cases": 62
+  },
+  "21": {
+   "pool_rows": 1908,
+   "pool_rows_with_gold": 1908,
+   "dev_quota": 360,
+   "max_case_rows": 90,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 360,
+   "taken_cases": 360
+  },
+  "22": {
+   "pool_rows": 1279,
+   "pool_rows_with_gold": 1279,
+   "dev_quota": 360,
+   "max_case_rows": 90,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 360,
+   "taken_cases": 138
+  },
+  "23": {
+   "pool_rows": 4238,
+   "pool_rows_with_gold": 4238,
+   "dev_quota": 361,
+   "max_case_rows": 90,
+   "rows_in_oversized_cases": 939,
+   "taken_rows": 376,
+   "taken_cases": 57
+  },
+  "25": {
+   "pool_rows": 21,
+   "pool_rows_with_gold": 21,
+   "dev_quota": 87,
+   "max_case_rows": 21,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 21,
+   "taken_cases": 21
+  },
+  "28": {
+   "pool_rows": 745,
+   "pool_rows_with_gold": 745,
+   "dev_quota": 261,
+   "max_case_rows": 65,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 261,
+   "taken_cases": 261
+  },
+  "29": {
+   "pool_rows": 9520,
+   "pool_rows_with_gold": 9520,
+   "dev_quota": 261,
+   "max_case_rows": 65,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 261,
+   "taken_cases": 261
+  },
+  "30": {
+   "pool_rows": 2114,
+   "pool_rows_with_gold": 2114,
+   "dev_quota": 262,
+   "max_case_rows": 65,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 262,
+   "taken_cases": 131
+  },
+  "31": {
+   "pool_rows": 4476,
+   "pool_rows_with_gold": 4476,
+   "dev_quota": 262,
+   "max_case_rows": 65,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 262,
+   "taken_cases": 262
+  },
+  "32": {
+   "pool_rows": 228,
+   "pool_rows_with_gold": 228,
+   "dev_quota": 262,
+   "max_case_rows": 65,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 228,
+   "taken_cases": 228
+  },
+  "33": {
+   "pool_rows": 1126,
+   "pool_rows_with_gold": 1126,
+   "dev_quota": 262,
+   "max_case_rows": 65,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 262,
+   "taken_cases": 262
+  },
+  "36": {
+   "pool_rows": 22,
+   "pool_rows_with_gold": 22,
+   "dev_quota": 99,
+   "max_case_rows": 24,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 22,
+   "taken_cases": 22
+  },
+  "37": {
+   "pool_rows": 4080,
+   "pool_rows_with_gold": 4080,
+   "dev_quota": 460,
+   "max_case_rows": 115,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 460,
+   "taken_cases": 417
+  },
+  "38": {
+   "pool_rows": 1036,
+   "pool_rows_with_gold": 1036,
+   "dev_quota": 262,
+   "max_case_rows": 65,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 267,
+   "taken_cases": 77
+  },
+  "39": {
+   "pool_rows": 457,
+   "pool_rows_with_gold": 457,
+   "dev_quota": 261,
+   "max_case_rows": 65,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 261,
+   "taken_cases": 257
+  },
+  "40": {
+   "pool_rows": 4063,
+   "pool_rows_with_gold": 4063,
+   "dev_quota": 270,
+   "max_case_rows": 67,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 271,
+   "taken_cases": 29
+  },
+  "41": {
+   "pool_rows": 2484,
+   "pool_rows_with_gold": 2484,
+   "dev_quota": 261,
+   "max_case_rows": 65,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 261,
+   "taken_cases": 252
+  },
+  "42": {
+   "pool_rows": 4860,
+   "pool_rows_with_gold": 4860,
+   "dev_quota": 304,
+   "max_case_rows": 76,
+   "rows_in_oversized_cases": 2130,
+   "taken_rows": 336,
+   "taken_cases": 9
+  },
+  "43": {
+   "pool_rows": 58,
+   "pool_rows_with_gold": 58,
+   "dev_quota": 256,
+   "max_case_rows": 64,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 58,
+   "taken_cases": 58
+  },
+  "44": {
+   "pool_rows": 4475,
+   "pool_rows_with_gold": 4475,
+   "dev_quota": 262,
+   "max_case_rows": 65,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 262,
+   "taken_cases": 239
+  },
+  "45": {
+   "pool_rows": 51,
+   "pool_rows_with_gold": 51,
+   "dev_quota": 225,
+   "max_case_rows": 56,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 51,
+   "taken_cases": 51
+  },
+  "48": {
+   "pool_rows": 9375,
+   "pool_rows_with_gold": 9375,
+   "dev_quota": 389,
+   "max_case_rows": 97,
+   "rows_in_oversized_cases": 6255,
+   "taken_rows": 390,
+   "taken_cases": 174
+  },
+  "50": {
+   "pool_rows": 955,
+   "pool_rows_with_gold": 955,
+   "dev_quota": 361,
+   "max_case_rows": 90,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 363,
+   "taken_cases": 139
+  },
+  "56": {
+   "pool_rows": 1080,
+   "pool_rows_with_gold": 1080,
+   "dev_quota": 460,
+   "max_case_rows": 115,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 460,
+   "taken_cases": 460
+  },
+  "57": {
+   "pool_rows": 11508,
+   "pool_rows_with_gold": 11508,
+   "dev_quota": 262,
+   "max_case_rows": 65,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 262,
+   "taken_cases": 258
+  },
+  "58": {
+   "pool_rows": 4983,
+   "pool_rows_with_gold": 4983,
+   "dev_quota": 262,
+   "max_case_rows": 65,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 262,
+   "taken_cases": 262
+  },
+  "59": {
+   "pool_rows": 2160,
+   "pool_rows_with_gold": 2160,
+   "dev_quota": 270,
+   "max_case_rows": 67,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 270,
+   "taken_cases": 45
+  },
+  "61": {
+   "pool_rows": 3079,
+   "pool_rows_with_gold": 3079,
+   "dev_quota": 461,
+   "max_case_rows": 115,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 464,
+   "taken_cases": 199
+  },
+  "62": {
+   "pool_rows": 1520,
+   "pool_rows_with_gold": 1520,
+   "dev_quota": 1066,
+   "max_case_rows": 266,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 1066,
+   "taken_cases": 377
+  },
+  "64": {
+   "pool_rows": 54,
+   "pool_rows_with_gold": 54,
+   "dev_quota": 237,
+   "max_case_rows": 59,
+   "rows_in_oversized_cases": 0,
+   "taken_rows": 54,
+   "taken_cases": 14
+  }
+ }
+}
