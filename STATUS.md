@@ -6,8 +6,13 @@
 - 2026-10-06 (m2-prep, $0): `heads/` (backbone-agnostic hidden-state interface; options-first ordered + symmetric layouts; integrator / final-state fork / bounded-S snapshot / Head B / Clef-attention control; noul/choice/score cumulative-link) and `train/` (frozen backbone + LoRA r=256 default, CE vs LS-CE+Brier(+RPS) arms, feature temperature, eval-card hook with harness/steer stubs, checkpoint/resume, H100 estimator). CPU tests on tiny random backbones only. First paid-run spec: train/M2_RUN_SPEC.md (not launched).
 
 ## Track L — SSM-Language (owner: codex)
+<<<<<<< HEAD
 - 2026-10-06: plan in plans/codex/LANGUAGE_GROWTH_PLAN.md; interface interfaces/DECISION_LANGUAGE_V0.md. Next: L0 types/interpreter/renderer + joint fixtures (CPU), oracle/replay backends.
 - L0c renderer implements plain-text productions over released kernel objects, with quotation, exact values, relation binding and explicit derivation labels. Depends on contract #4, fixtures #5 and kernel #10. No unrestricted prose or learned capability is claimed; CPU cross-review pending.
+=======
+- 2026-10-06: canonical interface draft 0.1 adds optional attribution, nonauthoritative semantic records and separate policy probabilities, with semantic/type/source audit repairs. Cross-review requested; no learned capability or completed runtime is claimed by this documentation change.
+- CPU L0 implementation proceeds in an isolated codex worktree using oracle/replay backends; no paid compute.
+>>>>>>> 51118261 (Define decision-to-language interface 0.1 and resolve audit gaps)
 
 ## Open decisions for the user
 - SF Compute credit expiry date.
