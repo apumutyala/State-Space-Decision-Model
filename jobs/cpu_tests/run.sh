@@ -29,6 +29,9 @@ log "nupi tests: $NUPI_TESTS"
 N_RC=$?
 log "nupi rc=$N_RC"
 
+SUITES="${SUITES:-nupi g16 sym}"
+G16_RC=0; H_RC=0; S_RC=0
+if [[ " $SUITES " == *" g16 "* ]]; then
 # ---------------------------------------------------------------- 2. g16-sym (2d913b3e)
 (cd "$T/g16" && timeout 900 $PYT --junitxml="$OUT/junit-g16.xml" tests/controlsafe/test_g16_sym.py > "$OUT/g16.log" 2>&1)
 G16_RC=$?
@@ -38,10 +41,13 @@ log "g16 rc=$G16_RC"
 H_RC=$?
 log "g16 harness rc=$H_RC"
 
+fi
+if [[ " $SUITES " == *" sym "* ]]; then
 # ---------------------------------------------------------------- 3. sym-invariant (42388c2c), control
 (cd "$T/sym" && timeout 900 $PYT --junitxml="$OUT/junit-sym.xml" tests/test_sym_invariance.py > "$OUT/sym.log" 2>&1)
 S_RC=$?
 log "sym rc=$S_RC"
+fi
 
 # ---------------------------------------------------------------- summary
 python - "$OUT" "$G_RC" "$N_RC" "$G16_RC" "$H_RC" "$S_RC" <<'EOF' >> "$OUT/run.log" 2>&1
@@ -49,7 +55,7 @@ import hashlib, json, os, sys, xml.etree.ElementTree as ET
 out = sys.argv[1]
 rcs = dict(zip(["golden", "nupi", "g16", "g16_harness", "sym"], map(int, sys.argv[2:])))
 suites = {}
-for name in ["nupi", "g16", "g16-harness", "sym"]:
+for name in [n for n in ["nupi", "g16", "g16-harness", "sym"] if os.path.isfile(os.path.join(out, f"junit-{n}.xml")) or n == "nupi"]:
     f = os.path.join(out, f"junit-{name}.xml")
     s = {"passed": 0, "failed": 0, "skipped": 0, "failures": [], "skips": []}
     if os.path.isfile(f):
