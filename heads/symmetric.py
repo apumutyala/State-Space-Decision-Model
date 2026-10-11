@@ -23,8 +23,9 @@ Two extra measures make the property exact in floating point, not only up to red
 NOT relabel-invariant (tests/test_sym_invariance.py shows both).
 
 Formats: a shim template (``jrt-h2o-shim:<family>``) gets the Qwen chat turn of the H2O shim with a symmetric user turn
-(``SHIM_SYM_SYSTEM``) tokenized whole-string by the shim spec (special tokens honoured, request text that encodes to a
-control token refused); a G1 template (``jrt-rwkv-g1-*``) gets the RWKV7-G1 vendor format (``g1_pieces``, the row
+(``SHIM_SYM_SYSTEM``) tokenized by the shim spec (special tokens honoured, request text that encodes to a control token
+refused) segment by segment: template text and request text (state, question, each option) never share a token
+(``_Pieces``; G15 under BPE); a G1 template (``jrt-rwkv-g1-*``) gets the RWKV7-G1 vendor format (``g1_pieces``, the row
 encoder's whole-string tokens, id 0 refused); any other template gets ``head + body`` / ``" <option>" + tail``.
 Continuations: ``sym-fork`` (default) ends each option with the user-turn terminator (Qwen ``<|im_end|>``: ONE token;
 G1 "\\n\\n") and the head reads that position, which makes the layout cost-neutral against the g1v2 shim prompt on
@@ -40,7 +41,10 @@ SYM_LAYOUT = "sym-fork"  # lean continuation: " <option>" + the turn terminator 
 SYM_CHAT_LAYOUT = "sym-fork-chat"  # the full answer turn after each option (+10 tokens per option on Qwen)
 SYM_IDS_LAYOUT = "sym-fork-ids"  # ablation: "<id>: <option>" (lean tail)
 SYM_LAYOUTS = (SYM_LAYOUT, SYM_CHAT_LAYOUT, SYM_IDS_LAYOUT)
-SYM_VERSION = "sym-fork-v2"  # v2: lean (turn-terminated) continuation is the sym-fork default; G1 format
+#: v2: lean (turn-terminated) continuation is the sym-fork default; G1 format. v3: trust-segment tokenization (the
+#: state, the question and each option text are tokenized apart from the template, so no BPE merge crosses a trust
+#: boundary: G15's trusted token list is independent of untrusted text; byte-level encoders give the same ids as v2)
+SYM_VERSION = "sym-fork-v3"
 #: train.run_cell.keep_item: longest continuation (option text + its tail) a sym row may carry
 SYM_MAX_CONT = 128
 G1_SYM_SYSTEM = ("Read the state, then the question, then ONE candidate answer. Candidates are shown one at a time and "
@@ -80,11 +84,32 @@ def _state_text(state: Any) -> str:
 
 
 class _Pieces:
-    """Prefix text with the character ranges of state and question, plus a continuation renderer."""
+    """Prefix text with the character ranges of state and question, plus a continuation renderer.
+
+    ``cont_parts(o)`` = (request part, template tail): the request part is " " + the option text (the one template
+    space before the option travels with it, so BPE sees the natural " word" token), the tail is fixed template text.
+    Trust segments (G15): the prefix is tokenized as separate segments cut at the state and question boundaries
+    (``prefix_cuts``; each request segment again carries the one template space before it), and a continuation as
+    its request part + its tail, so no token ever merges across a trust boundary and the template's tokens are the
+    same whatever the request text is."""
 
     def __init__(self, prefix: str, state: tuple[int, int], instr: tuple[int, int], field: tuple[int, int],
-                 cont: Callable[[str], str]) -> None:
-        self.prefix, self.state, self.instr, self.field, self.cont = prefix, state, instr, field, cont
+                 cont_parts: Callable[[str], tuple[str, str]]) -> None:
+        self.prefix, self.state, self.instr, self.field, self.cont_parts = prefix, state, instr, field, cont_parts
+
+    def cont(self, o: str) -> str:
+        return "".join(self.cont_parts(o))
+
+    def seg(self, a: int, b: int) -> tuple[int, int]:
+        """The trust segment of request text at chars [a, b): it absorbs the one template space right before it, also
+        when the request text is empty (so the template's own tokens never depend on whether it is)."""
+        return (a - 1, b) if a > 0 and self.prefix[a - 1] == " " else (a, b)
+
+    def prefix_cuts(self) -> list[int]:
+        cuts = {0, len(self.prefix), self.field[0], self.field[1]}
+        for a, b in (self.state, self.instr):
+            cuts |= set(self.seg(a, b))
+        return sorted(cuts)
 
 
 def _body(state_text: str, instr: str, n: int, open_: str) -> tuple[str, tuple, tuple, tuple]:
@@ -106,7 +131,7 @@ def shim_pieces(state_text: str, q: dict[str, Any], n: int, chat_tail: bool = Fa
     off = len(head)
     tail = (CHATML["user_close"] + CHATML["generation"] + PREFILL) if chat_tail else "<|im_end|>"
     return _Pieces(head + body, (st[0] + off, st[1] + off), (ins[0] + off, ins[1] + off),
-                   (fld[0] + off, fld[1] + off), lambda o: " " + o.rstrip() + tail)
+                   (fld[0] + off, fld[1] + off), lambda o: (" " + o.rstrip(), tail))
 
 
 def is_g1_template(tpl: Any) -> bool:
@@ -125,7 +150,7 @@ def g1_pieces(state_text: str, q: dict[str, Any], n: int, chat_tail: bool = Fals
     off = len(head)
     tail = G1V2_TEMPLATE.tail if chat_tail else G1_TURN_END
     return _Pieces(head + body, (st[0] + off, st[1] + off), (ins[0] + off, ins[1] + off),
-                   (fld[0] + off, fld[1] + off), lambda o: " " + g1_clean(o).rstrip() + tail)
+                   (fld[0] + off, fld[1] + off), lambda o: (" " + g1_clean(o).rstrip(), tail))
 
 
 def template_pieces(tpl: Any, state_text: str, q: dict[str, Any], n: int) -> _Pieces:
@@ -133,7 +158,7 @@ def template_pieces(tpl: Any, state_text: str, q: dict[str, Any], n: int) -> _Pi
     body, st, ins, fld = _body(state_text, _instr_text(q), n, "")
     off = len(head)
     return _Pieces(head + body, (st[0] + off, st[1] + off), (ins[0] + off, ins[1] + off),
-                   (fld[0] + off, fld[1] + off), lambda o: " " + o + tpl.tail)
+                   (fld[0] + off, fld[1] + off), lambda o: (" " + o, tpl.tail))
 
 
 class _Tok:
@@ -167,6 +192,27 @@ class _Tok:
 
     def ids(self, text: str) -> list[int]:
         return self.ids_offsets(text)[0]
+
+    def ids_segments(self, text: str, cuts: Sequence[int]) -> tuple[list[int], list[tuple[int, int]], dict[int, int]]:
+        """Tokenize ``text`` as the separate segments ``text[cuts[i]:cuts[i+1]]`` and concatenate (no token crosses a
+        cut). Returns (ids, char offsets, {cut: index of its first token}); the token span of [cuts[i], cuts[j]) is
+        (bounds[cuts[i]], bounds[cuts[j]])."""
+        ids: list[int] = []
+        offs: list[tuple[int, int]] = []
+        bounds: dict[int, int] = {}
+        for x, y in zip(cuts, cuts[1:]):
+            bounds[x] = len(ids)
+            if y > x:
+                i, o = self.ids_offsets(text[x:y])
+                ids += i
+                offs += [(s + x, e + x) for s, e in o]
+        bounds[cuts[-1]] = len(ids)
+        return ids, offs, bounds
+
+    def cont_ids(self, parts: tuple[str, str]) -> tuple[list[int], tuple[int, int]]:
+        """(ids of request part + ids of the tail, token span of the request part)."""
+        req = self.ids(parts[0]) if parts[0] else []
+        return req + (self.ids(parts[1]) if parts[1] else []), (0, len(req))
 
     def n_control(self, ids: Sequence[int]) -> int:
         if self.spec is None:
@@ -213,17 +259,19 @@ def build_row_sym(request: dict[str, Any], qid: str, encode: Any, tpl: Any, layo
         st_text = _state_text(request["state"])
         pieces = template_pieces(tpl, st_text, q, n)
     tok = _Tok(encode, spec)
-    ids, offs = tok.ids_offsets(pieces.prefix)
+    # trust segments (G15): no token merges across a trusted/untrusted boundary (see _Pieces)
+    ids, offs, bounds = tok.ids_segments(pieces.prefix, pieces.prefix_cuts())
     texts, as_content = [], []
     for oid, desc in opts:
         t, c = option_text(oid, desc, with_id)
         texts.append(t)
         as_content.append(c)
-    cont_texts = [pieces.cont(t) for t in texts]
-    conts_c = [tok.ids(c) for c in cont_texts]
+    cont_enc = [tok.cont_ids(pieces.cont_parts(t)) for t in texts]
+    conts_c = [c for c, _ in cont_enc]
     if spec is not None:  # control-token refusal, as the shim row: the skeleton's control count only
         skel = shim_pieces("x", {"instructions": "x"}, n, chat_tail)
-        want_p, want_c = tok.n_control(tok.ids(skel.prefix)), tok.n_control(tok.ids(skel.cont("x")))
+        want_p = tok.n_control(tok.ids_segments(skel.prefix, skel.prefix_cuts())[0])
+        want_c = tok.n_control(tok.cont_ids(skel.cont_parts("x"))[0])
         if tok.n_control(ids) != want_p or any(tok.n_control(c) != want_c for c in conts_c):
             raise ControlTokenError("request text encodes to a control token; refused")
     if g1 and (0 in ids or any(0 in c for c in conts_c)):  # as the g1v2 rows: id 0 is <|endoftext|>
@@ -236,20 +284,19 @@ def build_row_sym(request: dict[str, Any], qid: str, encode: Any, tpl: Any, layo
     if q["type"] == "score" and perm != sorted(perm):
         raise ValueError("score levels are ordinal; their order is part of the question and cannot be permuted")
     axis = [canon[k] for k in perm]
-    state_span, evidence = _span(offs, *pieces.state), "state"
-    instr_span = _span(offs, *pieces.instr)
+    def seg_span(a: int, b: int) -> tuple[int, int]:  # token span of a trust segment (both ends are cuts)
+        return (bounds[a], bounds[b])
+
+    state_span, evidence = seg_span(*pieces.seg(*pieces.state)), "state"
+    instr_span = seg_span(*pieces.seg(*pieces.instr))
     if is_empty_state(request["state"]) or state_span[1] <= state_span[0]:
         if empty_state != "reread_instructions" or instr_span[1] <= instr_span[0]:
             raise ValueError("state is empty (no evidence content); heads need at least one evidence token")
         state_span, evidence = instr_span, "reread_instructions"
-    st_sp = _span(offs, *pieces.state)
-    field_span = _span(offs, *pieces.field)
-    # option text tokens inside each continuation: data (ID_PATH), for the controlsafe trust gate
-    cont_spans = []
-    for k in axis:
-        c_ids, c_offs = tok.ids_offsets(cont_texts[k])
-        a = 1 if cont_texts[k].startswith(" ") else 0
-        cont_spans.append([(*_span(c_offs, a, a + len(texts[k].rstrip())), ID_PATH)])
+    st_sp = seg_span(*pieces.seg(*pieces.state))
+    field_span = seg_span(*pieces.field)
+    # option text tokens inside each continuation (its whole request part): data (ID_PATH), for the controlsafe gate
+    cont_spans = [[(*cont_enc[k][1], ID_PATH)] for k in axis]
     caller = [s for s in (st_sp, instr_span) if s[1] > s[0]]
     fields = [f for f in ((st_sp[0], st_sp[1], state_path()), (instr_span[0], instr_span[1], instructions_path(qid)))
               if f[1] > f[0]]

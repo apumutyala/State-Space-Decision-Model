@@ -52,6 +52,18 @@ def test_perturb_eval_sym_fork_passes_g1_with_identical_rows(tmp_path):
     assert set(per) == {"option_reverse", "option_shuffle", "key_relabel"}
     assert rep["g1_pass"] and rep["rows_all_identical"]
     assert all(v["flips"] == 0 and v["max_abs_dp"] == 0.0 for v in per.values()), per
+    po = rep["presented_order"]
+    assert all(po[op]["request_changed"] > 0 for op in per), po  # the perturbations really reached the decider
+    assert all(po[op]["model_order_changed"] == 0 for op in per), po  # sym rows: canonical by construction
+    # the written perturbation file keeps the PERTURBED option order (no sort_keys)
+    import json as _json
+
+    from jevkit import perturb as _P
+
+    rows_f = [_json.loads(x) for x in (tmp_path / "perturbed.jsonl").read_text(encoding="utf-8").splitlines()]
+    ps = _P.make_perturbations(_items(5), ["option_reverse", "option_shuffle", "key_relabel"], [0])
+    assert [list((r.get("item") or r).get("question", {}).get("criteria") or {}) for r in rows_f] == \
+        [list(p.item.question.get("criteria") or {}) for p in ps]
     for f in ("base.preds.jsonl", "perturbed.jsonl", "perturbed.preds.jsonl", "perturb_report.json"):
         assert (tmp_path / f).is_file()
     # the written files are the ones `jevkit perturb score` reads, and it agrees
@@ -64,6 +76,91 @@ def test_perturb_eval_sym_fork_passes_g1_with_identical_rows(tmp_path):
     assert cli.main(["perturb", "score", "--items", str(it_path), "--perturbed", str(tmp_path / "perturbed.jsonl"),
                      "--pred", str(tmp_path / "base.preds.jsonl"), "--pred-perturbed",
                      str(tmp_path / "perturbed.preds.jsonl"), "--out", str(tmp_path / "cli.json")]) == 0
+
+
+def test_written_perturbation_file_must_preserve_the_in_memory_order(tmp_path):
+    """#245: a sort_keys dump restores base order (0/213 reordered rows in a receipt); assert_file_order catches it."""
+    import json as _json
+
+    from jevkit import perturb as _P
+    from jobs.sym_eval.perturb_eval import assert_file_order
+
+    ps = _P.make_perturbations(_items(5), ["option_reverse", "option_shuffle", "key_relabel"], [0])
+    good, bad = tmp_path / "good.jsonl", tmp_path / "bad.jsonl"
+    good.write_text("".join(_json.dumps(p.to_dict(), ensure_ascii=False) + "\n" for p in ps), encoding="utf-8")
+    bad.write_text("".join(_json.dumps(p.to_dict(), ensure_ascii=False, sort_keys=True) + "\n" for p in ps),
+                   encoding="utf-8")
+    assert_file_order(good, ps)
+    with pytest.raises(AssertionError, match="in-memory option order"):
+        assert_file_order(bad, ps)
+
+
+def test_g1_verdict_fails_closed():
+    """Every requested operator must be present with n > 0, the dp bound defaults to 0 (bitwise), and the rows must
+    be checked and identical (SYM_CHECK.md section 3)."""
+    from functools import partial
+
+    from jobs.sym_eval import perturb_eval as PE
+    from jobs.sym_eval.perturb_eval import REORDER_RELABEL_OPS
+
+    ok = {"n": 4, "flips": 0, "invalid": 0, "max_abs_dp": 0.0}
+    per = {op: dict(ok) for op in REORDER_RELABEL_OPS}
+    rows = {op: {"n": 4, "identical": 4} for op in REORDER_RELABEL_OPS}
+    order = {op: {"n": 4, "request_changed": 4, "model_order_changed": 0} for op in REORDER_RELABEL_OPS}
+    g1_verdict = partial(PE.g1_verdict, order=order)
+    assert g1_verdict(REORDER_RELABEL_OPS, per, rows)["g1_pass"]
+    # the perturbation never reached the decider (sort_keys put options back in base order) -> vacuous -> FAIL
+    for op in REORDER_RELABEL_OPS:
+        v = PE.g1_verdict(REORDER_RELABEL_OPS, per, rows, order={**order, op: {**order[op], "request_changed": 0}})
+        assert not v["g1_pass"] and any(op in f and "presented" in f for f in v["g1_failures"])
+    assert not PE.g1_verdict(REORDER_RELABEL_OPS, per, rows)["g1_pass"]  # no order check = no pass
+    # an operator that produced no perturbation (e.g. key_relabel on a noul-only item set) -> vacuous -> FAIL
+    part = {k: v for k, v in per.items() if k != "key_relabel"}
+    v = g1_verdict(REORDER_RELABEL_OPS, part, rows)
+    assert not v["g1_pass"] and any("key_relabel" in f for f in v["g1_failures"])
+    assert not g1_verdict(REORDER_RELABEL_OPS, {**per, "key_relabel": {**ok, "n": 0}}, rows)["g1_pass"]
+    # bitwise by default; the observed max |dp| is reported apart
+    jit = {**per, "option_shuffle": {**ok, "max_abs_dp": 1e-9}}
+    v = g1_verdict(REORDER_RELABEL_OPS, jit, rows)
+    assert not v["g1_pass"] and v["max_abs_dp_observed"] == 1e-9
+    assert g1_verdict(REORDER_RELABEL_OPS, jit, rows, max_dp=1e-3)["g1_pass"]
+    # rows: missing check, one differing row, or a missing operator -> FAIL
+    assert not g1_verdict(REORDER_RELABEL_OPS, per, None)["g1_pass"]
+    assert not g1_verdict(REORDER_RELABEL_OPS, per, {**rows, "option_reverse": {"n": 4, "identical": 3}})["g1_pass"]
+    assert not g1_verdict(REORDER_RELABEL_OPS, per, {k: v for k, v in rows.items() if k != "key_relabel"})["g1_pass"]
+    assert not g1_verdict([], {}, {})["g1_pass"]
+
+
+def test_perturb_eval_noul_only_items_fail_g1_as_vacuous(tmp_path):
+    """The SYM_CHECK repro: noul items only -> key_relabel yields nothing -> G1 must not pass."""
+    from jobs.sym_eval.perturb_eval import run
+
+    rep = run(_decider(SYM_LAYOUT), _items(0), tmp_path, row_fn=_row_fn(SYM_LAYOUT))
+    assert "key_relabel" not in rep["flip_report"]["per_operator"]
+    assert not rep["g1_pass"] and any("key_relabel" in f for f in rep["g1_failures"])
+
+
+def test_select_actions_on_sym_rows_uses_content_ties_invariant_under_relabel():
+    """The sym Decider puts the content keys on the policy-conditioned stage; select_actions then decides duplicates as
+    a tie_set (invariant as a set under reorder + relabel) and never by id."""
+    from decide import select_actions
+
+    dec = _decider(SYM_LAYOUT)
+    rng = random.Random(11)
+    for t in range(3):
+        req = make_request(rng, 4)
+        crit = req["questions"]["q"]["criteria"]
+        a, b = list(crit)[:2]
+        crit[b] = crit[a]
+        req["ssdm"] = {"policy_ref": "p1", "context_ref": "c1", "request_id": f"r{t}",
+                       "policy_restriction": {"q": sorted(crit)}}
+        sel = select_actions(req, dec.decide(req))
+        assert sel["action"] == "execute", sel
+        new, m = transform({k: v for k, v in req.items() if k != "ssdm"}, rng, relabel=True, reorder=True)
+        new["ssdm"] = {**req["ssdm"], "policy_restriction": {"q": sorted(new["questions"]["q"]["criteria"])}}
+        sel2 = select_actions(new, dec.decide(new))
+        assert sorted(m[o] for o in sel["answers"]["q"]["tie_set"]) == sel2["answers"]["q"]["tie_set"]
+        assert all(sel2["answers"]["q"]["probabilities"][m[o]] == p for o, p in sel["answers"]["q"]["probabilities"].items())
 
 
 def test_perturb_eval_teeth_ordered_layout_moves_under_key_relabel(tmp_path):
