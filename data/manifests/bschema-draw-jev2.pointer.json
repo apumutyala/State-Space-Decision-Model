@@ -1,0 +1,90 @@
+{
+ "build": "bschema-draw-jev2 (TRAIN-only rows for the 10 JevBench families jev1 lacks + long_policy at eval length)",
+ "components": [
+  {
+   "build": "bschema-draw-jev2a-v2",
+   "pointer": "data/manifests/bschema-draw-jev2a-v2.pointer.json",
+   "pointer_sha256": "eba70d2c7fccbca43a127d8f3e47c4153c9fbd727c59e4fd789be8f935c87946",
+   "records_uncompressed_sha256": "00a1d722310f8923b8d7e998243bf7632909bb4fd03a0edfff1bc7a573dbdf27",
+   "n_records": 7500,
+   "families": {
+    "multi_hop": 1500,
+    "judge_hard": 1500,
+    "temporal_numeric": 1500,
+    "fact": 1500,
+    "tool_selection": 1500
+   },
+   "token_window": [
+    0,
+    4096
+   ],
+   "note": "stage a families (supersedes jev2a)"
+  },
+  {
+   "build": "bschema-draw-jev2b",
+   "pointer": "data/manifests/bschema-draw-jev2b.pointer.json",
+   "pointer_sha256": "35620f5f47c6e48bb61de0a336ccfb54dad5bf11f606a15f30b32fe48fee4127",
+   "records_uncompressed_sha256": "9406ae088c20f1c2916c35053042974d61dca1fe101601f078b46067f60d69c0",
+   "n_records": 7500,
+   "families": {
+    "probability": 1500,
+    "trap": 1500,
+    "ambiguous": 1500,
+    "tradeoff": 1500,
+    "adversarial": 1500
+   },
+   "token_window": [
+    0,
+    2048
+   ],
+   "note": "stage b families"
+  },
+  {
+   "build": "bschema-draw-jev2c-v2",
+   "pointer": "data/manifests/bschema-draw-jev2c-v2.pointer.json",
+   "pointer_sha256": "86960d903d613bc88eca9ee131b486a749afa9a89c9cebca77744178721c5a99",
+   "records_uncompressed_sha256": "0bdb1ac6902f99cd0df9f0ab1a5c8d8bbe6a418f1da18997c82c4d41fecb28dc",
+   "n_records": 1500,
+   "families": {
+    "long_policy": 1500
+   },
+   "token_window": [
+    2000,
+    4096
+   ],
+   "note": "long_policy at eval length (supersedes jev2c; replaces jev1 long_policy in the mix)"
+  }
+ ],
+ "n_records": 16500,
+ "families": {
+  "multi_hop": 1500,
+  "judge_hard": 1500,
+  "temporal_numeric": 1500,
+  "fact": 1500,
+  "tool_selection": 1500,
+  "probability": 1500,
+  "trap": 1500,
+  "ambiguous": 1500,
+  "tradeoff": 1500,
+  "adversarial": 1500,
+  "long_policy": 1500
+ },
+ "superseded_do_not_mix": {
+  "bschema-draw-jev2a": {
+   "pointer_sha256": "53416094f957a6aebb6514dceaaef11b18473da1a6a910c89057639865c24eda",
+   "records_uncompressed_sha256": "393d0f0fffd0beec658a4d3a50a463422ea4156aae59c7ed5c3df05508809a14",
+   "n_records": 30000,
+   "why": "pre-audit format"
+  },
+  "bschema-draw-jev2c": {
+   "pointer_sha256": "b9f82ab18c140b4221d017248503b7f8d3620c4737e2028b067242bf94c514fc",
+   "records_uncompressed_sha256": "0a297a5886b0b3318344165acbf44c7f1cbe187639dae6de1312aeb91e4ad50c",
+   "n_records": 1500,
+   "why": "5% score rows, length p90 below public"
+  }
+ },
+ "loader_contract": "rows keep their stored criteria order (never re-sort option keys); family = aug.jev1.family8; max_len 4,096 shim tokens covers every row",
+ "gates": "each component's receipts/2026-10-10-jev2-draw/<build>/GATES.json (all_pass true: doc_overlap Index + JevBench, attack_guard, jevbench rescan, cohort v2/v3, Index fingerprint, frozen heldout, D1-B, gold-once, gold-position chi2) + shape-gate.json (schema statistics only)",
+ "family_spec": "receipts/2026-10-10-jev2-draw/FAMILY_SPEC.md",
+ "readme": "receipts/2026-10-10-jev2-draw/README.md"
+}
