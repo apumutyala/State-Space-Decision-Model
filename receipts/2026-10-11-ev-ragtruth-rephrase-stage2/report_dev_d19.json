@@ -1,0 +1,143 @@
+{
+ "schema": "ssdm.m2.ragtruth_rephrase.v1.dev",
+ "prereg": "B-PREREG-RAGTRUTH-REPHRASE (state PREREG.md @0683fa7c)",
+ "split": "Index DEV catalog 59 minus proxy600",
+ "n_rows": 255,
+ "ids_sha256": "5a1d4896f6cdffd50d3414d1459fe9ada70bffe669800b77892f446bb9706776",
+ "arms": {
+  "d19": {
+   "wordings": {
+    "original": {
+     "status": {
+      "ok": 255
+     },
+     "n_scored": 255,
+     "auroc": {
+      "point": 0.874384236453202,
+      "lo": 0.8236275093063261,
+      "hi": 0.917229572339143,
+      "level": 0.95,
+      "B": 2000,
+      "seed": 20261009,
+      "skipped_single_class": 0,
+      "n": 255,
+      "n_pos": 87
+     },
+     "auroc_flipped": {
+      "point": 0.12561576354679804,
+      "lo": 0.082770427660857,
+      "hi": 0.17637249069367378,
+      "level": 0.95,
+      "B": 2000,
+      "seed": 20261009,
+      "skipped_single_class": 0,
+      "n": 255,
+      "n_pos": 87
+     },
+     "mean_p_hallucinated": 0.41833607843137255,
+     "frac_pred_hallucinated": 0.37254901960784315,
+     "f1_hallucinated_at_0p5": 0.6923076923076923,
+     "accuracy_at_0p5": 0.7803921568627451,
+     "by_track_auroc": {
+      "Data2txt": {
+       "n": 78,
+       "auroc": 0.8953571428571429
+      },
+      "QA": {
+       "n": 88,
+       "auroc": 0.7538461538461538
+      },
+      "Summary": {
+       "n": 89,
+       "auroc": 0.8695512820512821
+      }
+     },
+     "in_draw": {
+      "n": 0,
+      "n_pos": 0,
+      "auroc": NaN
+     },
+     "out_of_draw": {
+      "n": 255,
+      "n_pos": 87,
+      "auroc": 0.874384236453202
+     },
+     "results_sha256": "0c6fd02527310e37d3e4e2990baf0b803dcb80c396ba6a875a44d59981b4ba30"
+    },
+    "rt1": {
+     "status": {
+      "ok": 255
+     },
+     "n_scored": 255,
+     "auroc": {
+      "point": 0.8819786535303776,
+      "lo": 0.8318541080023445,
+      "hi": 0.9231834151669213,
+      "level": 0.95,
+      "B": 2000,
+      "seed": 20261009,
+      "skipped_single_class": 0,
+      "n": 255,
+      "n_pos": 87
+     },
+     "auroc_flipped": {
+      "point": 0.11802134646962233,
+      "lo": 0.07681658483307881,
+      "hi": 0.1681458919976554,
+      "level": 0.95,
+      "B": 2000,
+      "seed": 20261009,
+      "skipped_single_class": 0,
+      "n": 255,
+      "n_pos": 87
+     },
+     "mean_p_hallucinated": 0.4203470588235294,
+     "frac_pred_hallucinated": 0.3803921568627451,
+     "f1_hallucinated_at_0p5": 0.717391304347826,
+     "accuracy_at_0p5": 0.796078431372549,
+     "by_track_auroc": {
+      "Data2txt": {
+       "n": 78,
+       "auroc": 0.8867857142857143
+      },
+      "QA": {
+       "n": 88,
+       "auroc": 0.7630769230769231
+      },
+      "Summary": {
+       "n": 89,
+       "auroc": 0.8762820512820513
+      }
+     },
+     "in_draw": {
+      "n": 0,
+      "n_pos": 0,
+      "auroc": NaN
+     },
+     "out_of_draw": {
+      "n": 255,
+      "n_pos": 87,
+      "auroc": 0.8819786535303776
+     },
+     "results_sha256": "28736ba3aba20832046e831cc27211d0e9d187c368096e391a8257f4a08db918"
+    }
+   },
+   "paired_dauroc_rt1_minus_original": {
+    "point": 0.007594417077175675,
+    "lo": -0.0014812274161468241,
+    "hi": 0.01760998139287604,
+    "B": 2000,
+    "seed": 20261009,
+    "skipped_single_class": 0,
+    "n": 255
+   },
+   "n_in_draw": 0,
+   "reproduction_vs_landed": {
+    "n": 255,
+    "max_abs_dp": 0.0,
+    "mean_abs_dp": 0.0
+   }
+  }
+ },
+ "verdict": "measured"
+}

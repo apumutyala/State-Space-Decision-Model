@@ -1,0 +1,108 @@
+{
+ "prereg": "B-PREREG-RAGTRUTH-REPHRASE (state PREREG.md @0683fa7c)",
+ "arm": "d19",
+ "edition": "0.2.1",
+ "scorer": "harness.score.decompose + bootstrap.compare (B=2000, seed 0)",
+ "files": {
+  "--landed": {
+   "path": "C:/Users/apumu/d19_fulldev_land/merged/fulldev/child.results.jsonl",
+   "sha256": "b6bab8034458b1a6b45da300f3a253141ed91b6fdb66eba9b5370c5ff8d846a8"
+  },
+  "--rt1": {
+   "path": "C:/Users/apumu/art/job-ixpzj/final/out/ragtruth_rephrase/d19-dev-rt1.results.jsonl",
+   "sha256": "28736ba3aba20832046e831cc27211d0e9d187c368096e391a8257f4a08db918"
+  },
+  "--orig": {
+   "path": "C:/Users/apumu/art/job-ixpzj/final/out/ragtruth_rephrase/d19-dev-original.results.jsonl",
+   "sha256": "0c6fd02527310e37d3e4e2990baf0b803dcb80c396ba6a875a44d59981b4ba30"
+  }
+ },
+ "n_swapped_rows": 255,
+ "swapped_ids_sha256": "5a1d4896f6cdffd50d3414d1459fe9ada70bffe669800b77892f446bb9706776",
+ "reproduction_original_vs_landed": {
+  "n": 255,
+  "max_abs_dp": 0.0
+ },
+ "primary_dev_minus_proxy600": {
+  "n_rows": 11460,
+  "ids_sha256": "d45a1adb1cb8cb5c2b15734299ced15ac2f4da13a30949738bee312b52ee4164",
+  "index_candidate": 49.7547,
+  "index_baseline": 49.6276,
+  "delta": {
+   "point": 0.1271,
+   "lo": 0.0,
+   "hi": 0.3204,
+   "excludes_zero": false
+  },
+  "benchmarks_changed": {
+   "59": {
+    "point": 5.21,
+    "lo": 0.0,
+    "hi": 13.1405,
+    "excludes_zero": null
+   }
+  }
+ },
+ "dev_minus_proxy600_excl_overlength51": {
+  "n_rows": 11413,
+  "ids_sha256": "0a2d9ab22b65f4f20c011688be29e0b0e705ebb3a83f5d390974c64eac021426",
+  "index_candidate": 50.0835,
+  "index_baseline": 49.9565,
+  "delta": {
+   "point": 0.1271,
+   "lo": 0.0,
+   "hi": 0.3204,
+   "excludes_zero": false
+  },
+  "benchmarks_changed": {
+   "59": {
+    "point": 5.21,
+    "lo": 0.0,
+    "hi": 13.14,
+    "excludes_zero": null
+   }
+  }
+ },
+ "sensitivity_vs_job_original": {
+  "n_rows": 11460,
+  "ids_sha256": "d45a1adb1cb8cb5c2b15734299ced15ac2f4da13a30949738bee312b52ee4164",
+  "index_candidate": 49.7547,
+  "index_baseline": 49.6276,
+  "delta": {
+   "point": 0.1271,
+   "lo": 0.0,
+   "hi": 0.3204,
+   "excludes_zero": false
+  },
+  "benchmarks_changed": {
+   "59": {
+    "point": 5.21,
+    "lo": 0.0,
+    "hi": 13.1405,
+    "excludes_zero": null
+   }
+  }
+ },
+ "dev_minus_proxy600_minus_lineage4": {
+  "n_rows": 11456,
+  "ids_sha256": "f27c4b68bcd09ada9a910a78e5be721dbe25fa4f22851a38a383cafbf6366177",
+  "index_candidate": 49.7239,
+  "index_baseline": 49.5969,
+  "delta": {
+   "point": 0.1271,
+   "lo": 0.0,
+   "hi": 0.3216,
+   "excludes_zero": false
+  },
+  "benchmarks_changed": {
+   "59": {
+    "point": 5.21,
+    "lo": 0.0,
+    "hi": 13.1875,
+    "excludes_zero": null
+   }
+  }
+ },
+ "success": false,
+ "verdict": "FAIL: RT1 retired for this arm (DEAD_ENDS)"
+}

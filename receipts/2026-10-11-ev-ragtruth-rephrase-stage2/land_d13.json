@@ -1,0 +1,67 @@
+{
+ "prereg": "B-PREREG-RAGTRUTH-REPHRASE (state PREREG.md @0683fa7c)",
+ "arm": "d13",
+ "edition": "0.2.1",
+ "scorer": "harness.score.decompose + bootstrap.compare (B=2000, seed 0)",
+ "files": {
+  "--landed": {
+   "path": "C:/Users/apumu/d13_fulldev_land/merged/fulldev/child.results.jsonl",
+   "sha256": "7b42f4c34c4d80d997a2d349b15cbcc8560571ea3f4a4e17b32d24a7360bb1dd"
+  },
+  "--rt1": {
+   "path": "C:/Users/apumu/art/job-qhf6k/final/out/ragtruth_rephrase/d13-dev-rt1.results.jsonl",
+   "sha256": "8c94fcb1ed8370d983bef65a87990e9df0afbfc10c82eed0ecf5ff663b3c0e1b"
+  },
+  "--orig": {
+   "path": "C:/Users/apumu/art/job-qhf6k/final/out/ragtruth_rephrase/d13-dev-original.results.jsonl",
+   "sha256": "b48dcaf8266fc2138718fb6039f93d710f47da9ca41167685ed4b627b489917e"
+  }
+ },
+ "n_swapped_rows": 255,
+ "swapped_ids_sha256": "5a1d4896f6cdffd50d3414d1459fe9ada70bffe669800b77892f446bb9706776",
+ "reproduction_original_vs_landed": {
+  "n": 255,
+  "max_abs_dp": 0.0
+ },
+ "primary_dev_minus_proxy600": {
+  "n_rows": 11460,
+  "ids_sha256": "d45a1adb1cb8cb5c2b15734299ced15ac2f4da13a30949738bee312b52ee4164",
+  "index_candidate": 43.1208,
+  "index_baseline": 43.1208,
+  "delta": {
+   "point": 0.0,
+   "lo": 0.0,
+   "hi": 0.0,
+   "excludes_zero": false
+  },
+  "benchmarks_changed": {}
+ },
+ "dev_minus_proxy600_excl_overlength51": {
+  "n_rows": 11413,
+  "ids_sha256": "0a2d9ab22b65f4f20c011688be29e0b0e705ebb3a83f5d390974c64eac021426",
+  "index_candidate": 43.4808,
+  "index_baseline": 43.4808,
+  "delta": {
+   "point": 0.0,
+   "lo": 0.0,
+   "hi": 0.0,
+   "excludes_zero": false
+  },
+  "benchmarks_changed": {}
+ },
+ "sensitivity_vs_job_original": {
+  "n_rows": 11460,
+  "ids_sha256": "d45a1adb1cb8cb5c2b15734299ced15ac2f4da13a30949738bee312b52ee4164",
+  "index_candidate": 43.1208,
+  "index_baseline": 43.1208,
+  "delta": {
+   "point": 0.0,
+   "lo": 0.0,
+   "hi": 0.0,
+   "excludes_zero": false
+  },
+  "benchmarks_changed": {}
+ },
+ "success": false,
+ "verdict": "FAIL: RT1 retired for this arm (DEAD_ENDS)"
+}
