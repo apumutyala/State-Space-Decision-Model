@@ -17,6 +17,10 @@ head for the invariance harness). Tests: `tests/controlsafe/test_g16_sym.py`. Th
   `score`. Ties are reported as a set; a single representative is picked by content hash, never by position or id.
 - Composition: reorder + relabel invariance (bitwise, harness tol = 0) and G15 on `[lo, hi]` hold at the same time,
   so the matched robust set is invariant to reorder, relabel AND any untrusted text.
+- **The injection-robust action is `act`**, the singleton of the trusted-only matched robust set (from `[lo, hi]`
+  alone; `null` = escalate). `decision_set` / `decision` are the argmax of `score = b + a·E`, and E reads untrusted
+  text, so they are NOT G15-invariant (only reorder/relabel-invariant). Only `lo`, `hi`, the veto and `act` are
+  G15-invariant.
 
 ## Record schema (`ssdm.g16sym.export.v1`, one JSON object per line)
 
@@ -28,7 +32,9 @@ head for the invariance harness). Tests: `tests/controlsafe/test_g16_sym.py`. Th
  "vetoed": ["close"],
  "decision_set": ["escalate"],
  "decision": "escalate",
- "gold": "escalate"}
+ "gold": "escalate",
+ "act": "escalate",
+ "act_rule": {"qhat": 0.83, "kappa": null}}
 ```
 
 | Field | Required | Meaning |
@@ -41,9 +47,11 @@ head for the invariance harness). Tests: `tests/controlsafe/test_g16_sym.py`. Th
 | `options[].score` | yes | the point logit `b + a.E` (reads untrusted text; never used for a guaranteed action) |
 | `options[].content_sha256` | no | SHA-256 of the option's continuation token ids (the tie-break key) |
 | `vetoed` | yes | host-vetoed ids (keyed by id, they travel with the option); they have no interval and can never be decided |
-| `decision_set` | no | ids whose score equals the max (exact float equality) |
-| `decision` | no | content-hash representative of `decision_set`, or `null` when duplicate contents tie |
+| `decision_set` | no | ids whose score equals the max (exact float equality). Reads E, hence untrusted text: NOT G15-invariant, never a guaranteed action |
+| `decision` | no | content-hash representative of `decision_set`, or `null` when duplicate contents tie (same caveat) |
 | `gold` | calibration rows | gold option id. A vetoed gold is legal: it scores `s_lo = +inf` in calibration (an honest miss) |
+| `act` | yes (may be `null`) | THE injection-robust action: `act(rec, qhat, kappa)`, the singleton of the matched robust set built from `[lo, hi]` only, else `null` (escalate). `null` when exported without a calibrated `qhat`. G15-invariant |
+| `act_rule` | with `act` | `{"qhat", "kappa"}` used for `act` (`null` without a qhat). `validate_record` recomputes `act` from `[lo, hi]` and refuses a record whose `act` differs |
 
 `validate_record(rec)` checks the schema and returns `{id: [lo, hi]}`, exactly the `intervals` argument of
 `jevkit.guarantees.robust_set` / `robust_min_score`. `write_jsonl` / `read_jsonl` validate every row and refuse NaN.
@@ -56,6 +64,7 @@ head for the invariance harness). Tests: `tests/controlsafe/test_g16_sym.py`. Th
    exact (≤ 1 − α + 1/(n+1)) for continuous scores.
 3. Act only on the trusted-only singleton: `act(rec, q̂, kappa=None)` returns the element of a singleton set (optionally
    requiring its worst-case box probability ≥ kappa), else `None` = escalate. Never act on `decision`/`score`.
+   `export_record(..., qhat=q̂, kappa=...)` writes exactly that as the record's `act` field.
 
 The JSON keys line up with the recommended `calibration="trusted_lo"` mode in INJECTION_ROBUST_CONFORMAL.md §6
 (`--cal-intervals` = a calibration JSONL of these records). jevkit is not edited here.
@@ -65,7 +74,7 @@ The JSON keys line up with the recommended `calibration="trusted_lo"` mode in IN
 | Property | Holds because | Assumptions | Test |
 |---|---|---|---|
 | Reorder + relabel invariance, bitwise | (C1) prefix has no option list; (C2) one shared judge, no slot index, no id in the continuation; (C3) set softmax with `fsum`; (C4) argmax set + content hash. Row axis is content-canonical, and the batch is ordered by trusted token lists | non-empty descriptions (`row.meta["id_as_content"]` lists exceptions); `sym-fork` layout (`sym-fork-ids` is the non-relabel ablation) | `test_harness_reorder_and_relabel_bitwise` (evidence harness, tol 0), `test_lo_hi_score_travel_with_the_option_bitwise`, structural axis permutation + slot-bias teeth |
-| G15 on `[lo, hi]` | `a`, `b` read `h_P` only; `h_P` is a function of the trusted token lists; batch order is too | trust labels correct (A1), G15 kernels (A2) | `test_untrusted_text_cannot_move_lo_hi` (recompute and cache stream modes), undeclared-description edit test |
+| G15 on `[lo, hi]` | `a`, `b` read `h_P` only; `h_P` is a function of the trusted token lists; batch order is too | trust labels correct (A1), G15 kernels (A2); under BPE, sym-fork v3 trust-segment tokenization (no token straddles a trust boundary; `tests/test_sym_g15_bpe.py`) | `test_untrusted_text_cannot_move_lo_hi` (recompute and cache stream modes), undeclared-description edit test |
 | Robust-set coverage | Theorem A on `s_lo` | `(P, Y)` exchangeable (A3), clean-task gold (A4), fixed weights (A7) | `test_matched_robust_set_coverage_under_box_adversary` |
 
 ## Training in a cell

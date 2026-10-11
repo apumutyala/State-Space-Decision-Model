@@ -29,7 +29,10 @@ Guarantees (stated with their assumptions):
    the normaliser is a set softmax, ties are content-resolved. With the content-canonical sym-fork axis the row, hence
    every float op, is identical for any reorder / relabel: outputs are BITWISE equal (tests/guarantees harness, tol=0).
    Relabel needs the descriptions to be non-empty (``row.meta["id_as_content"]`` lists the exceptions).
-2. **G15 on the intervals.** ``lo``, ``hi`` (and the veto) are bitwise invariant to untrusted content and lengths.
+2. **G15 on the intervals.** ``lo``, ``hi`` (and the veto) are bitwise invariant to untrusted content and lengths;
+   so is the exported ``act`` (built from them alone). ``decision_set`` / ``decision`` = argmax of ``b + a.E`` read
+   E, i.e. untrusted text: they are NOT G15-invariant (reorder/relabel-invariant only). Under a BPE tokenizer this
+   relies on sym-fork v3's trust-segment tokenization (no token straddles a trust boundary, heads.symmetric).
 3. **G16 (a)-(d)** of ``controlsafe/g16.py`` carry over unchanged (the judge is the same function minus u/beta).
 4. **Injection-robust sets.** Any conformal score built from (lo, hi) alone is attack-proof (Theorem A); the matched
    ``s_lo`` calibration (``matched_qhat``) is exact split conformal; act only on the trusted-only singleton
@@ -59,7 +62,7 @@ from .trust_gate import ID_PATH, TrustGatedBackbone, continuation_trust, row_tru
 GUARANTEE_ID = "ssdm.g16sym.position_free_judge.v1"
 EXPORT_SCHEMA = "ssdm.g16sym.export.v1"
 OPTION_TRUST = ("declared", "host_schema")
-SYM_FORK_LAYOUTS = ("sym-fork", "sym-fork-ids")
+SYM_FORK_LAYOUTS = ("sym-fork", "sym-fork-chat", "sym-fork-ids")
 _U32 = 2.0 ** -24  # fp32 unit roundoff
 
 
@@ -253,8 +256,14 @@ class G16SymHead(nn.Module):
 
 # --------------------------------------------------------------------------------------------- export
 def export_record(decision_id: str, out: G16SymOutput, gold: str | None = None,
-                  extra: dict[str, Any] | None = None) -> dict[str, Any]:
-    """One JSONL record (docs/G16_EXPORT.md). ``options`` holds the allowed options only; vetoed ids are listed."""
+                  extra: dict[str, Any] | None = None, qhat: float | None = None,
+                  kappa: float | None = None) -> dict[str, Any]:
+    """One JSONL record (docs/G16_EXPORT.md). ``options`` holds the allowed options only; vetoed ids are listed.
+
+    ``act`` is THE injection-robust action: the trusted-only singleton of the matched robust set built from [lo, hi]
+    alone (``act(rec, qhat, kappa)``; None = escalate, and None when no calibrated ``qhat`` is given). It is
+    G15-invariant. ``decision_set`` / ``decision`` are the point argmax of ``score = b + a.E``; E reads untrusted text,
+    so they are NOT G15-invariant (reorder/relabel-invariant only) and must never drive a guaranteed action."""
     opts = []
     for k, o in enumerate(out.option_ids):
         if not bool(out.allowed[k]):
@@ -268,6 +277,8 @@ def export_record(decision_id: str, out: G16SymOutput, gold: str | None = None,
                            "decision_set": out.decision_set, "decision": out.decision}
     if gold is not None:
         rec["gold"] = gold
+    rec["act"] = None if qhat is None else act(rec, qhat, kappa)
+    rec["act_rule"] = None if qhat is None else {"qhat": float(qhat), "kappa": kappa}
     if extra:
         rec.update({k: v for k, v in extra.items() if k not in rec})
     return rec
@@ -287,6 +298,13 @@ def validate_record(rec: dict[str, Any]) -> dict[str, list[float]]:
         iv[oid] = [lo, hi]
     if "gold" in rec and rec["gold"] not in iv and rec["gold"] not in rec.get("vetoed", []):
         raise ValueError("gold must be an option id")
+    if rec.get("act") is not None:  # the exported action must be the trusted-only robust singleton, nothing else
+        rule = rec.get("act_rule")
+        if not isinstance(rule, dict) or "qhat" not in rule:
+            raise ValueError("act needs act_rule {qhat, kappa}")
+        if rec["act"] != act({k: v for k, v in rec.items() if k not in ("act", "act_rule")}, float(rule["qhat"]),
+                             rule.get("kappa")):
+            raise ValueError("act is not the matched robust singleton of [lo, hi]")
     return iv
 
 
