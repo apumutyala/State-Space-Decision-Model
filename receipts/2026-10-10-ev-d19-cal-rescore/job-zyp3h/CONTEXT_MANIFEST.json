@@ -1,0 +1,20 @@
+{
+ "job": "ev_cal_land",
+ "m1_sha": "99bc675f2770a3a29d451d18b75297e7e4750796",
+ "branch_commit": "99bc675f2770a3a29d451d18b75297e7e4750796",
+ "builder": "jobs.common.launch",
+ "params": "jobs/ev_cal_land/job_params.json",
+ "dockerfile_sha256": "46b200e58aaa67a62fae2ef2c5cbe7f68e2c920fd7632a8cb4e3c03782dd97f8",
+ "files_sha256": {
+  "jobs/ev_cal_land/data.sha256": "027f1c1b7cb92e0597268b4e7fef06496597601bfe2ffec26f3ab034bef2cdbb",
+  "jobs/ev_cal_land/ev_cal_land_job.sh": "289f4ec2ac8ed7168e736d5c01434a2b0938eb46adae4dfebbd319c698bc7bc5",
+  "jobs/ev_cal_land/job_params.json": "cbc2d40e4b272f2c8cd4c1ae713a200e2d091f54e906f21c99107d2d8640cbf5"
+ },
+ "data_sha256": {
+  "data/cand/calibrated.results.jsonl": "7c40c1158c312c2fbe1913c957c20c026ed0e23486cd16bc959352a25e7adb02",
+  "data/cand/untempered.results.jsonl": "b6bab8034458b1a6b45da300f3a253141ed91b6fdb66eba9b5370c5ff8d846a8",
+  "data/clef/clef27b.results.jsonl": "f5ad788be191f7737dfadd1594cab7b02a428d847b0cfd9478660df8032ab09e",
+  "data/clef/clef_flash.results.jsonl": "2cb2e96114694b589a35c392099b2f67dc5ae0970e9939f8500f0bedf86649c5",
+  "data/slices/dev-rows.jsonl.gz": "d1202ab84de3ddf74e53aff6b1fc6bba4f33352dfe03e9814a68bcbf2f235c84"
+ }
+}

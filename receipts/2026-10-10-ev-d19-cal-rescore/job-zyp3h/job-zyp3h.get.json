@@ -1,0 +1,121 @@
+{
+  "artifact": {
+    "artifact_id": "art-u7rbx",
+    "download": {
+      "expires_at": "2026-10-18T02:03:30.274132293+00:00",
+      "url": "https://s3.us-west-2.amazonaws.com/givemeanode-jobs/artifacts/f979ff45-d56a-4144-8565-298cac7dae9a/art-u7rbx?REDACTED&REDACTED&REDACTED&REDACTED&REDACTED&response-content-disposition=attachment%3B%20filename%3D%22art-u7rbx.tar%22&response-content-type=application%2Fx-tar&REDACTED"
+    },
+    "sha256": "521fce9828ea862e188fb9a54b39922ce12f57147a6c4e580fe24c8fd38da761",
+    "size_bytes": 40960,
+    "state": "ready"
+  },
+  "attempt": 1,
+  "attempt_history": [
+    {
+      "attempt": 1,
+      "end_cause": "process_exit",
+      "end_reason": null,
+      "ended_at": "2026-10-11T01:37:54.314450+00:00",
+      "outcome": "completed",
+      "started_at": "2026-10-11T01:35:29.533921+00:00"
+    }
+  ],
+  "checks": {
+    "declared": {
+      "health": {
+        "check": {
+          "path": "/output/heartbeat",
+          "type": "heartbeat"
+        },
+        "fail_threshold": 2,
+        "grace_period_s": 900,
+        "interval_s": 300,
+        "on_fail": "kill"
+      },
+      "success": {
+        "check": {
+          "all_of": [
+            {
+              "path": "/output/EV_CAL_LAND_DONE",
+              "type": "file_exists"
+            },
+            {
+              "path": "/output/MANIFEST.jsonl",
+              "type": "file_exists"
+            }
+          ]
+        }
+      }
+    },
+    "results": [
+      {
+        "action": "none",
+        "at": "2026-10-11T01:37:54.314450+00:00",
+        "attempt": 1,
+        "detail": "",
+        "phase": "success",
+        "verdict": "passed"
+      }
+    ],
+    "success_verdict": "passed"
+  },
+  "chip": {
+    "count": 1,
+    "model": "h100"
+  },
+  "clock_lock": false,
+  "finished_at": "2026-10-11T01:37:54.314450+00:00",
+  "hf_cache": false,
+  "infra_start_failures": 0,
+  "job_id": "job-zyp3h",
+  "label": "evidence: D19 calibrated full-DEV Index + area ECE (CPU-only landing)",
+  "max_restarts": 0,
+  "object": "job",
+  "preempted_count": 0,
+  "preflight": {
+    "checks": [
+      {
+        "check": "cost-cap",
+        "inputs": {
+          "cap_usd_micros": 900000000,
+          "committed_usd_micros": 56637000,
+          "remaining_usd_micros": 899547000,
+          "scope": "workspace",
+          "worst_case_usd_micros": 2520000
+        },
+        "message": "worst case $2.52 fits the workspace cap's remaining $899.55",
+        "verdict": "pass"
+      },
+      {
+        "check": "disk-model",
+        "inputs": {
+          "silent_because": "no Hugging Face model reference in the model field, the command, or the env"
+        },
+        "message": "",
+        "verdict": "silent"
+      }
+    ],
+    "ran_at": "2026-10-11T01:34:33.580360724Z"
+  },
+  "profiling": false,
+  "receipt": {
+    "attempts": [
+      {
+        "attempt": 1,
+        "billed_seconds": 144,
+        "charged_usd_micros": 151200,
+        "gpu_count": 1,
+        "rate_usd_micros_per_gpu_minute": 63000
+      }
+    ],
+    "billed_attempts": 1,
+    "billed_seconds": 144,
+    "charged_usd_micros": 151200,
+    "image_digest": "sha256:aecf47adcaedede4acbf751d2351098c1d7e23c329804fba4e4a7ae6ba9ae21e"
+  },
+  "restarts_used": 0,
+  "resume_source": "opted_out",
+  "start_failures": 0,
+  "status": "succeeded",
+  "submitted_at": "2026-10-11T01:34:33.580592+00:00"
+}

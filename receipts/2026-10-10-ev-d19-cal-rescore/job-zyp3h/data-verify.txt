@@ -1,0 +1,5 @@
+/data/slices/dev-rows.jsonl.gz: OK
+/data/cand/calibrated.results.jsonl: OK
+/data/cand/untempered.results.jsonl: OK
+/data/clef/clef27b.results.jsonl: OK
+/data/clef/clef_flash.results.jsonl: OK

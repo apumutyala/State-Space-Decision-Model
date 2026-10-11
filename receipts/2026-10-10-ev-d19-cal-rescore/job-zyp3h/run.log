@@ -1,0 +1,94 @@
+[ev_cal_land 2026-10-11T01:35:29Z] setup: data pins (jobs/ev_cal_land/data.sha256)
+/data/slices/dev-rows.jsonl.gz: OK
+/data/cand/calibrated.results.jsonl: OK
+/data/cand/untempered.results.jsonl: OK
+/data/clef/clef27b.results.jsonl: OK
+/data/clef/clef_flash.results.jsonl: OK
+[ev_cal_land 2026-10-11T01:35:30Z] preflight: projected landing time vs cap 22 min
+{"probe_rows": 12104, "probe_s": 1.66, "passes": 3, "multiplier": 6.0, "projected_min": 0.5, "cap_min": 22.0, "ok": true}
+[ev_cal_land 2026-10-11T01:35:31Z] land: calibrated
+## full
+rows: full (12104 rows, edition 0.2.1, B=2000, seed=0); context: {'candidate': 'mixed', 'clef': '32k', 'clef_flash': '32k'}
+
+| system | Index [95% CI] | board ECE | ECE 10-bin |
+|---|---|---|---|
+| candidate | 49.44 [47.72, 50.77] | 0.1235 | 0.0453 |
+| clef | 61.89 [60.28, 63.28] | 0.0403 | 0.0138 |
+| clef_flash | 57.29 [55.88, 58.67] | 0.0314 | 0.0235 |
+
+| pairing | paired diff Index [95% CI] | p(diff<=0) |
+|---|---|---|
+| candidate_vs_clef | -12.45 [-14.34, -10.87] | 1.0000 |
+| candidate_vs_clef_flash | -7.85 [-9.91, -6.24] | 1.0000 |
+
+## full_excl51
+rows: full_excl51 (12053 rows, edition 0.2.1, B=2000, seed=0); context: {'candidate': 'none', 'clef': 'none', 'clef_flash': 'none'}
+
+| system | Index [95% CI] | board ECE | ECE 10-bin |
+|---|---|---|---|
+| candidate | 49.65 [47.90, 51.06] | 0.1235 | 0.0453 |
+| clef | 62.06 [60.55, 63.53] | 0.0403 | 0.0138 |
+| clef_flash | 57.55 [56.10, 59.00] | 0.0314 | 0.0235 |
+
+| pairing | paired diff Index [95% CI] | p(diff<=0) |
+|---|---|---|
+| candidate_vs_clef | -12.41 [-14.38, -10.83] | 1.0000 |
+| candidate_vs_clef_flash | -7.89 [-9.95, -6.19] | 1.0000 |
+
+full DEV 12,104 rows (native, no truncation): 49.44 [47.72, 50.77]; vs Clef -12.45 [-14.34, -10.87], vs Clef-flash -7.85 [-9.91, -6.24]; excl-51 (12,053): 49.65 [47.90, 51.06], vs Clef -12.41 [-14.38, -10.83], vs Clef-flash -7.89 [-9.95, -6.19]; board ECE 0.1235; beats_both full=False excl51=False
+[ev_cal_land 2026-10-11T01:36:39Z] land: untempered
+## full
+rows: full (12104 rows, edition 0.2.1, B=2000, seed=0); context: {'candidate': 'mixed', 'clef': '32k', 'clef_flash': '32k'}
+
+| system | Index [95% CI] | board ECE | ECE 10-bin |
+|---|---|---|---|
+| candidate | 49.49 [47.77, 50.80] | 0.0705 | 0.0406 |
+| clef | 61.89 [60.28, 63.28] | 0.0403 | 0.0138 |
+| clef_flash | 57.29 [55.88, 58.67] | 0.0314 | 0.0235 |
+
+| pairing | paired diff Index [95% CI] | p(diff<=0) |
+|---|---|---|
+| candidate_vs_clef | -12.40 [-14.29, -10.82] | 1.0000 |
+| candidate_vs_clef_flash | -7.80 [-9.84, -6.18] | 1.0000 |
+
+## full_excl51
+rows: full_excl51 (12053 rows, edition 0.2.1, B=2000, seed=0); context: {'candidate': 'none', 'clef': 'none', 'clef_flash': 'none'}
+
+| system | Index [95% CI] | board ECE | ECE 10-bin |
+|---|---|---|---|
+| candidate | 49.70 [47.95, 51.08] | 0.0705 | 0.0406 |
+| clef | 62.06 [60.55, 63.53] | 0.0403 | 0.0138 |
+| clef_flash | 57.55 [56.10, 59.00] | 0.0314 | 0.0235 |
+
+| pairing | paired diff Index [95% CI] | p(diff<=0) |
+|---|---|---|
+| candidate_vs_clef | -12.36 [-14.32, -10.79] | 1.0000 |
+| candidate_vs_clef_flash | -7.85 [-9.89, -6.15] | 1.0000 |
+
+full DEV 12,104 rows (native, no truncation): 49.49 [47.77, 50.80]; vs Clef -12.40 [-14.29, -10.82], vs Clef-flash -7.80 [-9.84, -6.18]; excl-51 (12,053): 49.70 [47.95, 51.08], vs Clef -12.36 [-14.32, -10.79], vs Clef-flash -7.85 [-9.89, -6.15]; board ECE 0.0705; beats_both full=False excl51=False
+[ev_cal_land 2026-10-11T01:37:47Z] area ECE
+calibrated {"n": 31754, "acc": 0.86761, "conf": 0.91269, "ece_10bin": 0.04527, "debiased15": 0.08973} board 0.12346
+   arts {"n": 2045, "acc": 0.60147, "conf": 0.69417, "ece_10bin": 0.09489, "debiased15": 0.10409}
+   knowledge {"n": 4532, "acc": 0.66792, "conf": 0.84385, "ece_10bin": 0.17593, "debiased15": 0.2029}
+   language {"n": 18702, "acc": 0.95696, "conf": 0.95822, "ece_10bin": 0.01894, "debiased15": 0.03969}
+   retrieval {"n": 2301, "acc": 0.75576, "conf": 0.86976, "ece_10bin": 0.11531, "debiased15": 0.13203}
+   tools {"n": 4174, "acc": 0.87614, "conf": 0.91416, "ece_10bin": 0.03802, "debiased15": 0.07559}
+untempered {"n": 31754, "acc": 0.86761, "conf": 0.87728, "ece_10bin": 0.04057, "debiased15": 0.05632} board 0.07053
+   arts {"n": 2045, "acc": 0.60147, "conf": 0.64137, "ece_10bin": 0.05812, "debiased15": 0.05987}
+   knowledge {"n": 4532, "acc": 0.66792, "conf": 0.80053, "ece_10bin": 0.13261, "debiased15": 0.15604}
+   language {"n": 18702, "acc": 0.95696, "conf": 0.93301, "ece_10bin": 0.03752, "debiased15": 0.03791}
+   retrieval {"n": 2301, "acc": 0.75576, "conf": 0.78843, "ece_10bin": 0.04137, "debiased15": 0.05517}
+   tools {"n": 4174, "acc": 0.87614, "conf": 0.87551, "ece_10bin": 0.04198, "debiased15": 0.0515}
+clef27b {"n": 31754, "acc": 0.89353, "conf": 0.88193, "ece_10bin": 0.01382, "debiased15": 0.0131} board 0.04034
+   arts {"n": 2045, "acc": 0.64694, "conf": 0.63552, "ece_10bin": 0.04253, "debiased15": 0.05297}
+   knowledge {"n": 4532, "acc": 0.76037, "conf": 0.80768, "ece_10bin": 0.05341, "debiased15": 0.05848}
+   language {"n": 18702, "acc": 0.95781, "conf": 0.92112, "ece_10bin": 0.03732, "debiased15": 0.05015}
+   retrieval {"n": 2301, "acc": 0.81269, "conf": 0.85191, "ece_10bin": 0.04656, "debiased15": 0.05231}
+   tools {"n": 4174, "acc": 0.91543, "conf": 0.92425, "ece_10bin": 0.02027, "debiased15": 0.03268}
+clef_flash {"n": 31754, "acc": 0.87548, "conf": 0.85199, "ece_10bin": 0.02349, "debiased15": 0.03027} board 0.03139
+   arts {"n": 2045, "acc": 0.61809, "conf": 0.62335, "ece_10bin": 0.0136, "debiased15": 0.0}
+   knowledge {"n": 4532, "acc": 0.75949, "conf": 0.78262, "ece_10bin": 0.02566, "debiased15": 0.02842}
+   language {"n": 18702, "acc": 0.94466, "conf": 0.90235, "ece_10bin": 0.04238, "debiased15": 0.05899}
+   retrieval {"n": 2301, "acc": 0.71751, "conf": 0.71637, "ece_10bin": 0.07248, "debiased15": 0.08989}
+   tools {"n": 4174, "acc": 0.90465, "conf": 0.88845, "ece_10bin": 0.02368, "debiased15": 0.02532}
+[ev_cal_land 2026-10-11T01:37:53Z] done

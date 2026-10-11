@@ -1,0 +1,23 @@
+{
+ "src_sha256": "a07aea1147b70e1f1ef5eddefbfd912f94f513f8e588cea17bc5a3b109993095",
+ "ours_sha256": "0a70b8844d78859ab32db146ed79a9446404e473b750b87a998b03c221de8a86",
+ "T": 0.8062113683612343,
+ "answers": 231,
+ "kinds": {
+  "noul": 74,
+  "choice": 139,
+  "score": 18
+ },
+ "argmax_flips_vs_untempered": 0,
+ "lead_sha256": "229049b628519d1ecfe2efc2f393752248f71133d59d00b5bc021f5d23e96e57",
+ "same_ids": true,
+ "n_ours": 231,
+ "n_lead": 231,
+ "max_abs_dp_vs_lead": 1.9095779635325272e-07,
+ "worst": [
+  "hard-opus-a-long_policy-01",
+  "pay_subject_to_15000_sublimit"
+ ],
+ "max_abs_dscore_vs_lead": 4.516826135336771e-08,
+ "argmax_disagree_vs_lead": 0
+}

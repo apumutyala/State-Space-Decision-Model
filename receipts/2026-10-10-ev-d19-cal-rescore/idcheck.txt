@@ -1,0 +1,35 @@
+dev-manifest harness\manifests\dev-manifest.jsonl.gz sha256 1362c23ebe810ccc chars 4337252
+test-manifest harness\manifests\test-manifest.jsonl.gz sha256 76a6b135cfcc11ab chars 4359978
+proxy600 jobs\common\dev_proxy600.json sha256 aa4c0c01a7663e71 chars 39649
+jev-pin jevkit\data\jevbench_public_pin.json sha256 5ce5268d48ef97a9 chars 961
+jev-fingerprints jevkit\data\jevbench_public_fingerprints.json sha256 05d6630d94df525d chars 39475
+pool n 804 unique 804 sources {'anli': 72, 'boolq': 51, 'factchange': 50, 'gsm8k': 58, 'hellaswag': 65, 'mmlu_aux': 75, 'multi': 102, 'nq': 27, 'sst5': 42, 'toolace': 155, 'when2call': 49, 'winogrande': 58}
+unique source-item tokens 634
+{
+ "dev-manifest": {
+  "full_id_hits": 0,
+  "source_item_token_hits": 0,
+  "examples": []
+ },
+ "test-manifest": {
+  "full_id_hits": 0,
+  "source_item_token_hits": 0,
+  "examples": []
+ },
+ "proxy600": {
+  "full_id_hits": 0,
+  "source_item_token_hits": 0,
+  "examples": []
+ },
+ "jev-pin": {
+  "full_id_hits": 0,
+  "source_item_token_hits": 0,
+  "examples": []
+ },
+ "jev-fingerprints": {
+  "full_id_hits": 0,
+  "source_item_token_hits": 0,
+  "examples": []
+ }
+}
+short tokens (<8 chars, not searched): 468

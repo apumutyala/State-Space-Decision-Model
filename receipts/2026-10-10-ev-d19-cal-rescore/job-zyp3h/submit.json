@@ -1,0 +1,101 @@
+{
+ "job": "ev_cal_land",
+ "mode": null,
+ "sha": "99bc675f2770a3a29d451d18b75297e7e4750796",
+ "params": "jobs/ev_cal_land/job_params.json",
+ "context": {
+  "file": "C:\\Users\\apumu\\AppData\\Local\\Temp\\claude\\C--Users-apumu-research-CHLabs\\8ba1e3cb-efb0-46e2-9fd6-7683f7008f8a\\scratchpad\\pkg_evcal2\\ev_cal_land-99bc675f2770.tar.zst",
+  "sha256": "5b8c4ed6c775d470a8117c36d598901bf7534287c1ff496726cccf14a1dcd98a",
+  "size_bytes": 54689907
+ },
+ "cost": {
+  "worst_case_usd": 6.3,
+  "hard_cap_usd": 6.3,
+  "set_workspace_cap_increment_usd": 7
+ },
+ "lint": {
+  "waived": {}
+ },
+ "tests": {
+  "skipped": true
+ },
+ "calls": [
+  {
+   "tool": "open_mission",
+   "args": {
+    "name": "ssdm-evidence-rescore"
+   }
+  },
+  {
+   "tool": "create_context",
+   "args": {
+    "sha256": "5b8c4ed6c775d470a8117c36d598901bf7534287c1ff496726cccf14a1dcd98a",
+    "size_bytes": 54689907
+   }
+  },
+  {
+   "tool": "upload",
+   "args": {
+    "file": "C:\\Users\\apumu\\AppData\\Local\\Temp\\claude\\C--Users-apumu-research-CHLabs\\8ba1e3cb-efb0-46e2-9fd6-7683f7008f8a\\scratchpad\\pkg_evcal2\\ev_cal_land-99bc675f2770.tar.zst",
+    "how": "curl -T <file> '<put url>'"
+   }
+  },
+  {
+   "tool": "finalize_context",
+   "args": {
+    "context_id": "<from create_context>"
+   }
+  },
+  {
+   "tool": "validate_job",
+   "args": "submit_job args minus context_id/idempotency_key/mission; must pass the cost-cap preflight without force"
+  },
+  {
+   "tool": "submit_job",
+   "args": {
+    "chip": "h100",
+    "chip_count": 1,
+    "mission": "ssdm-evidence-rescore",
+    "idempotency_key": "ev-cal-land-d19-5b8c4ed6c775",
+    "label": "evidence: D19 calibrated full-DEV Index + area ECE (CPU-only landing)",
+    "context_id": "<from create_context>",
+    "dockerfile_path": "Dockerfile",
+    "build_timeout_minutes": 60,
+    "command": "bash /opt/ssdm/m1/jobs/ev_cal_land/ev_cal_land_job.sh",
+    "env": {},
+    "max_duration_minutes": 40,
+    "max_restarts": 0,
+    "resume": "none",
+    "queue_ttl_minutes": 720,
+    "hf_cache": false,
+    "model": "none: CPU-only analysis of shipped prediction files",
+    "checks": {
+     "success": {
+      "check": {
+       "all_of": [
+        {
+         "type": "file_exists",
+         "path": "/output/EV_CAL_LAND_DONE"
+        },
+        {
+         "type": "file_exists",
+         "path": "/output/MANIFEST.jsonl"
+        }
+       ]
+      }
+     },
+     "health": {
+      "check": {
+       "type": "heartbeat",
+       "path": "/output/heartbeat"
+      },
+      "interval_s": 300,
+      "grace_period_s": 900,
+      "fail_threshold": 2,
+      "on_fail": "kill"
+     }
+    }
+   }
+  }
+ ]
+}

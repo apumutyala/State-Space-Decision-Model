@@ -1,0 +1,202 @@
+{
+ "job": "job-y6ste+job-uq5p5 (untempered)",
+ "artifact": "art-utxjp+art-6qppy",
+ "candidate": "/data/cand/untempered.results.jsonl",
+ "modes": [
+  "full",
+  "full_excl51"
+ ],
+ "pairings": {
+  "full": {
+   "brief": {
+    "index": {
+     "candidate": {
+      "point": 49.49089088082853,
+      "lo": 47.77206598948069,
+      "hi": 50.79955412870706,
+      "se": 0.7859424566866094
+     },
+     "clef": {
+      "point": 61.887295106752696,
+      "lo": 60.2816027658574,
+      "hi": 63.27762585638909,
+      "se": 0.7628415198001904
+     },
+     "clef_flash": {
+      "point": 57.290095310432335,
+      "lo": 55.88244057082658,
+      "hi": 58.67372471797225,
+      "se": 0.7331224007653646
+     }
+    },
+    "diff_vs": {
+     "clef": {
+      "point": -12.396404225924165,
+      "lo": -14.285627862629294,
+      "hi": -10.817441082221155,
+      "se": 0.9024553272391974,
+      "p_le_zero": 1.0,
+      "excludes_zero": true
+     },
+     "clef_flash": {
+      "point": -7.7992044296038046,
+      "lo": -9.840705630403859,
+      "hi": -6.183709889021925,
+      "se": 0.9432122431025138,
+      "p_le_zero": 1.0,
+      "excludes_zero": true
+     }
+    },
+    "board_ece": {
+     "candidate": 0.07053192770856526,
+     "clef": 0.04034185237347393,
+     "clef_flash": 0.03138836136870478
+    },
+    "context": {
+     "candidate": "mixed",
+     "clef": "32k",
+     "clef_flash": "32k"
+    },
+    "beats_both": false
+   },
+   "table": "rows: full (12104 rows, edition 0.2.1, B=2000, seed=0); context: {'candidate': 'mixed', 'clef': '32k', 'clef_flash': '32k'}\n\n| system | Index [95% CI] | board ECE | ECE 10-bin |\n|---|---|---|---|\n| candidate | 49.49 [47.77, 50.80] | 0.0705 | 0.0406 |\n| clef | 61.89 [60.28, 63.28] | 0.0403 | 0.0138 |\n| clef_flash | 57.29 [55.88, 58.67] | 0.0314 | 0.0235 |\n\n| pairing | paired diff Index [95% CI] | p(diff<=0) |\n|---|---|---|\n| candidate_vs_clef | -12.40 [-14.29, -10.82] | 1.0000 |\n| candidate_vs_clef_flash | -7.80 [-9.84, -6.18] | 1.0000 |",
+   "rows": 12104,
+   "files": {
+    "candidate": {
+     "path": "/data/cand/untempered.results.jsonl",
+     "sha256": "b6bab8034458b1a6b45da300f3a253141ed91b6fdb66eba9b5370c5ff8d846a8",
+     "rows_outside_slice_dropped": 0
+    },
+    "clef": {
+     "path": "/data/clef/clef27b.results.jsonl",
+     "sha256": "f5ad788be191f7737dfadd1594cab7b02a428d847b0cfd9478660df8032ab09e",
+     "rows_outside_slice_dropped": 0
+    },
+    "clef_flash": {
+     "path": "/data/clef/clef_flash.results.jsonl",
+     "sha256": "2cb2e96114694b589a35c392099b2f67dc5ae0970e9939f8500f0bedf86649c5",
+     "rows_outside_slice_dropped": 0
+    }
+   },
+   "context": {
+    "candidate": {
+     "context": "mixed",
+     "overlength_rows_in_slice": 51,
+     "scored_over_16k": 0,
+     "unsupported_16k": 0,
+     "other": 51
+    },
+    "clef": {
+     "context": "32k",
+     "overlength_rows_in_slice": 51,
+     "scored_over_16k": 51,
+     "unsupported_16k": 0,
+     "other": 0
+    },
+    "clef_flash": {
+     "context": "32k",
+     "overlength_rows_in_slice": 51,
+     "scored_over_16k": 51,
+     "unsupported_16k": 0,
+     "other": 0
+    }
+   }
+  },
+  "full_excl51": {
+   "brief": {
+    "index": {
+     "candidate": {
+      "point": 49.70203502131019,
+      "lo": 47.95191886847687,
+      "hi": 51.07953133589559,
+      "se": 0.800173697787823
+     },
+     "clef": {
+      "point": 62.06115253087404,
+      "lo": 60.545571553057364,
+      "hi": 63.53453104596807,
+      "se": 0.7602888418111475
+     },
+     "clef_flash": {
+      "point": 57.54705275934633,
+      "lo": 56.104692274882716,
+      "hi": 58.998093458415646,
+      "se": 0.7308621267557628
+     }
+    },
+    "diff_vs": {
+     "clef": {
+      "point": -12.359117509563852,
+      "lo": -14.316634647399525,
+      "hi": -10.79480697599918,
+      "se": 0.9004413204591891,
+      "p_le_zero": 1.0,
+      "excludes_zero": true
+     },
+     "clef_flash": {
+      "point": -7.845017738036141,
+      "lo": -9.88855905843633,
+      "hi": -6.147991658596888,
+      "se": 0.9607262591399717,
+      "p_le_zero": 1.0,
+      "excludes_zero": true
+     }
+    },
+    "board_ece": {
+     "candidate": 0.07053192770856526,
+     "clef": 0.04034185237347393,
+     "clef_flash": 0.03138836136870478
+    },
+    "context": {
+     "candidate": "none",
+     "clef": "none",
+     "clef_flash": "none"
+    },
+    "beats_both": false
+   },
+   "table": "rows: full_excl51 (12053 rows, edition 0.2.1, B=2000, seed=0); context: {'candidate': 'none', 'clef': 'none', 'clef_flash': 'none'}\n\n| system | Index [95% CI] | board ECE | ECE 10-bin |\n|---|---|---|---|\n| candidate | 49.70 [47.95, 51.08] | 0.0705 | 0.0406 |\n| clef | 62.06 [60.55, 63.53] | 0.0403 | 0.0138 |\n| clef_flash | 57.55 [56.10, 59.00] | 0.0314 | 0.0235 |\n\n| pairing | paired diff Index [95% CI] | p(diff<=0) |\n|---|---|---|\n| candidate_vs_clef | -12.36 [-14.32, -10.79] | 1.0000 |\n| candidate_vs_clef_flash | -7.85 [-9.89, -6.15] | 1.0000 |",
+   "rows": 12053,
+   "files": {
+    "candidate": {
+     "path": "/data/cand/untempered.results.jsonl",
+     "sha256": "b6bab8034458b1a6b45da300f3a253141ed91b6fdb66eba9b5370c5ff8d846a8",
+     "rows_outside_slice_dropped": 51
+    },
+    "clef": {
+     "path": "/data/clef/clef27b.results.jsonl",
+     "sha256": "f5ad788be191f7737dfadd1594cab7b02a428d847b0cfd9478660df8032ab09e",
+     "rows_outside_slice_dropped": 51
+    },
+    "clef_flash": {
+     "path": "/data/clef/clef_flash.results.jsonl",
+     "sha256": "2cb2e96114694b589a35c392099b2f67dc5ae0970e9939f8500f0bedf86649c5",
+     "rows_outside_slice_dropped": 51
+    }
+   },
+   "context": {
+    "candidate": {
+     "context": "none",
+     "overlength_rows_in_slice": 0,
+     "scored_over_16k": 0,
+     "unsupported_16k": 0,
+     "other": 0
+    },
+    "clef": {
+     "context": "none",
+     "overlength_rows_in_slice": 0,
+     "scored_over_16k": 0,
+     "unsupported_16k": 0,
+     "other": 0
+    },
+    "clef_flash": {
+     "context": "none",
+     "overlength_rows_in_slice": 0,
+     "scored_over_16k": 0,
+     "unsupported_16k": 0,
+     "other": 0
+    }
+   }
+  }
+ },
+ "ledger_note": "full DEV 12,104 rows (native, no truncation): 49.49 [47.77, 50.80]; vs Clef -12.40 [-14.29, -10.82], vs Clef-flash -7.80 [-9.84, -6.18]; excl-51 (12,053): 49.70 [47.95, 51.08], vs Clef -12.36 [-14.32, -10.79], vs Clef-flash -7.85 [-9.89, -6.15]; board ECE 0.0705; beats_both full=False excl51=False"
+}
