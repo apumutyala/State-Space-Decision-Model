@@ -293,9 +293,95 @@ def cluster_pick(cal: Sequence[Scored], cluster_of: Callable[[Scored], str], see
     return [best[c][1] for c in sorted(best)]
 
 
+CRR_BET_CAP = 0.75  # betting fraction cap, as a share of the largest bet that keeps capital nonnegative
+
+
+def crr_betting_pvalue(y: Sequence[float], epsilon: float, level: float) -> tuple[float, float]:
+    """One-sided betting (hedged-capital, Waudby-Smith & Ramdas 2024) p-value for H0: E[Y] > 0, Y_i i.i.d. in
+    [-epsilon, 1 - epsilon], taken in the given (answer-free) order.
+
+    Capital K_t = prod_{i<=t} (1 - b_i Y_i), b_i = min(CRR_BET_CAP / (1 - epsilon), sqrt(2 ln(1/level) / (n var_i))),
+    var_i = (1/4 + sum_{j<i} (Y_j - mu_j)^2) / i, mu_j = mean(Y_1..Y_{j-1}) (0 for j = 1). b_i depends on Y_1..Y_{i-1}
+    only and 1 - b_i Y_i >= 1 - CRR_BET_CAP > 0, so under H0 K_t is a nonnegative supermartingale and Ville's
+    inequality gives P(max_t K_t >= 1/a) <= a: p = min(1, 1 / max_t K_t) is valid for any n. Returns (p, ln max K)."""
+    n = len(y)
+    if n == 0:
+        return 1.0, 0.0
+    bmax = CRR_BET_CAP / (1.0 - epsilon)
+    c0 = 2.0 * math.log(1.0 / level) / n
+    s_mu, s_var, logk, best = 0.0, 0.25, 0.0, 0.0
+    for i, yi in enumerate(y, start=1):
+        if not -epsilon - 1e-12 <= yi <= 1.0 - epsilon + 1e-12:
+            raise ValueError(f"Y_{i} = {yi} outside [-epsilon, 1 - epsilon]")
+        mu = s_mu / (i - 1) if i > 1 else 0.0
+        b = min(bmax, math.sqrt(c0 * i / s_var))
+        logk += math.log1p(-b * yi)
+        best = max(best, logk)
+        s_var += (yi - mu) ** 2
+        s_mu += yi
+    return min(1.0, math.exp(-best)), best
+
+
+def _crr_order(seed: int, cluster: str) -> str:
+    return hashlib.sha256(f"{seed}|crr-order|{cluster}".encode()).hexdigest()
+
+
+def _ltt_crr(cal: Sequence[Scored], fit: dict, epsilon: float, level: float, lambdas: Sequence[float], method: str,
+             cluster_of: Callable[[Scored], str], cap: float, cluster_size: Callable[[str], int] | None,
+             order_seed: int) -> tuple[list[dict], dict]:
+    """Cluster-robust ratio test of R_c(lambda) = E[w_r L_r] / E[w_r n_r] <= epsilon (w_r = min(1, cap / s_r))."""
+    if not cap >= 1:
+        raise ValueError("crr_cap must be >= 1")
+    by: dict[str, list[Scored]] = {}
+    for r in cal:
+        by.setdefault(str(cluster_of(r)), []).append(r)
+    keys = sorted(by, key=lambda c: (_crr_order(order_seed, c), c))
+    size = {c: (len(by[c]) if cluster_size is None else int(cluster_size(c))) for c in keys}
+    for c in keys:
+        if size[c] < len(by[c]):
+            raise ValueError(f"cluster {c}: cluster_size {size[c]} < {len(by[c])} decisions present")
+    w = {c: min(1.0, cap / size[c]) for c in keys}
+    # _acts(r, fit, lam) is (singleton and p_y >= lam): precompute (p_y, wrong) per singleton decision once
+    thr: dict[str, list[tuple[float, bool]]] = {}
+    for c in keys:
+        thr[c] = []
+        for r in by[c]:
+            s = prediction_set(r.probs, _qhat_for(fit, r))
+            if len(s) == 1:
+                thr[c].append((r.probs[s[0]], s[0] != r.label))
+    valid: list[dict] = []
+    for lam in sorted(lambdas, reverse=True):
+        y, n_act, err, wn, wl = [], 0, 0, 0.0, 0.0
+        for c in keys:
+            a = e = 0
+            for p, wrong in thr[c]:
+                if p >= lam:
+                    a += 1
+                    e += wrong
+            n_act, err, wn, wl = n_act + a, err + e, wn + w[c] * a, wl + w[c] * e
+            y.append(w[c] * (e - epsilon * a) / cap)
+        if n_act == 0:
+            continue
+        pval, logk = crr_betting_pvalue(y, epsilon, level)
+        if pval <= level:
+            valid.append({"lambda": lam, "n_act": n_act, "errors": err, "p_value": pval, "log_capital": logk,
+                          "weighted_error": wl / wn})
+        elif method == "fixed_sequence":
+            break
+    info = {"cluster_test": "crr: Waudby-Smith-Ramdas betting on Y_r = w_r (L_r - eps n_r) / cap, "
+                            "w_r = min(1, cap / s_r), clusters in sha256(seed|crr-order|cluster) order",
+            "crr_cap": cap, "crr_order_seed": order_seed, "crr_bet_cap": CRR_BET_CAP, "n_clusters": len(keys),
+            "n_decisions": len(cal), "cluster_size_source": "given" if cluster_size is not None else "present",
+            "max_cluster_size": max(size.values(), default=0),
+            "n_clusters_above_cap": sum(s > cap for s in size.values())}
+    return valid, info
+
+
 def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
                lambdas: Sequence[float] = DEFAULT_LAMBDAS, method: str = "bonferroni",
-               cluster_of: Callable[[Scored], str] | None = None, pick_seed: int = 0) -> dict:
+               cluster_of: Callable[[Scored], str] | None = None, pick_seed: int = 0,
+               cluster_test: str = "pick", crr_cap: float = 8, cluster_size: Callable[[str], int] | None = None,
+               crr_seed: int = 0) -> dict:
     """Learn-then-Test over a data-independent lambda grid: H0(lambda): P(error | act) > epsilon.
 
     p(lambda) = P(Bin(n_act, epsilon) <= errors) on the acted calibration decisions (a lambda that acts on nothing
@@ -308,13 +394,37 @@ def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
     one source case) are correlated, so counting them as independent trials is anti-conservative. With a cluster
     key, the test runs on ONE decision per cluster (``cluster_pick``, seeded by ``pick_seed``); the certified risk
     is then the cluster-weighted acted risk, valid when clusters (not decisions) are i.i.d.
+
+    ``cluster_test="crr"`` (opt-in, needs ``cluster_of``; PREREG B-PREREG-GUAR-CRR): keeps EVERY decision and tests
+    the ratio risk R_c(lambda) = E[w_r L_r] / E[w_r n_r] over i.i.d. clusters (L_r, n_r = the cluster's acted errors
+    and acts; w_r = min(1, crr_cap / s_r), s_r = ``cluster_size(key)`` or the number of decisions present) with the
+    betting p-value ``crr_betting_pvalue`` on Y_r = w_r (L_r - epsilon n_r) / crr_cap. crr_cap = 1 targets the
+    cluster-weighted risk, crr_cap >= every s_r the decision-weighted risk. Valid for any within-cluster dependence.
     """
     if method not in ("bonferroni", "fixed_sequence"):
         raise ValueError("method must be bonferroni or fixed_sequence")
+    if cluster_test not in ("pick", "crr"):
+        raise ValueError("cluster_test must be pick or crr")
     reused = fit.get("_ids", frozenset()) & {r.id for r in cal}
     if reused:
         raise ValueError(f"LTT data overlaps the conformal fit data ({len(reused)} ids): the bound needs disjoint "
                          "halves (split_calibration)")
+    if cluster_test == "crr":
+        if cluster_of is None:
+            raise ValueError("cluster_test='crr' needs cluster_of")
+        level = delta / len(lambdas) if method == "bonferroni" else delta
+        valid, info = _ltt_crr(cal, fit, epsilon, level, lambdas, method, cluster_of, crr_cap, cluster_size,
+                               crr_seed)
+        base = {"epsilon": epsilon, "delta": delta, "method": method, "test_level": level, "n_cal": len(cal),
+                "ltt_ids_sha256": ids_sha256(r.id for r in cal), "fit_ids_sha256": fit.get("ids_sha256"),
+                "grid": [min(lambdas), max(lambdas), len(lambdas)], **info}
+        if not valid:
+            return {**base, "lambda": None, "n_valid_lambdas": 0, "note": "no lambda certified: abstain on everything"}
+        best = min(valid, key=lambda v: v["lambda"])
+        return {**base, "lambda": best["lambda"], "act_rate_cal": best["n_act"] / len(cal),
+                "accepted_error_cal": best["errors"] / best["n_act"],
+                "accepted_error_cal_weighted": best["weighted_error"], "p_value": best["p_value"],
+                "log_capital": best["log_capital"], "n_valid_lambdas": len(valid)}
     cal_all = cal
     if cluster_of is not None:
         cal = cluster_pick(cal_all, cluster_of, pick_seed)
