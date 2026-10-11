@@ -1,0 +1,50 @@
+== host
+ run.log: [2026-10-11T16:16:54Z +2m] parent: HOST h2oai/h2o-lightning-4b@193ad740925b176a3b70a5a13a7cff2f2fadd01e (license copied to out/license)
+ host-verify revision 193ad740925b176a3b70a5a13a7cff2f2fadd01e resolved 193ad740925b176a3b70a5a13a7cff2f2fadd01e
+ snapshot-verify 10 / 10 OK
+ license copy LICENSE bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a host-verify bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a
+ license copy README.md 614272b067a136750be190a1a1fb363986b291041c8ac4346b89a2fefc395527 host-verify 614272b067a136750be190a1a1fb363986b291041c8ac4346b89a2fefc395527
+== exclusion lists
+ CONTEXT_MANIFEST receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt aeb8027aaaebdb6fad2b24f8b5bee9d37c4e176fcc4e18ad0d366acf1b579705
+ CONTEXT_MANIFEST receipts/2026-10-10-jev2b-regate/jev2b_exclude_ids.txt 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
+ CONTEXT_MANIFEST receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad
+ CONTEXT_MANIFEST receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt 5cebf60bfa489d462a7e7d9b82e152a4968f30e1dc7ea50a2155e491a1ef37ab
+ draw-report global_exclude {"files": [{"file": "receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt", "sha256": "c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad", "n_ids": 23}, {"file": "receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt", "sha256": "5cebf60bfa489d462a7e7d9b82e152a4968f30e1dc7ea50a2155e491a1ef37ab", "n_ids": 104}], "n_ids": 127, "found": 127}
+ draw-report excluded_subs {"prob_indep": 124}
+ draw-report n_train 17959
+ draw-report n_calib 3600
+ draw-report train_ids_sha256 "7763e55ee1fcb52e2cf5fc3f1acb28902c535de467f1c24dd638821426aca363"
+ draw-report calib_ids_sha256 "142a593a1257d6729b5480fe67647b1af0c5678d2a929654f6325e128fce00be"
+ draw-report force_calib {"file": "jobs/m2_first_cell/jev2h_selection_slice_ids.txt", "sha256": "e09721b7ae3d5b89a9406b19fd81bb4e9c42c95d7fbb84f66f9ff10fb7f462f9", "n_ids": 3600, "found": 3600, "by_family": {"policy": 200, "intent": 200, "adequacy": 200, "state_tracking": 200, "routing": 200, "enum": 200, "severity": 200, "fact": 200, "tool_selection": 200, "judge_hard": 200, "temporal_numeric": 200, "multi_hop": 200, "lo
+== records vs in-job pins
+ in-job records uncompressed ee3f6d2882c85553100e4c165882fd6b92eeb19b195c052ec6aa79babfe7e1a9 local ee3f6d2882c85553100e4c165882fd6b92eeb19b195c052ec6aa79babfe7e1a9
+ in-job drawn_ids_sha256 5c84ca2b326577b693a7043bac1ba7d1e8fbdc1e3fdb460e127b23dc57644d96
+ local calib uncompressed bda63e92459cdd545407ee78caf1cb7ff6ad068c56b5c99dc0a245d9effc8799
+== prob_indep / subs
+ train: n 17959 prob_indep rows 0; families 150
+ calib: n 3600 prob_indep rows 0; families 147
+ type_mix (in-job) {'noul': 0.3018, 'choice': 0.4476, 'score': 0.2506}
+== public-231 input tokens
+ stock_shim: n 231 max 3952 n>4096 0
+ native_shimcal: n 231 max 3952 n>4096 0
+ train no_truncation {'no_truncation_tokenize': {'rows': 17959, 'max_row_tokens': 3980, 't_cap': 4096}}
+== slice-train identical STATE (content = state+questions overlap is 0; this is state alone)
+ n 49 by family {'jev1_agent_audit_yn': 1, 'jev2_glaive': 24, 'jev2_temporal_prorate': 1, 'jev2_tool_food': 3, 'jev2_tool_media': 1, 'jev2_tool_finance': 2, 'jev2_tool_shopping': 1, 'jev2_tool_travel': 2, 'jev2_tool_email': 1, 'jev2_tool_home': 1, 'jev2_prob_dice_band': 4, 'jev2_prob_dice': 8}; questions equal 0; labels equal 29; state chars min/med/max 30/79/645
+  e.g. slice m2:jev1synth:agent_audit:2187~view:jev1-audit-yn | train m2:jev1synth:agent_audit:5066~view:jev1-audit-first | q {"type": "noul", "instructions": "Does the agent's trace satisfy every listed requirement?", "criteria": {"true": "every | train q {"type": "choice", "instructions": "Which is the first listed requirement (lowest number) that the agent's trace violate
+  e.g. slice m2:glaive_fc:101~view:jev2v2-tool | train m2:glaive_fc:17046~view:jev2v2-tool | q {"type": "choice", "instructions": "Select the function the assistant should call.", "criteria": {"search_nearby_restaur | train q {"type": "choice", "instructions": "Select the function the assistant should call.", "criteria": {"convert_currency": "C
+  e.g. slice m2:glaive_fc:10641~view:jev2v2-tool | train m2:glaive_fc:3036~view:jev2v2-tool | q {"type": "choice", "instructions": "Pick the one tool that handles the user's request.", "criteria": {"get_definition_sy | train q {"type": "choice", "instructions": "Pick the one tool that handles the user's request.", "criteria": {"search_restaurant
+  e.g. slice m2:glaive_fc:108~view:jev2v2-tool | train m2:glaive_fc:3025~view:jev2v2-tool | q {"type": "choice", "instructions": "Which tool should be called for this request?", "criteria": {"calculate_bmi": "Calcu | train q {"type": "choice", "instructions": "Pick the one tool that handles the user's request.", "criteria": {"get_recipe_ingred
+  e.g. slice m2:glaive_fc:11264~view:jev2v2-tool | train m2:glaive_fc:5624~view:jev2v2-tool | q {"type": "choice", "instructions": "Pick the one tool that handles the user's request.", "criteria": {"calculate_emissio | train q {"type": "choice", "instructions": "Select the function the assistant should call.", "criteria": {"find_prime_numbers": 
+  e.g. slice m2:glaive_fc:13719~view:jev2v2-tool | train m2:glaive_fc:3813~view:jev2v2-tool | q {"type": "choice", "instructions": "Which tool should be called for this request?", "criteria": {"generate_random_number | train q {"type": "choice", "instructions": "Select the function the assistant should call.", "criteria": {"calculate_tip_split":
+ for reference, x7c42 train draw: slice rows with an identical state 3
+== slice step-0 column vs x7c42 (same untrained host, same 3,600 decisions)
+ ids equal True; step0 top-1 q668q 2889 x7c42 2886; per-id step0 disagreements 7
+   m2:jev1synth:agent_audit:2041~view:jev1-audit-first/q adequacy q668q True x7c42 False
+   m2:jev1synth:event_state:4112~view:jev1-dst/q state_tracking q668q True x7c42 False
+   m2:jev2synth:temporal:100~view:jev2v2-tz/q temporal_numeric q668q False x7c42 True
+   m2:jev2synth:prob:61952~view:jev2-dice/q probability q668q True x7c42 False
+   m2:jev2synth:tradeoff:110144~view:jev2-pick/q tradeoff q668q True x7c42 False
+   m2:jev2synth:tradeoff:116801~view:jev2-pick/q tradeoff q668q False x7c42 True
+ row keys ['family', 'id', 'native', 'step0', 'type']
+== train log
+ loss rows 1845 last step 1845 rows seen ~14760 of 17959 (0.822 epoch)

@@ -1,0 +1,11 @@
+{
+ "price": {
+  "kind": "base_model_reference",
+  "usd_per_m_input": 0.03,
+  "usd_per_m_output": 0.15,
+  "source": "JevBench v1.6.1 board api_v161.json deepinfra:Qwen/Qwen3.5-4B 0.03/0.15 per 1M (the price basis of the h2o-lightning-4b row; EV-PREREG-H2O-HOST)",
+  "as_of": "2026-10-09",
+  "listed_since": null,
+  "model": "Qwen/Qwen3.5-4B"
+ }
+}

@@ -1,0 +1,3 @@
+slice rows with a train-identical state 49 | of which the train row has the same gold label 29
+ on those rows: step0 0.878 selected 0.939 (n 49)
+ floor EXCLUDING them: n 3551 step0 0.8015 selected 0.8916 delta 9.01 pp CI95 [7.74, 10.36]
