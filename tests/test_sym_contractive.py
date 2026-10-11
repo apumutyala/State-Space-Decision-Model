@@ -111,7 +111,9 @@ def test_A_joint_record_sym_question_order_symmetric_and_init_is_fork_head():
         m.head.w.copy_(torch.randn(m.head.w.shape, generator=g))
         a = m(rows).log_probs
         b = m(rows[::-1]).log_probs.flip(0)
-    assert float((a - b).abs().max()) <= 1e-6  # questions permuted: same per-question distribution (float order only)
+    fin = torch.isfinite(a)  # padded options are -inf in both (-inf - -inf would be nan)
+    assert torch.equal(fin, torch.isfinite(b))
+    assert float((a[fin] - b[fin]).abs().max()) <= 1e-6  # questions permuted: same per-question distribution (float order only)
     assert not torch.equal(a, f(rows).log_probs)  # the mixer is live
 
 
