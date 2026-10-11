@@ -399,3 +399,11 @@ is rewritten at readout time by exact content match) and `"arms": ["d13"]` (the 
 Runs on this lineage because D13's cell pins attack_clean templates 930863..., which the D19 lineage's attack guard v2 no longer
 produces (job-862xw exit 10). Caps setup 7 / guard 2 / checkpoint 3 / score_d13 18 / report 3 + reserve 7 = 40; quoted hold $2.52,
 worst case (60 + 2 x 40) x 0.0495 = $6.93 (cap $15).
+
+### Mode `ragtruth_rephrase_d13_dev`: stage 2 of B-PREREG-RAGTRUTH-REPHRASE, D13 arm
+
+`eval_only: "ragtruth_rephrase"` (the runner branch and `jobs/m2_first_cell/ragtruth_rephrase.py` ported from
+`claude/ev-ragtruth-rephrase`) with `"rows": "dev_minus_proxy600"`: D13 scores the 255 DEV catalog-59 rows outside proxy600
+(ids sha 5a1d4896...) under the original wording and RT1; report-dev reproduces the original rows against the landed full DEV
+(shipped, pinned). Caps setup 7 / guard 2 / checkpoint 3 / score_d13 19 / report 3 + reserve 7 = 41; quoted hold $2.58, worst
+case (60 + 2 x 41) x 0.0495 = $7.03 (cap $15).

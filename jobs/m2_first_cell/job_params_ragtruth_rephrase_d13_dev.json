@@ -1,0 +1,270 @@
+{
+ "_comment": "Mode ragtruth_rephrase_d13_dev (B-PREREG-RAGTRUTH-REPHRASE STAGE 2, D13 arm; stage 1 PASSED: job-3f7q7 RT1 AUROC 0.589 [0.521,0.654] vs 0.418). On job-3zmj2's lineage (D13 cannot load on the D19 lineage: attack guard v2 templates sha). D13 (art-cr9a2 best1600) scores the 255 Index DEV catalog-59 rows outside proxy600 (ids pinned in dev_stage) under the original wording AND RT1 (eval_only ragtruth_rephrase, rows dev_minus_proxy600, one model load); report-dev checks the original rows against the landed full-DEV rows (subset of 7b42f4c3..., pinned). The Index delta (RT1 - original, DEV minus proxy600, n 11,460, frozen score + bootstrap B 2000 seed 0) is computed at landing by analysis/ragtruth_rephrase_land.py (claude/ev-ragtruth-rephrase). Load 6.75 min measured (job-3zmj2), 2 x 3.4 min. Caps setup 7 / guard 2 / checkpoint 3 / score_d13 19 / report 3 + reserve 7 = 41 (hold $2.58); worst case (60 + 2 x 41) x 0.0495 = $7.03 (cap $15).",
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo; checked on the PR that pins them"
+   }
+  ],
+  "image": "jobs/rwkv7/Dockerfile"
+ },
+ "job": "m2-first-cell-ragtruth-rephrase-d13-dev",
+ "status": "B-PREREG-RAGTRUTH-REPHRASE stage 2, D13 arm: original + RT1 on the 255 DEV RAGTruth rows outside proxy600",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 41,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "checkpoint",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 15.0,
+ "phase_caps_minutes": {
+  "setup": 7,
+  "guard": 2,
+  "checkpoint": 3,
+  "score_d13": 19,
+  "report": 3
+ },
+ "reserve_minutes": 7,
+ "expected_minutes": {
+  "build": 15,
+  "setup": 2,
+  "guard": 1,
+  "checkpoint": 2,
+  "score_d13": 13.6,
+  "report": 1
+ },
+ "evals_fixed_minutes": {
+  "d13": 6.75
+ },
+ "max_input_tokens": 65536,
+ "readout": "v3w",
+ "eval_only": "ragtruth_rephrase",
+ "measured_rates_reference": {
+  "TOK_S": 3757,
+  "CALL_S": 0.117,
+  "source": "job-tkfaj probe.json (the runner requires them; fulldev pricing uses the rows below)",
+  "child_s_per_1k_tokens": 1.2513,
+  "child_source": "job-hjwpq art-cr9a2 phases/final.tgz out/screen/timing-child.json: 644 proxy600 rows, 1,669.17 s (v3w readout, joint_record head, H100); 1,481,526 v1 plan tokens (fulldev_lengths_rwkv7.json) x 0.9004; applied to BOTH arms (D1's own v1 rate 1.037 s/1k, job-c7pq2, is lower)",
+  "parent_s_per_1k_tokens": null,
+  "parent_source": "unused (no parent arm)"
+ },
+ "parent": "rwkv7",
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_ragtruth_rephrase_d13_dev.json",
+ "train_set_pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+ "cohort": "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "guard_pin": "jobs/m2_pilot/guard_pin.json",
+ "guard_content_index_sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+ "cell_config_d1": "jobs/m2_first_cell/m2_first_cell_rwkv7_fulldev_eval.json",
+ "checkpoint": {
+  "_note": "job-hjwpq (D13n d13_joint_safe_nofla, m2_first_cell @ 8d92f04, 1,901 steps, best_ckpt), artifact art-cr9a2 (sha below, 1,216,542,720 B; downloaded + hashed locally). member = the BEST checkpoint's inference export (train.ckpt_export --best: trainable-step0001600.safetensors, bf16 LoRA, sidecar source_ckpt ckpt-step0001600.pt sha b6506c35... = exactly the checkpoint the proxy600 screen scored, 41.07 [37.57, 45.22] under v3w); select best = latest.json's best pointer must name it with this sha (latest.json's path is the last step, 1901). cell.json = the run's out/cell.json (config == m2_first_cell_rwkv7_d13_joint_safe_nofla.json). url_env: CKPT_URL = the get_artifact art-cr9a2 URL, filled into submit.json env at submit time only.",
+  "artifact": "art-cr9a2",
+  "job": "job-hjwpq",
+  "artifact_sha256": "ff586289941e5477793c8acef2254128428ebd8fcd238a48cb98973a2d385fd5",
+  "member": "./ckpt/trainable-step0001600.safetensors",
+  "ckpt_sha256": "61c19d162acb5e97183361ffd839c5e7f5d6978e40da01063a16ec196a657d7b",
+  "sidecar_sha256": "a873c26fbbb1f5c037256c7801130099fd6b50a4a343f24a16683a45971ebf41",
+  "latest_json_sha256": "4b6d0463f90f74fd547fc1b3eb02c5840756371712d76fc5f5a11535172e1810",
+  "cell_json_sha256": "ac919ff8db76c34af2e8492c340a066148336b0e8143d82762552de9abeb80a6",
+  "select": "best",
+  "url_env": "CKPT_URL"
+ },
+ "ragtruth": {
+  "_note": "RAGTruth TRAIN items (jobs.m2_first_cell.ragtruth_polarity build, local CPU); the job refuses unless the shipped file's sha256 equals items_sha256 here AND in ragtruth_polarity_selection.json",
+  "items_sha256": "dbbca4ff03f141b8b0f5d17c17fe0cfbb2593df226f4f80793dff84366349fd4",
+  "ids_sha256": "794bcce30da94f7da3696b522a1a20d1e8719b51286970dc2a47ac7fc8ab9295",
+  "n": 300,
+  "seed": "ragtruth-polarity-v1",
+  "selection": "jobs/m2_first_cell/ragtruth_polarity_selection.json",
+  "excluded_dev_source": 0,
+  "excluded_doc_overlap_guard": 24
+ },
+ "reference_results_sha256": {
+  "_note": "unused by this mode",
+  "rwkv7_stock_tkfaj": null,
+  "clef_flash": null
+ },
+ "mission": "m2-first-cell",
+ "decision_rule": null,
+ "runner": "jobs/m2_first_cell/first_cell_job.sh",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py, PR #93): identical to the JOB_SPEC submit block (tests/test_launch.py checks field by field). TOK_S / CALL_S = the job-tkfaj probe's measured rates (the runner exits 4 without them).",
+  "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh ragtruth_rephrase_d13_dev",
+  "env": {
+   "TOK_S": "3757",
+   "CALL_S": "0.117",
+   "CKPT_URL": "<CKPT_URL>"
+  },
+  "key": "m2-first-cell-ragtruth-rephrase-d13-dev-best1600-20261011a",
+  "clock_lock": true,
+  "label": "ragtruth_rephrase_d13_dev: original + RT1 on the 255 DEV RAGTruth rows outside proxy600, D13 (art-cr9a2 best1600), v3w, no training",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/M2_FIRST_CELL_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "as fulldev_eval_d13_v3w (image + code + PRIVATE data: records, DEV rows (the setup's pinned data check), the 150k set (both checkpoints' lineage checks rebuild their training items), the suite, D13's cell.json) plus D1's cell.json (checkpoint_d1/) and the RAGTruth TRAIN items (ragtruth/items.jsonl.gz). Neither checkpoint is in the context: the job fetches each artifact from its URL env and checks every byte (checkpoint_loader --block).",
+  "dockerfile": "jobs/rwkv7/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/rwkv7/rwkv7_job.sh",
+   "jobs/m2_first_cell/first_cell_job.sh"
+  ],
+  "data": [
+   {
+    "src": "m2/build/sample-20000-seed20261006/records.jsonl.gz",
+    "dest": "m2/records.jsonl.gz",
+    "pin": "jobs/rwkv7/records.sha256"
+   },
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/records.jsonl.gz",
+    "dest": "m2-150k/records.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.manifest.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.content.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.content.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/selected-rows.jsonl.gz",
+    "dest": "suite-0.2/selected-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/added-rows.jsonl.gz",
+    "dest": "suite-0.2/added-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/excluded-questions.json",
+    "dest": "suite-0.2/excluded-questions.json",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/checkpoints/job-hjwpq/cell.json",
+    "dest": "checkpoint/cell.json",
+    "pin_json": [
+     "jobs/m2_first_cell/job_params_ragtruth_rephrase_d13_dev.json",
+     "checkpoint",
+     "cell_json_sha256"
+    ]
+   },
+   {
+    "src": "m2/ragtruth-polarity/items.jsonl.gz",
+    "dest": "ragtruth/items.jsonl.gz",
+    "pin_json": [
+     "jobs/m2_first_cell/job_params_ragtruth_rephrase_d13_dev.json",
+     "ragtruth",
+     "items_sha256"
+    ]
+   },
+   {
+    "src": "m2/ragtruth-rephrase/landed/d13.ragtruth.results.jsonl",
+    "dest": "landed/d13.ragtruth.results.jsonl",
+    "pin_json": [
+     "jobs/m2_first_cell/job_params_ragtruth_rephrase_d13_dev.json",
+     "dev_stage",
+     "landed",
+     "d13",
+     "ragtruth_rows_sha256"
+    ]
+   }
+  ],
+  "manifest_files": [
+   "jobs/m2_first_cell/first_cell_job.sh",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7.json",
+   "jobs/m2_pilot/guard_pin.json",
+   "data/manifests/sample-150000-seed20261006.pointer.json",
+   "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+   "jobs/rwkv7/snapshot.sha256",
+   "jobs/m2_first_cell/data.sha256",
+   "jobs/m2_first_cell/fulldev_lengths_rwkv7.json",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_d1_fast.json",
+   "data/manifests/attack_clean/sample-150000-seed20261006.cell-m2_first_cell_rwkv7.json",
+   "jobs/common/dev_proxy600.json",
+   "jobs/common/dev_subset_m1.json",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_fulldev_eval.json",
+   "jobs/m2_first_cell/ragtruth_polarity_selection.json",
+   "jobs/m2_first_cell/ragtruth_polarity.py",
+   "jobs/m2_first_cell/RAGTRUTH_POLARITY.md",
+   "decide/ragtruth_rephrase.py",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_ragtruth_rephrase_d13_dev.json",
+   "jobs/m2_first_cell/job_params_ragtruth_rephrase_d13_dev.json",
+   "jobs/m2_first_cell/ragtruth_rephrase.py"
+  ]
+ },
+ "cohort_note": "no cohort role is scored; no temperature fit (untempered readout, both arms)",
+ "mode": "ragtruth_rephrase_d13_dev",
+ "score_setup_cap_minutes": {
+  "d13": 9
+ },
+ "arms": {
+  "d13": {
+   "block": "checkpoint",
+   "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_ragtruth_rephrase_d13_dev.json",
+   "train_dir": "m2-150k",
+   "wordings": [
+    "original",
+    "rt1"
+   ]
+  }
+ },
+ "score_minutes_per_wording": 3.4,
+ "rows": "dev_minus_proxy600",
+ "dev_stage": {
+  "n": 255,
+  "ids_sha256": "5a1d4896f6cdffd50d3414d1459fe9ada70bffe669800b77892f446bb9706776",
+  "landed": {
+   "d13": {
+    "source": "C:/Users/apumu/d13_fulldev_land/merged/fulldev/child.results.jsonl (7b42f4c3...), the 255 rows",
+    "ragtruth_rows_sha256": "4d4ead024711812f28385a5edad76ef4d6ade42c2c52f129362b3715001b5195"
+   }
+  }
+ },
+ "no_verdict_reason": "measurement; the B-PREREG-RAGTRUTH-REPHRASE stage-2 rule (Index delta CI lower bound > 0 on DEV minus proxy600) is applied at landing by analysis/ragtruth_rephrase_land.py"
+}

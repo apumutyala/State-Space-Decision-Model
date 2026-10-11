@@ -155,8 +155,8 @@ td = p.get("train_dir", "m2-150k")
 if not isinstance(td, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*", td) or ".." in td.split("/"):
     sys.exit(f"mode {mode}: train_dir {td!r} must be a relative path under $DATA")
 ev = p.get("eval_only", "none")
-if ev not in ("none", "fulldev", "ragtruth"):
-    sys.exit(f"mode {mode}: eval_only {ev!r} must be none, fulldev or ragtruth")
+if ev not in ("none", "fulldev", "ragtruth", "ragtruth_rephrase"):
+    sys.exit(f"mode {mode}: eval_only {ev!r} must be none, fulldev, ragtruth or ragtruth_rephrase")
 if ev != "none":
     sys.path.insert(0, ".")
     from jobs.m2_first_cell.checkpoint_loader import CheckpointError, checkpoint_block
@@ -164,6 +164,9 @@ if ev != "none":
         checkpoint_block(p)
         if ev == "ragtruth":
             checkpoint_block(p, "checkpoint_d1")
+        if ev == "ragtruth_rephrase":
+            for arm in p["arms"].values():
+                checkpoint_block(p, arm["block"])
     except CheckpointError as e:
         sys.exit(f"mode {mode}: {e}")
 st = p.get("stage", "gates")
@@ -178,6 +181,7 @@ EOF
   say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}, eval-only $EVAL_ONLY"
   [ "$EVAL_ONLY" = fulldev ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_result DECISION=$WORK/out/fulldev_eval_result.json
   [ "$EVAL_ONLY" = ragtruth ] && VALIDATOR=jobs.m2_first_cell.ragtruth_polarity:valid_result DECISION=$WORK/out/ragtruth_polarity_result.json
+  [ "$EVAL_ONLY" = ragtruth_rephrase ] && VALIDATOR=jobs.m2_first_cell.ragtruth_rephrase:valid_any DECISION=$WORK/out/ragtruth_rephrase_result.json
   [ "$STAGE" = screen ] && VALIDATOR=jobs.m2_first_cell.screen:valid_result DECISION=$WORK/out/screen.json
 fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
@@ -260,6 +264,19 @@ RT_ITEMS=$DATA/ragtruth/items.jsonl.gz RT_SEL=$CODE/jobs/m2_first_cell/ragtruth_
 if [ "$EVAL_ONLY" = ragtruth ]; then  # the shipped TRAIN items == the params pin == the committed selection; priced
   python -I -c 'import hashlib,json,sys; p=json.load(open(sys.argv[1]))["ragtruth"]; s=json.load(open(sys.argv[3])); h=hashlib.sha256(open(sys.argv[2],"rb").read()).hexdigest(); sys.exit(0 if h == p["items_sha256"] == s["items_sha256"] and p["ids_sha256"] == s["ids_sha256"] else 1)'     "$PARAMS" "$RT_ITEMS" "$RT_SEL" || fail 10 "ragtruth items sha256 != params / selection pin"
   python -X utf8 -m jobs.m2_first_cell.ragtruth_polarity estimate --params "$PARAMS" --selection "$RT_SEL" > "$WORK/out/preflight-ragtruth.json"     || fail 15 "ragtruth scoring projected past its caps at D13's measured child rate"
+elif [ "$EVAL_ONLY" = ragtruth_rephrase ]; then  # B-PREREG-RAGTRUTH-REPHRASE: RAGTruth TRAIN items, D13 + D19, RT1
+  python -c "import jobs.m2_first_cell.ragtruth_rephrase, decide.ragtruth_rephrase" || fail 5 "ragtruth_rephrase driver not importable"
+  RT_ITEMS=$DATA/ragtruth/items.jsonl.gz RT_SEL=$CODE/jobs/m2_first_cell/ragtruth_polarity_selection.json
+  python -I -c 'import hashlib,json,sys; p=json.load(open(sys.argv[1]))["ragtruth"]; s=json.load(open(sys.argv[3])); h=hashlib.sha256(open(sys.argv[2],"rb").read()).hexdigest(); sys.exit(0 if h == p["items_sha256"] == s["items_sha256"] and p["ids_sha256"] == s["ids_sha256"] else 1)' "$PARAMS" "$RT_ITEMS" "$RT_SEL" || fail 10 "ragtruth items sha256 != params / selection pin"
+  # an arm whose train dir is not the mode's (e.g. D19's bschema-draw-v3b) is verified against its own cell config
+  D19_TRAIN=""
+  if python -I -c 'import json,sys; sys.exit(0 if "d19" in json.load(open(sys.argv[1]))["arms"] else 1)' "$PARAMS"; then
+    read -r D19_CELL D19_TRAIN <<< "$(python -I -c 'import json,sys; a=json.load(open(sys.argv[1]))["arms"]["d19"]; print(a["cell_config"], a["train_dir"])' "$PARAMS")" || fail 5 "job_params arms.d19"
+    python -X utf8 -m train.train_set verify --config "$D19_CELL" --train-dir "$DATA/$D19_TRAIN" --out "$WORK/out/train-set-verify-d19.json" \
+      > "$WORK/logs/train-set-d19.log" 2>&1 || fail 10 "D19 train set (bschema-draw-v3b) != pointer"
+  fi
+  python -X utf8 -m jobs.m2_first_cell.ragtruth_rephrase estimate --params "$PARAMS" > "$WORK/out/preflight-ragtruth-rephrase.json" \
+    || fail 15 "ragtruth_rephrase scoring projected past its caps at the measured load + scoring rates"
 elif [ "$EVAL_ONLY" = fulldev ]; then  # full-DEV scoring priced from the committed row lengths x D1's measured child rate
   python -X utf8 -m jobs.m2_first_cell.fulldev_eval estimate --params "$PARAMS" > "$WORK/out/preflight-fulldev.json" \
     || fail 15 "fulldev projected past its cap at the measured D1 child rate"
@@ -305,6 +322,63 @@ timeout --kill-after=30s $(cap guard)m python -X utf8 -m jobs.m2_pilot.guard_rea
 gate "guard" $r; export_phase guard
 case $r in 0) ;; 124|137) fail 7 "guard timeout" ;; 30|31|32) fail $r "guard not ready (see out/guard/readiness.json)" ;; *) fail 5 "guard rc=$r" ;; esac
 
+if [ "$EVAL_ONLY" = ragtruth_rephrase ]; then  # -- eval-only: D13 then D19 on the RAGTruth TRAIN items, RT1 (+ original)
+  # each arm: checkpoint_loader --block (every byte pinned), then ONE model load scoring every wording of the arm
+  # (rate guard: a slow load stops with 15 before any item is scored); D13's original wording = job-3zmj2's pinned rows
+  RR_ARMS=$(python -I -c 'import json,sys; print(" ".join(json.load(open(sys.argv[1]))["arms"]))' "$PARAMS") || fail 5 "job_params arms"
+  # params "rows": "train" (default: the 300 RAGTruth TRAIN items) or "dev_minus_proxy600" (stage 2: the 255 DEV
+  # catalog-59 rows outside proxy600, ids pinned by params dev_stage; B-PREREG-RAGTRUTH-REPHRASE addendum 1)
+  RR_ROWS=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("rows", "train"))' "$PARAMS") || fail 5 "job_params rows"
+  case $RR_ROWS in
+    train) RR_ITEMS=(--items "$RT_ITEMS" --selection "$RT_SEL") ;;
+    dev_minus_proxy600) RR_ITEMS=(--dev-rows "$DATA/slices/dev-rows.jsonl.gz" --params "$PARAMS") ;;
+    *) fail 5 "job_params rows $RR_ROWS: train or dev_minus_proxy600" ;;
+  esac
+  for ARMNAME in $RR_ARMS; do
+    read -r BLOCK ACELL ATRAIN AWORDS <<< "$(python -I -c 'import json,sys; a=json.load(open(sys.argv[1]))["arms"][sys.argv[2]]; print(a["block"], a["cell_config"], a["train_dir"], ",".join(a["wordings"]))' "$PARAMS" "$ARMNAME")" \
+      || fail 5 "job_params arms.$ARMNAME"
+    PHC=$BLOCK
+    CKCELL=$WORK/ckpt-$ARMNAME
+    say "phase $PHC ($ARMNAME: params block $BLOCK, cell config $ACELL, into $CKCELL); free bytes: $(diskfree "$OUT" "$CK" "$WORK")"
+    timeout --kill-after=30s $(cap $PHC)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS" --block "$BLOCK" \
+      --cell-src "$DATA/$BLOCK/cell.json" --cell-config "$ACELL" --ck-dir "$CKCELL" --work "$WORK/art-$ARMNAME" \
+      --cell-out "$WORK/out/cell-$ARMNAME.json" --out "$WORK/out/checkpoint-$ARMNAME.json" > "$WORK/logs/$PHC.log" 2>&1; r=$?
+    gate "$PHC" $r; export_phase "$PHC"
+    case $r in 0) ;; 124|137) fail 7 "$PHC timeout" ;; 10) fail 10 "$PHC identity: $(tail -1 "$WORK/logs/$PHC.log")" ;;
+      *) fail 5 "$PHC rc=$r: $(tail -1 "$WORK/logs/$PHC.log")" ;; esac
+    CKPT=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$WORK/out/checkpoint-$ARMNAME.json") || fail 5 "checkpoint-$ARMNAME.json"
+    PH=score_$ARMNAME
+    SCAP=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['score_setup_cap_minutes'][sys.argv[2]])" "$PARAMS" "$ARMNAME") \
+      || fail 5 "job_params score_setup_cap_minutes.$ARMNAME"
+    say "phase $PH ($ARMNAME arm, wordings $AWORDS, readout v3w untempered, train dir $ATRAIN; resumes from $CK/ragtruth_rephrase)"
+    python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-$PH.jsonl" --cap-min "$(cap $PH)" \
+      --setup-cap-min "$SCAP" --report "$WORK/out/rate-$PH.json" -- \
+      timeout --kill-after=30s $(cap $PH)m python -X utf8 -m jobs.m2_first_cell.ragtruth_rephrase score --arm "$ARMNAME" --wordings "$AWORDS" \
+      "${RR_ITEMS[@]}" --cell "$WORK/out/cell-$ARMNAME.json" --ckpt-dir "$CKCELL" --ckpt "$CKPT" \
+      --model-dir "$SNAP" --records "$RECORDS" --train-dir "$DATA/$ATRAIN" --guard-readiness "$WORK/out/guard/readiness.json" \
+      --resume-dir "$CK/ragtruth_rephrase" --out-dir "$WORK/out/ragtruth_rephrase" --progress "$WORK/logs/progress-$PH.jsonl" > "$WORK/logs/$PH.log" 2>&1; r=$?
+    [ $r -eq 0 ] || { say "$PH rc=$r; last 40 lines of logs/$PH.log:"; tail -n 40 "$WORK/logs/$PH.log" 2> /dev/null | sed "s/^/[$PH.log] /"; }
+    gate "$PH" $r; export_phase "$PH"
+    case $r in 0) ;; 124|137) fail 7 "$PH timeout" ;; 15) fail 15 "$PH: load past its setup cap or live rate past its cap" ;;
+      10) fail 10 "$PH identity (items / checkpoint lineage / cohort)" ;; *) fail 9 "$PH rc=$r" ;; esac
+  done
+  say "phase report ($RR_ROWS)"
+  if [ "$RR_ROWS" = train ]; then
+    timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.ragtruth_rephrase report --out-dir "$WORK/out/ragtruth_rephrase" \
+      --params "$PARAMS" --items "$RT_ITEMS" --selection "$RT_SEL" \
+      --manifest "$DATA/$D19_TRAIN/bschema-draw-v3b.manifest.jsonl.gz" --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$DECISION" \
+      > "$WORK/logs/report.log" 2>&1; r=$?
+  else
+    timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.ragtruth_rephrase report-dev --out-dir "$WORK/out/ragtruth_rephrase" \
+      --params "$PARAMS" --dev-rows "$DATA/slices/dev-rows.jsonl.gz" --landed-dir "$DATA/landed" --out "$DECISION" \
+      > "$WORK/logs/report.log" 2>&1; r=$?
+  fi
+  gate "report" $r
+  [ $r -eq 0 ] || fail 9 "ragtruth_rephrase result missing or invalid (rc=$r): $(tail -1 "$WORK/logs/report.log")"
+  sample "$DECISION" "ragtruth-rephrase"
+  RC=0
+  exit 0
+fi
 if [ "$EVAL_ONLY" = ragtruth ]; then  # ------------------- eval-only: two SAVED checkpoints on the RAGTruth TRAIN items
   # params "arms" (default d13 d1) and "wording" (default original; B-PREREG-RAGTRUTH-REPHRASE: rt1)
   read -r RT_ARMS_CSV RT_WORDING <<< "$(python -I -c 'import json,sys; p=json.load(open(sys.argv[1])); print(",".join(p.get("arms", ["d13", "d1"])), p.get("wording", "original"))' "$PARAMS")" \
