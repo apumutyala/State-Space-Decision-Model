@@ -4,8 +4,8 @@
 
 | Target | Current best | Our best so far |
 |---|---|---|
-| JevBench Composite (H2O-Lightning-4B v1.1) | 72.5 board (API: Sage 1.3.0 74.0). LOCAL public-231 scale differs (H2O I 77.6 local vs 60.0 board): target = paired Δ Composite vs H2O on public-231, CI>0 (EV-PREREG-COMPOSITE-LOCAL) | D19 public-231 Composite A 62.3 (vs H2O run in job-zbtbj; paired Δ to compute). Kit parity DONE: H2O 205, decider-12b v2 197 (pub 198), decider-12b-v1 200 (pub 200) |
-| JevBench Capability (Quyet-1.0-Large) | 81.7 | not measured yet |
+| JevBench Composite (H2O-Lightning-4B v1.1) | 72.5 board (API: Sage 1.3.0 74.0). LOCAL public-231 scale differs (H2O I 77.6 local vs 60.0 board): target = paired Δ Composite vs H2O on public-231, CI>0 (EV-PREREG-COMPOSITE-LOCAL) | Local scorecard (claude/ev-scorecard @e2fcd82b, 28 arms, paired vs H2O B1000 seed16, open public items only): NO arm CI>0. Best ours: stock Qwen3.5-4B+H2O shim ΔComp A −9.4 [−23.1,−4.2] (67.3 vs 76.6); best trained cell D19 −14.4 [−31.7,−10.6] (62.3). Best external: torchcast-12b −3.6 [−6.6,−0.8]. Kit parity DONE: H2O 205, decider-12b v2 197 (pub 198), decider-12b-v1 200 (pub 200) |
+| JevBench Capability (Quyet-1.0-Large) | 81.7 | Quyet not downloadable -> paired vs best downloadable Capability row (H2O local 80.5) per EV-PREREG-COMPOSITE-LOCAL: best ours D19 ΔCap −17.2 [−26.6,−10.7] (63.3); stock 4B+shim −17.7 [−26.5,−8.2]; external torchcast −1.0 [−7.7,5.2] (ns). claude/ev-scorecard @e2fcd82b |
 | MD1 reported | 83.5% avg / cal 92.2 / p50 85 ms (Foundry) / 1.3% flips | not measured yet |
 | Decision Index proxy600: Clef-flash / Clef 27B | 59.03 / 64.56 | D19 48.61 [44.10,53.08] (RWKV7 attention-free + joint head + v3b; +10.9 vs D1+v3w); D13 41.07 |
 | Decision Index FULL DEV: Clef-flash / Clef 27B | 57.29 / 61.89 | D19 49.49 [47.77,50.80] (paired −7.80 / −12.40; ECE 0.041; p50 569 ms); D13 43.21 (−14.08 / −18.68). Held-out attacks: D13 MORE ROBUST than Clef-flash (hijack 0.025 vs 0.115; steer 0.003 vs 0.089, Holm-significant) |
