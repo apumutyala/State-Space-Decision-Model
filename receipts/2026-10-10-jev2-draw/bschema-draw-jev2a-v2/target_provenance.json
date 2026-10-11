@@ -1,0 +1,220 @@
+{
+ "rule": "Brief (evidence lane, 2026-10-10): TRAIN-ONLY rows for the 10 JevBench families with no jev1 rows, ~6,000 per family (60k over 10), from public TRAIN splits or deterministic generators only; no rate or count taken from JevBench items or any eval row. Stage a = multi_hop, judge_hard, temporal_numeric, fact, tool_selection; stage b = probability, trap, ambiguous, tradeoff, adversarial. Within a family, sub-source shares come from data.jev2.PLAN (fixed before any gate ran; generated with ~35% headroom over the target for gate drops); the final trim is sha256(id) order (label-blind). Label rates are the natural train-split rates for public rows and the generator's own rule outcomes for synthetic rows (reported, never tuned toward any eval rate). Question-type mix per family follows the family's public FORMAT (type counts of the public items are format, not labels). Option presentation order is a seeded per-row shuffle. A family short of T after the gates is reported short, never topped up from another family.",
+ "target_rows_per_family": 1500,
+ "stage": "a2",
+ "plan": {
+  "multi_hop": {
+   "ref_chase": 1500,
+   "musique": 500
+  },
+  "judge_hard": {
+   "gsm8k": 700,
+   "synth": 1300
+  },
+  "temporal_numeric": {
+   "synth": 1500,
+   "gsm8k": 500
+  },
+  "fact": {
+   "synth": 1300,
+   "boolq": 700
+  },
+  "tool_selection": {
+   "glaive": 1000,
+   "synth": 1000
+  }
+ },
+ "seed": 20261011,
+ "families": {
+  "multi_hop": {
+   "rows": 1500,
+   "sources": {
+    "jev2synth": 1134,
+    "musique": 366
+   },
+   "licenses": {
+    "jev2synth: own generator (repo)": 1134,
+    "musique: CC-BY-4.0 (MuSiQue v1.0, StonyBrookNLP; HF mirror bdsaglam/musique)": 366
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.5238,
+     "true": 0.4762
+    },
+    "score": {
+     "0": 0.4828,
+     "1": 0.319,
+     "2": 0.181,
+     "3": 0.0172
+    }
+   },
+   "types": {
+    "choice": 1216,
+    "noul": 168,
+    "score": 116
+   }
+  },
+  "judge_hard": {
+   "rows": 1500,
+   "sources": {
+    "gsm8k": 369,
+    "jev2synth": 1131
+   },
+   "licenses": {
+    "gsm8k: MIT": 369,
+    "jev2synth: own generator (repo)": 1131
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.4913,
+     "true": 0.5087
+    }
+   },
+   "types": {
+    "noul": 1500
+   }
+  },
+  "temporal_numeric": {
+   "rows": 1500,
+   "sources": {
+    "gsm8k": 253,
+    "jev2synth": 1247
+   },
+   "licenses": {
+    "gsm8k: MIT": 253,
+    "jev2synth: own generator (repo)": 1247
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.5292,
+     "true": 0.4708
+    },
+    "score": {
+     "0": 0.4937,
+     "1": 0.2025,
+     "2": 0.1392,
+     "3": 0.1646
+    }
+   },
+   "types": {
+    "choice": 1068,
+    "noul": 274,
+    "score": 158
+   }
+  },
+  "fact": {
+   "rows": 1500,
+   "sources": {
+    "boolq": 386,
+    "jev2synth": 1114
+   },
+   "licenses": {
+    "boolq: CC-BY-SA-3.0": 386,
+    "jev2synth: own generator (repo)": 1114
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.4773,
+     "true": 0.5227
+    }
+   },
+   "types": {
+    "noul": 1500
+   }
+  },
+  "tool_selection": {
+   "rows": 1500,
+   "sources": {
+    "glaive_fc": 726,
+    "jev2synth": 774
+   },
+   "licenses": {
+    "glaive_fc: Apache-2.0": 726,
+    "jev2synth: own generator (repo)": 774
+   },
+   "label_rates": {},
+   "types": {
+    "choice": 1500
+   }
+  }
+ },
+ "public_sources": {
+  "musique": {
+   "file": "ssdm-data/raw/jev2/musique/musique_ans_v1.0_train.jsonl (HF bdsaglam/musique @ 22873a405dd809893b22ada0b499299fb612d2df)",
+   "split": "answerable train",
+   "license": "CC-BY-4.0",
+   "selection": "sha256('jev2-part|musique:<id>') % 5 == 0, supporting paragraphs <= 3,200 chars, first n in file order"
+  },
+  "gsm8k": {
+   "file": "sources/gsm8k main/train (sources.lock)",
+   "split": "train",
+   "license": "MIT",
+   "pools": "sha256('jev2-part|gsm8k:<i>') % 2: 0 judge_hard, 1 temporal_numeric (no problem in two families)"
+  },
+  "boolq": {
+   "file": "sources/boolq data/train (sources.lock)",
+   "split": "train",
+   "license": "CC-BY-SA-3.0",
+   "selection": "hash % 3 == 0, passage <= 1,400 chars"
+  },
+  "glaive_fc": {
+   "file": "sources/glaive_fc default/train/0000.parquet (sources.lock)",
+   "split": "train",
+   "license": "Apache-2.0",
+   "selection": "hash % 6 == 0; first user turn <= 240 chars whose first assistant turn calls a listed function"
+  }
+ },
+ "not_used": {
+  "HotpotQA / 2WikiMultihopQA": "HotpotQA underlies HoVer (an Index benchmark); MuSiQue covers the family (its paragraphs still pass the Index guards per row)",
+  "NaturalQuestions / TriviaQA": "fact rows are short explicit statements; BoolQ + generator cover it",
+  "ToolBench / APIGen / xLAM": "licence / gating; Glaive FC v2 (Apache-2.0) is on disk",
+  "HelpSteer2 / UltraFeedback": "HelpSteer2 is already used by jev1 adequacy; judge_hard uses GSM8K solutions + rule-checked synthetic responses",
+  "TimeQA / TempReason / FinQA": "deterministic rule engines give exact gold"
+ },
+ "generators": {
+  "jev2_ref_chase": {
+   "name": "jev2_ref_chase",
+   "task_family": "register_archive_reference_chasing"
+  },
+  "jev2_judge_check": {
+   "name": "jev2_judge_check",
+   "task_family": "response_correctness_judging"
+  },
+  "jev2_temporal": {
+   "name": "jev2_temporal",
+   "task_family": "date_deadline_amount_rules"
+  },
+  "jev2_fact_record": {
+   "name": "jev2_fact_record",
+   "task_family": "explicit_fact_yes_no"
+  },
+  "jev2_tool_pick": {
+   "name": "jev2_tool_pick",
+   "task_family": "single_tool_pick"
+  },
+  "jev2_prob": {
+   "name": "jev2_prob",
+   "task_family": "exact_probability_word_problems"
+  },
+  "jev2_trap": {
+   "name": "jev2_trap",
+   "task_family": "rule_override_and_false_premise"
+  },
+  "jev2_ambig": {
+   "name": "jev2_ambig",
+   "task_family": "agent_reference_resolution_or_clarify"
+  },
+  "jev2_tradeoff": {
+   "name": "jev2_tradeoff",
+   "task_family": "constrained_option_choice"
+  },
+  "jev2_adv": {
+   "name": "jev2_adv",
+   "task_family": "rules_over_embedded_instructions"
+  },
+  "jev2_long_handbook": {
+   "name": "jev2_long_handbook",
+   "task_family": "long_handbook_rule_engine"
+  }
+ }
+}

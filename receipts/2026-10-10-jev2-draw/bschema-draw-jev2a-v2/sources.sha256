@@ -1,0 +1,4 @@
+83a75b1e11e4e9bb8f8308e72ac40ca617ae4431b3a0d955b61cab259248490a  musique  C:/Users/apumu/research/CHLabs/ssdm-data/raw/jev2/musique/musique_ans_v1.0_train.jsonl
+ea82612ea9582142387730c793eb67d3b12849002bc0b7fa6f8efafa7351419d  gsm8k  C:/Users/apumu/research/CHLabs/ssdm-data/m2/sources/gsm8k/train-00000-of-00001.parquet
+4f028e992c0bd4df30b9f056f4946b64f5c23028034ff0ed5ea467d8538cc623  boolq  C:/Users/apumu/research/CHLabs/ssdm-data/m2/sources/boolq/train-00000-of-00001.parquet
+7e7e32f0466699513b38923bc4991858e192c9274df22e243b9e77eb2775b6e8  glaive_fc  C:/Users/apumu/research/CHLabs/ssdm-data/m2/sources/glaive_fc/0000.parquet
