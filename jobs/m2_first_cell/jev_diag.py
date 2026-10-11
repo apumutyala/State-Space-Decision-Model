@@ -40,9 +40,10 @@ def slice_ids_sha256(record_ids) -> str:
     return hashlib.sha256("\n".join(sorted(record_ids)).encode()).hexdigest()
 
 
-def indist_records(path: Path, per_family: int, exclude: set[str] = frozenset()) -> list[dict]:
-    """The probe = calibration slice: per JevBench family (aug.jev1.family8) the ``per_family`` smallest
-    sha256("jevdiag:<id>") among the records NOT in ``exclude`` (the record ids r2's checkpoint trained on)."""
+def candidate_records(path: Path, per_family: int) -> list[dict]:
+    """The FIXED candidate list (A-PREREG-JEV1-DIAG): per JevBench family (aug.jev1.family8) the ``per_family``
+    smallest sha256("jevdiag:<id>") over the pinned jev1 records file; a pure function of that file (label-blind; no
+    JevBench item is read). Returned in (family, ascending hash) order."""
     import heapq
 
     heaps: dict[str, list] = {}
@@ -51,8 +52,6 @@ def indist_records(path: Path, per_family: int, exclude: set[str] = frozenset())
             if not line.strip():
                 continue
             r = json.loads(line)
-            if r["id"] in exclude:
-                continue
             fam = ((r.get("aug") or {}).get("jev1") or {}).get("family8") or r.get("family", "?")
             key = -int(hashlib.sha256(f"jevdiag:{r['id']}".encode()).hexdigest()[:16], 16)
             h = heaps.setdefault(fam, [])
@@ -66,6 +65,20 @@ def indist_records(path: Path, per_family: int, exclude: set[str] = frozenset())
             r = json.loads(line)
             r["_fam"] = fam
             out.append(r)
+    return out
+
+
+def held_out_slice(cands: list[dict], per_family: int, visited: set[str]) -> list[dict]:
+    """The first ``per_family`` candidates of each family that r2's checkpoint never consumed; fails closed (ValueError)
+    if a family has fewer than ``per_family`` unconsumed candidates."""
+    out, short = [], {}
+    for fam in sorted({r["_fam"] for r in cands}):
+        keep = [r for r in cands if r["_fam"] == fam and r["id"] not in visited][:per_family]
+        if len(keep) < per_family:
+            short[fam] = len(keep)
+        out += keep
+    if short:
+        raise ValueError(f"held-out slice: families with < {per_family} unconsumed candidates: {short}")
     return out
 
 
@@ -115,16 +128,38 @@ def run(a) -> int:
     targets = {"native": SystemOneAdapter(decider, kind="decider", model_name="child-native"),
                "lora_lmhead": SystemOneAdapter(eng, kind="request", model_name="lora-lmhead-shim"),
                "stock_shim": SystemOneAdapter(eng, kind="request", model_name="stock-shim")}
-    probe = indist_records(Path(a.data) / dg["indist_records"], int(dg["indist_per_family"]), visited)
-    sha = slice_ids_sha256(r["id"] for r in probe)
-    pin = dg.get("calib_ids_sha256")
-    if pin and len(pin) == 64 and pin != sha:
-        print(f"identity: calib slice ids sha256 {sha} != pinned {pin}", file=sys.stderr)
+    # consumed-row check: the reconstructed consumed set must be exactly steps x batch x grad_accum items (no skips)
+    cfg = ident["cell_config"]
+    vis = ident.get("visited") or {}
+    want = int(ident["checkpoint"]["step"]) * int(cfg["batch_size"]) * int(cfg["grad_accum"])
+    if vis.get("epoch") != 0 or vis.get("cursor") != want or len(visited_items) != want:
+        print(f"identity: consumed rows {vis} / {len(visited_items)} != step x batch x accum = {want}", file=sys.stderr)
         return 10
+    rec_path = Path(a.data) / dg["indist_records"]
+    rec_sha = hashlib.sha256(rec_path.read_bytes()).hexdigest()
+    if dg.get("records_gz_sha256") and rec_sha != dg["records_gz_sha256"]:
+        print(f"identity: jev1 records {rec_sha} != pinned {dg['records_gz_sha256']}", file=sys.stderr)
+        return 10
+    cands = candidate_records(rec_path, int(dg["candidates_per_family"]))
+    cand_sha = slice_ids_sha256(r["id"] for r in cands)
+    if dg.get("candidates_ids_sha256") and len(dg["candidates_ids_sha256"]) == 64 and cand_sha != dg["candidates_ids_sha256"]:
+        print(f"identity: candidate ids sha256 {cand_sha} != pinned {dg['candidates_ids_sha256']}", file=sys.stderr)
+        return 10
+    try:
+        probe = held_out_slice(cands, int(dg["indist_per_family"]), visited)
+    except ValueError as e:
+        print(f"identity: {e}", file=sys.stderr)
+        return 10
+    sha = slice_ids_sha256(r["id"] for r in probe)
+    assert not ({r["id"] for r in probe} & visited)
     meta = {"identity": {k: v for k, v in ident.items() if k != "cell_config"}, "arms": {}, "indist": {
         "n": len(probe), "ids_sha256": sha, "per_family": int(dg["indist_per_family"]),
-        "excluded_r2_visited_records": len(visited), "visited": ident.get("visited"),
-        "rule": "per family, ascending sha256('jevdiag:<id>') among jev1 records r2's checkpoint never stepped on"}}
+        "candidates_ids_sha256": cand_sha, "candidates_per_family": int(dg["candidates_per_family"]),
+        "candidates_consumed_by_r2": sum(1 for r in cands if r["id"] in visited),
+        "records_gz_sha256": rec_sha, "r2_consumed_items": len(visited_items), "visited": vis,
+        "rule": "fixed candidates = per family the 300 smallest sha256('jevdiag:<id>') of the pinned jev1 records; slice = "
+                "the first 200 per family that r2's scored checkpoint never consumed (Trainer order seed 0 epoch 0, "
+                "cursor = step x 8, verified)"}}
     export_head_probs(decider.backend, probe, out / "calib_probs.jsonl")
     for name, ad in targets.items():
         ctx = eng.lora_off() if name == "stock_shim" else _null()
@@ -248,7 +283,10 @@ def report(a) -> int:
             r["_c"], r["_ll"] = (cl if cl else (0, math.log(1e12)))
         ind[name] = rows
     acc = {nm: {"acc": sum(r["_c"] for r in v) / len(v), "logloss": sum(r["_ll"] for r in v) / len(v), "n": len(v),
-                "by_family": {f: sum(r["_c"] for r in v if r["family"] == f) / max(1, sum(1 for r in v if r["family"] == f))
+                "by_family": {f: {"acc": sum(r["_c"] for r in v if r["family"] == f) / max(1, sum(1 for r in v if r["family"] == f)),
+                                  "nll": sum(r["_ll"] for r in v if r["family"] == f) / max(1, sum(1 for r in v if r["family"] == f)),
+                                  "invalid": sum(1 for r in v if r["family"] == f and r["status"] != "ok"),
+                                  "n": sum(1 for r in v if r["family"] == f)}
                               for f in sorted({r["family"] for r in v})}} for nm, v in ind.items()}
     gain = family_cluster_ci(ind["native"], ind["stock_shim"])
     readout = pairs["lora_lmhead_vs_native"]["I"]

@@ -80,7 +80,8 @@
   "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh jevdiag_q35_4b",
   "env": {
    "TOK_S": "22144",
-   "CALL_S": "0.0595"
+   "CALL_S": "0.0595",
+   "CKPT_URL": "<get_artifact art-mv9cr url: fill at submit>"
   },
   "key": "m2-first-cell-jevdiag-q35-4b-r1",
   "clock_lock": true,
@@ -249,7 +250,7 @@
    {
     "src": "m2/checkpoint/jev1_r2/cell.json",
     "dest": "checkpoint/cell.json",
-    "pin_sha256": "PLACEHOLDER = checkpoint.cell_json_sha256"
+    "pin_sha256": "f02f82721dd962d292583db7ff895bbb3154a58b4bf8f9f2007463ce6380575a"
    }
   ],
   "manifest_files": [
@@ -288,21 +289,24 @@
  "cohort_note": "pins cohort v2 deliberately (no G13 here); the training draw excludes cohort v3 regardless (#105). The G13 gate of this checkpoint is a separate job on v3 (~16-17 H100-h at job-tkfaj rates).",
  "eval_only": "jevdiag",
  "checkpoint": {
-  "artifact": "PLACEHOLDER-r2-art",
-  "job": "PLACEHOLDER-r2-job",
-  "artifact_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "artifact": "art-mv9cr",
+  "job": "job-xt3ax",
+  "artifact_sha256": "0b0707c634a01f58644505a9a294bd60ff5ce04c26ca5bb46b7d153b5441b4a2",
   "member": "./ckpt/trainable-step0001121.safetensors",
-  "ckpt_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-  "sidecar_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-  "latest_json_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-  "cell_json_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "ckpt_sha256": "4422ec6e77a1a8d12a8d03d0543632d7a713d755f623be50f578ac4d4229193b",
+  "sidecar_sha256": "f80f4d8416bec7966a423da10fa16ca8d6cf37e3dda5086a54f6d96ed70f5a31",
+  "latest_json_sha256": "a22b63a8257e6da7d34358ca8e2882095341aaa4fc5b2b6c038578ae4c49ba91",
+  "cell_json_sha256": "f02f82721dd962d292583db7ff895bbb3154a58b4bf8f9f2007463ce6380575a",
   "url_env": "CKPT_URL",
-  "_note": "PLACEHOLDER: fill from r2's artifact (member = its last trainable export; the loader installs the best export too and scores it, as r2's own screen did)"
+  "_note": "JEV1-4B r2 (job-xt3ax), artifact art-mv9cr (tar sha 0b0707c6...). latest.json names trainable-step0001121 and best = trainable-step0001000 (sha ea672c8d..., sidecar aea03a20...): the loader installs the best export and scores it (= the step-1000 checkpoint r2's own screen scored). cell.json = r2's out/cell.json (f02f8272...), shipped as data checkpoint/cell.json."
  },
  "jevdiag": {
   "indist_records": "m2-jev1/records.jsonl.gz",
+  "records_gz_sha256": "25c8677b95d22ae252580ffd171d9cd618655d41b6b526ffee41096f08c930e2",
+  "candidates_per_family": 300,
   "indist_per_family": 200,
-  "calib_ids_sha256": "PLACEHOLDER: computed in-job (deterministic in r2's checkpoint cursor); pin after r1",
+  "candidates_ids_sha256": null,
+  "slice_note": "FIXED by rule before submit: candidates = per JevBench family the 300 smallest sha256('jevdiag:<id>') of the pinned jev1 records (25c8677b..., label-blind, no JevBench item read); slice = the first 200 per family that r2's scored checkpoint (step 1000) never consumed. Consumed set = Trainer._order(seed 0, epoch 0)[:cursor], cursor verified == 1000 x 1 x 8 = 8,000 (exit 10 otherwise). candidates_ids_sha256 and the slice ids sha256 are written to out/jevdiag/identity.json; the candidate sha could not be precomputed locally (laptop RAM < 0.3 GB free, no local torch for the order) and is pinned on the state branch at landing.",
   "covered_families": [
    "adequacy",
    "enum",
@@ -313,6 +317,6 @@
    "severity",
    "state_tracking"
   ],
-  "r2_delta_I_ci95": null
+  "r2_delta_I_ci95": [-15.812124146496544, 5.107429461645505]
  }
 }
