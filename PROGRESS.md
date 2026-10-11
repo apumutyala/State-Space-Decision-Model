@@ -1,5 +1,10 @@
 # PROGRESS: rolling, 3–5 lines per session (did / learned / next). Older entries roll into history/.
 
+## 2026-10-11: evidence independent rescore of JEV2-H2O-L (job-q668q)
+- Did: self-downloaded art-5si2g (91287177 = job record) + 4g6m8 + zbtbj artifacts; jevkit CLI rescore + scripts/ev_rescore_q668q.py (from the x7c42 script) + integrity / state-overlap checks; claude/ev-q668q-rescore @a100c3b9.
+- Learned: AGREES (max |d| 1e-14). PRIMARY flat: dCompA -0.97 [-3.38,+1.12] (97.5% [-3.73,+1.41], p 0.810); with x7c42 (p 0.565) Holm stops at the first test -> 'H2O v1.1 + SSDM jev2 data beats H2O v1.1' NOT CLAIMED. Floor beaten +8.97pp. Bigger slice gains than x7c42 (temporal_numeric now +12.5pp on the slice) but transfer corr -0.32: public loses tradeoff/probability items and the 26 control errors (temporal_numeric/judge_hard/long_policy) do not move net. The same-code H2O control is float-nondeterministic across jobs (x7c42 drifted; q668q = 4g6m8/zbtbj to 1e-6). 49 slice rows share a state with L train rows (glaive dupes, prob_dice).
+- Next: lead: state-level dedupe in the jev2 generator (glaive_fc, prob_dice); this Holm family is closed (NOT CLAIMED), so any further H2O-host arm needs a new prereg; consider 2 seeds per arm to size run-to-run variance.
+
 ## 2026-10-11: evidence independent rescore of JEV2-H2O (job-x7c42)
 - Did: self-downloaded art-cwk49 (0c538a61 = job record) + 9fy9p + zbtbj artifacts; jevkit CLI rescore + scripts/ev_rescore_x7c42.py (Holm CI/p, floor bootstrap, overlap, order, determinism, transfer); claude/ev-x7c42-rescore @bf706854.
 - Learned: AGREES (max |d| 0). PRIMARY flat: dCompA -0.41 [-1.75,+1.39] (97.5% [-2.06,+1.58], p 0.565) -> x7c42 not claimable under Holm whatever L does. Floor beaten +4.44pp [+3.47,+5.31]. Training is run-to-run nondeterministic (vs 9fy9p) but reselects step 200. Slice gains (tradeoff/adversarial/trap/adequacy/ambiguous/policy) land where public is already 83-100%; public errors (temporal_numeric, judge_hard, long_policy, multi_hop) see ~0 slice gain; slice shapes differ (state type, K, type mix, public states 2-6x longer).
