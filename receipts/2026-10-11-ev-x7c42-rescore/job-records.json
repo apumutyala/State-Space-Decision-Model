@@ -1,0 +1,143 @@
+{
+ "job-x7c42": {
+  "artifact": {
+   "artifact_id": "art-cwk49",
+   "download": {
+    "url": "<signed url redacted>"
+   },
+   "sha256": "0c538a615ef838f75b824b03cbaacae9293051d915b81a3293033037556ae220",
+   "size_bytes": 130693120,
+   "state": "ready"
+  },
+  "attempt": 1,
+  "attempt_history": [
+   {
+    "attempt": 1,
+    "end_cause": "process_exit",
+    "end_reason": null,
+    "ended_at": "2026-10-11T15:05:20.115967+00:00",
+    "outcome": "completed",
+    "started_at": "2026-10-11T14:23:09.897820+00:00"
+   }
+  ],
+  "boundary_severs": 0,
+  "checks": {
+   "declared": {
+    "health": {
+     "check": {
+      "path": "/output/heartbeat",
+      "type": "heartbeat"
+     },
+     "fail_threshold": 2,
+     "grace_period_s": 1800,
+     "interval_s": 600,
+     "on_fail": "kill"
+    },
+    "success": {
+     "check": {
+      "all_of": [
+       {
+        "path": "/output/M2_FIRST_CELL_DONE",
+        "type": "file_exists"
+       },
+       {
+        "path": "/output/MANIFEST.jsonl",
+        "type": "file_exists"
+       }
+      ]
+     }
+    }
+   },
+   "health_polls": 2,
+   "last_health_at": "2026-10-11T15:03:09.824969+00:00",
+   "last_health_verdict": "passed",
+   "results": [
+    {
+     "action": "none",
+     "at": "2026-10-11T15:05:20.115967+00:00",
+     "attempt": 1,
+     "detail": "",
+     "phase": "success",
+     "verdict": "passed"
+    }
+   ],
+   "success_verdict": "passed"
+  },
+  "chip": {
+   "count": 1,
+   "model": "h100"
+  },
+  "clock_lock": true,
+  "finished_at": "2026-10-11T15:05:20.115967+00:00",
+  "hf_cache": true,
+  "infra_start_failures": 0,
+  "job_id": "job-x7c42",
+  "label": "A-PREREG-JEV2-H2O jev2_h2o_shim: H2O-Lightning-4B v1.1 + SSDM jev2 data (final cleared mix), g1v2, head lm_label (trains the scored shim readout), r16 LR 4e-5, 333 steps, clock 130 [paired vs H2O v1.1 + shim; step-0 floor on the held-out slice]",
+  "max_restarts": 0,
+  "object": "job",
+  "preempted_count": 0,
+  "preflight": {
+   "checks": [
+    {
+     "check": "cost-cap",
+     "inputs": {
+      "cap_usd_micros": 900000000,
+      "committed_usd_micros": 0,
+      "remaining_usd_micros": 899547000,
+      "scope": "workspace",
+      "worst_case_usd_micros": 16821000
+     },
+     "message": "worst case $16.82 fits the workspace cap's remaining $899.55",
+     "verdict": "pass"
+    },
+    {
+     "check": "disk-model",
+     "inputs": {
+      "silent_because": "no Hugging Face model reference in the model field, the command, or the env"
+     },
+     "message": "",
+     "verdict": "silent"
+    }
+   ],
+   "ran_at": "2026-10-11T13:54:40.018778999Z"
+  },
+  "profiling": false,
+  "receipt": {
+   "attempts": [
+    {
+     "attempt": 1,
+     "billed_seconds": 2530,
+     "charged_usd_micros": 2655800,
+     "gpu_count": 1,
+     "rate_usd_micros_per_gpu_minute": 62983
+    }
+   ],
+   "billed_attempts": 1,
+   "billed_seconds": 2530,
+   "charged_usd_micros": 2655800,
+   "image_digest": "sha256:c1c03fe46deb5e3cecb0af96b0326f887ea3589fb1da178fc96478c3f657da67"
+  },
+  "restarts_used": 0,
+  "result_error": "exceeds 32 KiB (the result file is 35282 bytes)",
+  "resume": "checkpoint",
+  "resume_source": "declared",
+  "samples": {
+   "count": 3,
+   "latest_captured_at": "2026-10-11T15:05:07.739979+00:00"
+  },
+  "start_failures": 0,
+  "status": "succeeded",
+  "submitted_at": "2026-10-11T13:54:40.019221+00:00",
+  "sustained_clock_mhz": 1590
+ },
+ "job-9fy9p_artifact": {
+  "artifact_id": "art-4m5ew",
+  "sha256": "69c878145e4add4ae172fa36f007752ffb0e029f106ee01cb5be5c785d387796",
+  "size_bytes": 4935680
+ },
+ "job-zbtbj_artifact": {
+  "artifact_id": "art-ju73t",
+  "sha256": "d0a048841c2ccdcb8cefb78b3e9f3dea4bb33474e826bd0f815703879ab88acd",
+  "size_bytes": 1587200
+ }
+}

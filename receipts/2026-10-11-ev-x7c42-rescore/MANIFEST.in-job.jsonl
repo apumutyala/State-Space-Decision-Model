@@ -1,0 +1,6 @@
+{"phase": "setup", "file": "phases/setup.tgz", "sha256": "a2834854332dc5d2e74fa005c53ee5d29a460739d66e98743a6be3afe2050ce0", "bytes": 15154, "ok": true, "t": "2026-10-11T14:25:37Z"}
+{"phase": "guard", "file": "phases/guard.tgz", "sha256": "012dfdc6715296bd6c507acb664664469f60bfff5a230a0397ef3f0e4bec0925", "bytes": 907199, "ok": true, "t": "2026-10-11T14:25:46Z"}
+{"phase": "heldout", "file": "phases/heldout.tgz", "sha256": "b13caa4688121e3f835031c74ef9cef995065ae78f84ea06e596f10b72effb80", "bytes": 908696, "ok": true, "t": "2026-10-11T14:25:50Z"}
+{"phase": "cell", "file": "phases/cell.tgz", "sha256": "f0e18590dbb23f9de9cd1178da3621fa6428cf9681b63303518c6d28773a84b2", "bytes": 934449, "ok": true, "t": "2026-10-11T14:51:19Z"}
+{"phase": "screen", "file": "phases/screen.tgz", "sha256": "419ffcb2ecdfd36c5c3043c33b4fc50137578f19fab470dcf7dd9992b28b8452", "bytes": 1561730, "ok": true, "t": "2026-10-11T15:05:07Z"}
+{"phase": "final", "file": "phases/final.tgz", "sha256": "deb9ce227cd9ae2523d0ef609cd63c9081fc960ee4152b78fc6d0126fbf4b8b9", "bytes": 1617162, "ok": true, "t": "2026-10-11T15:05:18Z"}

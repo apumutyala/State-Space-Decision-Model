@@ -1,0 +1,12 @@
+noul n 74 max|dp| 0.007538451568352533 median 0.00021376361422679319 n>1e-3 13 n>1e-2 0
+choice n 139 max|dp| 0.01891587819347801 median 0.0003928659675257462 n>1e-3 32 n>1e-2 2
+score n 18 max|dp| 0.0073917638454280565 median 0.0007220756650149832 n>1e-3 6 n>1e-2 0
+max 0.01891587819347801 hard-opus-c-temporal_numeric-03 {"type": "choice", "choice": "eur_692_00", "probabilities": {"eur_617_00": 0.042850953829761125, "eur_688_00": 0.201300465716434, "eur_692_00": 0.44068446473874145, "eur_693_90": 0.2537494071330916, "eur_812_00": 0.06141470858197191}, "confidence": 0.3008555809234268} {"type": "choice", "choice": "eur_692_00", "probabilities": {"eur_617_00": 0.040247885892196224, "eur_688_00": 0.1887651022982514, "eur_692_00": 0.4387833047673377, "eur_693_90": 0.2726652853265696, "eur_812_00": 0.059538421715645065}, "confidence": 0.29847913095917206}
+sample keys ctrl ['type', 'noul']
+records sha 9fy9p 824671c97070c0e61a40df8f0103ebeb6fddc557e0974a61226653887d57ceb7 329fca010144f205808b596309808fe014516eb783e6874c846a803e503d4ebf x7c42 824671c97070c0e61a40df8f0103ebeb6fddc557e0974a61226653887d57ceb7 329fca010144f205808b596309808fe014516eb783e6874c846a803e503d4ebf
+loss first 6 x7c42 [0.4999, 0.6032, 1.3802, 0.8094, 0.839, 1.1061]
+loss first 6 9fy9p [0.4909, 0.6102, 1.4034, 0.7912, 0.8495, 1.1124]
+keys ['step', 'loss', 'peak_gb', 't']
+STATE-OVERLAP slice m2:jev1synth:agent_audit:2187~view:jev1-audit-yn jev1_agent_audit_yn | train m2:jev1synth:agent_audit:5066~view:jev1-audit-first jev1_agent_audit_first | state chars 645 | q equal False | labels {'q': 'false'} {'q': 'R2'}
+STATE-OVERLAP slice m2:jev2synth:temporal:816~view:jev2v2-prorate jev2_temporal_prorate | train m2:jev2synth:temporal:1356~view:jev2v2-prorate jev2_temporal_prorate | state chars 315 | q equal False | labels {'q': 'amt_2_40'} {'q': 'amt_2_40'}
+STATE-OVERLAP slice m2:jev2synth:tool_pick:597~view:jev2v2-tool jev2_tool_travel | train m2:jev2synth:tool_pick:473~view:jev2v2-tool jev2_tool_travel | state chars 37 | q equal False | labels {'q': 'convert_currency'} {'q': 'convert_currency'}
