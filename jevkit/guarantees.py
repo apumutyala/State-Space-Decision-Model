@@ -419,9 +419,134 @@ def _inside(logits: dict[str, float], intervals: dict[str, Sequence[float]], tol
                                                  for k, v in logits.items())
 
 
+G16SYM_SCHEMA = "ssdm.g16sym.export.v1"
+
+
+def g16sym_intervals(rec: dict, need_gold: bool = False) -> dict[str, list[float]]:
+    """Parse + validate one ``ssdm.g16sym.export.v1`` record (lead's docs/G16_EXPORT.md; JSON only, no torch).
+    Returns {option id: [lo, hi]} over the host-allowed options. Refuses: wrong schema, missing decision_id, empty
+    options, duplicate option ids, non-finite or lo > hi intervals, score outside [lo, hi], vetoed ids that are also
+    options, a gold that is neither an option nor vetoed, and (``need_gold``) a missing gold."""
+    if not isinstance(rec, dict) or rec.get("schema") != G16SYM_SCHEMA:
+        raise ValueError(f"record schema must be {G16SYM_SCHEMA!r}")
+    did = rec.get("decision_id")
+    if not isinstance(did, str) or not did:
+        raise ValueError("decision_id must be a non-empty string")
+    opts = rec.get("options")
+    if not isinstance(opts, list) or not opts:
+        raise ValueError(f"{did}: options must be a non-empty list")
+    iv: dict[str, list[float]] = {}
+    for o in opts:
+        oid = o.get("id") if isinstance(o, dict) else None
+        if not isinstance(oid, str) or oid in iv:
+            raise ValueError(f"{did}: option ids must be unique strings ({oid!r})")
+        try:
+            lo, hi, s = float(o["lo"]), float(o["hi"]), float(o["score"])
+        except (KeyError, TypeError, ValueError) as e:
+            raise ValueError(f"{did}: option {oid!r} needs numeric lo, hi, score") from e
+        if not all(math.isfinite(v) for v in (lo, hi, s)) or not lo <= hi or not lo <= s <= hi:
+            raise ValueError(f"{did}: option {oid!r} needs finite lo <= score <= hi")
+        iv[oid] = [lo, hi]
+    vetoed = rec.get("vetoed", [])
+    if not isinstance(vetoed, list) or any(not isinstance(v, str) for v in vetoed) or set(vetoed) & set(iv):
+        raise ValueError(f"{did}: vetoed must be a list of ids disjoint from options")
+    gold = rec.get("gold")
+    if gold is None:
+        if need_gold:
+            raise ValueError(f"{did}: calibration records need gold")
+    elif gold not in iv and gold not in vetoed:
+        raise ValueError(f"{did}: gold must be an option id or a vetoed id")
+    return iv
+
+
+def _box_min_prob(iv: dict[str, list[float]], y: str) -> float:
+    """pi^lo_y: the smallest softmax probability of y over the box (y at lo, every other option at hi)."""
+    return softmax({k: (v[0] if k == y else v[1]) for k, v in iv.items()})[y]
+
+
+def _matched_score(iv: dict[str, list[float]], gold: str) -> float:
+    return robust_min_score(iv, gold) if gold in iv else math.inf  # a vetoed gold can never be covered: +inf
+
+
+def injection_matched_report(cal: Sequence[dict], test: Sequence[dict], alpha: float = 0.1, epsilon: float = 0.05,
+                             delta: float = 0.05, lambdas: Sequence[float] = DEFAULT_LAMBDAS, split_seed: int = 0,
+                             fit_frac: float = 0.5) -> dict:
+    """MATCHED injection-robust conformal (docs/guarantees/INJECTION_ROBUST_CONFORMAL.md, Theorem A / Corollary A', E).
+
+    ``cal`` and ``test`` are ``ssdm.g16sym.export.v1`` records; calibration records need ``gold``. Calibration is cut
+    into FIT / LTT halves by ``split_calibration`` (on decision ids). q_hat = Q_alpha(s_lo(intervals_i, gold_i)) on
+    FIT; set C(x) = {y : s_lo(x, y) <= q_hat}. Act rule: act iff |C| = 1 and pi^lo(singleton) >= lambda; the action is
+    the singleton (never the attacked argmax). lambda is certified by LTT (Bonferroni over ``lambdas``) on the LTT
+    half. Everything is a function of the trusted intervals, so sets, acts and actions are identical for every
+    untrusted text."""
+    cal_iv = [(r["decision_id"], g16sym_intervals(r, need_gold=True), r["gold"]) for r in cal]
+    test_iv = [(r["decision_id"], g16sym_intervals(r), r.get("gold")) for r in test]
+    for name, rows in (("calibration", cal_iv), ("test", test_iv)):
+        if len({d for d, _, _ in rows}) != len(rows):
+            raise ValueError(f"{name} decision_ids must be unique")
+    if {d for d, _, _ in cal_iv} & {d for d, _, _ in test_iv}:
+        raise ValueError("test decisions overlap the calibration decisions")
+    by_id = {d: (iv, g) for d, iv, g in cal_iv}
+    fit_h, ltt_h, split = split_calibration([Scored(d, "g16sym", {}, g) for d, _, g in cal_iv], split_seed, fit_frac)
+    qhat = conformal_qhat([_matched_score(*by_id[r.id]) for r in fit_h], alpha)
+
+    def decide(iv: dict[str, list[float]]) -> tuple[list[str], float | None]:
+        cs = robust_set(iv, qhat)
+        return cs, (_box_min_prob(iv, cs[0]) if len(cs) == 1 else None)
+
+    ltt_rows = [(decide(by_id[r.id][0]), by_id[r.id][1]) for r in ltt_h]
+    level = delta / len(lambdas)
+    valid = []
+    for lam in sorted(lambdas, reverse=True):
+        acted = [(cs[0], g) for (cs, kap), g in ltt_rows if kap is not None and kap >= lam]
+        n, err = len(acted), sum(y != g for y, g in acted)
+        if n and binom_cdf(err, n, epsilon) <= level:
+            valid.append({"lambda": lam, "n_act": n, "errors": err})
+    best = min(valid, key=lambda v: v["lambda"]) if valid else None
+    lam_hat = best["lambda"] if best else None
+    ltt = {"epsilon": epsilon, "delta": delta, "method": "bonferroni", "test_level": level, "n_cal": len(ltt_h),
+           "grid": [min(lambdas), max(lambdas), len(lambdas)], "lambda": lam_hat, "n_valid_lambdas": len(valid),
+           "act_rule": "act iff |C_lo| == 1 and pi_lo(singleton) >= lambda; action = the singleton"}
+    if best:
+        ltt.update({"act_rate_cal": best["n_act"] / len(ltt_h), "accepted_error_cal": best["errors"] / best["n_act"],
+                    "accepted_error_ucb": clopper_pearson_upper(best["errors"], best["n_act"], level)})
+    n = len(test_iv)
+    n_gold = cov = size = single = indep = n_act = act_err = act_gold = 0
+    for _d, iv, g in test_iv:
+        cs, kap = decide(iv)
+        size += len(cs)
+        single += len(cs) == 1
+        indep += independent_label(iv) is not None
+        acts = lam_hat is not None and kap is not None and kap >= lam_hat
+        n_act += acts
+        if g is not None:
+            n_gold += 1
+            cov += g in cs
+            if acts:
+                act_gold += 1
+                act_err += cs[0] != g
+    return {"mode": "matched", "schema": G16SYM_SCHEMA, "alpha": alpha, "target_coverage": 1 - alpha, "qhat": qhat,
+            "calibration_split": split, "n": n, "n_with_gold": n_gold,
+            "coverage": cov / n_gold if n_gold else None, "mean_set_size": size / n if n else None,
+            "singleton_rate": single / n if n else None, "independence_rate": indep / n if n else None,
+            "ltt": ltt, "act_rate": n_act / n if n else None,
+            "acted_error": act_err / act_gold if act_gold else None,
+            "guarantee": ("Theorem A: P(gold in C) >= 1 - alpha for every untrusted text (sets read the trusted-only "
+                          "intervals only); LTT: P(acted-on risk of the selected rule > epsilon) <= delta. Assumes "
+                          "(P, gold) exchangeable, i.i.d. decisions (one per input; see CONFORMAL.md D1), fixed "
+                          "weights and box scale c chosen before calibration (A9), trusted option set (A10).")}
+
+
 def injection_robust_report(cal: Sequence[Scored], test: Sequence[dict], alpha: float = 0.1,
-                            mondrian: bool = True) -> dict:
-    """``test`` rows: {id, type, label, intervals: {y: [lo, hi]}, clean_logits?: {y: v}, attacked_logits?: [{y: v}]}."""
+                            mondrian: bool = True, mode: str = "clean", **matched_kw: Any) -> dict:
+    """``test`` rows: {id, type, label, intervals: {y: [lo, hi]}, clean_logits?: {y: v}, attacked_logits?: [{y: v}]}.
+
+    ``mode="matched"``: ``cal`` and ``test`` are ``ssdm.g16sym.export.v1`` records instead; delegates to
+    ``injection_matched_report`` (``matched_kw``: epsilon, delta, lambdas, split_seed, fit_frac). Default unchanged."""
+    if mode == "matched":
+        return injection_matched_report(cal, test, alpha, **matched_kw)  # type: ignore[arg-type]
+    if mode != "clean":
+        raise ValueError("mode must be clean or matched")
     fit = fit_conformal(cal, alpha, mondrian)
     n = cov = size = single = indep = 0
     clean_out = clean_not_subset = clean_checked = att_out = att_checked = 0

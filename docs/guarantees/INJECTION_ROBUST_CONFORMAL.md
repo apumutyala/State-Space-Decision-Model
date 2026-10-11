@@ -138,7 +138,16 @@ Theorem B as proved above needs more than Theorem A: clean calibration text plus
 - Adversarially robust CP (Gendler et al., ICLR 2022; VRCP, NeurIPS 2024) bounds the score over a perturbation set by smoothing or verification. Here the bound is exact, it covers arbitrary text rather than an ℓp ball, and the set is not merely robust but *invariant*.
 - What I did not find in the literature: the observation that matched calibration on the interval bound (Theorem A) dominates the clean-calibrated dominance construction (Theorem B, Proposition C). VRCP-style methods calibrate on clean scores and inflate at test time, which is Theorem B. I have not done an exhaustive search.
 
-## 6. Recommendation for jevkit (no change made here)
+## 6. Recommendation for jevkit (IMPLEMENTED 2026-10-10)
+
+**Implemented** as `injection_robust_report(cal_records, test_records, mode="matched")` (`injection_matched_report`). The CLI is `python -m jevkit guarantees injection --mode matched --cal-intervals CAL.jsonl --test TEST.jsonl`.
+- Inputs are the lead's `ssdm.g16sym.export.v1` records (`docs/G16_EXPORT.md` on stack/qwen35/g16-sym), parsed from JSON with no torch import (`g16sym_intervals` validates them).
+- Calibration is split FIT/LTT. `q̂` is the FIT half's conformal quantile of `s_lo`, and a vetoed gold scores +∞.
+- LTT certifies λ for the act rule "|C_lo| = 1 and π^lo(singleton) ≥ λ"; the action is the singleton.
+- Reported: coverage, mean set size, singleton rate, independence rate, act rate and acted-on error.
+- The default `mode="clean"` is unchanged. Tests: `tests/guarantees/test_injection_conformal.py::test_matched_mode_*`.
+
+The original recommendation follows.
 
 Add a matched mode to `injection_robust_report`, for example `calibration="trusted_lo"`:
 - calibration rows carry `{intervals, label}`;

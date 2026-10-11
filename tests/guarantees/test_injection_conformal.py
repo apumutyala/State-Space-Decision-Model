@@ -232,3 +232,91 @@ def test_print_summary(capsys):
               % (SEEDS, ALPHA, N_CAL, N_TEST, K))
         for k in keys:
             print(f"  {k:32s} {_mean(r, k):.4f}")
+
+
+# ------------------------------------------------------------------ jevkit matched mode on ssdm.g16sym.export.v1 records
+def _record(r: dict, did: str, score: dict | None = None, gold: bool = True) -> dict:
+    sc = score or r["clean"]
+    rec = {"schema": "ssdm.g16sym.export.v1", "decision_id": did, "vetoed": [],
+           "options": [{"id": k, "lo": v[0], "hi": v[1], "score": sc[k]} for k, v in r["iv"].items()]}
+    if gold:
+        rec["gold"] = r["y"]
+    return rec
+
+
+def test_matched_mode_covers_over_seeds_and_ignores_untrusted_scores():
+    covs, sizes = [], []
+    for seed in range(60):
+        rng = random.Random(f"matched|{seed}")
+        cal = [draw(rng) for _ in range(300)]
+        test = [draw(rng) for _ in range(N_TEST)]
+        rep = injection_robust_report([_record(r, f"c{i}") for i, r in enumerate(cal)],
+                                      [_record(r, f"t{i}") for i, r in enumerate(test)], alpha=ALPHA, mode="matched",
+                                      epsilon=0.10, delta=0.10)
+        # the adversary moves every observed score to the worst in-box corner: nothing in the report may change
+        att = [_record(r, f"t{i}", score={k: (v[0] if k == r["y"] else v[1]) for k, v in r["iv"].items()})
+               for i, r in enumerate(test)]
+        rep2 = injection_robust_report([_record(r, f"c{i}") for i, r in enumerate(cal)], att, alpha=ALPHA,
+                                       mode="matched", epsilon=0.10, delta=0.10)
+        assert rep == rep2
+        # sets are exactly {y : s_lo(y) <= q_hat}, q_hat from the FIT half's matched scores
+        assert rep["mode"] == "matched" and rep["n_with_gold"] == N_TEST
+        covs.append(rep["coverage"])
+        sizes.append(rep["mean_set_size"])
+        if rep["ltt"]["lambda"] is not None:
+            assert 0.0 < rep["act_rate"] <= rep["singleton_rate"]
+    mean = sum(covs) / len(covs)
+    n_fit = 150  # about half of 300
+    assert TARGET - 0.015 <= mean <= TARGET + 1 / (n_fit + 1) + 0.015, mean
+
+
+def test_matched_mode_rejects_malformed_records():
+    import pytest
+    rng = random.Random("bad")
+    r = draw(rng)
+    good = _record(r, "c0")
+    test = [_record(draw(rng), "t0")]
+    import copy as _copy
+
+    def bad(mutate, where="cal"):
+        rec = _copy.deepcopy(good)
+        mutate(rec)
+        cal, tst = ([rec], test) if where == "cal" else ([good], [rec])
+        with pytest.raises(ValueError):
+            injection_robust_report(cal, tst, alpha=ALPHA, mode="matched")
+
+    bad(lambda x: x["options"][0].update(lo=x["options"][0]["hi"] + 1.0))          # lo > hi
+    bad(lambda x: x["options"].append(dict(x["options"][0])))                      # duplicate option id
+    bad(lambda x: x.pop("gold"))                                                    # calibration without gold
+    bad(lambda x: x.update(schema="other"))                                         # wrong schema
+    bad(lambda x: x["options"][0].update(score=x["options"][0]["hi"] + 1.0))       # score outside its box
+    bad(lambda x: x["options"][0].update(lo=float("nan")))                          # non-finite
+    bad(lambda x: x.update(gold="nope"))                                            # gold not an option / vetoed
+    bad(lambda x: x.update(vetoed=[x["options"][0]["id"]]))                         # vetoed id still an option
+    bad(lambda x: x.update(options=[]))                                             # empty options
+    bad(lambda x: x.update(decision_id="c0"), where="test")                         # test overlaps calibration
+    with pytest.raises(ValueError):
+        injection_robust_report([good, _copy.deepcopy(good)], test, alpha=ALPHA, mode="matched")  # duplicate ids
+    with pytest.raises(ValueError):
+        injection_robust_report([good], test, alpha=ALPHA, mode="bogus")
+    # a vetoed gold is legal (scores +inf); a test record may omit gold
+    ok = _copy.deepcopy(good)
+    ok["vetoed"], ok["gold"], ok["decision_id"] = ["gone"], "gone", "c1"
+    rep = injection_robust_report([ok, good], [_record(r, "t9", gold=False)], alpha=ALPHA, mode="matched")
+    assert rep["n_with_gold"] == 0 and rep["coverage"] is None
+
+
+def test_matched_mode_cli(tmp_path):
+    import json as _json
+
+    from jevkit import cli
+    rng = random.Random("cli")
+    cal = [_record(draw(rng), f"c{i}") for i in range(200)]
+    test = [_record(draw(rng), f"t{i}") for i in range(50)]
+    pc, pt, po = tmp_path / "cal.jsonl", tmp_path / "test.jsonl", tmp_path / "rep.json"
+    pc.write_text("\n".join(_json.dumps(r) for r in cal) + "\n", encoding="utf-8")
+    pt.write_text("\n".join(_json.dumps(r) for r in test) + "\n", encoding="utf-8")
+    assert cli.main(["guarantees", "injection", "--mode", "matched", "--cal-intervals", str(pc), "--test", str(pt),
+                     "--alpha", "0.1", "--out", str(po)]) == 0
+    rep = _json.loads(po.read_text(encoding="utf-8"))
+    assert rep == _json.loads(_json.dumps(injection_robust_report(cal, test, alpha=0.1, mode="matched", delta=0.05)))
