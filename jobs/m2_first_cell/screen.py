@@ -614,12 +614,16 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: st
     if jk.get("target_ref"):  # JEV3-SYM: H2O's EXISTING preds (job-zbtbj), copied into the report dir if pinned
         tr = jk["target_ref"]
         src = Path(data_dir) / tr["preds"] if data_dir else None
-        if src is not None and src.is_file() and len(tr.get("sha256") or "") == 64 \
+        pinned = len(tr.get("sha256") or "") == 64
+        if src is not None and src.is_file() and pinned \
                 and hashlib.sha256(src.read_bytes()).hexdigest() == tr["sha256"]:
             (out_dir / "target_ref.preds.jsonl").write_bytes(src.read_bytes())
             ident["target_ref"] = {"preds": tr["preds"], "sha256": tr["sha256"], "status": "copied"}
+        elif pinned:  # a pinned target that is missing / changed fails closed
+            print(f"identity: target_ref {tr.get('preds')} missing or sha256 != {tr['sha256']}", file=sys.stderr)
+            return 10
         else:
-            ident["target_ref"] = {"preds": tr.get("preds"), "status": "UNAVAILABLE (missing or sha256 mismatch)"}
+            ident["target_ref"] = {"preds": tr.get("preds"), "status": "UNAVAILABLE (not pinned)"}
     first = None
     if jk.get("slice_first"):  # tfit.json / calib_probs.jsonl / slice_floor.json were written before the screen
         first = json.loads((out_dir / "slice_first.json").read_text(encoding="utf-8"))

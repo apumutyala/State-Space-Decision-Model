@@ -853,3 +853,4 @@ PRE-REGISTRATION TEXT (paste on origin/state before seed 0 is submitted):
     - The G1 perturbed preds per arm under out/screen/jevkit/g1/<arm>/ (native = the gate; stock_shim = report), for reverse / shuffle / relabel, with perturbed.jsonl written WITHOUT sort_keys and its order asserted.
     - The 8-op battery on the trained arm (out/screen/jevkit/flip8/).
     - landing.json with phase timestamps (MANIFEST.jsonl), gates and every out/ file mtime / sha256, including slice_first_before_public_preds.
+  - **Target arm (pinned 2026-10-11):** H2O preds = job-4g6m8 control preds (identical answers to job-zbtbj), claude/lead-h2o-eval @f5615683 receipts/2026-10-11-h2o-host-eval/arms/h2o/preds.jsonl, sha256 e00d5ac7bfcccac18fe526752871004133ebd0b598dc42224cf498496ff62fd2, shipped as job data and sha-checked; a missing or changed file fails closed. Paired on the same 231 ids and bootstrap draws.

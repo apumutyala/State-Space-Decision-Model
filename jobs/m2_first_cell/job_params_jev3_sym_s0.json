@@ -259,6 +259,11 @@
     "src": "m2/build/bschema-draw-jev2-mix-s-calib/records.jsonl.gz",
     "dest": "m2-jev3-calib/records.jsonl.gz",
     "pin": "jobs/m2_first_cell/data_jev3.sha256"
+   },
+   {
+    "src": "target_ref/h2o_4g6m8.preds.jsonl",
+    "dest": "target_ref/h2o_4g6m8.preds.jsonl",
+    "pin_sha256": "e00d5ac7bfcccac18fe526752871004133ebd0b598dc42224cf498496ff62fd2"
    }
   ],
   "manifest_files": [
@@ -341,10 +346,11 @@
   "g1_per_arm": true,
   "flip_reference": "stock Qwen3.5-4B + shim: 7.55% average flip rate over the jevkit operators (evidence receipt)",
   "target_ref": {
-   "name": "H2O-Lightning-4B v1.1 (job-zbtbj)",
-   "preds": "target_ref/zbtbj_h2o.preds.jsonl",
-   "sha256": "PLACEHOLDER",
-   "caveat": "TARGET only (76.6 local): S / K come from a different job (~2.7 S-pt cross-job noise) and H2O ran through the vendored-shim path"
+   "name": "H2O-Lightning-4B v1.1 (job-4g6m8 control preds; identical answers to job-zbtbj)",
+   "preds": "target_ref/h2o_4g6m8.preds.jsonl",
+   "sha256": "e00d5ac7bfcccac18fe526752871004133ebd0b598dc42224cf498496ff62fd2",
+   "source": "claude/lead-h2o-eval @f5615683 receipts/2026-10-11-h2o-host-eval/arms/h2o/preds.jsonl (SHA256SUMS)",
+   "caveat": "TARGET only (76.6 local): S / K come from a different job (~2.7 S-pt cross-job noise) and H2O ran through the vendored-shim path; paired on the same 231 ids and the same bootstrap draws (screen.paired_vs B 1000 seed 16); a missing / changed file fails closed (exit 10)"
   },
   "slice_floor": true,
   "slice_first": true,
