@@ -1,5 +1,9 @@
 # PROGRESS: rolling, 3–5 lines per session (did / learned / next). Older entries roll into history/.
 
+## 2026-10-11: evidence independent rescore of JEV1-4B r2 (job-xt3ax, A-PREREG-JEV1-4B)
+- Did: self-downloaded art-mv9cr (sha matches autor), rescored raw preds with the frozen jevkit CLI + paired B1000 seed16; added --secondary-axes/--groups/--vs (EV-PREREG-SECONDARY-AXES) to scripts/ev_rescore_jevkit.py; receipts claude/ev-j1-rescore @e2b336c6 receipts/2026-10-10-ev-rescore-xt3ax/.
+- Learned: AGREES with screen.json (max |diff| 0.0); PRIMARY NOT SUCCESS, dA -4.07 [-25.64,+3.22] (best@1000). The -25.6 tail is the I floor (native I 51.2 sits on 50; 42% of draws below). Jev1 draw HURT covered families (-6.7pp, long_policy -31.6pp) and left uncovered flat; trained arm abstains on 10/74 noul. vs H2O dA -13.2 [-37.8,-7.6]: still far behind.
+- Next: lead's call on the next 4B cell; long_policy and noul softening are the concrete regressions to inspect.
 ## 2026-10-10: evidence local Composite/Capability scorecard (EV-PREREG-COMPOSITE-LOCAL)
 - Did: 28 arms with raw preds on the 231 public items (zbtbj host scan incl. H2O anchor, 9j3uu D19 + stock RWKV13.3B, sizecliff 27anq/haxmm/reknq all arms, r3uc4 decider/torchcast) scored by the frozen jevkit CLI with each system's declared price, paired vs H2O (job-zbtbj) on one shared B1000 seed16 resample set (Capability, Composite A, Composite A with S held at H2O's); every arm reproduces its in-job report exactly (max |diff| 0.0); receipts claude/ev-scorecard @e2fcd82b receipts/2026-10-10-ev-scorecard/.
 - Learned: NO arm has CI>0 vs H2O on Composite A or Capability. Best ours stock Qwen3.5-4B+H2O shim ΔA −9.4 [−23.1,−4.2]; best trained D19 ΔA −14.4 [−31.7,−10.6], ΔCap −17.2 [−26.6,−10.7]; the gap is I (D19 52.6 vs 77.6) not S/K (holding S at H2O's changes Δ by <2). External 12B systems sit −3.6 to −5.6 (CI<0). Stock RWKV13.3B measured twice: S 86.1 vs 83.4 = ~2.7 pt cross-job S noise.
