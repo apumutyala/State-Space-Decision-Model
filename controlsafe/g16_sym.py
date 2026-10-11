@@ -238,7 +238,8 @@ class G16SymHead(nn.Module):
         """P stream run ONE distinct trusted token list at a time (batch of 1), assembled into the gated backbone's
         ``p_cache`` format so the batched call reuses it exactly. With merging, untrusted text decides how many
         distinct rows the batch has and where each sits; per row, h_P of an option is a function of its own trusted
-        list alone, whatever the batch (no batch-invariance assumption on the P kernels, e.g. on GPU)."""
+        list alone, whatever the batch (no batch-invariance assumption on the P kernels, e.g. on GPU). The batched
+        path is NOT batch-invariant even on CPU (job-r2y6v, torch 2.13: last-bit lo differences vs this path)."""
         from .trust_gate import compaction
 
         g = self.gated
