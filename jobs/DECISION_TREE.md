@@ -169,3 +169,5 @@ Read r2's `screen.json` `jevkit.primary` (A-PREREG-JEV1-4B: delta Composite A vs
   pin is set and `jevdiag.r2_delta_I_ci95` is filled. Worst case $17.89. Its `diagnosis` picks the next cell:
   READOUT -> LM-head label readout; TRANSFER -> coverage + format first (jev2); UNDERFIT -> JEV2-4B budget + LR x2;
   mixed -> JEV2-4B.
+
+**Update (A-PREREG-JEV2-4B Amendment 2, 2026-10-10):** r2 was FLAT, so JEV1-DIAG is folded (the jev1 audit explains r2) and JEV2-4B is the next cell. It is registered as `jobs/m2_first_cell/job_params_jev2_q35_4b.json` (mode `jev2_q35_4b`, stack/qwen35/jev2-4b). Shape: 586 rows per family (adequacy 293) x 18 families = 10,255 rows, 1,281 steps, clock 462, max_duration 604 min, worst case $79.88 (operator hard cap $80), expected ~$28.7. It waits on jev2b + jev2c: rebuild the mix with them and refill the PROVISIONAL pins.
