@@ -1,0 +1,288 @@
+{
+ "n_records": 1500,
+ "unique_ids": 1500,
+ "dup_ids": [],
+ "by_family": {
+  "long_policy": 1500
+ },
+ "type_by_family": {
+  "long_policy": {
+   "choice": 778,
+   "noul": 647,
+   "score": 75
+  }
+ },
+ "by_source": {
+  "jev2synth": 1500
+ },
+ "split_by_source": {
+  "jev2synth": {
+   "synthetic": 1500
+  }
+ },
+ "license_by_source": {
+  "jev2synth": {
+   "own generator (repo)": 1500
+  }
+ },
+ "missing_license": 0,
+ "missing_license_ids": [],
+ "state_type_by_family": {
+  "long_policy": {
+   "str": 1500
+  }
+ },
+ "gold_failures": {},
+ "gold_position_presented": {
+  "long_policy": {
+   "n_tested": 778,
+   "chi2": 8.74,
+   "df": 14,
+   "p": 0.8479,
+   "per_k": {
+    "3": {
+     "n": 122,
+     "positions": [
+      48,
+      36,
+      38
+     ]
+    },
+    "4": {
+     "n": 282,
+     "positions": [
+      72,
+      71,
+      67,
+      72
+     ]
+    },
+    "5": {
+     "n": 193,
+     "positions": [
+      42,
+      38,
+      43,
+      34,
+      36
+     ]
+    },
+    "6": {
+     "n": 181,
+     "positions": [
+      23,
+      31,
+      35,
+      30,
+      37,
+      25
+     ]
+    }
+   }
+  }
+ },
+ "choice_keys_already_sorted": {
+  "long_policy": {
+   "n_choice": 778,
+   "n_sorted": 33,
+   "expected_if_shuffled": 33.9
+  }
+ },
+ "empty_criteria_rows": {
+  "long_policy": {
+   "n": 75,
+   "examples": [
+    "m2:jev2synth:long_handbook:1011~view:jev2-lpl",
+    "m2:jev2synth:long_handbook:1048~view:jev2-lpl",
+    "m2:jev2synth:long_handbook:1058~view:jev2-lpl",
+    "m2:jev2synth:long_handbook:1071~view:jev2-lpl",
+    "m2:jev2synth:long_handbook:1082~view:jev2-lpl"
+   ]
+  }
+ },
+ "empty_option_description_rows": {},
+ "noul_criteria_variants": {
+  "long_policy": {
+   "n_variants": 24,
+   "top": [
+    [
+     "{\"false\": \"no: the leave is refused\", \"true\": \"yes: the leave is granted\"}",
+     72
+    ],
+    [
+     "{\"false\": \"the request is turned down\", \"true\": \"the request is approved\"}",
+     59
+    ],
+    [
+     "{\"false\": \"no: some or all of it is charged\", \"true\": \"yes: fully waived\"}",
+     37
+    ],
+    [
+     "{\"false\": \"no: something is reduced or refused\", \"true\": \"yes: every item is paid in full\"}",
+     31
+    ],
+    [
+     "{\"false\": \"economy only\", \"true\": \"above economy allowed\"}",
+     27
+    ]
+   ]
+  }
+ },
+ "label_dist_by_family_sub": {
+  "long_policy/lpl_access": {
+   "grant": 25,
+   "deny": 31,
+   "false": 23,
+   "masked": 19,
+   "true": 24
+  },
+  "long_policy/lpl_latefee": {
+   "n_distinct": 8,
+   "top5": [
+    [
+     "false",
+     33
+    ],
+    [
+     "true",
+     25
+    ],
+    [
+     "charge",
+     24
+    ],
+    [
+     "waive",
+     18
+    ],
+    [
+     "half",
+     11
+    ]
+   ]
+  },
+  "long_policy/lpl_leave": {
+   "true": 66,
+   "false": 65
+  },
+  "long_policy/lpl_overtime": {
+   "toil": 18,
+   "time_half": 24,
+   "true": 26,
+   "none": 18,
+   "false": 22,
+   "double": 13
+  },
+  "long_policy/lpl_returns": {
+   "false": 19,
+   "true": 29,
+   "full_refund": 24,
+   "store_credit": 27,
+   "refund_minus_fee": 15,
+   "not_returnable": 11
+  },
+  "long_policy/lpl_travel": {
+   "business": 28,
+   "economy": 24,
+   "false": 22,
+   "true": 26,
+   "premium_economy": 26
+  },
+  "long_policy/lpl_warranty": {
+   "true": 30,
+   "replacement": 28,
+   "false": 20,
+   "free_repair": 24,
+   "paid_repair": 21
+  },
+  "long_policy/lpl_building": {
+   "false": 24,
+   "escorted": 26,
+   "grant": 24,
+   "deny": 28,
+   "true": 19
+  },
+  "long_policy/lpl_equipment": {
+   "n_distinct": 8,
+   "top5": [
+    [
+     "true",
+     25
+    ],
+    [
+     "false",
+     24
+    ],
+    [
+     "none",
+     17
+    ],
+    [
+     "full",
+     14
+    ],
+    [
+     "partial",
+     13
+    ]
+   ]
+  },
+  "long_policy/lpl_expense": {
+   "n_distinct": 8,
+   "top5": [
+    [
+     "true",
+     25
+    ],
+    [
+     "reject_all",
+     24
+    ],
+    [
+     "false",
+     22
+    ],
+    [
+     "approve_full",
+     19
+    ],
+    [
+     "approve_partial",
+     19
+    ]
+   ]
+  },
+  "long_policy/lpl_procurement": {
+   "true": 26,
+   "escalate": 22,
+   "approve": 19,
+   "reject": 20,
+   "false": 20,
+   "more_quotes": 17
+  },
+  "long_policy/lpl_subscription": {
+   "true": 15,
+   "full_refund": 20,
+   "service_credit": 26,
+   "prorated_refund": 18,
+   "false": 17,
+   "no_refund": 23
+  }
+ },
+ "dup_state_by_sub": {},
+ "judge_corruption_vs_label": {},
+ "words_by_family": {
+  "long_policy": {
+   "p50": 2033,
+   "p99": 2557,
+   "max": 2609
+  }
+ },
+ "dup_exact_text": {
+  "groups_gt1": 0,
+  "extra_rows": 0
+ },
+ "dup_examples": {},
+ "dup_state_within_family": {},
+ "near_dup_digits_masked_within_family": {}
+}

@@ -144,7 +144,7 @@ def fam(r):
 def cmd_hashes(a):
     d = Path(a.draw)
     out = {}
-    for name in ("records.jsonl.gz", "bschema-draw-jev2a.manifest.jsonl.gz", "bschema-draw-jev2a.content.jsonl.gz"):
+    for name in ("records.jsonl.gz", f"{d.name}.manifest.jsonl.gz", f"{d.name}.content.jsonl.gz"):
         p = d / name
         out[name] = {"gz_sha256": sha_file(p), "uncompressed_sha256": sha_uncompressed(p),
                      "n_lines": sum(1 for _ in lines(p))}
@@ -471,7 +471,7 @@ def cmd_cohort(a):
     d = Path(a.draw)
     out = {}
     cm = {}
-    for line in lines(d / "bschema-draw-jev2a.content.jsonl.gz"):
+    for line in lines(d / f"{d.name}.content.jsonl.gz"):
         e = json.loads(line)
         cm[e.get("id")] = e.get("content_sha256") or e.get("sha256") or e.get("content")
     out["content_map_rows"] = len(cm)
