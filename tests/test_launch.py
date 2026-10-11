@@ -350,6 +350,42 @@ def test_real_tree_context_builds_without_cr_and_deterministically():
     assert launch.deterministic_tar(ctx) == launch.deterministic_tar(dict(reversed(list(ctx.items()))))
 
 
+def test_streamed_context_matches_in_memory_bytes(tmp_path):
+    """Low-RAM path: archive streamed to disk (Path contents) + write_context == the old in-memory tar + one-shot
+    zstd, byte for byte (same sha256 / size); tar_size is exact, including GNU longname members."""
+    zstandard = pytest.importorskip("zstandard")
+    long = "d/" + "x" * 150 + ".py"
+    mem = {"Dockerfile": (b"FROM x\n", 0o644), "code/m1/a.sh": (b"echo\n", 0o755), long: (b"y" * 1000, 0o644),
+           "data/big.bin": (bytes(range(256)) * 3000, 0o644), "data/empty": (b"", 0o644)}
+    disk = {}
+    for name, (b, mode) in mem.items():
+        f = tmp_path / "src" / name
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_bytes(b)
+        disk[name] = (f, mode)
+    tar = launch.deterministic_tar(mem)
+    assert launch.tar_size(mem) == launch.tar_size(disk) == len(tar) == len(launch.deterministic_tar(disk))
+    sha, size = launch.write_context(disk, tmp_path / "c.tar.zst", 3)
+    z = (tmp_path / "c.tar.zst").read_bytes()
+    # the tar inside is byte-identical; the zstd bytes may differ from a one-shot compress (they do at level 19), so
+    # the receipt's sha256 / size are those of the file written, and the frame carries the exact content size
+    assert (sha, size) == (hashlib.sha256(z).hexdigest(), len(z))
+    assert zstandard.ZstdDecompressor().decompress(z) == tar
+    assert zstandard.get_frame_parameters(z).content_size == len(tar)
+    assert not (tmp_path / "c.tar.zst.part").exists()
+
+
+def test_archive_streams_to_disk_same_files(tmp_path):
+    if not (ROOT / ".git").exists():
+        pytest.skip("needs a git checkout")
+    sha = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    mem = launch.archive(ROOT, sha)
+    disk = launch.archive(ROOT, sha, dest=tmp_path)
+    assert set(mem) == set(disk)
+    for rel in ("jobs/common/launch.py", "AGENTS.md"):
+        assert disk[rel][0] == tmp_path / rel and launch.blob(disk[rel][0]) == mem[rel][0] and disk[rel][1] == mem[rel][1]
+
+
 # ----------------------------------------------------------------------------- Clef recipes (CONTEXT_RECIPES)
 def _clef_files(extra=None):
     """The real tree's archive (HEAD) plus optional overrides, as build_context sees it."""
@@ -394,7 +430,8 @@ def test_clef_data_pins_literal_json_gunzip_and_src_env(tmp_path, monkeypatch):
     monkeypatch.setenv("REF_FLASH", str(ref))
     ctx = launch.build_context(files, "clef_baseline", sha, ok, "jobs/clef_baseline/job_params_index_subset.json",
                                tmp_path / "d")
-    assert ctx["data/m2-150k/records.jsonl.gz"][0] == blob and ctx["data/reference/r.jsonl"][0] == b"ref\n"
+    assert launch.blob(ctx["data/m2-150k/records.jsonl.gz"][0]) == blob
+    assert launch.blob(ctx["data/reference/r.jsonl"][0]) == b"ref\n"
     bad = {**ok, "data": [dict(ok["data"][1], pin_sha256="0" * 64)]}
     with pytest.raises(launch.LaunchError, match="!= pin"):
         launch.build_context(files, "clef_baseline", sha, bad, "x", tmp_path / "d")
