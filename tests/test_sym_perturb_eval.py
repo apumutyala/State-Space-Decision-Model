@@ -52,6 +52,18 @@ def test_perturb_eval_sym_fork_passes_g1_with_identical_rows(tmp_path):
     assert set(per) == {"option_reverse", "option_shuffle", "key_relabel"}
     assert rep["g1_pass"] and rep["rows_all_identical"]
     assert all(v["flips"] == 0 and v["max_abs_dp"] == 0.0 for v in per.values()), per
+    po = rep["presented_order"]
+    assert all(po[op]["request_changed"] > 0 for op in per), po  # the perturbations really reached the decider
+    assert all(po[op]["model_order_changed"] == 0 for op in per), po  # sym rows: canonical by construction
+    # the written perturbation file keeps the PERTURBED option order (no sort_keys)
+    import json as _json
+
+    from jevkit import perturb as _P
+
+    rows_f = [_json.loads(x) for x in (tmp_path / "perturbed.jsonl").read_text(encoding="utf-8").splitlines()]
+    ps = _P.make_perturbations(_items(5), ["option_reverse", "option_shuffle", "key_relabel"], [0])
+    assert [list((r.get("item") or r).get("question", {}).get("criteria") or {}) for r in rows_f] == \
+        [list(p.item.question.get("criteria") or {}) for p in ps]
     for f in ("base.preds.jsonl", "perturbed.jsonl", "perturbed.preds.jsonl", "perturb_report.json"):
         assert (tmp_path / f).is_file()
     # the written files are the ones `jevkit perturb score` reads, and it agrees
@@ -69,12 +81,22 @@ def test_perturb_eval_sym_fork_passes_g1_with_identical_rows(tmp_path):
 def test_g1_verdict_fails_closed():
     """Every requested operator must be present with n > 0, the dp bound defaults to 0 (bitwise), and the rows must
     be checked and identical (SYM_CHECK.md section 3)."""
-    from jobs.sym_eval.perturb_eval import REORDER_RELABEL_OPS, g1_verdict
+    from functools import partial
+
+    from jobs.sym_eval import perturb_eval as PE
+    from jobs.sym_eval.perturb_eval import REORDER_RELABEL_OPS
 
     ok = {"n": 4, "flips": 0, "invalid": 0, "max_abs_dp": 0.0}
     per = {op: dict(ok) for op in REORDER_RELABEL_OPS}
     rows = {op: {"n": 4, "identical": 4} for op in REORDER_RELABEL_OPS}
+    order = {op: {"n": 4, "request_changed": 4, "model_order_changed": 0} for op in REORDER_RELABEL_OPS}
+    g1_verdict = partial(PE.g1_verdict, order=order)
     assert g1_verdict(REORDER_RELABEL_OPS, per, rows)["g1_pass"]
+    # the perturbation never reached the decider (sort_keys put options back in base order) -> vacuous -> FAIL
+    for op in REORDER_RELABEL_OPS:
+        v = PE.g1_verdict(REORDER_RELABEL_OPS, per, rows, order={**order, op: {**order[op], "request_changed": 0}})
+        assert not v["g1_pass"] and any(op in f and "presented" in f for f in v["g1_failures"])
+    assert not PE.g1_verdict(REORDER_RELABEL_OPS, per, rows)["g1_pass"]  # no order check = no pass
     # an operator that produced no perturbation (e.g. key_relabel on a noul-only item set) -> vacuous -> FAIL
     part = {k: v for k, v in per.items() if k != "key_relabel"}
     v = g1_verdict(REORDER_RELABEL_OPS, part, rows)

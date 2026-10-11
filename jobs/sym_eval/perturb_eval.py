@@ -71,8 +71,10 @@ def run(decider: Any, items: list, out_dir: str | Path, ops: Iterable[str] = REO
     pert = run_items(ad, [p.item for p in ps])
     _write_jsonl(out / "base.preds.jsonl", base)
     _write_jsonl(out / "perturbed.preds.jsonl", pert)
-    with open(out / "perturbed.jsonl", "w", encoding="utf-8", newline="\n") as fh:  # == `jevkit perturb make` output
-        fh.writelines(json.dumps(p.to_dict(), ensure_ascii=False, sort_keys=True) + "\n" for p in ps)
+    # NOT sort_keys: a sorted dump puts every option list back in BASE order (jevkit/cli.py:133 did exactly that, so
+    # reorder flips read from that file were vacuously 0); the in-process run above never round-trips through JSON
+    with open(out / "perturbed.jsonl", "w", encoding="utf-8", newline="\n") as fh:  # same rows as `jevkit perturb make`
+        fh.writelines(json.dumps(p.to_dict(), ensure_ascii=False) + "\n" for p in ps)
     rep = perturb.flip_report(items, ps, preds_to_answers(base), preds_to_answers(pert))
     ties = [r["id"] for r in base if isinstance(r.get("answer"), dict) and len(r["answer"].get("tie_set") or []) > 1]
     report = {"ops": ops, "seeds": list(seeds), "n_base": len(items), "n_perturbed": len(ps), "flip_report": rep,
@@ -80,20 +82,69 @@ def run(decider: Any, items: list, out_dir: str | Path, ops: Iterable[str] = REO
               "status": {"base": _count(r["status"] for r in base), "perturbed": _count(r["status"] for r in pert)}}
     if row_fn is not None:
         report["row_identity"] = row_identity(items, ps, row_fn)
-    report.update(g1_verdict(ops, rep["per_operator"], report.get("row_identity"), max_dp))
+    report["presented_order"] = presented_order(items, ps, [p.item for p in ps], row_fn)
+    report.update(g1_verdict(ops, rep["per_operator"], report.get("row_identity"), max_dp, report["presented_order"]))
     (out / "perturb_report.json").write_text(json.dumps(report, indent=1, default=str), encoding="utf-8")
     return report
 
 
-def g1_verdict(ops: Iterable[str], per: dict, rows: dict | None, max_dp: float = 0.0) -> dict:
+REORDER_OPS = ("option_reverse", "option_shuffle")
+RELABEL_OPS = ("key_relabel",)
+
+
+def _base_order(question: dict, label_map: dict) -> list[str]:
+    """The option ids of a (perturbed) question in the order they are LISTED, mapped back to base ids."""
+    inv = {str(v): str(k) for k, v in (label_map or {}).items()}
+    crit = question.get("criteria") or {}
+    return [inv.get(str(o), str(o)) for o in (crit if isinstance(crit, dict) else range(len(crit)))]
+
+
+def presented_order(items, perturbed, sent_items, row_fn: Callable[[dict], Any] | None = None) -> dict:
+    """Per operator: did the perturbation actually reach the decider? ``request_changed`` counts perturbations whose
+    request (the exact item handed to ``run_items``) lists the options in a different base-id order than the base
+    item (reorder ops) or under different ids (relabel). ``model_order_changed`` (with ``row_fn``) counts those whose
+    model row lists them in a different order: 0 under sym-fork BY DESIGN (decide.schema.canonical_options sorts by
+    id, schema.py:98, and the sym axis is content-sorted), so the reorder evidence at the model level is the row
+    identity + the structural axis-permutation tests (tests/test_sym_invariance.py), not this count."""
+    from jevkit.systemone import item_request
+
+    base = {it.id: it for it in items}
+    out: dict[str, dict] = {}
+    for p, sent in zip(perturbed, sent_items):
+        b = base[p.base_id]
+        r = out.setdefault(p.op, {"n": 0, "request_changed": 0, "model_order_changed": 0 if row_fn else None})
+        r["n"] += 1
+        lm = getattr(p, "label_map", None) or {}
+        if p.op in RELABEL_OPS:
+            changed = any(str(k) != str(v) for k, v in lm.items())
+        else:
+            changed = _base_order(sent.question, lm) != _base_order(b.question, {})
+        r["request_changed"] += int(changed)
+        if row_fn is not None:
+            rb, rp = row_fn(item_request(b)), row_fn(item_request(sent))
+            inv = {str(v): str(k) for k, v in lm.items()}
+            r["model_order_changed"] += int([inv.get(o, o) for o in rp.option_ids] != list(rb.option_ids))
+    return out
+
+
+def g1_verdict(ops: Iterable[str], per: dict, rows: dict | None, max_dp: float = 0.0,
+               order: dict | None = None) -> dict:
     """The G1 gate, FAIL CLOSED: every requested operator must be present with n > 0 (an operator that produced no
     perturbation would make its check vacuous), with zero flips, zero invalid answers and max |dp| <= ``max_dp``
     (default 0: bit-identity, as the proof claims; the observed max |dp| is reported apart), AND the rows themselves
-    must be bit-identical for every operator (``rows`` from ``row_identity``; no row check = no pass)."""
+    must be bit-identical for every operator (``rows`` from ``row_identity``; no row check = no pass), AND every
+    reorder / relabel operator must have actually changed the request the decider received (``order`` from
+    ``presented_order``: request_changed > 0; a perturbation file that put the options back in base order -- the
+    sort_keys bug -- makes the reorder check vacuous, so it FAILS)."""
     ops = list(ops)
     fails: list[str] = []
     if not ops:
         fails.append("no operators requested")
+    for op in ops:
+        if op in REORDER_OPS + RELABEL_OPS:
+            o = (order or {}).get(op)
+            if not o or not o.get("request_changed"):
+                fails.append(f"{op}: no perturbation changed the presented request (vacuous)")
     for op in ops:
         v = per.get(op)
         if not v or not v.get("n"):
@@ -150,6 +201,7 @@ def main(argv=None) -> int:  # pragma: no cover - GPU path (load_child needs a t
               max_dp=a.max_dp)
     (Path(a.out_dir) / "identity.json").write_text(json.dumps(ident, indent=1, default=str), encoding="utf-8")
     print(json.dumps({"g1_pass": rep["g1_pass"], "g1_failures": rep["g1_failures"],
+                      "presented_order": rep["presented_order"],
                       "max_abs_dp_observed": rep["max_abs_dp_observed"],
                       "rows_all_identical": rep.get("rows_all_identical"),
                       "per_operator": {k: {x: v[x] for x in ("n", "flips", "max_abs_dp")}
