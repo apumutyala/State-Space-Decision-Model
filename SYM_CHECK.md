@@ -141,3 +141,54 @@ Reproduce (CPU): `CUDA_VISIBLE_DEVICES="" <venv-with-torch>/python -m pytest -q 
 file), or with `controlsafe/g16_sym*.py` present for the G16 file;
 `SSDM_INV_HEAD=jobs.sym_eval.inv_adapter:sym_fork_score|ordered_score` for the harness, and
 `SSDM_BPE_TOKENIZER=<tokenizer dir>` for the BPE test.
+
+---
+
+# Round 2 (2026-10-11): sym-fork v3 @ 72af9886, G16-sym @ 9e44eb36 (rebased on 72af9886)
+One fresh detached worktree at 9e44eb36. It is 72af9886 plus the 6 G16 files, so one tree covers both. CPU, tiny
+backbones, torch 2.14.1+cpu. The harness copy on the lead's tree is byte-identical to f7170cb. New/updated files:
+`tests/guarantees/test_sym_r2_checks.py`, and `test_g16_sym_adversarial.py` (the BPE section now goes through
+`heads.layout.build_row`).
+
+| run | result |
+|---|---|
+| harness `sym_fork_score` / `ordered_score` (teeth) / `controlsafe.g16_sym_plug:score_fn`, tol 0 | 11/11 / relabel FAIL (7 flips, 1.96e-3) / 11/11 |
+| `test_sym_fork_adversarial.py`, seeds 0,1,2,3,7 | **74/74** |
+| `test_g16_sym_adversarial.py` + `test_sym_r2_checks.py` | **63 passed, 4 strict-xfail (findings below), 1 opt-in skip** |
+| `SSDM_BPE_FUZZ=1000` (real Qwen3.5-4B tokenizer + real-vocab tiny G16 head) | **1 passed: 1000 cases, 0 mismatches** (626 s) |
+| lead's `tests/test_sym_g15_bpe.py` + `tests/controlsafe/test_g16_sym.py` | 18/18 |
+
+## Per-property verdicts
+| # | property | verdict |
+|---|---|---|
+| 1 | Harness + both adversarial files on v3 | **CONFIRMED** (as above) |
+| 2 | G15 under real BPE through `build_row`: trusted token ids (read exactly as `G16SymHead.streams` does: `row_trust` + `sym_continuation_trust`) and [lo, hi] bitwise invariant to untrusted edits | **CONFIRMED.** 1000 paired cases, 0 mismatches. Untrusted text varied: state (raw str, str + trailing `\n`/space/CRLF/digit, dict, list), undeclared descriptions, undeclared instructions. Fragments: trailing/leading spaces, newlines, digits, NBSP, combining marks, ZWJ emoji, RTL controls, CJK, template look-alikes. 0 to K declared options per case. Both round-1 repros are covered. The 613 extra draws that were refused were all literal control tokens (`<think>`, `<|im_end|>`) in request text: fail-closed by design. |
+| 3a | Per-row judge: untrusted edits never move lo/hi (hidden 32 and 128, undeclared options re-sorted across the axis, state length 1 to 40x) | **CONFIRMED** |
+| 3b | Per-row judge: duplicates score bitwise-identically | **FAILS at hidden 128** (passes at 32). lo/hi/a/b are equal (per-row judge), but **E**, from the **batched D stream**, depends on the duplicate's batch row. score differs by up to 1.5e-5. |
+| 3c | Consequence: reorder/relabel invariance of score / decision_set / decision with duplicates | **FAILS**: see the minimal repro below |
+| 4 | "2.6e-8 batch-vs-single is the only residual" | **Not the only one** (3b/3c). The batch-vs-single residual itself reproduces on torch 2.14.1 too: max \|dp\| **2.86e-8** over 20 requests, 2 seeds (round 1 saw 0 on 2 requests). Min top-2 margin 3.3e-5, 0 decision flips. It can flip a decision only when the top-2 margin is below about 3e-8, i.e. near-exact ties between different contents. Those are then decided by co-batched siblings, not by the content hash. |
+| 5 | perturb_eval fail-closed G1 | **CONFIRMED** on 13 mutations (no ops, op missing, n = 0, flip, invalid, dp 1e-15, dp None, rows None / missing op / not identical / n = 0, order missing, request unchanged). The round-1 noul repro now fails (`key_relabel: no perturbations`). Residual weakness: `request_changed > 0` per op, not `== n`; harmless for jevkit's own ops. |
+| 6 | NEW: `jevkit/cli.py perturb make` writes with `sort_keys=True` | **CONFIRMED BUG (strict-xfail)**: the dumped criteria dict is back in base order, so reorder flip rates through the documented CLI path (`AGENTS.md`: `jevkit perturb make` then `perturb score`) are vacuous. cli.py is not on the frozen list. Fix: drop `sort_keys` there, as perturb_eval now does. |
+
+## Minimal repro, 3b/3c (G16-sym @ 9e44eb36)
+`test_relabel_among_duplicates_never_changes_score_or_decision_hidden128[recompute|cache]`:
+`tiny_hf_backbone("q9af", seed=4, hidden=128)`, `long_memory_(seed=4)`, `TrustGatedBackbone(bridge_rank=4)`,
+`G16SymHead(r=8, c=1, seed=4)`, own params `randn*0.5` (generator 5), bridges `randn*0.1`. State `"state 11"`, options
+`o0: "x y"` (undeclared) plus `o1..o4: "q"` (4 exact duplicates, declared). Permuting the ids among the 4 duplicates
+(contents unchanged) moves per-id score by up to 1.4e-5. The served `decision` becomes `o1`, `o2`, `o3` or `o4`
+depending on the labelling (it should be `None` with all four in `decision_set`). In a 36-option-set sweep, 23/36
+(recompute) and 25/36 (cache) sets were not relabel-invariant.
+
+Mechanism: exact duplicates are ordered on the axis by `(continuation ids, k)`, with k in id order. The D stream (and
+its batched GEMMs) is computed for the whole K batch, so the duplicate that lands in a different row (here row 3 of 5)
+gets different E bits. The round-2 fix made the judge (a, b) per row, but not E. The sym-fork Decider (cache fork) did
+**not** show this: duplicates bitwise equal at hidden 32/128/256, seeds 0 and 4, 4 to 7 duplicates among 5 to 10 options.
+Fix options: compute each distinct (continuation, trust) once and broadcast it to its duplicates (exact, and cheaper),
+or score the D stream per row.
+
+## Round-2 summary
+CONFIRMED: harness and adversarial suites on v3; G15 on trusted ids and [lo, hi] under the real Qwen BPE (1000-case
+fuzz); per-row judge G15; perturb_eval fail-closed; select_actions content-hash rule (reviewed; the lead's tests pass).
+FAILS: G16-sym duplicates at a realistic width (E is batch-row-dependent). Relabel can change the served decision, so
+claim (1) "every float op identical for any reorder/relabel" does not hold for duplicates. `act`/robust sets (lo/hi
+only) are unaffected. A5's residual is real here too (2.86e-8) but is not the only one. New jevkit CLI sort_keys bug.
