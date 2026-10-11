@@ -1,0 +1,60 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw-jev2c-v2/records.jsonl.gz",
+ "fingerprint": "receipts/2026-10-10-jev2-draw/public-shape-fingerprint.json",
+ "families": {
+  "long_policy": {
+   "draw": {
+    "n": 1500,
+    "string_state_share": 1.0,
+    "types": {
+     "choice": 551,
+     "noul": 655,
+     "score": 294
+    },
+    "choice_K": {
+     "3": 78,
+     "4": 200,
+     "5": 135,
+     "6": 138
+    },
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 2292,
+     "p50": 2956,
+     "p90": 3650,
+     "max": 3981
+    }
+   },
+   "public": {
+    "n": 19,
+    "string_state_share": 1.0,
+    "types": {
+     "choice": 12,
+     "noul": 5,
+     "score": 2
+    },
+    "choice_K": {
+     "4": 7,
+     "5": 4,
+     "6": 1
+    },
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 2360,
+     "p50": 2658,
+     "p90": 3606,
+     "max": 3953
+    }
+   },
+   "checks": {
+    "types": true,
+    "K": true,
+    "criteria": true,
+    "string": true,
+    "length_p90": true
+   },
+   "pass": true
+  }
+ },
+ "all_pass": true
+}

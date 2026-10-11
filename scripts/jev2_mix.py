@@ -34,7 +34,12 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--pointers", nargs="+", required=True)
     ap.add_argument("--out", default=str(REPO / "data" / "manifests" / "bschema-mix-jev1-jev2.json"))
+    ap.add_argument("--replace", nargs="*", default=["long_policy=bschema-draw-jev2c-v2"],
+                    help="family=build: take this family ONLY from that build (JEV1_AUDIT: jev1 long_policy is the "
+                         "harmful template monoculture; jev2c-v2 replaces it)")
+    ap.add_argument("--max-len", type=int, default=4096)
     a = ap.parse_args(argv)
+    repl = dict(x.split("=", 1) for x in a.replace)
     comps, fams, owner = [], {}, {}
     seen: dict[str, str] = {}
     overlap = collections.Counter()
@@ -52,6 +57,9 @@ def main(argv=None) -> int:
                 r = json.loads(line)
                 n += 1
                 f = r["aug"]["jev1"]["family8"]
+                if f in repl and repl[f] != build:
+                    c[f + " (excluded: replaced)"] += 1
+                    continue
                 c[f] += 1
                 ch = record_content_hash(r)
                 if ch in seen and seen[ch] != build:
@@ -64,8 +72,10 @@ def main(argv=None) -> int:
                       "records_uncompressed_sha256": ptr["records_uncompressed_sha256"], "n_records": n,
                       "families": dict(c)})
         for f, k in c.items():
+            if f.endswith("(excluded: replaced)"):
+                continue
             if f in fams:
-                raise SystemExit(f"family {f} in two draws")
+                raise SystemExit(f"family {f} in two draws (use --replace)")
             fams[f] = k
             owner[f] = build
     total = sum(fams.values())
@@ -78,6 +88,9 @@ def main(argv=None) -> int:
            "families": {f: {"draw": owner[f], "rows": k, "weight_equal": round(1 / nf, 6),
                             "row_weight_equal": 1 / (nf * k), "weight_natural": round(k / total, 6)}
                         for f, k in sorted(fams.items())},
+           "replace": repl, "max_len_shim_tokens": a.max_len,
+           "max_len_note": "every component row is <= its build's token cap (jev1 / jev2b 2,048; jev2a-v2 / jev2c-v2 "
+                           "4,096) under jrt-h2o-shim:qwen3.5-4b, so max_len 4,096 truncates nothing",
            "cross_draw_content_overlap": dict(overlap), "cross_draw_content_overlap_total": sum(overlap.values()),
            "loader_contract": "rows keep their stored criteria order (never re-sort option keys); family = "
                               "aug.jev1.family8"}
