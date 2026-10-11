@@ -653,3 +653,7 @@ The text below is ready to paste.
     - **Unchanged:** budget (worst case $79.88), steps (max 1,281, floor 600, short-budget continuation), loss (noul eps 0, choice/score 0.05), the noul band gate, PRIMARY, CI method and G1.
 
 - **Amendment 2 addendum 3 (2026-10-11, before submission):** long_policy now comes from jev2c-v2 (claude/ev-jev2a-regate @c76f150a, pointer 86960d90, empty exclusion list, 1,500 rows, max 3,981 tokens, 0 over 4,096) instead of jev2c. A SMALL fallback variant `jev2s_q35_4b` (worst case <= $38) has the same recipe and gates, but 163 rows per family (adequacy 81) x 18 and fewer steps.
+
+## Mode `jev2s_q35_4b` (A-PREREG-JEV2-4B SMALL fallback)
+
+Same recipe, gates, PRIMARY and CI method as `jev2_q35_4b`. Size: 163 rows per family (adequacy 81) x 18 families = 2,852 rows, 356 steps (floor 200), clock 129. Schedule: setup 20 + guard 5 + heldout 10 + cell 164 + screen 60 + report 5 + reserve 7 = 271 min. Quoted hold 271 x $0.063 = $17.07; **worst case** (60 + 2 x 271) x $0.063 = **$37.93** (hard cap $38). Expected ~$12.5. Type mix: choice 44.4% / noul 30.4% / score 25.2%.
