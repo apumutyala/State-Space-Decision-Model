@@ -19,7 +19,12 @@ class PIController:
         self.kp, self.ki, self.nu = float(kappa_p), float(kappa_i), float(nu)
         self.lam0, self.lam_max = float(lambda_init), float(lambda_max)
         self.imin, self.imax = float(integral_min), float(integral_max)
-        self.lam, self.integral, self.xi, self.e, self.n = self.lam0, 0.0, 0.0, 0.0, 0
+        # the I term kappa_i * I_t is accumulated pre-scaled (iterm <- clip(iterm + kappa_i e, kappa_i [imin, imax])),
+        # so kappa_p = 0 runs the float ops of projected gradient ascent, lambda <- max(0, lambda + kappa_i e), exactly
+        # (kappa_i * sum(e) and sum(kappa_i e) differ in the last bit). ``integral`` keeps I_t itself for logging.
+        self.ilo = self.ki * self.imin if self.ki > 0 else 0.0
+        self.ihi = self.ki * self.imax if self.ki > 0 else 0.0
+        self.lam, self.integral, self.iterm, self.xi, self.e, self.n = self.lam0, 0.0, 0.0, 0.0, 0.0, 0
 
     def update(self, e: float) -> float:
         e = float(e)
@@ -28,15 +33,18 @@ class PIController:
         self.e = e
         self.xi = self.nu * self.xi + (1.0 - self.nu) * e
         self.integral = min(self.imax, max(self.imin, self.integral + e))
-        self.lam = min(self.lam_max, max(0.0, self.lam0 + self.kp * self.xi + self.ki * self.integral))
+        self.iterm = min(self.ihi, max(self.ilo, self.iterm + self.ki * e))
+        self.lam = min(self.lam_max, max(0.0, self.lam0 + self.kp * self.xi + self.iterm))
         self.n += 1
         return self.lam
 
     def state_dict(self) -> dict[str, Any]:
-        return {"lam": self.lam, "integral": self.integral, "xi": self.xi, "e": self.e, "n": self.n}
+        return {"lam": self.lam, "integral": self.integral, "iterm": self.iterm, "xi": self.xi, "e": self.e,
+                "n": self.n}
 
     def load_state_dict(self, st: dict[str, Any]) -> None:
         self.lam, self.integral, self.xi = float(st["lam"]), float(st["integral"]), float(st["xi"])
+        self.iterm = float(st["iterm"])
         self.e, self.n = float(st["e"]), int(st["n"])
 
 
