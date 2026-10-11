@@ -144,9 +144,14 @@ class TrainConfig:
     collapse_loss_frac: float = 0.8
     collapse_acc_frac: float = 0.6
     collapse_max_events: int = 3
+    #: consistency-view training (docs/CONSISTENCY.md; ``consistency_spec``). Empty = OFF: left out of to_json / the
+    #: hash and never read by the step, so an OFF run is the old run bit for bit (tests/test_consistency.py).
+    consistency: dict = field(default_factory=dict)
 
     def to_json(self) -> dict:
         d = asdict(self)
+        if not d["consistency"]:
+            d.pop("consistency")  # OFF: old records, hashes and checkpoints byte-identical
         d["loss"] = self.loss.identity()  # optional KD/order-consistency fields only when enabled (old hashes unchanged)
         if d["axis_loss_weight"] == 0.0:
             d.pop("axis_loss_weight")  # preserve legacy config identities
@@ -177,6 +182,49 @@ class TrainConfig:
         if not d.get("controlsafe"):
             d.pop("controlsafe", None)
         return hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:16]
+
+
+#: ``TrainConfig.consistency`` keys -> defaults (``consistency_spec`` fills them in; unknown keys are refused)
+CONSISTENCY_DEFAULTS = {"lambda": 0.5, "view_frac": 0.25, "seed": 0, "families": ["format", "instruction", "option"],
+                        "view_grad": True, "controller": None}
+#: the nuPI controller block (train.pi_control.PIController): constraint E[symmetric KL | paired row] <= epsilon
+CONTROLLER_KEYS = {"epsilon", "kappa_p", "kappa_i", "nu", "lambda_init", "lambda_max"}
+
+
+def consistency_spec(block: dict) -> dict:
+    """The validated, defaults-filled consistency block, or {} (OFF) for an empty / absent block.
+
+    lambda      fixed weight lambda_c of the symmetric-KL term (ignored when a controller is set)
+    view_frac   share of training items that get a view (train.consistency_views.sampled)
+    seed        view-generator seed; families: subset of train.consistency_views.FAMILIES
+    view_grad   True: gradients through both forwards; False: the view forward runs under no_grad (cheaper, one-sided)
+    controller  None, or {epsilon, kappa_p, kappa_i, nu, lambda_init, lambda_max}: lambda_c is the nuPI multiplier of the
+                constraint "mean symmetric KL over the step's paired rows <= epsilon", updated once per optimiser step
+    """
+    if not block:
+        return {}
+    if not isinstance(block, dict) or set(block) - set(CONSISTENCY_DEFAULTS):
+        raise ValueError(f"consistency: unknown keys {sorted(set(block) - set(CONSISTENCY_DEFAULTS))}")
+    s = {**CONSISTENCY_DEFAULTS, **block}
+    s["families"] = list(s["families"])
+    from .consistency_views import FAMILIES
+
+    if not s["families"] or any(f not in FAMILIES for f in s["families"]):
+        raise ValueError(f"consistency.families must be a non-empty subset of {FAMILIES}")
+    if type(s["lambda"]) not in (int, float) or not 0.0 <= s["lambda"] < float("inf"):
+        raise ValueError("consistency.lambda must be finite and >= 0")
+    if type(s["view_frac"]) not in (int, float) or not 0.0 < s["view_frac"] <= 1.0:
+        raise ValueError("consistency.view_frac must be in (0, 1]")
+    if type(s["seed"]) is not int or type(s["view_grad"]) is not bool:
+        raise ValueError("consistency.seed must be an int and view_grad a bool")
+    c = s["controller"]
+    if c is not None:
+        if not isinstance(c, dict) or set(c) != CONTROLLER_KEYS:
+            raise ValueError(f"consistency.controller must have exactly the keys {sorted(CONTROLLER_KEYS)}")
+        if not 0.0 < float(c["epsilon"]) < float("inf"):
+            raise ValueError("consistency.controller.epsilon must be > 0")
+        s["controller"] = {k: float(v) for k, v in c.items()}
+    return s
 
 
 def with_execution(cfg: TrainConfig, cell: dict) -> TrainConfig:
@@ -458,6 +506,23 @@ class Trainer:
         elif any(getattr(i, "view", None) is not None or getattr(i, "view_perm", None) is not None
                  for i in (eval_items or [])):
             raise ValueError("eval_items must not contain order-consistency views")
+        #: consistency-view training ({} = OFF: none of the code below the checks reads it)
+        self.cons = consistency_spec(cfg.consistency)
+        if any(getattr(i, "cview", None) is not None for i in (eval_items or [])):
+            raise ValueError("consistency views are training-only; eval_items must not carry a cview")
+        if self.cons:
+            if cfg.loss.order_consistency_weight > 0:
+                raise ValueError("consistency and order_consistency are separate arms; enable one")
+            paired = [i for i in train_items if getattr(i, "cview", None) is not None]
+            if not paired:
+                raise ValueError("consistency is on but no training item carries a consistency view")
+            for it in paired:
+                v = it.cview
+                if (tuple(v.row.option_ids) != tuple(it.row.option_ids) or v.label != it.label
+                        or v.row.qtype != it.row.qtype or getattr(v, "cview", None) is not None):
+                    raise ValueError(f"{it.id}: consistency view must keep the option domain, label and type")
+        elif any(getattr(i, "cview", None) is not None for i in train_items):
+            raise ValueError("training items carry consistency views but TrainConfig.consistency is off")
         self._seed_all(cfg.seed)
         self.guard = guard
         self.model, self.cfg = model, cfg
@@ -488,6 +553,19 @@ class Trainer:
         self.history: list[dict[str, Any]] = []
         self.cards: list[dict[str, Any]] = []
         self.lineage = lineage(model.backbone, train_items)
+        if self.cons:
+            ctl = self.cons["controller"]
+            self.cons_ctrl = None
+            if ctl is not None:
+                from .pi_control import PIController
+
+                # integral_min = -lambda_init / kappa_i: lambda_init is a warm start the I term can wind back to 0
+                # (with nuPI's default integral_min 0 the multiplier could never fall below lambda_init)
+                imin = -ctl["lambda_init"] / ctl["kappa_i"] if ctl["kappa_i"] > 0 else 0.0
+                self.cons_ctrl = PIController(ctl["kappa_p"], ctl["kappa_i"], ctl["nu"], ctl["lambda_init"],
+                                              ctl["lambda_max"], integral_min=imin)
+            self.cons_lambda = float(ctl["lambda_init"] if ctl is not None else self.cons["lambda"])
+            self._cons_kl, self._cons_n = 0.0, 0
 
     # ------------------------------------------------------------------ LR schedule
     def lr_factor(self, s: int) -> float:
@@ -696,6 +774,8 @@ class Trainer:
                                                   [item.view.row.qtype for _, item in paired], None)
                     ref = add_order_consistency(ref, view_ref, torch.zeros((), device=ref.device), len(batch),
                                                 len(paired), weight_order)
+        if self.cons:
+            loss = loss + self._consistency_term(lp, batch)  # the uniform predictor's KL is 0: ref unchanged
         weight = self.cfg.axis_loss_weight
         if type(weight) not in (int, float) or not 0 <= weight < float("inf"):
             raise ValueError("axis_loss_weight must be finite and nonnegative")
@@ -714,10 +794,42 @@ class Trainer:
             self._step_uniform += float(ref) * row_weight
         return loss
 
+    def _consistency_term(self, lp: torch.Tensor, batch: list[Item]) -> torch.Tensor:
+        """``(n_paired / n_base) * lambda_c * mean symmetric KL(p(orig) || p(view))`` over the batch's rows that carry a
+        ``cview`` (one extra forward over those rows). Expressed per base row, so the step objective is
+        ``mean_rows[L_task + lambda_c 1[paired] KL]`` whatever the grouping. The detached KL sum feeds the controller."""
+        from .losses import symmetric_kl
+
+        idx = [b for b, it in enumerate(batch) if getattr(it, "cview", None) is not None]
+        if not idx:
+            return lp.new_zeros(())
+        bb = self.model.backbone
+        groups = getattr(bb, "prefix_groups", None)
+        if groups is not None:
+            bb.prefix_groups = None  # the view call is its own call, never grouped as the step's base rows
+        try:
+            grad = torch.enable_grad() if self.cons["view_grad"] else torch.no_grad()
+            with grad, self._autocast():
+                vfw = self.model([batch[b].cview.row for b in idx])
+        finally:
+            if groups is not None:
+                bb.prefix_groups = groups
+        vlp = vfw.log_probs.float()
+        base = lp[idx]
+        k = min(base.shape[1], vlp.shape[1])  # pad widths can differ between the two calls; padding is -inf
+        if bool(torch.isfinite(base[:, k:]).any()) or bool(torch.isfinite(vlp[:, k:]).any()):
+            raise ValueError("consistency view and base row have different option counts")
+        kl = symmetric_kl(base[:, :k], vlp[:, :k])
+        self._cons_kl += float(kl.detach().sum())
+        self._cons_n += len(idx)
+        return (len(idx) / len(batch)) * self.cons_lambda * kl.mean()
+
     def train_step(self) -> float:
         self.model.train()
         self.opt.zero_grad(set_to_none=True)
         self._step_uniform = 0.0
+        if self.cons:
+            self._cons_kl, self._cons_n = 0.0, 0
         total = 0.0
         if self.cfg.row_batch > 1:
             # the same rows as the micro-batch loop below (same _next_batch calls, so epoch roll-over is unchanged); the
@@ -728,11 +840,15 @@ class Trainer:
                 base_lengths = [len(it.row.ids) for it in rows]
                 view_lengths = [len(it.view.row.ids) if it.view is not None else 0 for it in rows]
                 groups = row_groups_with_views(base_lengths, view_lengths, self.cfg.row_batch, self.cfg.row_tokens)
+            elif self.cons:  # both forwards' graphs are alive at once: budget the view rows too
+                groups = row_groups_with_views([len(it.row.ids) for it in rows],
+                                               [len(it.cview.row.ids) if it.cview is not None else 0 for it in rows],
+                                               self.cfg.row_batch, self.cfg.row_tokens)
             else:
                 plan = {"greedy": row_groups, "min_cost": row_groups_min_cost}[self.cfg.row_plan]
                 groups = plan([len(it.row.ids) for it in rows], self.cfg.row_batch, self.cfg.row_tokens,
                               [it.row.n_options for it in rows], self.cfg.row_options)
-            if self.cfg.cont_plan == "single" and len(groups) > 1 and single_cont_fits(
+            if self.cfg.cont_plan == "single" and not self.cons and len(groups) > 1 and single_cont_fits(
                     [it.row.n_options for it in rows], self.cfg.row_options):
                 self.model.backbone.prefix_groups = groups
                 try:
@@ -758,9 +874,22 @@ class Trainer:
         self.opt.step()
         self.sched.step()
         self.step += 1
-        self.history.append({"step": self.step, "loss": total})
+        rec = {"step": self.step, "loss": total}
+        if self.cons:
+            rec.update(self._consistency_update())
+        self.history.append(rec)
         self._guard_step(total)
         return total
+
+    def _consistency_update(self) -> dict[str, Any]:
+        """End of an optimiser step: the step's mean symmetric KL over paired rows; with a controller, lambda_c <- the
+        nuPI multiplier of (mean KL - epsilon), used from the next step on. Returns the history fields."""
+        n, kl = self._cons_n, (self._cons_kl / self._cons_n if self._cons_n else float("nan"))
+        self._cons_kl, self._cons_n = 0.0, 0
+        out = {"cons_kl": kl, "cons_paired": n, "cons_lambda": self.cons_lambda}
+        if self.cons_ctrl is not None and n:
+            self.cons_lambda = self.cons_ctrl.update(kl - self.cons["controller"]["epsilon"])
+        return out
 
     def train(self, steps: int | None = None) -> list[dict[str, Any]]:
         target = self.cfg.max_steps if steps is None else self.step + steps
@@ -794,6 +923,9 @@ class Trainer:
             "lora_modules": self.lora_modules,
             "guard": None if self.guard is None else self.guard.identity(),
             **({"anti_collapse": self.anti_collapse_state()} if self.anti_collapse_on() else {}),
+            **({"consistency": {"lambda": self.cons_lambda,
+                                "controller": None if self.cons_ctrl is None else self.cons_ctrl.state_dict()}}
+               if self.cons else {}),
         }
 
     def anti_collapse_on(self) -> bool:
@@ -882,6 +1014,11 @@ class Trainer:
             self.collapse_events, self.stopped = list(ac["collapse_events"]), ac.get("stopped")
             self.guard_armed = bool(ac.get("guard_armed"))
             self._guard_window[:] = [(float(x), float(u)) for x, u in ac.get("guard_window") or []]
+        cs = st.get("consistency")
+        if cs is not None and self.cons:  # the config hash already pins the block; this restores lambda_c's state
+            self.cons_lambda = float(cs["lambda"])
+            if self.cons_ctrl is not None and cs.get("controller") is not None:
+                self.cons_ctrl.load_state_dict(cs["controller"])
         if is_inference(path):
             self.loaded_format = "inference"
             return

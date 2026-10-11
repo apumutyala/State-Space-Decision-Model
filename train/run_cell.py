@@ -534,6 +534,45 @@ def restrict_order_views_to_tmax(cfg: dict, train_items: list, max_t: int) -> di
     return {"t_max": max_t, "retained": retained, "dropped_for_length": dropped}
 
 
+def consistency_fields(cfg: dict) -> dict:
+    """The cell's ``consistency`` block, validated and defaults-filled (train.trainer.consistency_spec); absent or
+    empty = {} = OFF (the TrainConfig hash and the step are unchanged)."""
+    from train.trainer import consistency_spec
+
+    spec = consistency_spec(cfg.get("consistency") or {})
+    if spec and cfg.get("order_consistency"):
+        raise ValueError("consistency and order_consistency are separate arms; enable one")
+    return spec
+
+
+def attach_consistency_views(cfg: dict, train_items: list, train_records: dict, enc, guard, max_t: int) -> dict | None:
+    """Attach consistency views to the filtered TRAINING list only (evaluation data is never passed here)."""
+    spec = consistency_fields(cfg)
+    if not spec:
+        return None
+    from train.consistency_views import attach_views
+
+    return attach_views(train_items, train_records, enc, layout=cfg["layout"], template=cfg["template"], guard=guard,
+                        keep=lambda row: keep_item(row, train_max_k(cfg), max_t), seed=spec["seed"],
+                        view_frac=float(spec["view_frac"]), families=tuple(spec["families"]))
+
+
+def restrict_consistency_views_to_tmax(cfg: dict, train_items: list, max_t: int) -> dict | None:
+    """Drop views longer than the measured T_max; their base rows stay (single-view)."""
+    if not consistency_fields(cfg):
+        return None
+    retained = dropped = 0
+    for item in train_items:
+        if item.cview is None:
+            continue
+        if len(item.cview.row.ids) > max_t:
+            item.cview = None
+            dropped += 1
+        else:
+            retained += 1
+    return {"t_max": max_t, "retained": retained, "dropped_for_length": dropped}
+
+
 def attach_teacher(cfg: dict, items: list, teacher_dir, train_ids, expected: dict | None = None,
                    contamination: bool = True) -> dict | None:
     """KD cells (``cfg["teacher"]``): load the PINNED teacher (``train.teacher.load_teacher``: identity, file sha256,
@@ -582,7 +621,8 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
                        grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=bf16, grad_checkpointing=False,
                        seed=cfg["seed"], ckpt_dir=ckpt_dir, ckpt_every=cfg["ckpt_every"],
                        eval_every=cfg["eval_every"], controlsafe=cfg.get("controlsafe") or {},
-                       **anti_collapse_fields(cfg))
+                       **anti_collapse_fields(cfg),
+                       **({"consistency": consistency_fields(cfg)} if consistency_fields(cfg) else {}))
 
 
 #: cell config keys -> TrainConfig anti-collapse fields (research-notes/D10_DIVERGENCE.md); absent = old behaviour
@@ -937,6 +977,7 @@ def _main(argv=None, ctx: dict | None = None):
     try:
         validate_head(cfg)
         order_consistency_fields(cfg)
+        consistency_fields(cfg)
         train_max_k(cfg)
         if parent == "q9af" or cfg.get("teacher") or cfg.get("head_from_proxy"):
             from jobs.q9af_cell import hooks  # typed KD-teacher / proxy-head hooks (fail closed until wired)
@@ -1011,6 +1052,13 @@ def _main(argv=None, ctx: dict | None = None):
         print(f"order-consistency views: {e}", flush=True)
         return EXIT["config"]
     try:
+        cons_views = attach_consistency_views(cfg, train_items, train_recs, enc, guard, t_cap)
+        if cons_views is not None and cons_views["with_view"] == 0:
+            raise ValueError("no training item received a consistency view")
+    except ValueError as e:
+        print(f"consistency views: {e}", flush=True)
+        return EXIT["config"]
+    try:
         kd_cov = attach_teacher(cfg, train_items, a.teacher_dir, tr_ids)
     except ValueError as e:  # TeacherIdentityError / TeacherContamination subclass ValueError
         print(f"teacher: {e}", flush=True)
@@ -1021,7 +1069,8 @@ def _main(argv=None, ctx: dict | None = None):
                     "guard_manifests": guard.manifests, "guard": guard.identity(), "max_k": cfg["max_k"],
                     **({"train_max_k": train_max_k(cfg)} if cfg.get("train_max_k") else {}),
                     **cohort_ident, **({"teacher": kd_cov} if kd_cov else {}),
-                    **({"order_consistency_views": order_views} if order_views else {})}
+                    **({"order_consistency_views": order_views} if order_views else {}),
+                    **({"consistency_views": cons_views} if cons_views else {})}
     save()
     if len(train_items) < cfg["min_train_items"]:
         print(f"too few items {len(train_items)}", flush=True)
@@ -1103,10 +1152,13 @@ def _main(argv=None, ctx: dict | None = None):
     if "ladder" in stages and "ladder" not in cell:
         lad = {}
         order_active = bool(order_consistency_fields(cfg))
+        cons_active = bool(consistency_fields(cfg))
+
         def item_context_len(item):
             base_len = len(item.row.ids)
             view_len = len(item.view.row.ids) if order_active and getattr(item, "view", None) is not None else 0
-            return max(base_len, view_len)
+            cview_len = len(item.cview.row.ids) if cons_active and item.cview is not None else 0
+            return max(base_len, view_len, cview_len)
 
         for T in cfg["t_ladder"]:
             its = sorted((x for x in train_items if item_context_len(x) <= T),
@@ -1188,6 +1240,13 @@ def _main(argv=None, ctx: dict | None = None):
             save()
             if view_t_max["retained"] == 0:
                 print("order-consistency views: no paired item fits measured T_max", flush=True)
+                return EXIT["config"]
+        cview_t_max = restrict_consistency_views_to_tmax(cfg, train_items, t_max)
+        if cview_t_max is not None:
+            cell["data"]["consistency_t_max"] = cview_t_max
+            save()
+            if cview_t_max["retained"] == 0:
+                print("consistency views: no paired item fits measured T_max", flush=True)
                 return EXIT["config"]
         eval_items[:] = [x for x in eval_items if len(x.row.ids) <= t_max]
         reset_peak()

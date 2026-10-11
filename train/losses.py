@@ -139,6 +139,20 @@ def add_order_consistency(base_mean: torch.Tensor, view_mean: torch.Tensor, js_m
     return base_mean + (n_paired / n_base) * (view_mean + weight * js_mean)
 
 
+def symmetric_kl(lp: torch.Tensor, lq: torch.Tensor) -> torch.Tensor:
+    """Per row ``KL(p || q) + KL(q || p) = sum_k (p_k - q_k)(log p_k - log q_k)`` (Jeffreys divergence, nats) over the
+    valid options. ``lp``, ``lq``: [B, K] log-probabilities over the SAME option axis (same ids, same order) with
+    ``-inf`` on padded options in the same positions (consistency views keep the option domain). Non-negative, zero iff
+    p == q, symmetric; gradients flow into both arguments."""
+    if lp.shape != lq.shape:
+        raise ValueError(f"symmetric_kl: shapes {tuple(lp.shape)} != {tuple(lq.shape)}")
+    m = _valid(lp)
+    if not torch.equal(m, _valid(lq)):
+        raise ValueError("symmetric_kl: the two distributions have different valid options")
+    a, b = lp.masked_fill(~m, 0.0), lq.masked_fill(~m, 0.0)
+    return ((a.exp() - b.exp()) * (a - b) * m).sum(-1)
+
+
 @dataclass(frozen=True)
 class LossConfig:
     arm: str = "ce"  # "ce" | "clef"

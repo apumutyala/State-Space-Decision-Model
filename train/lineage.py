@@ -118,6 +118,11 @@ def items_identity(items: Sequence) -> dict[str, Any]:
             v = view.row
             value.append({"view": [view.id, view.label, v.ids, v.option_ids, v.continuations, v.option_seqs, v.qtype,
                                    list(it.view_perm)]})
+        cview = getattr(it, "cview", None)
+        if cview is not None:  # consistency view (train.consistency_views): opt-in, legacy digests unchanged
+            v = cview.row
+            value.append({"cview": [cview.id, cview.label, v.ids, v.option_ids, v.continuations, v.option_seqs,
+                                    v.qtype]})
         h.update(_h(value).encode())
     return {"n": len(items), "sha256": h.hexdigest(), "order_fn": ORDER_FN}
 
