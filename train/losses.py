@@ -29,7 +29,8 @@ def nll(lp: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return -lp.gather(1, y.unsqueeze(1)).squeeze(1)
 
 
-def label_smoothed_ce(lp: torch.Tensor, y: torch.Tensor, eps: float) -> torch.Tensor:
+def label_smoothed_ce(lp: torch.Tensor, y: torch.Tensor, eps: "float | torch.Tensor") -> torch.Tensor:
+    """``eps`` a float, or a per-row tensor [B] (e.g. 0 on yes/no rows: ``LossConfig.label_smoothing_noul``)."""
     m = _valid(lp)
     k = m.sum(-1).clamp_min(1)
     uniform = -(lp.masked_fill(~m, 0.0)).sum(-1) / k
@@ -149,6 +150,9 @@ class LossConfig:
     kd_temperature: float = 1.0
     #: opt-in content-aligned distribution consistency for eligible option-permuted training views
     order_consistency_weight: float = 0.0
+    #: label smoothing on yes/no (noul) rows; None = label_smoothing (left out of the identity, old hashes unchanged).
+    #: JEV2-4B: 0 (jevkit scores a noul p in (0.2, 0.8) as wrong; smoothing pushes yes/no answers into that band)
+    label_smoothing_noul: float | None = None
 
     #: field -> default; left out of config identities at these values (old hashes unchanged)
     KD_DEFAULTS = {"kd_alpha": 0.0, "kd_temperature": 1.0}
@@ -178,6 +182,8 @@ class LossConfig:
                 d.pop(k)
         if d["order_consistency_weight"] == 0.0:
             d.pop("order_consistency_weight")
+        if d["label_smoothing_noul"] is None:
+            d.pop("label_smoothing_noul")
         return d
 
     @property
@@ -193,7 +199,11 @@ def arm_loss(lp: torch.Tensor, y: torch.Tensor, qtypes: list[str], cfg: LossConf
     if cfg.arm == "ce":
         per = nll(lp, y)
     else:
-        per = label_smoothed_ce(lp, y, cfg.label_smoothing) + cfg.brier_weight * brier(lp, y)
+        eps: "float | torch.Tensor" = cfg.label_smoothing
+        if cfg.label_smoothing_noul is not None:
+            eps = torch.tensor([cfg.label_smoothing_noul if q == "noul" else cfg.label_smoothing for q in qtypes],
+                               dtype=lp.dtype, device=lp.device)
+        per = label_smoothed_ce(lp, y, eps) + cfg.brier_weight * brier(lp, y)
     w = cfg.effective_rps_weight
     if w:
         per = per + w * ordinal * rps(lp, y)

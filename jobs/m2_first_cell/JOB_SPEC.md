@@ -608,3 +608,30 @@ The text below is ready to paste. Everything not restated here is unchanged: PRI
   - 600 rows per family x 18 does not fit the cap: it needs ~374 min of training, worst ~$79.
 - **Readout speed fix:** DecisionModelBackend builds each request's rows once (plan + score). Outputs are
   bit-identical (tests/test_backend_row_cache.py, remote test job). It is measured on the Speed axis, not claimed.
+
+### A-PREREG-JEV2-4B AMENDMENT 2 (supersedes Amendment 1's budget, data and loss lines; registered before any JEV2 run)
+
+The text below is ready to paste.
+
+- **Budget (hard):** worst-case hold <= $80 (operator: D20 links 2-3 parked). max_duration 604 min, clock 462, worst
+  $79.88, quoted hold $38.05, expected ~$28.7.
+- **Data:** the balanced mix `bschema-draw-jev2-mix`, 18 JevBench families, 586 train rows per family; jev1 adequacy at
+  half weight (293). Total 10,255 rows, each seen once (~6.8% of the pooled rows).
+  - jev1's long_policy is EXCLUDED entirely. Per the r2 rescore (claude/ev-j1-rescore @a8ca3e7e), length is not the
+    cause: multi_hop > 2,048 tokens improved +11.8 pp. The cause is jev1's long_policy / adequacy templates and label
+    priors.
+  - long_policy comes only from jev2c once it gates. The cell waits on jev2b and jev2c.
+- **Steps:** max 1,281 at the 16.6 s/step estimate, which sets the clock with 1.3x headroom.
+  - At the step-10 rate check, the planned final step = min(1,281, the clock-affordable steps at the measured rate).
+    The cosine horizon = 0.6717 (r2's 753 / 1,121) x that.
+  - The run continues if the plan is shortened, down to the floor min_steps 600; below 600 it exits 26.
+  - A shortened run sees a prefix of the random-permutation pass (family-balanced in expectation). cell.json records
+    `train_budget_shortened`.
+- **Loss:** label smoothing 0 on yes/no (noul) rows, 0.05 on choice / score rows. Why: jevkit scores a noul p in
+  (0.2, 0.8) as wrong; r2 put 10/74 noul items there vs 0 for stock.
+- **Reported gate, noul band:** the native arm's yes/no 0.2-0.8 band rate on the 231 items must be <= stock_shim's.
+  - The calibration slice's band rate is reported at T = 1 and at the fitted T.
+  - The scalar T (NLL on the slice only) is moved toward 1 if it would raise the slice's band rate above its T = 1
+    value. Both T_nll and the used T are reported.
+- **Unchanged:** max_len 4,096 (with the longest-row probe and require_t_max), PRIMARY / CI method, G1,
+  native_shimcal, the calibration slice (200 per family, ids sha256 pinned at the build), the row-cache speed fix.

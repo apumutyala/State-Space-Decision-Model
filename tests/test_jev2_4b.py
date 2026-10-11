@@ -27,7 +27,32 @@ def test_one_pass_fixed_budget():
 
 def test_4k_and_label_smoothing():
     assert max(CELL["t_ladder"]) == CELL["eval_max_t"] == CELL["require_t_max"] == 4096
-    assert CELL["ladder_probe_longest"] is True and 0.05 <= CELL["label_smoothing"] <= 0.1
+    assert CELL["ladder_probe_longest"] is True and CELL["label_smoothing"] <= 0.05
+    assert CELL["label_smoothing_noul"] == 0.0
+
+
+def test_noul_rows_unsmoothed_choice_rows_smoothed():
+    torch = pytest.importorskip("torch")
+    from train.losses import LossConfig, arm_loss, label_smoothed_ce, brier
+
+    lp = torch.log_softmax(torch.tensor([[2.0, 0.0], [1.0, 0.5]]), -1)
+    y = torch.tensor([0, 1])
+    cfg = LossConfig(arm="clef", label_smoothing=0.05, label_smoothing_noul=0.0, rps_weight=0.0)
+    per = arm_loss(lp, y, ["noul", "choice"], cfg)
+    want0 = label_smoothed_ce(lp[:1], y[:1], 0.0) + brier(lp[:1], y[:1])
+    want1 = label_smoothed_ce(lp[1:], y[1:], 0.05) + brier(lp[1:], y[1:])
+    assert torch.allclose(per, torch.cat([want0, want1]))
+    assert "label_smoothing_noul" not in LossConfig(arm="clef").identity()  # old config hashes unchanged
+
+
+def test_t_constrained_by_noul_band():
+    import math
+
+    from jobs.m2_first_cell.screen import constrain_t_by_band, noul_band_rate
+    noul = [([math.log(0.85), math.log(0.15)], 0)] * 10  # p(yes) 0.85 at T = 1: outside the band
+    r = constrain_t_by_band({"T": 3.0}, noul)  # T 3 would flatten them into the band
+    assert r["constrained"] and r["band_T"] <= r["band_T1"] == 0.0 and r["T"] < 3.0
+    assert noul_band_rate([0.1, 0.5, 0.9])["in_band"] == 1
 
 
 def test_pools_jev2a_wired_placeholders_declared():
@@ -35,6 +60,7 @@ def test_pools_jev2a_wired_placeholders_declared():
     assert pools["jev2a"]["status"] == "gated" and len(pools["jev2a"]["pointer_sha256"]) == 64
     assert {pools["jev2b"]["status"], pools["jev2c"]["status"]} == {"PLACEHOLDER"}
     assert len({f for p in pools.values() for f in p["families"]}) == 18
+    assert "--exclude long_policy=bschema-draw-jev1" in CELL["train_set"]["note"]
     assert (ROOT / pools["jev2a"]["pointer"]).is_file()
 
 

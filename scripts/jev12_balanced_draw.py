@@ -58,23 +58,27 @@ def rank(seed: int, rid: str) -> str:
 
 
 def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
-         family_src: dict[str, str] | None = None) -> tuple[dict, dict]:
-    """Pass 1: per family the (n_train + n_calib) smallest-rank ids; returns ({id: (family, role)}, family counts).
-    ``family_src`` {family: source dir name}: that family is drawn ONLY from that source (e.g. long_policy from the
-    rebuilt 2-4.5k-token jev2c pool instead of jev1's short typed-JSON rows)."""
-    keep = n_train + n_calib
+         family_src: dict[str, str] | None = None, exclude: set[tuple[str, str]] | None = None,
+         family_cap: dict[str, int] | None = None) -> tuple[dict, dict]:
+    """Pass 1: per family the (n_train_f + n_calib) smallest-rank ids; returns ({id: (family, role)}, family counts).
+    ``family_src`` {family: source dir name}: that family is drawn ONLY from that source. ``exclude`` {(family, source
+    dir name)}: that family's rows of that source are never drawn (e.g. jev1's long_policy). ``family_cap`` {family:
+    n}: at most n TRAIN rows for that family (down-weighting; its calib rows are unchanged)."""
+    family_cap = family_cap or {}
     heaps: dict[str, list] = collections.defaultdict(list)
     seen: set[str] = set()
     counts = collections.Counter()
     family_src = family_src or {}
+    exclude = exclude or set()
     for d in srcs:
         for line in _lines(d / "records.jsonl.gz"):
             r = json.loads(line)
             rid, fam = r["id"], family_of(r)
             if fam is None:
                 raise SystemExit(f"{d}: {rid} has no aug.<draw>.family8 / family")
-            if fam in family_src and family_src[fam] != d.name:
+            if (fam in family_src and family_src[fam] != d.name) or (fam, d.name) in exclude:
                 continue
+            keep = min(n_train, family_cap.get(fam, n_train)) + n_calib
             if rid in seen:
                 raise SystemExit(f"duplicate id across sources: {rid}")
             seen.add(rid)
@@ -88,8 +92,9 @@ def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
     roles = {}
     for fam, h in heaps.items():
         ids = [rid for _, rid in sorted(h, key=lambda x: -x[0])]  # ascending rank
+        nt = min(n_train, family_cap.get(fam, n_train))
         for k, rid in enumerate(ids):
-            roles[rid] = (fam, "train" if k < n_train else "calib")
+            roles[rid] = (fam, "train" if k < nt else "calib")
     return roles, dict(counts)
 
 
@@ -104,6 +109,10 @@ def main(argv=None) -> int:
     ap.add_argument("--allow-short", action="store_true")
     ap.add_argument("--family-src", action="append", default=[],
                     help="FAMILY=SRC_DIR_NAME: draw FAMILY only from that source (repeatable)")
+    ap.add_argument("--exclude", action="append", default=[],
+                    help="FAMILY=SRC_DIR_NAME: never draw FAMILY from that source (repeatable)")
+    ap.add_argument("--family-cap", action="append", default=[],
+                    help="FAMILY=N: at most N train rows for FAMILY (repeatable; calib unchanged)")
     a = ap.parse_args(argv)
     from train.cohort import record_content_hash
 
@@ -111,8 +120,11 @@ def main(argv=None) -> int:
     fsrc = dict(x.split("=", 1) for x in a.family_src)
     if any(v not in {s.name for s in srcs} for v in fsrc.values()):
         raise SystemExit(f"--family-src names a source that is not a --src: {fsrc}")
-    roles, counts = plan(srcs, a.train_per_family, a.calib_per_family, a.seed, fsrc)
-    short = {f: n for f, n in counts.items() if n < a.train_per_family + a.calib_per_family}
+    excl = {tuple(x.split("=", 1)) for x in a.exclude}
+    caps = {k: int(v) for k, v in (x.split("=", 1) for x in a.family_cap)}
+    roles, counts = plan(srcs, a.train_per_family, a.calib_per_family, a.seed, fsrc, excl, caps)
+    short = {f: n for f, n in counts.items()
+             if n < min(a.train_per_family, caps.get(f, a.train_per_family)) + a.calib_per_family}
     if short and not a.allow_short:
         raise SystemExit(f"families below train + calib: {short} (pass --allow-short to accept)")
     out = Path(a.out)
@@ -154,6 +166,7 @@ def main(argv=None) -> int:
     if clash:
         raise SystemExit(f"{len(clash)} content hash(es) in both train and calib (rebuild with another seed)")
     rep = {"name": a.name, "seed": a.seed, "sources": [str(s) for s in srcs], "family_src": fsrc,
+           "exclude": sorted("=".join(x) for x in excl), "family_cap": caps,
            "source_family_rows": counts,
            "train_per_family": a.train_per_family, "calib_per_family": a.calib_per_family, "short_families": short,
            "train_rows": dict(per["train"]), "calib_rows": dict(per["calib"]),

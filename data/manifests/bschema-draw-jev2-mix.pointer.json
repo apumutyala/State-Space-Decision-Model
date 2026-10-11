@@ -1,66 +1,22 @@
 {
- "PLACEHOLDER": "replace with <out>/bschema-draw-jev2-mix/pointer.json from scripts/jev12_balanced_draw.py",
- "build": "bschema-draw-jev2-mix (scripts/jev12_balanced_draw.py over the gated pools)",
- "pools": {
-  "jev1": {
-   "dir": "m2/build/bschema-draw-jev1",
-   "pointer": "data/manifests/bschema-draw-jev1.pointer.json",
-   "pointer_sha256": "582ffe1cb34602473a847833758e06d69dbb6755594b4609e95f8fa39a2b464b",
-   "status": "gated",
-   "families": [
-    "adequacy",
-    "enum",
-    "intent",
-    "long_policy",
-    "policy",
-    "routing",
-    "severity",
-    "state_tracking"
-   ]
-  },
-  "jev2a": {
-   "dir": "m2/build/bschema-draw-jev2a",
-   "pointer": "data/manifests/bschema-draw-jev2a.pointer.json",
-   "pointer_sha256": "53416094f957a6aebb6514dceaaef11b18473da1a6a910c89057639865c24eda",
-   "status": "gated",
-   "branch": "claude/ev-jev2-draw@77065b1c",
-   "families": [
-    "multi_hop",
-    "judge_hard",
-    "temporal_numeric",
-    "fact",
-    "tool_selection"
-   ]
-  },
-  "jev2b": {
-   "dir": "m2/build/bschema-draw-jev2b",
-   "pointer": "data/manifests/bschema-draw-jev2b.pointer.json",
-   "pointer_sha256": null,
-   "status": "PLACEHOLDER",
-   "families": [
-    "probability",
-    "trap",
-    "ambiguous",
-    "tradeoff",
-    "adversarial"
-   ]
-  },
-  "jev2c": {
-   "dir": "m2/build/bschema-draw-jev2c",
-   "pointer": "data/manifests/bschema-draw-jev2c.pointer.json",
-   "pointer_sha256": null,
-   "status": "PLACEHOLDER",
-   "families": [
-    "long_policy"
-   ],
-   "note": "rebuilt long_policy, prose state 2-4.5k tokens; replaces jev1's long_policy via --family-src"
-  }
- },
- "n_records": 10260,
- "records_uncompressed_sha256": null,
+ "PROVISIONAL": "PROVISIONAL (2026-10-10): built from the 12 families gated so far (jev1 minus long_policy, adequacy 293; jev2a 5) to prove the package; 6,739 train rows < the cell's n_train_records 10,255, so a submit would fail closed at train_set verify. Rebuild with jev2b + jev2c and refill these pins before any submit.",
+ "build": "bschema-draw-jev2-mix (scripts/jev12_balanced_draw.py over bschema-draw-jev1, bschema-draw-jev2a)",
+ "location": "ssdm-data/m2/build/bschema-draw-jev2-mix/ (outside git; deterministic)",
+ "records_uncompressed_sha256": "04644b008d8850cde927d8c486c53889da263e68b65f74d73ee328828ead01e2",
  "manifest": "bschema-draw-jev2-mix.manifest.jsonl.gz",
- "manifest_uncompressed_sha256": null,
+ "manifest_uncompressed_sha256": "fbc4ca9fa710da043151ec30d1e9d8af51db676b7ba9aad15898cadbaf1f4d8f",
  "content_map": "bschema-draw-jev2-mix.content.jsonl.gz",
- "content_map_uncompressed_sha256": null,
- "templates_verified": []
+ "content_map_uncompressed_sha256": "de52b96b81df5f52b751b722cb17a635ca27c4b9048056d21d203cdeca14a720",
+ "n_records": 6739,
+ "role": "train",
+ "ids_sha256": "ff60404bcea50ff2580ec609f02240ffa6910a2f56096817f62fee1c9ac9a199",
+ "schema": "ssdm-train-v0, one question per row (qid 'q'), JevBench request shape",
+ "excludes_cohort": "inherited from every source draw's own gates (each source pointer's excludes_cohort)",
+ "builder": {
+  "module": "scripts/jev12_balanced_draw.py",
+  "seed": 20261010
+ },
+ "templates_verified": [
+  "jrt-h2o-shim:qwen3.5-4b"
+ ]
 }

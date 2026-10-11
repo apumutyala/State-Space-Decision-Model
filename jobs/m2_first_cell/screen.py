@@ -845,6 +845,44 @@ def fit_temperature(logps: list[list[float]], labels: list[int], lo: float = 0.2
             "at_bound": bool(abs(math.log(t) - math.log(lo)) < 1e-3 or abs(math.log(t) - math.log(hi)) < 1e-3)}
 
 
+NOUL_BAND = (0.2, 0.8)  # jevkit scores a yes/no answer with p strictly inside this band as wrong (r2 rescore a8ca3e7e)
+
+
+def noul_band_rate(ps: list[float]) -> dict:
+    """Share of yes/no P(yes) values strictly inside NOUL_BAND."""
+    n = len(ps)
+    k = sum(1 for p in ps if NOUL_BAND[0] < float(p) < NOUL_BAND[1])
+    return {"rate": (k / n) if n else None, "in_band": k, "n": n, "band": list(NOUL_BAND)}
+
+
+def _p_true(lp: list[float], i_true: int, t: float) -> float:
+    import math
+
+    z = [x / t for x in lp]
+    m = max(z)
+    return math.exp(z[i_true] - m) / sum(math.exp(v - m) for v in z)
+
+
+def constrain_t_by_band(fit: dict, noul: list[tuple[list[float], int]], steps: int = 60) -> dict:
+    """JEV2-4B: the NLL-optimal T is kept only if it does not raise the yes/no band rate on the calib slice above its
+    T = 1 value; otherwise T moves toward 1 (log grid) to the feasible value closest to the NLL optimum."""
+    import math
+
+    def band(t):
+        return noul_band_rate([_p_true(lp, i, t) for lp, i in noul])["rate"]
+
+    t_nll = float(fit["T"])
+    b1, bt = band(1.0), band(t_nll)
+    out = {"T_nll": t_nll, "band_T1": b1, "band_T_nll": bt, "constrained": False}
+    if b1 is None or bt <= b1:
+        return {**out, "T": t_nll, "band_T": bt}
+    for j in range(1, steps + 1):  # from the NLL optimum toward 1
+        t = math.exp(math.log(t_nll) * (1 - j / steps))
+        if band(t) <= b1:
+            return {**out, "T": t, "band_T": band(t), "constrained": True}
+    return {**out, "T": 1.0, "band_T": b1, "constrained": True}
+
+
 def retemper_answer(question: dict, answer: dict, t: float) -> dict:
     """The native SystemOne answer with its distribution re-tempered (p_i^(1/T), renormalised); derived fields
     recomputed by jevkit.systemone.normalize_answer. noul: P(yes) as the two-option distribution."""
@@ -896,7 +934,7 @@ def fit_native_temperature(backend, records_path: Path, out: Path, lo: float, hi
               for r in raws}
     items = items_from_records([to_train_record(r) for r in raws], backend.encode, layout=backend.layout,
                                template=backend.template)
-    logps, labels = [], []
+    logps, labels, noul = [], [], []
     m = backend.model
     was = m.training
     m.eval()
@@ -909,6 +947,8 @@ def fit_native_temperature(backend, records_path: Path, out: Path, lo: float, hi
                 v = lp.tolist()
                 logps.append(v)
                 labels.append(int(it.label))
+                if it.row.qtype == "noul" and "true" in list(it.row.option_ids):
+                    noul.append((v, list(it.row.option_ids).index("true")))
                 mx = max(v)
                 z = math.log(sum(math.exp(x - mx) for x in v)) + mx
                 rid = it.id.rsplit("/", 1)[0]
@@ -917,12 +957,17 @@ def fit_native_temperature(backend, records_path: Path, out: Path, lo: float, hi
                                     "gold": int(it.label)}, separators=(",", ":")) + "\n")
     finally:
         m.train(was)
-    rep = fit_temperature(logps, labels, lo, hi) | {
+    fit = fit_temperature(logps, labels, lo, hi)
+    band = constrain_t_by_band(fit, noul)  # the yes/no band rate on the slice may not rise above its T = 1 value
+    rep = fit | band | {
+        "nll_T_nll": fit["nll_T"], "n_noul": len(noul),
         "records": str(records_path), "records_gz_sha256": hashlib.sha256(raw).hexdigest(), "ids_sha256": sha,
         "calib_probs": "calib_probs.jsonl (per-option probabilities of every slice decision, untempered)",
-        "rule": "scalar T, NLL minimiser over all calib questions, bounded; fitted before any eval answer is tempered"}
+        "rule": "scalar T = the NLL minimiser over all calib questions (bounded), moved toward 1 if it would raise the "
+                "slice's yes/no 0.2-0.8 band rate above T = 1's; fitted before any eval answer is tempered"}
     out.write_text(json.dumps(rep, indent=1), encoding="utf-8")
-    return {k: rep[k] for k in ("T", "n", "nll_T", "nll_1", "at_bound", "ids_sha256")}
+    return {k: rep[k] for k in ("T", "T_nll", "constrained", "band_T1", "band_T", "n", "nll_1", "at_bound",
+                                "ids_sha256")}
 
 
 def tfit_preds(src: Path, dst: Path, items, t: float) -> None:
@@ -1037,7 +1082,18 @@ def jevkit_report(jk: dict, d: Path) -> dict:
             "rule": "A-PREREG-SIZECLIFF: lean adopted iff jevkit-I drops <= 1 point (paired) while tokens drop >= 25%",
             "adopt": bool(sl["I"] - sn["I"] >= -1.0 and drop is not None and drop >= 0.25)}
     if tfit is not None:
-        out["tfit"] = {k: tfit.get(k) for k in ("T", "n", "nll_T", "nll_1", "at_bound", "ids_sha256", "records_gz_sha256")}
+        out["tfit"] = {k: tfit.get(k) for k in ("T", "T_nll", "constrained", "band_T1", "band_T", "band_T_nll", "n",
+                                                "n_noul", "nll_T_nll", "nll_1", "at_bound", "ids_sha256",
+                                                "records_gz_sha256")}
+    # JEV2-4B reported gate: the yes/no 0.2-0.8 band rate per arm (jevkit counts those answers wrong)
+    noul_ids = {it.id for it in items if it.question.get("type") == "noul"}
+    out["noul_band"] = {nm: noul_band_rate([a["noul"] for i, a in answers_by[nm].items()
+                                            if i in noul_ids and isinstance(a, dict) and "noul" in a])
+                        for nm in answers_by}
+    if "stock_shim" in out["noul_band"] and "native" in out["noul_band"]:
+        nb, sb = out["noul_band"]["native"]["rate"], out["noul_band"]["stock_shim"]["rate"]
+        out["noul_band_gate"] = {"rule": "native yes/no band rate <= stock_shim's (reported gate, A-PREREG-JEV2-4B Am. 2)",
+                                 "native": nb, "stock_shim": sb, "pass": bool(nb is not None and sb is not None and nb <= sb)}
     if jk.get("perturb_ops"):  # JEV2-4B G1 (guarantee check beside the primary)
         g1 = json.loads((d / "g1" / "perturb_report.json").read_text(encoding="utf-8"))
         out["g1"] = {k: g1.get(k) for k in ("ops", "n_base", "n_perturbed", "g1_pass", "rows_all_identical",

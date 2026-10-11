@@ -574,7 +574,9 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
                        loss=LossConfig(arm=cfg["loss_arm"], **kd_fields(cfg), **order_consistency_fields(cfg),
                                        # opt-in (JEV2-4B); absent = LossConfig's default 0.1, so old hashes are unchanged
                                        **({"label_smoothing": float(cfg["label_smoothing"])}
-                                          if "label_smoothing" in cfg else {})),
+                                          if "label_smoothing" in cfg else {}),
+                                       **({"label_smoothing_noul": float(cfg["label_smoothing_noul"])}
+                                          if "label_smoothing_noul" in cfg else {})),
                        lr_head=cfg["lr_head"], lr_lora=cfg["lr_lora"], batch_size=cfg["batch_size"],
                        warmup_steps=int(cfg.get("warmup_steps") or 0),
                        grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=bf16, grad_checkpointing=False,

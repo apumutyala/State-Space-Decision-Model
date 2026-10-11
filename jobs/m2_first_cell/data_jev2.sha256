@@ -1,6 +1,4 @@
-# PLACEHOLDER (A-PREREG-JEV2-4B): fill from scripts/jev12_balanced_draw.py --name bschema-draw-jev2-mix
-# <sha256>  m2/build/bschema-draw-jev2-mix/records.jsonl.gz
-# <sha256>  m2/build/bschema-draw-jev2-mix/bschema-draw-jev2-mix.manifest.jsonl.gz
-# <sha256>  m2/build/bschema-draw-jev2-mix/bschema-draw-jev2-mix.content.jsonl.gz
-# <sha256>  m2/build/bschema-draw-jev2-mix-calib/records.jsonl.gz
-# (the suite-0.2 entries stay pinned by data_jev1.sha256)
+164515d791a7208fe9ddfff5e799f0c413f10c5d36f4a91242431a9f1ca7bb38  m2-jev2mix/records.jsonl.gz
+43ee2b06de77e51bd6c51d98b6caa96c4431862f62664f9746c25aa7ca109370  m2-jev2mix/bschema-draw-jev2-mix.manifest.jsonl.gz
+09dcc0ba2f60af220addf3ab8e4798b1f445dc99641caafe547eb406bc8087c0  m2-jev2mix/bschema-draw-jev2-mix.content.jsonl.gz
+2e2917fa927ec6ef848aba7b02ec6d01ee4064d2a19254bd9b5b161f120fc691  m2-jev2mix-calib/records.jsonl.gz
