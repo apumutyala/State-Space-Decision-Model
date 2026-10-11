@@ -55,7 +55,8 @@ Draw: claude/ev-jev2-draw @12461fff, `ssdm-data/m2/build/bschema-draw-jev2c/`.
 - **Gold:** 0 failures. **Option order** is kept (33/778 rows already in sorted order, 33.9 expected). **Gold-position
   χ²:** p 0.848 (builder 0.848). CONFIRMED.
 - **Types:** choice 778 (K 3/4/5/6 = 122/282/193/181), noul 647, score 75. **State:** plain string for 1,500/1,500.
-- **Empty criteria: 75 rows** (the score questions). 0 empty noul criteria, and there are 24 distinct noul criteria pairs.
+- **Empty criteria: 0 rows** (CORRECTED 2026-10-11). The 75 score rows reported earlier have non-empty list criteria;
+  that report was a checker false positive. 0 empty noul criteria, and there are 24 distinct noul criteria pairs.
 - **Duplicates:** 0 exact, 0 repeated states, 0 digit-masked near-duplicates.
 - **Gold spot-check** (m2:jev2synth:long_handbook:0, access domain): the case is an employee on the incident response
   team, untrained, asking for confidential data. Rule 6 (incident override, "whatever the other rules say") applies,

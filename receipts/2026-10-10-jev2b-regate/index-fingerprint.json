@@ -1,0 +1,164 @@
+{
+ "identity": {
+  "version": "ssdm-dedup-v3",
+  "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+  "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+  "rows": 155390
+ },
+ "assert_production": true,
+ "npz_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\index-fp-v3.npz",
+ "n_records": 7500,
+ "item_tier_probe_hits_by_family": {},
+ "item_tier_examples": [],
+ "full_row_probe_hits_by_family": {
+  "ambiguous": 478,
+  "trap": 746
+ },
+ "full_row_hits_by_matcher": {
+  "exact": 1218,
+  "minhash": 1224
+ },
+ "full_row_examples": [
+  [
+   "m2:jev2synth:ambig:100096~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:100672~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:100800~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:101568~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:101952~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:102016~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:102272~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:102336~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:102464~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:1024~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:102656~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:102912~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:103232~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:103488~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:103552~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:103616~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:105152~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:105216~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:105600~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:jev2synth:ambig:10560~view:jev2-count",
+   [
+    "exact",
+    "minhash"
+   ]
+  ]
+ ],
+ "seconds": 48
+}

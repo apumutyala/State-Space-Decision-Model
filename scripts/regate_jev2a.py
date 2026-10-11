@@ -216,7 +216,10 @@ def cmd_format(a):
         label_dist[f"{f}/{r['aug']['jev1'].get('sub')}"][str(g)] += 1
         if "corruption" in r["aug"]["jev1"]:
             corr_label[f"{r['aug']['jev1'].get('sub')}/{r['aug']['jev1']['corruption']}"][str(g)] += 1
-        if not isinstance(crit, dict) or not crit:
+        if t == "score" and isinstance(crit, list):  # score schema: an ordered list of level descriptions
+            if not crit or any((not isinstance(v, str)) or not v.strip() for v in crit):
+                empty_crit[f].append(rid)
+        elif not isinstance(crit, dict) or not crit:
             empty_crit[f].append(rid)
         else:
             if any((not isinstance(v, str)) or not v.strip() for v in crit.values()):

@@ -213,28 +213,7 @@
    "expected_if_shuffled": 137.9
   }
  },
- "empty_criteria_rows": {
-  "multi_hop": {
-   "n": 402,
-   "examples": [
-    "m2:jev2synth:ref_chase:1003~view:jev2-count",
-    "m2:jev2synth:ref_chase:1015~view:jev2-count",
-    "m2:jev2synth:ref_chase:1020~view:jev2-count",
-    "m2:jev2synth:ref_chase:1029~view:jev2-count",
-    "m2:jev2synth:ref_chase:102~view:jev2-count"
-   ]
-  },
-  "temporal_numeric": {
-   "n": 698,
-   "examples": [
-    "m2:jev2synth:temporal:1008~view:jev2-days_late",
-    "m2:jev2synth:temporal:1010~view:jev2-days_late",
-    "m2:jev2synth:temporal:1032~view:jev2-days_late",
-    "m2:jev2synth:temporal:1057~view:jev2-days_late",
-    "m2:jev2synth:temporal:1060~view:jev2-days_late"
-   ]
-  }
- },
+ "empty_criteria_rows": {},
  "empty_option_description_rows": {},
  "noul_criteria_variants": {
   "fact": {

@@ -88,18 +88,7 @@
    "expected_if_shuffled": 33.9
   }
  },
- "empty_criteria_rows": {
-  "long_policy": {
-   "n": 75,
-   "examples": [
-    "m2:jev2synth:long_handbook:1011~view:jev2-lpl",
-    "m2:jev2synth:long_handbook:1048~view:jev2-lpl",
-    "m2:jev2synth:long_handbook:1058~view:jev2-lpl",
-    "m2:jev2synth:long_handbook:1071~view:jev2-lpl",
-    "m2:jev2synth:long_handbook:1082~view:jev2-lpl"
-   ]
-  }
- },
+ "empty_criteria_rows": {},
  "empty_option_description_rows": {},
  "noul_criteria_variants": {
   "long_policy": {

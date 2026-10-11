@@ -1,0 +1,47 @@
+{
+ "identity": {
+  "_identity": {
+   "id": "jrt-h2o-shim:qwen3.5-4b",
+   "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+  },
+  "_pinned": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+ },
+ "errors": 0,
+ "by_family": {
+  "adversarial": {
+   "n": 1500,
+   "p50": 192,
+   "p99": 226,
+   "max": 233,
+   "n_over_2048": 0
+  },
+  "ambiguous": {
+   "n": 1500,
+   "p50": 239,
+   "p99": 363,
+   "max": 415,
+   "n_over_2048": 0
+  },
+  "probability": {
+   "n": 1500,
+   "p50": 191,
+   "p99": 249,
+   "max": 255,
+   "n_over_2048": 0
+  },
+  "tradeoff": {
+   "n": 1500,
+   "p50": 365,
+   "p99": 416,
+   "max": 420,
+   "n_over_2048": 0
+  },
+  "trap": {
+   "n": 1500,
+   "p50": 170,
+   "p99": 203,
+   "max": 203,
+   "n_over_2048": 0
+  }
+ }
+}

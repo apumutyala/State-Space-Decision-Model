@@ -1,0 +1,758 @@
+{
+ "n_records": 7500,
+ "unique_ids": 7500,
+ "dup_ids": [],
+ "by_family": {
+  "adversarial": 1500,
+  "ambiguous": 1500,
+  "probability": 1500,
+  "tradeoff": 1500,
+  "trap": 1500
+ },
+ "type_by_family": {
+  "adversarial": {
+   "choice": 411,
+   "noul": 217,
+   "score": 872
+  },
+  "ambiguous": {
+   "choice": 1022,
+   "score": 478
+  },
+  "probability": {
+   "score": 523,
+   "choice": 939,
+   "noul": 38
+  },
+  "tradeoff": {
+   "score": 543,
+   "choice": 755,
+   "noul": 202
+  },
+  "trap": {
+   "noul": 535,
+   "score": 740,
+   "choice": 225
+  }
+ },
+ "by_source": {
+  "jev2synth": 7500
+ },
+ "split_by_source": {
+  "jev2synth": {
+   "synthetic": 7500
+  }
+ },
+ "license_by_source": {
+  "jev2synth": {
+   "own generator (repo)": 7500
+  }
+ },
+ "missing_license": 0,
+ "missing_license_ids": [],
+ "state_type_by_family": {
+  "adversarial": {
+   "str": 1500
+  },
+  "ambiguous": {
+   "str": 879,
+   "dict": 621
+  },
+  "probability": {
+   "str": 1500
+  },
+  "tradeoff": {
+   "str": 1500
+  },
+  "trap": {
+   "str": 1500
+  }
+ },
+ "gold_failures": {},
+ "gold_position_presented": {
+  "adversarial": {
+   "n_tested": 411,
+   "chi2": 2.58,
+   "df": 3,
+   "p": 0.4639,
+   "per_k": {
+    "4": {
+     "n": 411,
+     "positions": [
+      110,
+      89,
+      107,
+      105
+     ]
+    }
+   }
+  },
+  "ambiguous": {
+   "n_tested": 1022,
+   "chi2": 7.56,
+   "df": 5,
+   "p": 0.1808,
+   "per_k": {
+    "3": {
+     "n": 755,
+     "positions": [
+      261,
+      262,
+      232
+     ]
+    },
+    "4": {
+     "n": 267,
+     "positions": [
+      52,
+      72,
+      77,
+      66
+     ]
+    }
+   }
+  },
+  "probability": {
+   "n_tested": 939,
+   "chi2": 0.02,
+   "df": 2,
+   "p": 0.9788,
+   "per_k": {
+    "3": {
+     "n": 939,
+     "positions": [
+      315,
+      312,
+      312
+     ]
+    }
+   }
+  },
+  "tradeoff": {
+   "n_tested": 755,
+   "chi2": 17.48,
+   "df": 12,
+   "p": 0.1317,
+   "per_k": {
+    "4": {
+     "n": 138,
+     "positions": [
+      40,
+      45,
+      26,
+      27
+     ]
+    },
+    "5": {
+     "n": 406,
+     "positions": [
+      79,
+      86,
+      66,
+      100,
+      75
+     ]
+    },
+    "6": {
+     "n": 211,
+     "positions": [
+      37,
+      34,
+      36,
+      39,
+      36,
+      29
+     ]
+    }
+   }
+  },
+  "trap": {
+   "n_tested": 225,
+   "chi2": 0.69,
+   "df": 3,
+   "p": 0.8754,
+   "per_k": {
+    "4": {
+     "n": 225,
+     "positions": [
+      58,
+      57,
+      51,
+      59
+     ]
+    }
+   }
+  }
+ },
+ "choice_keys_already_sorted": {
+  "adversarial": {
+   "n_choice": 411,
+   "n_sorted": 16,
+   "expected_if_shuffled": 17.1
+  },
+  "ambiguous": {
+   "n_choice": 1022,
+   "n_sorted": 146,
+   "expected_if_shuffled": 137.0
+  },
+  "probability": {
+   "n_choice": 939,
+   "n_sorted": 148,
+   "expected_if_shuffled": 156.5
+  },
+  "tradeoff": {
+   "n_choice": 755,
+   "n_sorted": 8,
+   "expected_if_shuffled": 9.4
+  },
+  "trap": {
+   "n_choice": 225,
+   "n_sorted": 9,
+   "expected_if_shuffled": 9.4
+  }
+ },
+ "empty_criteria_rows": {},
+ "empty_option_description_rows": {},
+ "noul_criteria_variants": {
+  "adversarial": {
+   "n_variants": 1,
+   "top": [
+    [
+     "{\"false\": \"no, the policy does not allow it\", \"true\": \"yes, the policy allows it\"}",
+     217
+    ]
+   ]
+  },
+  "probability": {
+   "n_variants": 3,
+   "top": [
+    [
+     "{\"false\": \"no, it does not follow from the record\", \"true\": \"yes, it follows from the record\"}",
+     18
+    ],
+    [
+     "{\"false\": \"no: the stated facts and rules give a different result\", \"true\": \"yes: the stated facts and rules give this result\"}",
+     13
+    ],
+    [
+     "{\"false\": \"no, the text requires otherwise\", \"true\": \"yes, that is what the text requires\"}",
+     7
+    ]
+   ]
+  },
+  "tradeoff": {
+   "n_variants": 4,
+   "top": [
+    [
+     "{\"false\": \"no: the stated facts and rules give a different result\", \"true\": \"yes: the stated facts and rules give this result\"}",
+     114
+    ],
+    [
+     "{\"false\": \"no, it does not follow from the record\", \"true\": \"yes, it follows from the record\"}",
+     60
+    ],
+    [
+     "{\"false\": \"no, the text requires otherwise\", \"true\": \"yes, that is what the text requires\"}",
+     14
+    ],
+    [
+     "{\"false\": \"false: the condition in the question does not hold\", \"true\": \"true: the condition in the question holds\"}",
+     14
+    ]
+   ]
+  },
+  "trap": {
+   "n_variants": 3,
+   "top": [
+    [
+     "{\"false\": \"no, the text requires otherwise\", \"true\": \"yes, that is what the text requires\"}",
+     274
+    ],
+    [
+     "{\"false\": \"no: the stated facts and rules give a different result\", \"true\": \"yes: the stated facts and rules give this result\"}",
+     140
+    ],
+    [
+     "{\"false\": \"false: the condition in the question does not hold\", \"true\": \"true: the condition in the question holds\"}",
+     121
+    ]
+   ]
+  }
+ },
+ "label_dist_by_family_sub": {
+  "adversarial/adv_priority": {
+   "p3": 105,
+   "p2": 104,
+   "p4": 85,
+   "p1": 117
+  },
+  "adversarial/adv_refund": {
+   "true": 116,
+   "false": 101
+  },
+  "adversarial/adv_severity": {
+   "1": 102,
+   "3": 103,
+   "0": 100,
+   "2": 119
+  },
+  "adversarial/adv_review": {
+   "1": 95,
+   "0": 84,
+   "2": 90,
+   "4": 85,
+   "3": 94
+  },
+  "ambiguous/ambig_file": {
+   "n_distinct": 22,
+   "top5": [
+    [
+     "ask_clarifying",
+     98
+    ],
+    [
+     "act_pricing_sheet_v2",
+     14
+    ],
+    [
+     "act_pricing_sheet_redlined",
+     14
+    ],
+    [
+     "act_q3_report_internal",
+     11
+    ],
+    [
+     "act_launch_plan_redlined",
+     11
+    ]
+   ]
+  },
+  "ambiguous/ambig_file_count": {
+   "3": 9,
+   "1": 57,
+   "2": 26,
+   "0": 27
+  },
+  "ambiguous/ambig_refund": {
+   "n_distinct": 146,
+   "top5": [
+    [
+     "ask_clarifying",
+     98
+    ],
+    [
+     "decline",
+     11
+    ],
+    [
+     "act_83748",
+     1
+    ],
+    [
+     "act_50395",
+     1
+    ],
+    [
+     "act_31477",
+     1
+    ]
+   ]
+  },
+  "ambiguous/ambig_meeting": {
+   "ask_clarifying": 79,
+   "act_monday": 39,
+   "act_wednesday": 35,
+   "act_tuesday": 38,
+   "act_thursday": 44
+  },
+  "ambiguous/ambig_refund_count": {
+   "0": 24,
+   "3": 5,
+   "1": 55,
+   "2": 40
+  },
+  "ambiguous/ambig_email": {
+   "n_distinct": 143,
+   "top5": [
+    [
+     "ask_clarifying",
+     122
+    ],
+    [
+     "act_vera_costa",
+     3
+    ],
+    [
+     "act_bram_horvat",
+     2
+    ],
+    [
+     "act_kofi_jansen",
+     2
+    ],
+    [
+     "act_goran_horvat",
+     2
+    ]
+   ]
+  },
+  "ambiguous/ambig_email_count": {
+   "1": 54,
+   "2": 36,
+   "0": 19,
+   "3": 8
+  },
+  "ambiguous/ambig_meeting_count": {
+   "1": 51,
+   "0": 24,
+   "2": 33,
+   "3": 10
+  },
+  "probability/prob_bayes_band": {
+   "2": 61,
+   "1": 41,
+   "3": 57,
+   "0": 3,
+   "4": 12
+  },
+  "probability/prob_dice": {
+   "n_distinct": 8,
+   "top5": [
+    [
+     "o_83_3",
+     18
+    ],
+    [
+     "o_27_8",
+     18
+    ],
+    [
+     "o_91_7",
+     18
+    ],
+    [
+     "o_41_7",
+     17
+    ],
+    [
+     "o_58_3",
+     17
+    ]
+   ]
+  },
+  "probability/prob_indep": {
+   "same": 124
+  },
+  "probability/prob_urn_band": {
+   "2": 35,
+   "1": 75,
+   "0": 22,
+   "3": 10
+  },
+  "probability/prob_urn": {
+   "n_distinct": 50,
+   "top5": [
+    [
+     "o_20_0",
+     7
+    ],
+    [
+     "o_27_8",
+     6
+    ],
+    [
+     "o_22_7",
+     6
+    ],
+    [
+     "o_14_3",
+     5
+    ],
+    [
+     "o_23_3",
+     5
+    ]
+   ]
+  },
+  "probability/prob_bayes": {
+   "n_distinct": 102,
+   "top5": [
+    [
+     "o_28_8",
+     4
+    ],
+    [
+     "o_26_9",
+     3
+    ],
+    [
+     "o_74_8",
+     3
+    ],
+    [
+     "o_25_0",
+     3
+    ],
+    [
+     "o_80_0",
+     3
+    ]
+   ]
+  },
+  "probability/prob_ev": {
+   "equal": 26,
+   "option_a": 64,
+   "option_b": 75
+  },
+  "probability/prob_conj": {
+   "a_only": 62,
+   "equal": 65
+  },
+  "probability/prob_atleast_band": {
+   "1": 21,
+   "4": 13,
+   "2": 26,
+   "3": 27,
+   "0": 3
+  },
+  "probability/prob_dice_band": {
+   "1": 33,
+   "3": 34,
+   "4": 20,
+   "2": 25,
+   "0": 5
+  },
+  "probability/prob_atleast": {
+   "n_distinct": 30,
+   "top5": [
+    [
+     "o_57_8",
+     7
+    ],
+    [
+     "o_18_5",
+     7
+    ],
+    [
+     "o_65_7",
+     6
+    ],
+    [
+     "o_9_8",
+     6
+    ],
+    [
+     "o_83_2",
+     6
+    ]
+   ]
+  },
+  "probability/prob_atleast_yn": {
+   "true": 12,
+   "false": 13
+  },
+  "probability/prob_bayes_yn": {
+   "true": 7,
+   "false": 6
+  },
+  "tradeoff/tradeoff_tco_count": {
+   "1": 69,
+   "0": 33,
+   "3": 22,
+   "2": 37,
+   "4": 5
+  },
+  "tradeoff/tradeoff_lexi": {
+   "n_distinct": 11,
+   "top5": [
+    [
+     "granite",
+     27
+    ],
+    [
+     "delmar",
+     27
+    ],
+    [
+     "fairhaven",
+     25
+    ],
+    [
+     "corvus",
+     25
+    ],
+    [
+     "juno",
+     24
+    ]
+   ]
+  },
+  "tradeoff/tradeoff_lexi_count": {
+   "2": 54,
+   "3": 85,
+   "4": 31,
+   "1": 25,
+   "0": 5
+  },
+  "tradeoff/tradeoff_weighted_count": {
+   "4": 56,
+   "3": 104,
+   "2": 17
+  },
+  "tradeoff/tradeoff_weighted": {
+   "n_distinct": 10,
+   "top5": [
+    [
+     "fairhaven",
+     34
+    ],
+    [
+     "halcyon",
+     32
+    ],
+    [
+     "arcline",
+     32
+    ],
+    [
+     "juno",
+     29
+    ],
+    [
+     "brightwell",
+     28
+    ]
+   ]
+  },
+  "tradeoff/tradeoff_tco": {
+   "n_distinct": 11,
+   "top5": [
+    [
+     "none",
+     53
+    ],
+    [
+     "everfield",
+     27
+    ],
+    [
+     "brightwell",
+     27
+    ],
+    [
+     "arcline",
+     25
+    ],
+    [
+     "halcyon",
+     22
+    ]
+   ]
+  },
+  "tradeoff/tradeoff_lexi_yn": {
+   "false": 35,
+   "true": 32
+  },
+  "tradeoff/tradeoff_tco_yn": {
+   "false": 38,
+   "true": 34
+  },
+  "tradeoff/tradeoff_weighted_yn": {
+   "false": 32,
+   "true": 31
+  },
+  "trap/trap_exception": {
+   "false": 87,
+   "true": 50
+  },
+  "trap/trap_except": {
+   "false": 89,
+   "true": 48
+  },
+  "trap/trap_count": {
+   "3": 165,
+   "0": 170,
+   "2": 187,
+   "4": 78,
+   "1": 140
+  },
+  "trap/trap_premise": {
+   "d3": 127,
+   "none": 98
+  },
+  "trap/trap_scale": {
+   "true": 84,
+   "false": 56
+  },
+  "trap/trap_holiday": {
+   "true": 53,
+   "false": 68
+  }
+ },
+ "dup_state_by_sub": {
+  "probability/prob_dice": {
+   "rows_in_dup_groups": 62
+  },
+  "probability/prob_dice_band": {
+   "rows_in_dup_groups": 49
+  }
+ },
+ "judge_corruption_vs_label": {},
+ "words_by_family": {
+  "adversarial": {
+   "p50": 86,
+   "p99": 113,
+   "max": 118
+  },
+  "ambiguous": {
+   "p50": 109,
+   "p99": 142,
+   "max": 155
+  },
+  "probability": {
+   "p50": 90,
+   "p99": 129,
+   "max": 135
+  },
+  "tradeoff": {
+   "p50": 166,
+   "p99": 188,
+   "max": 189
+  },
+  "trap": {
+   "p50": 67,
+   "p99": 93,
+   "max": 93
+  }
+ },
+ "dup_exact_text": {
+  "groups_gt1": 0,
+  "extra_rows": 0
+ },
+ "dup_examples": {},
+ "dup_state_within_family": {
+  "probability": {
+   "groups": 48,
+   "extra_rows": 63
+  }
+ },
+ "near_dup_digits_masked_within_family": {
+  "adversarial": {
+   "groups": 28,
+   "extra_rows": 32
+  },
+  "ambiguous": {
+   "groups": 10,
+   "extra_rows": 11
+  },
+  "probability": {
+   "groups": 54,
+   "extra_rows": 61
+  },
+  "trap": {
+   "groups": 95,
+   "extra_rows": 196
+  }
+ }
+}

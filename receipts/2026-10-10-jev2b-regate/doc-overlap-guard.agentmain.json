@@ -1,0 +1,1044 @@
+{
+ "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+ "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+ "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
+ "n_eval_rows": 153397,
+ "n_records": 7500,
+ "n_rows_any_eval_gram": 0,
+ "n_fail": 0,
+ "fail_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+ "per_source_rows": {
+  "jev2synth": 7500
+ },
+ "per_source_fail": {},
+ "per_reason": {},
+ "per_eval_family_fail": {},
+ "eval_rows_attributed_by_split": {},
+ "eval_rows_union_covered_by_split": {},
+ "allowlist_saved": {},
+ "boilerplate": [],
+ "n_boilerplate": 0,
+ "n_template_grams": 22369,
+ "template_grams_top": [
+  {
+   "gram_hash": "0000cb6dafdb13ea",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0002cbd4c674b397",
+   "eval_df": 442,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0006477e4a148639",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0006da5f11c34771",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "000b785cc3e48e7b",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "000c7c8ec6003220",
+   "eval_df": 508,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "000efead89f4762e",
+   "eval_df": 983,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00104c05d1e4291f",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0015ba26ecbc8bb5",
+   "eval_df": 2000,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0017f0702070fbfc",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "001938958f243f3f",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "001984c494e798de",
+   "eval_df": 1259,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "001b5ecb6640e8d2",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "001bccd5892e15f9",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "001fd11e8d9cbe71",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "002fc4881c4c123d",
+   "eval_df": 123,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0031272d4d46a65d",
+   "eval_df": 1586,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00326d32582774ed",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00348131379022ca",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0035f37a6923e7c2",
+   "eval_df": 215,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00379ca90f4dbd2c",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "003a2c0d0f26ff03",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "003c86eefd88fac4",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "004051642807405a",
+   "eval_df": 1209,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "004138ffa11865ee",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0044badcd992bd57",
+   "eval_df": 215,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "004c114259c03177",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "004ce20ecc6f5dd1",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "004eea3447ba9776",
+   "eval_df": 2004,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "004f71ae930369b9",
+   "eval_df": 128,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "004fae1ca44da5ba",
+   "eval_df": 10000,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0053c61147d63819",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0054feeb11ceb860",
+   "eval_df": 822,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "005777bc962516e9",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "005c90dc15e9aa6c",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "005c91452fd58686",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "005d68872ede949e",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "005d9517c5a61483",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "005dc5ec6fb18d83",
+   "eval_df": 108,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "005de1f9f630f5f5",
+   "eval_df": 900,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "005e5579683e023e",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "005fd8f9926adcad",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "006c89c1c956e1e7",
+   "eval_df": 186,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0070b75ee15219b2",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0075547118970140",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0075ebf9ae4a2edf",
+   "eval_df": 1401,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0076644c0fe6678e",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00779193776bf0fd",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "007c8a4cc7b03324",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0080c232313fc0b2",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0083d845f74a0b00",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "008d755ad03106cb",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00963e5491febcca",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00977fd804d37b9c",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00995e10ff329038",
+   "eval_df": 7052,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "009d155fdbe6b618",
+   "eval_df": 181,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00a09e06dc2bb15a",
+   "eval_df": 758,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00a0a5af39ff280d",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00a21d70a3aeb45e",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00a2ce3fcc36669d",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00a3b1a2843b569b",
+   "eval_df": 140,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00a450338a932238",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00a77596640653f3",
+   "eval_df": 167,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00aaa66ab2cc1852",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00aee8881946eef6",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00b1326b627f1b55",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00b5148d0159591e",
+   "eval_df": 1574,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00ba435f3b61d14d",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00ba96d4cf0ba16b",
+   "eval_df": 1401,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00bc7796d65c5cf6",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00bcf1ebe7c23cdb",
+   "eval_df": 284,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00be0df9b35ccba0",
+   "eval_df": 2004,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00be5d77a53a774f",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00beebc79a5407d6",
+   "eval_df": 112,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00c82e3c8f009d2c",
+   "eval_df": 185,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00c91622b4421760",
+   "eval_df": 215,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00cb377f1ff7b869",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00d55eb5c8421ecd",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00dbc9d77a57a7c1",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00dcdef45569ee78",
+   "eval_df": 215,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00dedf06ccda12f0",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00e070bde5327baf",
+   "eval_df": 178,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00e267423fdef00c",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00e39a6dd93d2127",
+   "eval_df": 900,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00e561203f561a2c",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00e743165f815c47",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00ebfd6afc46c15f",
+   "eval_df": 180,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00ed5473b61a81f6",
+   "eval_df": 758,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00f3b0297624b9bf",
+   "eval_df": 336,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00f3e7df16427dc9",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00f44943b37913ad",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00f5170da69d5b7a",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00f756a4dd956ea9",
+   "eval_df": 153,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00f887208625e64b",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00f9731671ab2188",
+   "eval_df": 108,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00fa5e7abb7836e2",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "00faa08cbf0f101d",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01018205cc195f62",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01034a09c0316a57",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "010801abfb1eda8c",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0108d7af910a0ad9",
+   "eval_df": 157,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01090ce49475199f",
+   "eval_df": 215,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "010b553b978299c4",
+   "eval_df": 143,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0111122d8ec4754a",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0115233e324fa2e8",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "011dbedf0529b96c",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "012fe6f8ac1d74d7",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "013136238a84cd39",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0133b7b2881eaa8b",
+   "eval_df": 1565,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01343e2fa7de9ebe",
+   "eval_df": 167,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0136400f1d13bd40",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01394bb787fea291",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "013d75a6b3358ec1",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01424191e3c98a80",
+   "eval_df": 1209,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01429b3f3d9e7623",
+   "eval_df": 108,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0143a41ef5199088",
+   "eval_df": 155,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0145801c2a95c637",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "014b8e35d6dd8947",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0156c0680250a755",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01580d0d011eb121",
+   "eval_df": 165,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "015d68da2697aa4e",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "015f0a5ceef061df",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "015f2fc3de355602",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0161d0fbb8b2ca89",
+   "eval_df": 2004,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "016281e8f795f7f8",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0165de3bcf271728",
+   "eval_df": 128,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0167bd3d35781139",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0168d5014349f92d",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0169fbe6a7fd7d6a",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "016dc99272b21bbc",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "016f3872d951dc93",
+   "eval_df": 508,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "017a47736f5eb54b",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "017be9e0f8df0453",
+   "eval_df": 123,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "017cb59db7b8a17e",
+   "eval_df": 114,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0181435a004ae0c5",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0184e3bf774ecbe7",
+   "eval_df": 215,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0184fb4bdaf96a09",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0187b237f5135265",
+   "eval_df": 215,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0187fb8685fc3315",
+   "eval_df": 215,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "018a8a82e384e1b2",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "018dcb80a2e4aba3",
+   "eval_df": 215,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01903fcb40ae5d8a",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01922cbd3b806a36",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "019270d54d3d7b0d",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "019b6fa60f08c115",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01a00023bebcafab",
+   "eval_df": 211,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01a1f384a543cc09",
+   "eval_df": 508,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01a33b50e079d320",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01a3847ec3d57883",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01a4e19368327c52",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01a92a78ca424574",
+   "eval_df": 185,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01aba63da7b320e1",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01aea61335dcc956",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01af11c01601ba4e",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01b15c4bedde7c26",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01b4c18336662779",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01c102c9b8f6db3c",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01c1cc6ea70e49df",
+   "eval_df": 181,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01c596c20218c950",
+   "eval_df": 1941,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01ca82239179478f",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01caad78865e7a4a",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01d4570debed9008",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01d7500facd88842",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01db45cc3b6b1635",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01db984ce74f21b0",
+   "eval_df": 167,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01dd5af5a08f74ed",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01dda3be37f98dd5",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01dde764c0574724",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01e1638c6b3436b5",
+   "eval_df": 157,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01e243363ef5dfd6",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01ea351fce948e02",
+   "eval_df": 10000,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01eba503e7961dc6",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01f0966ee702c46c",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01f3a8dab7d589aa",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01f51325dfcdd74f",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01fd304c72003635",
+   "eval_df": 442,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "01fe27cded66441f",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "020103cd3c75efab",
+   "eval_df": 123,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "020380e8e9e41c19",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "02096439c5398bae",
+   "eval_df": 143,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "020c3f51b88b3609",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "020de43eeea31b84",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "020e6ba398e279df",
+   "eval_df": 442,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "020edcc54bb4d780",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0210225daf3be8a8",
+   "eval_df": 758,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "021197a8da95b2a9",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "02131ed45075939d",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0213febadd61c7fd",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0214d06a1ce4db55",
+   "eval_df": 442,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "021cf3ef8bb99e17",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0222cda247c5f22e",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "02236333d2ad9c4d",
+   "eval_df": 128,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0225f76524f1ec77",
+   "eval_df": 215,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "02281a26e99c976f",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "022a49a7d38a2d67",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "022bcc989478c390",
+   "eval_df": 120,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0235bd0923eacb5e",
+   "eval_df": 351,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "023633f38d80ae82",
+   "eval_df": 233,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "0236aa070ddf9cb9",
+   "eval_df": 150,
+   "train_df": 0
+  },
+  {
+   "gram_hash": "023754ce07e1b5ec",
+   "eval_df": 120,
+   "train_df": 0
+  }
+ ],
+ "secs": 2.4,
+ "fail_ids": [],
+ "fails": [],
+ "jevbench": {
+  "enabled": true,
+  "index_sha256": "0fe994c40dfc70fa3a0cd711fa88abb7f439cb8f2546ecffd53e5ca232d3934b",
+  "fingerprint_arrays_sha256": "211da3f1d3c68fbfc48fc3dbdd72cfd0c6dcf723f47e4628a7f6f5f506c2c55c",
+  "exact_segments_sha256": "f9b94122d36e8b730cc18dc122d4fe65ff789a42072ca86ecebee207fdb5049d",
+  "pin_sha256": "e317bbb6aa541f5b9c26e038359036dc9d3f7039b410060fafa3bfe1bf2db49f",
+  "source_commit": "b6b8fff7e345b98c060ad26c13308860ddc67004",
+  "n_fail_doc": 0,
+  "n_fail_exact": 0,
+  "n_fail": 0,
+  "fail_ids": [],
+  "fail_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "per_source_fail": {},
+  "n_rows_any_eval_gram": 0,
+  "fails": []
+ },
+ "records": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\bschema-draw-jev2b\\records.jsonl.gz"
+}

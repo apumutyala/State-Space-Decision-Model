@@ -1,0 +1,26 @@
+{
+ "rows_with_any_segment_hit": 1224,
+ "rows_with_state_segment_hit_by_family": {},
+ "rows_only_question_segment_hit_by_family": {
+  "ambiguous": 478,
+  "trap": 746
+ },
+ "segment_hits_by_role_and_wordlen": {
+  "question/3-5w": 1224
+ },
+ "segment_hits_by_role_matcher": {
+  "question/exact": 1218,
+  "question/minhash": 1224
+ },
+ "catalog_hits_top": [
+  [
+   "24",
+   2436
+  ],
+  [
+   "36",
+   6
+  ]
+ ],
+ "state_segment_hits_ge6_words_examples": []
+}

@@ -92,9 +92,10 @@ The ids and texts above trace every row to the train file, and no MuSiQue id out
   against 50.0 / 175.4 / 137.9 expected under a uniform shuffle. CONFIRMED.
 - **Gold-position χ²** on the presented order (scipy): tool_selection p 0.774, temporal_numeric p 0.675, multi_hop
   p 0.470. This matches the builder's 0.77 / 0.67 / 0.47. CONFIRMED.
-- **Empty criteria: 1,100 rows.** These are the score questions with no option descriptions: multi_hop ref_chase
-  `count` (402) and temporal `days_late` (698). There are 0 empty noul criteria and 0 empty option descriptions. The
-  audit says empty criteria hurt, so the lead should decide whether to keep these 1,100 rows (3.7 %).
+- **Empty criteria: 0 rows** (CORRECTED 2026-10-11). An earlier version reported 1,100 empty rows. That was a false
+  positive in my checker, which treated a list as empty. The 1,100 rows are score questions (ref_chase `count` 402,
+  temporal `days_late` 698), and their criteria are non-empty ordered lists of level descriptions, as the score schema
+  requires. There are also 0 empty noul criteria and 0 empty option descriptions.
 - **Type mix:** fact noul 6,000; judge_hard noul 6,000; tool_selection choice 6,000; temporal_numeric choice 4,403 /
   noul 899 / score 698; multi_hop choice 5,053 / noul 545 / score 402.
 - **State type:** dict 17,058 (judge 6,000, multi_hop 6,000, temporal 5,058) and plain prose 12,942 (fact 6,000, tool
@@ -111,8 +112,8 @@ The ids and texts above trace every row to the train file, and no MuSiQue id out
 
 ## 7. Notes for the lead
 1. The draw is clean. WARN-1 to WARN-3 are by-design template or entity overlaps, and I recommend no change.
-2. Optional quality changes: drop or regenerate the 1,100 empty-criteria score rows, and deduplicate glaive by request
-   text (about 2.2k rows).
+2. Optional quality change: deduplicate glaive by request text (about 2.2k rows). (The earlier advice to drop 1,100
+   "empty-criteria" rows is RETRACTED; see section 6.)
 3. Family task shapes were calibrated on the public items' FORMAT only (option count, type, state shape; data/jev2.py
    docstring), never their text. I note this so the lead is aware; no text overlap exists (section 4).
 
