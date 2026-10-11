@@ -69,7 +69,10 @@ Under A1 the two sides are bit-identical, not merely within 1e-6.
 - **A5, padding and batch composition.** Within a row, the continuation batch (and its `cont_chunk` chunks, 4b0fb1d)
   and the padding width (`max len`, `MIN_CONT_WIDTH`) are functions of the content multiset (step 2), so they are
   invariant. Across rows, the shared-prefix eval path and `row_batch` group rows by request. A different
-  co-batched request can change float rounding under A1-violating kernels only.
+  co-batched request can change float rounding under A1-violating kernels only. Measured: on cpu-8 / torch 2.13
+  (job-8kqt9, job-44chn) one question scored alone vs batched with two others differs by max |Δp| 2.6e-8 (seed 1),
+  on this branch and on 42388c2c alike (SYM_CHECK saw 0 on torch 2.14.1). The bitwise claim is per request
+  (same batch composition); across co-batched requests it holds only up to such rounding.
 - **A6, content normalisation: leading and trailing whitespace is stripped.** A description is `.strip()`ped before
   it is rendered (`option_text`), so `" yes"`, `"yes"` and `"yes \n"` are ONE content: bit-equal probability and one
   `tie_set` (exact duplicates). Inner whitespace is content (`"a b"`, `"a  b"`, `"a\tb"`, NBSP all differ). The
