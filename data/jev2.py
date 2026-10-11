@@ -1128,3 +1128,14 @@ def generate(families=STAGE_A) -> Iterator[dict]:
         yield from gen_fact(p["fact"]["synth"], p["fact"]["boolq"])
     if "tool_selection" in families:
         yield from gen_tools(p["tool_selection"]["glaive"], p["tool_selection"]["synth"])
+    fb = [f for f in STAGE_B if f in families]
+    if fb:
+        from data.jev2b import generate_b
+        yield from generate_b(fb)
+
+
+# stage b generators (data/jev2b.py) register their specs and plan here; imported last (jev2b imports this module)
+from data.jev2b import GEN_SPECS_B, PLAN_B  # noqa: E402
+
+GEN_SPECS.update(GEN_SPECS_B)
+PLAN.update(PLAN_B)
