@@ -72,7 +72,8 @@ def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
          family_src: dict[str, str] | None = None, exclude: set[tuple[str, str]] | None = None,
          family_cap: dict[str, int] | None = None, score_share: float | None = None,
          pool_exclude: dict[str, set[str]] | None = None, dedupe_sources: set[str] | None = None,
-         deprioritize_empty_score: bool = False, stats: dict | None = None) -> tuple[dict, dict]:
+         deprioritize_empty_score: bool = False, stats: dict | None = None,
+         exclude_subs: set[str] | None = None) -> tuple[dict, dict]:
     """Pass 1: per family the (n_train_f + n_calib) smallest-rank ids; returns ({id: (family, role)}, family counts).
     ``family_src`` {family: source dir name}: that family is drawn ONLY from that source. ``exclude`` {(family, source
     dir name)}: that family's rows of that source are never drawn (e.g. jev1's long_policy). ``family_cap`` {family:
@@ -100,6 +101,12 @@ def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
                 stats["pool_excluded"][d.name] += 1
                 continue
             stats["pool_rows_after_exclude"][d.name] += 1
+            if exclude_subs:  # whole sub-families dropped (e.g. jev2b prob_indep: constant gold)
+                sub = next((v.get("sub") for v in (r.get("aug") or {}).values() if isinstance(v, dict) and v.get("sub")),
+                           None)
+                if sub in exclude_subs:
+                    stats.setdefault("sub_excluded", collections.Counter())[sub] += 1
+                    continue
             if (fam in family_src and family_src[fam] != d.name) or (fam, d.name) in exclude:
                 continue
             keep = min(n_train, family_cap.get(fam, n_train)) + n_calib
@@ -206,6 +213,8 @@ def main(argv=None) -> int:
     ap.add_argument("--pool-exclude", action="append", default=[], help="SRC_DIR_NAME=PATH: ids to drop from that pool")
     ap.add_argument("--pool-exclude-sha", action="append", default=[], help="SRC_DIR_NAME=SHA256 of that exclusion file")
     ap.add_argument("--pool-rows", action="append", default=[], help="SRC_DIR_NAME=N: assert N rows after exclusion")
+    ap.add_argument("--exclude-sub", action="append", default=[],
+                    help="sub-family name (aug.<draw>.sub): never drawn (repeatable)")
     ap.add_argument("--dedupe-source", action="append", default=[],
                     help="record source (e.g. glaive): at most one row per request text (state) in the draw")
     ap.add_argument("--deprioritize-empty-score", action="store_true",
@@ -236,7 +245,7 @@ def main(argv=None) -> int:
         pex_rec[name] = {"file": str(path), "sha256": got, "n_ids": len(ids_)}
     stats: dict = {}
     roles, counts = plan(srcs, a.train_per_family, a.calib_per_family, a.seed, fsrc, excl, caps, a.score_share,
-                         pex, set(a.dedupe_source), a.deprioritize_empty_score, stats)
+                         pex, set(a.dedupe_source), a.deprioritize_empty_score, stats, set(a.exclude_sub))
     for name, n in (x.split("=", 1) for x in a.pool_rows):
         if stats["pool_rows_after_exclude"][name] != int(n):
             raise SystemExit(f"pool {name}: {stats['pool_rows_after_exclude'][name]} rows after exclusion != expected {n}")
@@ -292,6 +301,7 @@ def main(argv=None) -> int:
            "exclude": sorted("=".join(x) for x in excl), "family_cap": caps, "score_share_target": a.score_share,
            "pool_exclusions": pex_rec, "pool_rows_after_exclude": dict(stats["pool_rows_after_exclude"]),
            "dedupe_sources": sorted(a.dedupe_source), "deduped_by_family": dict(stats["deduped"]),
+           "excluded_subs": dict(stats.get("sub_excluded", {})),
            "deprioritize_empty_score": a.deprioritize_empty_score,
            "empty_score_short_by_family": dict(stats.get("empty_score_capped", {})),
            "train_type_mix": {t: round(n / max(1, sum(types["train"].values())), 4) for t, n in types["train"].items()},

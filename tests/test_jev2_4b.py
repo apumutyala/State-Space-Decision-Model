@@ -112,8 +112,8 @@ def test_t_constrained_by_noul_band():
 
 def test_pools_jev2a_wired_placeholders_declared():
     pools = CELL["train_set"]["pools"]
-    assert pools["jev2a"]["status"] == "gated" and len(pools["jev2a"]["pointer_sha256"]) == 64
-    assert {pools["jev2b"]["status"], pools["jev2c"]["status"]} == {"PLACEHOLDER"}
+    assert pools["jev2a"]["status"].startswith("gated") and len(pools["jev2a"]["pointer_sha256"]) == 64
+    assert all(len(pools[k]["pointer_sha256"] or "") == 64 for k in ("jev1", "jev2a", "jev2b", "jev2c"))
     assert len({f for p in pools.values() for f in p["families"]}) == 18
     assert "--exclude long_policy=bschema-draw-jev1" in CELL["train_set"]["note"]
     assert "--score-share 0.25" in CELL["train_set"]["note"] and CELL["train_set"]["score_share"] == 0.25
@@ -139,7 +139,7 @@ def test_schedule_and_cost():
 def test_jevkit_additions_and_r2_untouched():
     jk = PARAMS["jevkit"]
     assert jk["perturb_ops"] == ["option_reverse", "option_shuffle", "key_relabel"]
-    assert jk["tfit"]["records"].startswith("m2-jev12-calib/")
+    assert jk["tfit"]["records"].startswith("m2-jev2mix-calib/")
     for k in ("price", "shim_calibration", "stock_shim", "paired_primary"):
         assert jk[k] == R2["jevkit"][k]
     assert not {"tfit", "perturb_ops", "covered_families"} & set(R2["jevkit"])

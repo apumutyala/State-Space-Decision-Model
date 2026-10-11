@@ -39,7 +39,7 @@ def _no_cache_cls():
     return NoCache
 
 
-@pytest.mark.parametrize("layout", ["ordered", "g1v2", "sym-fork"])
+@pytest.mark.parametrize("layout", ["ordered", "sym-fork"])  # g1v2 needs the shim template (tokenizer), not the toy one
 def test_plan_then_score_builds_rows_once_and_outputs_identical(monkeypatch, layout):
     import heads.decide_backend as DB
     from decide import Decider

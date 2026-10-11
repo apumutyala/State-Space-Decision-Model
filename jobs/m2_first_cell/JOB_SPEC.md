@@ -638,6 +638,7 @@ The text below is ready to paste.
 
 - **Amendment 2 addendum (score-type weighting, 2026-10-10, before any JEV2 run):** score-type rows (4-5-level ratings) are ~25% of the train rows via per-family score quotas in the balanced sampler (`--score-share 0.25`); total rows, steps and cost are unchanged. Provisional 12-family type mix: choice 41.0% / noul 34.0% / score 25.1%.
 
+<<<<<<< HEAD
 - **Amendment 2 addendum 2 (data re-gate, 2026-10-10, before any JEV2 run):** jev2a excludes the 105 re-gate ids (claude/ev-jev2a-regate @97d55f2e, file sha256 aeb8027a..., asserted at build with 29,895 rows after). jev2c is cleared (empty list) and wired as the only long_policy pool (b9f82ab1). Glaive rows are deduped to one per request text. Score rows with empty level criteria are used last and capped at half a family score quota. The build and the cell fail closed on any truncated training row or any JevBench item refused for length. Provisional 13-family mix: choice 40.5% / noul 34.5% / score 25.1%. Only jev2b remains.
 
 ## Modes `jev2_h2o_shim` / `jev2_h2o_sym` (A-PREREG-JEV2-H2O: the JEV2-4B recipe initialised from H2O-Lightning-4B v1.1)
@@ -724,3 +725,18 @@ shim), and only after the eval-only H2O job (claude/lead-h2o-eval) has landed an
     fitted on the same slice only. We never select or fit anything on public-231.
   - **Caveat:** open-split Intelligence only (the sealed split is not reproducible locally); never claimed as a board
     score. Labelled "H2O-Lightning-4B v1.1 + SSDM" everywhere; the control is the same revision.
+=======
+- **Amendment 2 addendum 2 (data re-gate, 2026-10-10, before any JEV2 run):** jev2a excludes the 105 re-gate ids (claude/ev-jev2a-regate @97d55f2e, file sha256 aeb8027a..., asserted at build with 29,895 rows after). jev2c is cleared (empty list) and wired as the only long_policy pool (b9f82ab1). Glaive rows are deduped to one per request text. Score rows with empty level criteria are used last and capped at half a family score quota. The build and the cell fail closed on any truncated training row or any JevBench item refused for length. (Superseded by the final addendum below.)
+- **Amendment 2 addendum (lead, 2026-10-11, all three draws cleared, BEFORE submission; final data):**
+    - **Mix:** `bschema-draw-jev2-mix` over 4 pools:
+      - jev1, with long_policy excluded and adequacy at 293.
+      - jev2a, minus the 105 re-gate ids. claude/ev-jev2a-regate @97d55f2e; exclusion file sha256 aeb8027a..., asserted at build with 29,895 rows after.
+      - jev2c, the only long_policy pool. Re-gated with an empty list (@cad1506a); 1,448 / 1,500 rows are > 2,048 tokens, max 3,347.
+      - jev2b. Re-gated with an empty list (@7a742d6a; exclusion file sha256 01ba4719..., 7,500 rows asserted). Its prob_indep sub-family is DROPPED (constant gold "same" in all 124 rows).
+    - **Size:** 18 families x 586 train rows (adequacy 293) = 10,255 rows, each seen once. Calibration slice: 200 per family, disjoint from training, ids sha256 pinned in the cell config.
+    - **Score rows:** ~25% of the train rows via per-family score quotas in the balanced sampler (jevkit score items are 7.8% of public items but ~1/3 of Intelligence). The final train type mix is in the cell config `train_set.type_mix_note`.
+    - **Glaive:** rows (glaive_fc) are deduped to one per request text.
+    - **Reverted:** the empty-level-criteria score down-weighting (a checker false positive; the real count is 0).
+    - **No truncation:** the cell fails closed on any training row dropped for length (`assert_no_truncation`), and the screen fails closed on any JevBench item refused for length.
+    - **Unchanged:** budget (worst case $79.88), steps (max 1,281, floor 600, short-budget continuation), loss (noul eps 0, choice/score 0.05), the noul band gate, PRIMARY, CI method and G1.
+>>>>>>> origin/stack/qwen35/jev2-4b

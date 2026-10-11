@@ -1,15 +1,14 @@
 {
- "PROVISIONAL": "PROVISIONAL (2026-10-10): the 13 families cleared so far (jev1 minus long_policy, adequacy 293; jev2a minus the 105 re-gate ids; jev2c long_policy) to prove the package; 7,325 train rows < the cell's n_train_records 10,255, so a submit would fail closed at train_set verify. Rebuild with jev2b and refill these pins before any submit.",
- "build": "bschema-draw-jev2-mix (scripts/jev12_balanced_draw.py over bschema-draw-jev1, bschema-draw-jev2a, bschema-draw-jev2c)",
+ "build": "bschema-draw-jev2-mix (scripts/jev12_balanced_draw.py over bschema-draw-jev1, bschema-draw-jev2a, bschema-draw-jev2c, bschema-draw-jev2b)",
  "location": "ssdm-data/m2/build/bschema-draw-jev2-mix/ (outside git; deterministic)",
- "records_uncompressed_sha256": "6bbfa0bbbbd30300fb95aac863d7575a7200478388574f13117a09b2575c4eec",
+ "records_uncompressed_sha256": "42b80cbd63e21eb477b7ff3f0b53f6c5dc4df53d082f7e550ae7b001f7a0ad23",
  "manifest": "bschema-draw-jev2-mix.manifest.jsonl.gz",
- "manifest_uncompressed_sha256": "f0d25a48416be4cd5211f8edc4b9f2235bd0877dc53a7675f1964803c5553e8d",
+ "manifest_uncompressed_sha256": "0ac65b5fe98d02710c3d09845af894a3969c822c54cd40e75e4473d03eefb35a",
  "content_map": "bschema-draw-jev2-mix.content.jsonl.gz",
- "content_map_uncompressed_sha256": "a850145ecbd30432cae22f2e9ae4860d372ce7af67713fd3ce50884fbc3d5672",
- "n_records": 7325,
+ "content_map_uncompressed_sha256": "f241b5f9e0c9124b502dd7de453b73dbc90a149b20e8224540b989b95659a5be",
+ "n_records": 10255,
  "role": "train",
- "ids_sha256": "4cbf581a45d853a61acd8e7c902c52fc2c550a61ef167796a8037478c8169610",
+ "ids_sha256": "32dfc20e06bd47acef3f3fb096dde40b25423b4e86f98a455156a78e1a0ed027",
  "schema": "ssdm-train-v0, one question per row (qid 'q'), JevBench request shape",
  "excludes_cohort": "inherited from every source draw's own gates (each source pointer's excludes_cohort)",
  "builder": {
@@ -18,5 +17,7 @@
  },
  "templates_verified": [
   "jrt-h2o-shim:qwen3.5-4b"
- ]
+ ],
+ "build_command": "python -X utf8 -I scripts/jev12_balanced_draw.py --src <data>/m2/build/bschema-draw-jev1 --src <data>/m2/build/bschema-draw-jev2a --src <data>/m2/build/bschema-draw-jev2c --src <data>/m2/build/bschema-draw-jev2b --exclude long_policy=bschema-draw-jev1 --family-cap adequacy=293 --score-share 0.25 --pool-exclude bschema-draw-jev2a=receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt --pool-exclude-sha bschema-draw-jev2a=aeb8027aaaebdb6fad2b24f8b5bee9d37c4e176fcc4e18ad0d366acf1b579705 --pool-rows bschema-draw-jev2a=29895 --pool-exclude bschema-draw-jev2b=receipts/2026-10-10-jev2b-regate/jev2b_exclude_ids.txt --pool-exclude-sha bschema-draw-jev2b=01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b --pool-rows bschema-draw-jev2b=7500 --pool-rows bschema-draw-jev2c=1500 --exclude-sub prob_indep --dedupe-source glaive_fc --train-per-family 586 --calib-per-family 200 --name bschema-draw-jev2-mix --out <data>/m2/build",
+ "draw_report": "draw-report.json (beside records.jsonl.gz): n_train 10,255, n_calib 3,600, type mix, exclusions"
 }

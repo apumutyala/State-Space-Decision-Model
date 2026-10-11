@@ -286,7 +286,9 @@
    "heads/decide_backend.py",
    "jobs/sym_eval/perturb_eval.py",
    "receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt",
-   "data/manifests/bschema-draw-jev2c.pointer.json"
+   "data/manifests/bschema-draw-jev2c.pointer.json",
+   "receipts/2026-10-10-jev2b-regate/jev2b_exclude_ids.txt",
+   "data/manifests/bschema-draw-jev2b.pointer.json"
   ]
  },
  "mode": "jev2_q35_4b",
@@ -322,7 +324,7 @@
    "records": "m2-jev2mix-calib/records.jsonl.gz",
    "lo": 0.25,
    "hi": 4.0,
-   "ids_sha256": "56cc795228bae6dfb686fccad751c98eb2a27ae9b08ce37d5206ff36e8ab1a28"
+   "ids_sha256": "792127c9e8ac0d98b3353d77340a01f36d25b591c4a892f576c859001432179f"
   },
   "perturb_ops": [
    "option_reverse",
