@@ -1,0 +1,131 @@
+{
+ "ops": [
+  "option_reverse",
+  "option_shuffle",
+  "key_relabel"
+ ],
+ "seeds": [
+  0
+ ],
+ "n_base": 231,
+ "n_perturbed": 565,
+ "flip_report": {
+  "per_operator": {
+   "key_relabel": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_reverse": {
+    "n": 213,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_shuffle": {
+    "n": 213,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   }
+  },
+  "per_operator_type": {
+   "key_relabel|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_reverse|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_reverse|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_shuffle|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_shuffle|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   }
+  },
+  "average_flip_rate": 0.0,
+  "pooled": {
+   "n": 565,
+   "invalid": 0,
+   "flips": 0,
+   "flip_rate": 0.0,
+   "mean_tv_shift": 0.0,
+   "max_tv_shift": 0.0,
+   "max_abs_dp": 0.0
+  },
+  "reorder_flips": 0,
+  "note": "operators are jevkit's own; MD1's exact 8 operators are unpublished"
+ },
+ "duplicate_tie_items": [],
+ "max_dp_bound": 0.001,
+ "g1_pass": true,
+ "status": {
+  "base": {
+   "ok": 231
+  },
+  "perturbed": {
+   "ok": 565
+  }
+ },
+ "row_identity": {
+  "option_reverse": {
+   "n": 213,
+   "identical": 213,
+   "differ_ids": []
+  },
+  "option_shuffle": {
+   "n": 213,
+   "identical": 213,
+   "differ_ids": []
+  },
+  "key_relabel": {
+   "n": 139,
+   "identical": 139,
+   "differ_ids": []
+  }
+ },
+ "rows_all_identical": true
+}

@@ -1,0 +1,21 @@
+{
+ "job": "jev_host_scan",
+ "m1_sha": "c1936746d5e68942e788f51c1c56532485ecf7e4",
+ "branch_commit": "c1936746d5e68942e788f51c1c56532485ecf7e4",
+ "builder": "jobs.common.launch",
+ "params": "jobs/jev_host_scan/job_params_h2o_eval_v11.json",
+ "dockerfile_sha256": "3649470b92d468db276fb49f2173aff8a268a93d6b5fbbb2437f62246445257b",
+ "files_sha256": {
+  "jevkit/data/jevbench_public_pin.json": "5ce5268d48ef97a973446691f030703eccb008b23ccb5892ffa83eb1795a35e2",
+  "jobs/jev_host_scan/h2o_eval.sh": "491858ab836db20710047c6b9993fe70b18dac8f4d13ca8c5e87a1ec93fa77d0",
+  "jobs/jev_host_scan/h2o_slice_ids.txt": "204e9bfe20d29ca95bd895ff368cf26f7b282635d615aeb85df47e69fcba2a9c",
+  "jobs/jev_host_scan/job_params_h2o_eval_v11.json": "4795ea3a760800df849dd8c3c7f782ea5eec60501295c20d7d6554aba4c73efa",
+  "jobs/jev_host_scan/snapshots/h2o-lightning-4b.sha256": "458f8642754547b02050e60f373c461dd19f2046e76fd798262fed4652042202"
+ },
+ "data_sha256": {
+  "data/jev2a/records.jsonl.gz": "9da7e35fa5b27a3aa4082f2db5d23a71176810740803f41864173859d309a9a2",
+  "data/jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/easy.jsonl": "231df3c2c8e88a1a8c137ebe85de96ba70fabd330849098ac7b3c52c70b7172b",
+  "data/jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/hard.jsonl": "89e9e6becb33ed88c1de7d42dcc87531b2fb64cfaef4e1986faf7c37b3f80ebb",
+  "data/jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/original.jsonl": "5c2414edb3006b8bfcb70fda433f0f9ca015759433849f8d3104328a1f7c4180"
+ }
+}

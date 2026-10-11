@@ -1,0 +1,77 @@
+{
+ "cmd": [
+  "python",
+  "-X",
+  "utf8",
+  "-m",
+  "jobs.jev_host_scan.h2o_eval",
+  "run",
+  "--model-dir",
+  "/root/.cache/huggingface/hub/models--h2oai--h2o-lightning-4b/snapshots/193ad740925b176a3b70a5a13a7cff2f2fadd01e",
+  "--slice",
+  "/tmp/jev-h2o-eval/out/slice.json",
+  "--records",
+  "/data/jev2a/records.jsonl.gz",
+  "--out",
+  "/tmp/jev-h2o-eval/out"
+ ],
+ "total": 1462,
+ "cap_min": 30.0,
+ "checks": [
+  {
+   "elapsed_min": 4.000080184141795,
+   "rows": 1462,
+   "projected_min": 4.000080184141795
+  },
+  {
+   "elapsed_min": 4.25008530219396,
+   "rows": 1462,
+   "projected_min": 4.25008530219396
+  },
+  {
+   "elapsed_min": 4.50009020169576,
+   "rows": 1462,
+   "projected_min": 4.50009020169576
+  },
+  {
+   "elapsed_min": 4.750094636281331,
+   "rows": 1462,
+   "projected_min": 4.750094636281331
+  },
+  {
+   "elapsed_min": 5.000098752975464,
+   "rows": 1462,
+   "projected_min": 5.000098752975464
+  },
+  {
+   "elapsed_min": 5.250102484226227,
+   "rows": 1462,
+   "projected_min": 5.250102484226227
+  },
+  {
+   "elapsed_min": 5.500105535984039,
+   "rows": 1462,
+   "projected_min": 5.500105535984039
+  },
+  {
+   "elapsed_min": 5.750108583768209,
+   "rows": 1462,
+   "projected_min": 5.750108583768209
+  },
+  {
+   "elapsed_min": 6.000112152099609,
+   "rows": 1462,
+   "projected_min": 6.000112152099609
+  },
+  {
+   "elapsed_min": 6.250116495291392,
+   "rows": 1462,
+   "projected_min": 6.250116495291392
+  }
+ ],
+ "exclude_startup": true,
+ "startup_s": 45.0,
+ "exit": 0,
+ "rows_done": 1462,
+ "elapsed_min": 6.500124422709147
+}

@@ -1,0 +1,28 @@
+{
+ "T_J": 0.6762901683695771,
+ "T_by_type": {
+  "choice": 0.6932408485000292,
+  "noul": 0.6232388803287231,
+  "score": 0.776853403906801
+ },
+ "T_by_family": {
+  "fact": 0.39423912305778674,
+  "judge_hard": 0.8142656388821291,
+  "multi_hop": 0.6984084199279721,
+  "temporal_numeric": 0.8244069494467582,
+  "tool_selection": 0.5049756453090583
+ },
+ "noul_floor": 0.801,
+ "arms": {
+  "a_T": 231,
+  "a_Ttype": 231,
+  "a_Tfam": 231,
+  "b_native": 231,
+  "b_shimcal": 231
+ },
+ "shim_temperature_by_type": {
+  "choice": 0.8,
+  "noul": 0.8,
+  "score": 0.8
+ }
+}

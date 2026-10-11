@@ -1,0 +1,86 @@
+{
+ "revision": "193ad740925b176a3b70a5a13a7cff2f2fadd01e",
+ "items": 231,
+ "phases": {
+  "slice": {
+   "rows": 1000,
+   "failed": 0,
+   "wall_s": 80.9
+  },
+  "h2o": {
+   "items": 231,
+   "status": {
+    "ok": 231
+   },
+   "wall_s": 20.9
+  },
+  "c_symfork": {
+   "items": 231,
+   "status": {
+    "ok": 231
+   },
+   "wall_s": 49.0
+  },
+  "g1_c_symfork": {
+   "g1_pass": true,
+   "rows_all_identical": true,
+   "wall_s": 172.1
+  },
+  "g1_h2o": {
+   "g1_pass": false,
+   "rows_all_identical": null,
+   "wall_s": 44.9
+  }
+ },
+ "load_s": 14.8,
+ "plugin": {
+  "model_id": "h2oai/h2o-lightning-4b",
+  "files": {
+   "weights": "c65443b1d28891ffc4b6f7d90028c542d6ccb24c2f9cd6a46a8294a44ab0ffae",
+   "tokenizer": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42",
+   "config": "6240a991871a574ff04525c90d8f75a2a11bad2f7012ab0774cbc69aca745859"
+  },
+  "notes": {
+   "model_class": "Qwen3_5ForCausalLM",
+   "fp32_head": true,
+   "unexpected_keys": {
+    "n": 0,
+    "first": []
+   },
+   "layer_types": {
+    "full_attention": 8,
+    "linear_attention": 24
+   },
+   "final_logit_softcapping": null
+  },
+  "max_context": 262144,
+  "kernel_stack": {
+   "transformers": "5.17.0",
+   "torch": "2.13.0+cu126",
+   "flash-linear-attention": "0.5.2",
+   "fla-core": "0.5.2",
+   "mamba-ssm": null,
+   "causal-conv1d": null,
+   "triton": "3.7.1"
+  }
+ },
+ "shim": {
+  "temperature_by_type": {
+   "choice": 0.8,
+   "noul": 0.8,
+   "score": 0.8
+  },
+  "noul_floor": 0.801,
+  "labels": 255,
+  "system": "You are a decision engine. You read a record and answer one question about it by choosing exactly one option. Reply with a single letter.",
+  "label_ids_sha256": "5cf6a26f4757edcfe40d1808a90a20640ba72d7453e039ad093c3fc4f1edab53"
+ },
+ "symfork_spec": {
+  "id": "jrt-h2o-shim:qwen3.5-4b",
+  "pinned_identity": true,
+  "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+ },
+ "max_memory_allocated_gib": 10.35,
+ "gpu": "NVIDIA H100 80GB HBM3",
+ "wall_s": 386.0
+}

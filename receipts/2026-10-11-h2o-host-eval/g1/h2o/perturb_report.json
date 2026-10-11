@@ -1,0 +1,113 @@
+{
+ "ops": [
+  "option_reverse",
+  "option_shuffle",
+  "key_relabel"
+ ],
+ "seeds": [
+  0
+ ],
+ "n_base": 231,
+ "n_perturbed": 565,
+ "flip_report": {
+  "per_operator": {
+   "key_relabel": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 6,
+    "flip_rate": 0.04316546762589928,
+    "mean_tv_shift": 0.028483947774901687,
+    "max_tv_shift": 0.4326477688917763,
+    "max_abs_dp": 0.43264776889177636
+   },
+   "option_reverse": {
+    "n": 213,
+    "invalid": 0,
+    "flips": 6,
+    "flip_rate": 0.028169014084507043,
+    "mean_tv_shift": 0.019890345933614956,
+    "max_tv_shift": 0.3285143237531231,
+    "max_abs_dp": 0.32851432375312306
+   },
+   "option_shuffle": {
+    "n": 213,
+    "invalid": 0,
+    "flips": 5,
+    "flip_rate": 0.023474178403755867,
+    "mean_tv_shift": 0.017352491790303726,
+    "max_tv_shift": 0.29692840668265014,
+    "max_abs_dp": 0.2955436512398958
+   }
+  },
+  "per_operator_type": {
+   "key_relabel|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 6,
+    "flip_rate": 0.04316546762589928,
+    "mean_tv_shift": 0.028483947774901687,
+    "max_tv_shift": 0.4326477688917763,
+    "max_abs_dp": 0.43264776889177636
+   },
+   "option_reverse|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 6,
+    "flip_rate": 0.04316546762589928,
+    "mean_tv_shift": 0.030479450963021477,
+    "max_tv_shift": 0.3285143237531231,
+    "max_abs_dp": 0.32851432375312306
+   },
+   "option_reverse|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_shuffle|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 5,
+    "flip_rate": 0.03597122302158273,
+    "mean_tv_shift": 0.02659050900240787,
+    "max_tv_shift": 0.29692840668265014,
+    "max_abs_dp": 0.2955436512398958
+   },
+   "option_shuffle|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   }
+  },
+  "average_flip_rate": 0.03160288670472073,
+  "pooled": {
+   "n": 565,
+   "invalid": 0,
+   "flips": 17,
+   "flip_rate": 0.03008849557522124,
+   "mean_tv_shift": 0.02104777553257702,
+   "max_tv_shift": 0.4326477688917763,
+   "max_abs_dp": 0.43264776889177636
+  },
+  "reorder_flips": 17,
+  "note": "operators are jevkit's own; MD1's exact 8 operators are unpublished"
+ },
+ "duplicate_tie_items": [],
+ "max_dp_bound": 0.001,
+ "g1_pass": false,
+ "status": {
+  "base": {
+   "ok": 231
+  },
+  "perturbed": {
+   "ok": 565
+  }
+ }
+}
