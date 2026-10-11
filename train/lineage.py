@@ -56,7 +56,7 @@ def weights_digest(module: torch.nn.Module, full: bool = False, sample: int = 40
     h = hashlib.sha256()
     named = []
     for name, p in module.named_parameters():
-        if name.endswith(("lora_A", "lora_B")):
+        if name.endswith(("lora_A", "lora_B", "scalar_a.logit_bias")):  # trained adapters, not the frozen backbone
             continue
         named.append((name.replace(".base.", "."), p))
     for name, p in sorted(named, key=lambda x: x[0]):
@@ -91,6 +91,8 @@ def backbone_config_identity(backbone) -> dict[str, Any]:
     }
     if getattr(backbone, "provenance", None):
         ident["provenance"] = backbone.provenance
+    if any(type(x).__name__ == "ScalarA" for x in m.modules()):  # heads.rwkv7_scalar_a (opt-in): another state
+        ident["rwkv7_scalar_a"] = True  # transition, so a checkpoint / cache of the other kind fails the lineage diff
     if getattr(backbone, "controlsafe", None):
         ident["controlsafe"] = backbone.controlsafe
     return ident

@@ -265,3 +265,137 @@ def test_off_path_bit_identical_to_parent():
     for k in parent:
         assert parent[k] == mine[k], k
     assert len(mine["lora_grad_sums"]) > 0 and math.isfinite(float.fromhex(mine["loss"]))
+
+
+# ------------------------------------------------------------------------------------------------ (A) wire level
+def _tie(opts: dict[str, str]) -> dict:
+    """sym_tie_info for a row whose continuation is a function of the description alone (as build_row_sym makes)."""
+    from heads.symmetric import SYM_WIRE_DIGITS, content_key
+
+    keys = {o: content_key([ord(ch) for ch in d]) for o, d in opts.items()}
+    return {"content_key": keys, "digits": SYM_WIRE_DIGITS}
+
+
+def _wire(probs: dict[str, float], opts: dict[str, str], tie: bool):
+    from decide.schema import wire_answer
+
+    q = {"type": "choice", "instructions": "x", "criteria": dict(opts)}
+    return wire_answer(q, probs, _tie(opts) if tie else None)
+
+
+def _relabel(opts: dict[str, str], probs: dict[str, float], new_ids: list[str]):
+    m = dict(zip(opts, new_ids))
+    items = [(m[o], d) for o, d in opts.items()][::-1]  # relabel AND reorder
+    return dict(items), {m[o]: p for o, p in probs.items()}, m
+
+
+def test_A_wire_near_tie_rounding_cannot_leak_a_relabel():
+    """Two DIFFERENT options 3e-5 apart: 4-digit wire rounding makes them an exact tie that a reader (jevkit
+    argmax_label, smallest id) breaks by id, so relabeling flips the read decision (teeth, old rule). With the sym tie
+    info the decision is taken at full precision BEFORE rounding and the wire keeps 12 digits: no flip."""
+    from jevkit.answers import argmax_label
+
+    opts = {"a1": "refund the card fee", "b2": "block the lost card", "c3": "explain the exchange rate"}
+    probs = {"a1": 0.40001, "b2": 0.40004, "c3": 0.19995}
+    content = {o: d for o, d in opts.items()}
+    o2, p2, m = _relabel(opts, probs, ["z9", "y8", "x7"])  # b2 -> y8 < z9 <- a1: the smallest id swaps sides
+    inv = {v: k for k, v in m.items()}
+    old0, old1 = _wire(probs, opts, False), _wire(p2, o2, False)
+    assert old0["probabilities"]["a1"] == old0["probabilities"]["b2"]  # rounding manufactured a tie
+    read0, read1 = argmax_label(old0["probabilities"]), argmax_label(old1["probabilities"])
+    assert content[read0] != content[inv[read1]]  # teeth: the reader's decision follows the ids
+    new0, new1 = _wire(probs, opts, True), _wire(p2, o2, True)
+    assert content[new0["choice"]] == content[inv[new1["choice"]]] == opts["b2"]  # the true (full-precision) argmax
+    read0, read1 = argmax_label(new0["probabilities"]), argmax_label(new1["probabilities"])
+    assert content[read0] == content[inv[read1]] == opts["b2"]
+    assert all(new0["probabilities"][o] == new1["probabilities"][m[o]] for o in opts)
+
+
+def test_A_wire_exact_ties_by_content_hash_and_duplicates_form_a_tie_set():
+    opts = {"a": "first text", "b": "second text", "c": "first text"}  # a, c duplicates; b different
+    probs = {"a": 0.3, "b": 0.3, "c": 0.3}
+    w0 = _wire(probs, opts, True)
+    for ids in (["q", "p", "r"], ["zz", "aa", "mm"], ["c", "a", "b"]):
+        o2, p2, m = _relabel(opts, probs, ids)
+        w1 = _wire(p2, o2, True)
+        inv = {v: k for k, v in m.items()}
+        assert opts[w0["choice"]] == opts[inv[w1["choice"]]]  # the content hash decides, never the id
+        assert sorted(opts[inv[x]] for x in w1["tie_set"]) == sorted(opts[x] for x in w0["tie_set"])
+    win = opts[w0["choice"]]
+    assert sorted(w0["tie_set"]) == sorted(o for o, d in opts.items() if d == win)
+
+
+def test_A_end_to_end_decide_wire_is_relabel_and_reorder_invariant():
+    from heads.inv_adapters import _model, _request
+    from heads.layout import ByteEncoder
+
+    m = _model("joint_record_sym")
+    rng = random.Random(23)
+    for s, o in H._cases(6, seed=4):
+        a = m.decide(_request(s, o), ByteEncoder(), layout="sym-fork", template="jrt-rwkv-g1-v2")["q"]
+        new = [(f"r{rng.randrange(10**6)}_{i}", c) for i, (_id, c) in enumerate(o)]
+        mp = {old: n for (old, _), (n, _) in zip(o, new)}
+        rng.shuffle(new)
+        b = m.decide(_request(s, new), ByteEncoder(), layout="sym-fork", template="jrt-rwkv-g1-v2")["q"]
+        assert mp[a["choice"]] == b["choice"] and a["confidence"] == b["confidence"]
+        assert all(a["probabilities"][k] == b["probabilities"][mp[k]] for k in a["probabilities"])
+        assert sorted(mp[x] for x in a["tie_set"]) == sorted(b["tie_set"])
+
+
+# ------------------------------------------------------------------------------------------------ identity (fail closed)
+def test_identity_scalar_a_in_lineage_weights_digest_unchanged():
+    from train.lineage import backbone_config_identity, backbone_identity, diff
+
+    plain, sw = _tiny(2), _tiny(2)
+    SA.enable_scalar_a(sw.model)
+    a, b = backbone_identity(plain), backbone_identity(sw)
+    assert "rwkv7_scalar_a" not in a and b["rwkv7_scalar_a"] is True
+    assert a["weights_digest"] == b["weights_digest"]  # the trainable bias is an adapter, not backbone weights
+    with torch.no_grad():
+        for p in SA.scalar_a_parameters(sw.model):
+            p.add_(1.0)
+    assert backbone_identity(sw)["weights_digest"] == a["weights_digest"]
+    assert diff({"backbone": a}, {"backbone": b}) == ["backbone.rwkv7_scalar_a"]  # trainer resume refuses
+    assert backbone_config_identity(plain) == {k: v for k, v in backbone_config_identity(sw).items()
+                                               if k != "rwkv7_scalar_a"}
+
+
+def test_identity_sym_layout_in_lineage():
+    from types import SimpleNamespace
+
+    from decide.prompt_g1v3 import G1V3W_ID
+    from heads.inv_adapters import _request
+    from heads.layout import ByteEncoder, build_row
+    from train.lineage import diff, layout_identity
+
+    s, o = H._cases()[0]
+    sym = [SimpleNamespace(row=build_row(_request(s, o), "q", ByteEncoder(), template="jrt-rwkv-g1-v2",
+                                         layout="sym-fork"))]
+    old = [SimpleNamespace(row=build_row(_request(s, o), "q", ByteEncoder(), template=G1V3W_ID, layout="g1v2"))]
+    assert diff({"layout": layout_identity(old)}, {"layout": layout_identity(sym)}) == ["layout"]
+
+
+def test_identity_parent_arm_refuses_mismatched_scalar_a(tmp_path):
+    import hashlib
+
+    from train.m2_gates import ARM_SCHEMA, IdentityMismatch, expected_parent_identity, read_arm_cache
+
+    stock = expected_parent_identity("rwkv7", {}, "chunked_lean")
+    swap = expected_parent_identity("rwkv7", {"rwkv7_scalar_a": True}, "chunked_lean")
+    assert set(stock) == {"parent", "repo", "revision", "wkv"} and swap == {**stock, "scalar_a": True}
+
+    def cache(d, parent):
+        d.mkdir()
+        text = json.dumps({"units": []})
+        (d / "u.json").write_text(text, encoding="utf-8")
+        man = {"schema": ARM_SCHEMA, "stages": {"g12": {"units_identity": {"x": 1}, "file": "u.json",
+                                                         "sha256": hashlib.sha256(text.encode()).hexdigest(),
+                                                         "arm": {"role": "parent", "parent": parent}}}}
+        (d / "arm.json").write_text(json.dumps(man), encoding="utf-8")
+        return d
+
+    stock_arm, swap_arm = cache(tmp_path / "s", stock), cache(tmp_path / "w", swap)
+    read_arm_cache(stock_arm, "g12", {"x": 1}, stock)
+    read_arm_cache(swap_arm, "g12", {"x": 1}, swap)
+    with pytest.raises(IdentityMismatch, match="scalar_a"):
+        read_arm_cache(stock_arm, "g12", {"x": 1}, swap)  # a scalar-a child never compares to a stock-parent arm

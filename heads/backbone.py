@@ -708,7 +708,10 @@ def load_rwkv7_hf_backbone(model_dir: str, device: str = "cuda", dtype: str = "b
         from heads.rwkv7_scalar_a import enable_scalar_a
 
         enable_scalar_a(lm)
-    return HiddenStateBackbone(lm.rwkv7, spec=BACKBONES["rwkv7-13.3b"], pad_id=0, fork_mode=fork_mode)
+    bb = HiddenStateBackbone(lm.rwkv7, spec=BACKBONES["rwkv7-13.3b"], pad_id=0, fork_mode=fork_mode)
+    if scalar_a:  # train.m2_gates.expected_parent_identity reads it: the comparator arm must carry the same swap
+        bb.provenance = {"rwkv7_scalar_a": True}
+    return bb
 
 
 def count_params(module: nn.Module, trainable_only: bool = False) -> int:

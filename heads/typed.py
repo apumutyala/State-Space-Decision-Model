@@ -85,9 +85,10 @@ class TypedOutput(nn.Module):
         return out
 
 
-def to_wire(question: dict, option_ids: list[str], log_probs: torch.Tensor) -> dict:
-    """SystemOne answer via the m0 adapter's ``wire_answer`` (same rounding and tie rules)."""
+def to_wire(question: dict, option_ids: list[str], log_probs: torch.Tensor, tie: dict | None = None) -> dict:
+    """SystemOne answer via the m0 adapter's ``wire_answer`` (same rounding and tie rules; ``tie`` = sym rows'
+    content-based ties, ``heads.symmetric.sym_tie_info``; None for every other layout: unchanged)."""
     from decide.schema import wire_answer
 
     probs = {oid: float(p) for oid, p in zip(option_ids, log_probs[: len(option_ids)].detach().exp().cpu().tolist())}
-    return wire_answer(question, probs)
+    return wire_answer(question, probs, tie)

@@ -476,8 +476,13 @@ class Decider:
         ):
             return self._failure(request, request_id, "error", "backend_error", SAFE_MESSAGES["backend_error"],
                                  t_start, state_handle, work)
+        feats = getattr(result, "features", None) or {}
+        ties = {qid: (feats.get(qid) or {}).get("sym") for qid in questions}  # sym-fork rows (heads.symmetric)
         for qid, q in questions.items():
             option_ids = [o for o, _ in canonical_options(q)]
+            sym = ties.get(qid)
+            if sym is not None and sorted(sym.get("content_order") or []) == sorted(option_ids):
+                option_ids = list(sym["content_order"])  # softmax sums in content order: free of the id order
             q_logits = logits[qid]
             if not isinstance(q_logits, dict) or set(q_logits) != set(option_ids):  # every supplied option
                 return self._failure(request, request_id, "error", "backend_error", SAFE_MESSAGES["backend_error"],
@@ -500,7 +505,7 @@ class Decider:
             temps[qid] = temp
             entropy[qid] = -sum(p * math.log(p) for p in served[qid].values() if p > 0)
 
-        answers = {qid: wire_answer(q, served[qid]) for qid, q in questions.items()}
+        answers = {qid: wire_answer(q, served[qid], ties.get(qid)) for qid, q in questions.items()}
         rules_diag = None
         if self.readout_rules:
             from .readout_rules import apply_rules
@@ -576,6 +581,10 @@ class Decider:
                 else:
                     stage["status"] = "unavailable_zero_served_mass"
                     stage["probabilities"] = None
+                sym = ties.get(qid)
+                if sym is not None and isinstance(sym.get("content_key"), dict):
+                    # sym-fork rows: select_actions breaks exact ties by content hash, as wire_answer does
+                    stage["content_key"] = dict(sym["content_key"])
                 pcp[qid] = stage
             ssdm["policy_conditioned_probabilities"] = pcp
         if self.enable_v0_1_deltas:
@@ -662,9 +671,22 @@ def select_actions(request: dict[str, Any], response: dict[str, Any]) -> dict[st
             if any(probs[o] != 0.0 for o in ids - set(allowed)) or any(
                     abs(probs[o] - base[o] / mass) > 1e-9 for o in allowed):
                 return defer("invalid_policy_conditioned")
-            best = max(allowed, key=lambda o: probs[o])  # allowed is sorted; ties use smallest ID
+            pmax = max(probs[o] for o in allowed)
+            top = sorted(o for o in allowed if probs[o] == pmax)
+            keys, extra = stage.get("content_key"), {}
+            if keys is None:
+                best = top[0]  # non-sym rows: ties use the smallest ID
+            else:
+                # sym-fork rows: the wire_answer rule. Exact ties between DIFFERENT contents go by content hash (never
+                # id); exact duplicates (equal content) form the tie_set, the relabel-invariant decision
+                if (not isinstance(keys, dict) or set(keys) != ids
+                        or not all(isinstance(v, str) for v in keys.values())):
+                    return defer("invalid_policy_conditioned")
+                k0 = min(keys[o] for o in top)
+                tie_set = sorted(o for o in top if keys[o] == k0)
+                best, extra = tie_set[0], {"tie_set": tie_set}
             actions[qid] = best
-            answers[qid] = {"type": "choice", "choice": best, "probabilities": dict(probs)}
+            answers[qid] = {"type": "choice", "choice": best, "probabilities": dict(probs), **extra}
         return {"status": "ok", "error": None, "action": "execute", "actions": actions, "answers": answers,
                 "abstention": {"abstained": False, "reason": None, "mechanism": "policy_action_boundary"}}
     except (KeyError, TypeError, ValueError, OverflowError, AttributeError, RequestRejected):

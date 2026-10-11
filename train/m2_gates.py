@@ -782,7 +782,10 @@ def expected_parent_identity(parent: str, provenance: dict | None = None, wkv: s
     if parent == "rwkv7":
         import third_party.rwkv7_hf as V
 
-        return {"parent": "rwkv7", "repo": V.REPO, "revision": V.REVISION, "wkv": str(wkv or "chunked")}
+        ident = {"parent": "rwkv7", "repo": V.REPO, "revision": V.REVISION, "wkv": str(wkv or "chunked")}
+        if (provenance or {}).get("rwkv7_scalar_a"):  # heads.rwkv7_scalar_a child: its comparator arm must be the
+            ident["scalar_a"] = True  # parent with the same swap at init (b = 0); a stock-parent cache is refused
+        return ident
     if parent == "q9af":
         from heads.backbone import Q9AF_BASE_REPO, Q9AF_BASE_REVISION
 

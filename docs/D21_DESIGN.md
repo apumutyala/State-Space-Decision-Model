@@ -53,11 +53,19 @@ order, measured at ≤ 1e-6.
    should be reported apart.
 2. Score levels keep their order, because it is part of the question.
 3. Duplicate descriptions get equal probability, so a single-id decision among them is impossible by symmetry.
-4. Wire rounding:
-   - `decide.schema.wire_answer` on this line still uses 4-digit rounding with smallest-id tie breaks. That is a
-     relabel leak at the wire, outside the model.
-   - The Qwen branch's `wire_answer(tie=…)` and `sym_tie_info` content ties are NOT ported yet. That port is the
-     serve-side follow-up before any eval claim.
+4. Wire rounding (ported from the Qwen branch):
+   - `decide.schema.wire_answer(tie=…)` gets the tie info from `heads.symmetric.sym_tie_info`, through
+     `DecisionModel.decide`, `DecisionModelBackend` features and `Decider`. `select_actions` applies the same rule.
+   - The decision is taken at full precision, BEFORE rounding:
+     - exact ties between DIFFERENT contents go by content hash;
+     - exact duplicates form `tie_set`.
+   - Probabilities are written with 12 digits, so 4-digit rounding cannot manufacture a tie that a reader breaks by
+     id.
+   - Receipts are the `test_A_wire_*` tests:
+     - a near-tie 3e-5 apart flips the jevkit reader under relabel with the old rule (teeth) and does not with the
+       sym rule;
+     - `DecisionModel.decide` output is relabel- and reorder-invariant end to end.
+   - Non-sym layouts pass `tie=None`, so their output is unchanged.
 5. Record grouping relies on the shared state prefix. This holds for every question of one request, because the sym
    prefix is `head + record: <state>` up to the state's end.
 
@@ -101,8 +109,16 @@ the per-layer decay ceiling from the weights. The per-step certificate `U_t = w_
 3. The output norms (GroupNorm) add local constants (F6).
 4. This is a statement about the state, not a safety claim on its own (SAFETY_SPEC §5.2). Decay bounds how long an
    injection persists, not whether it gets in.
-5. The parent identity: `expected_parent_identity` does not yet stamp `rwkv7_scalar_a`. Add it before a scalar-a cell
-   is scored, so a scalar-a child is never compared against the wrong parent arm.
+5. Identity, which fails closed:
+   - `train.lineage.backbone_config_identity` stamps `rwkv7_scalar_a: true` when the swap is installed, so the
+     trainer's resume / inference lineage diff refuses a checkpoint of the other kind.
+   - `weights_digest` excludes the trainable bias, as it excludes LoRA.
+   - The sym layout is already in the lineage's `layout` identity, and the backend identity carries `sym_version`.
+   - `expected_parent_identity` adds `scalar_a: true` for a scalar-a child, so `read_arm_cache` refuses a stock-parent
+     arm.
+   - TODO before a D21 Index gate: `jobs/m2_parent_arm` must be able to score the parent WITH the swap at init and
+     stamp `scalar_a` in its arm identity. Until then the gate refuses, which is the fail-closed direction.
+   - The off path adds no key, so existing D19/D20 caches still match.
 
 **Receipts (CPU, tiny random RWKV-7).** The WKV inputs are recorded on random token batches. For each (layer, batch,
 step, head):
@@ -151,8 +167,8 @@ cheaper first read is a **D21-screen**:
    The sym prefix shows only the option count. The joint mixer recovers cross-field context from the other
    questions' pooled option tokens, but the screen has to show it. If it costs more than the leak it removes (D19
    relabel flip 8.6%, job-andnb), keep (B) alone as D21b.
-3. **Wire-level relabel leak.** See (A), assumption 4. Port the content tie rules before any JevBench claim, or the
-   evidence lane's flip test will still see relabel flips from rounding.
+3. **Wire-level relabel leak.** Closed: see (A), assumption 4. The adapter path (`Decider`) is covered by the ported
+   code, but it has no test of its own on this line. The evidence lane's flip test is the end-to-end check.
 4. **Throughput.** Sym rows are scored as K forked continuations. On RWKV each costs one fixed-size state copy and no
    KV cache, so cost is O(K) copies independent of T. Price the K = 77–79 rows before packaging.
 
