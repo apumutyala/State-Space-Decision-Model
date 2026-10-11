@@ -1,0 +1,1067 @@
+{
+ "config": {
+  "_comment": "",
+  "seed": 0,
+  "head": "fork",
+  "head_kwargs": {},
+  "layout": "g1v2",
+  "template": "jrt-h2o-shim:qwen3.5-4b",
+  "loss_arm": "clef",
+  "lora_rank": 64,
+  "lr_head": 0.0003,
+  "lr_lora": 0.0001,
+  "warmup_steps": 50,
+  "batch_size": 1,
+  "grad_accum": 8,
+  "max_k": 16,
+  "t_ladder": [
+   512,
+   1024,
+   2048
+  ],
+  "n_train_records": 96000,
+  "n_eval_records": 0,
+  "min_train_items": 5000,
+  "max_steps": 1121,
+  "max_minutes": 270,
+  "min_steps": 1121,
+  "ckpt_every": 400,
+  "eval_every": 100000,
+  "tokenize_workers": 8,
+  "smoke": {
+   "rows": 2,
+   "max_k": 4,
+   "max_t": 512,
+   "lora_rank": 8,
+   "max_rel_feature_diff": 0.03,
+   "min_grad_cos": 0.99
+  },
+  "pass_rule": {
+   "window": 100,
+   "loss_drop_frac_min": 0.05,
+   "max_peak_gb": 76
+  },
+  "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+  "require_guard_readiness": true,
+  "calibration_role": "calibration",
+  "parent": "qwen35",
+  "eval_max_t": 2048,
+  "train_set": {
+   "pointer": "data/manifests/bschema-draw-jev1.pointer.json",
+   "heldout_excluded": {
+    "ids": [],
+    "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+    "reason": "the jev1 build reports 0 held-out D1-B hits (receipts/2026-10-10-jev1-draw); the heldout phase passes only if the whole set has 0 train.heldout hits"
+   },
+   "note": "no attack_clean / doc_clean pins: the build reports 0 attack_guard hits and 0 doc_overlap_guard fails (index af096960 + the JevBench public items 0fe994c4 / 211da3f1 / f9b94122), so the in-job heldout phase (train.attack_guard + train.doc_overlap_guard with train.jevbench_guard, agent-main 7c131f1) must find 0"
+  },
+  "act_ckpt": true,
+  "row_batch": 1,
+  "row_tokens": 0,
+  "row_plan": "min_cost",
+  "cont_plan": "single",
+  "compile_blocks": false,
+  "min_steps_note": "exit 26 if the measured step time cannot reach 600 optimiser steps (4,800 rows) inside max_minutes: below that the cell is not a meaningful first measurement; re-price instead of spending the evals",
+  "lora_rank_note": "r=64 on every arm (A-PREREG-SIZECLIFF: same LoRA rank); targets = every GDN in_proj_qkv / in_proj_z / out_proj, every attention q / k / v / o and every MLP projection (stock hybrid, heads.backbone.qwen35_spec from config.json)",
+  "variant": "jev1_q35_4b",
+  "train_max_k": 255,
+  "row_options": 160,
+  "train_max_k_note": "D8 code (#221 on agent-main): K cap of the training items only (train.run_cell.train_max_k; cell_items default, also used by the m2_gates lineage rebuild); max_k 16 remains the eval cap (train.m2_gates.unit_spec, run_cell eval_items). B1 100k-v2 carries rows with > 16 options (BANKING77 77-option catalogs, Glaive catalog views K 17-27), which max_k 16 alone would drop.",
+  "row_options_note": "execution guard (train.trainer.row_groups / single_cont_fits): <= 160 forked continuations per backbone call; a row with K > 160 runs alone, and a step whose summed K exceeds 160 runs per group under cont_plan single. Worst call = 8,192 prefix tokens + 160 copies ~= 53.8 GB (tvuat ladder 1,024 rung) + 80 x <= 87 MB ~= 61 GB < 76 GB stop (D8 sizing). Not in the TrainConfig hash; never binds on K <= 16 steps (8 x 16 = 128).",
+  "lr_schedule": "cosine",
+  "lr_min_frac": 0.1,
+  "dev_card_every": 200,
+  "dev_card_rows": 200,
+  "best_ckpt": true,
+  "collapse_guard": true,
+  "anti_collapse_note": "train/trainer.py TrainConfig anti-collapse fields; each absent key = the old behaviour. lr_schedule and collapse_* are in the config hash; dev_card_* and best_ckpt are operational. Each dev card scores 200 rows (budget it inside max_minutes).",
+  "execution_note": "row_batch 1: one row per backbone call (8 rows / optimiser step via grad_accum 8); act_ckpt true (heads/act_ckpt.py covers Qwen3.5 decoders); the cache fork reads each row's prompt once and forks its K continuations. row_plan / cont_plan / row_options only act with row_batch > 1 (train/trainer.py). The clock binds (max_steps 20,000).",
+  "v3w_note": "generic v3w (decide/v3w_generic.py, PINNED_SPEC_SHA256 'jrt-v3w-generic:qwen3.5' 2e4907ee...; 255 single-token codes after the Qwen answer prefix, word ids by unique first token, Qwen3.5 chat template with enable_thinking=False -> empty think block, budget 16,383). Bound to the snapshot's own tokenizer files on the box (run_cell / score_parent / m2_gates / screen): any other tokenizer or template fails closed.",
+  "qwen35": {
+   "repo": "Qwen/Qwen3.5-4B",
+   "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+   "config_sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+   "snapshot_sha256_file": "jobs/m2_first_cell/qwen35_4b_snapshot.sha256",
+   "note": "heads.backbone.qwen35_pin_check (repo@revision in QWEN35_STOCK + config.json sha256) before the tokenizer or any weight; the runner checks the whole snapshot against the manifest"
+  },
+  "shim_note": "template jrt-h2o-shim:qwen3.5-4b (decide/shim_format.py, pinned identity): the vendored, unmodified H2O-Lightning-4B v1.1 shim prompt (third_party/h2o_lightning_shim, the host scan's replica that matched H2O's card 205/231): Qwen chat turn, thinking off, the shim system text, 'record: / question: / options: A) name: desc', 'Answer:' prefill; option k = shim label k (A, B, ...), its continuation the ONE token of ' <label>' (the shim's own probe); bound to the snapshot's tokenizer files, any other tokenizer fails closed. Train rows == the shim prompt ids (and == transformers' whole-string tokenization = vLLM /tokenize): scripts/check_sizecliff_cpu.py.",
+  "cont_chunk": "auto",
+  "cont_chunk_candidates": [
+   8,
+   16,
+   32,
+   48,
+   64
+  ],
+  "cont_chunk_peak_frac": 0.85,
+  "lr_horizon_steps": 753,
+  "budget_note": "A-PREREG-JEV1-4B: 1,121 optimiser steps (= the size-cliff 4B / 2B), the 4B r4's LR horizon 753. Clock 270 min (r2): the jev1 data mix MEASURED 10.92 s/step at job-v6qm3's step-10 rate check (exit 26: 979 affordable < 1,111 needed in 180 min; jev1 rows carry more options than r4's DI rows), so ceil(1,121 x 10.92 x 1.3 / 60) = 266 -> 270. Cell cap = 270 + tokenize 10 + load / smoke / probe / ladder 15 + checkpoints 10 = 305. Everything else is r1's (job-v6qm3: guards, ladder T_max 2,048, cont_chunk 64 all passed)."
+ },
+ "data": {
+  "records_sha256": "824671c97070c0e61a40df8f0103ebeb6fddc557e0974a61226653887d57ceb7",
+  "n_train_records": 96000,
+  "tokenize_s": 41.9,
+  "n_train_items": 96000,
+  "n_eval_items": 1091,
+  "guard_manifests": {
+   "/opt/ssdm/m1/harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+   "/opt/ssdm/m1/harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+  },
+  "guard": {
+   "manifests": {
+    "/opt/ssdm/m1/harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+    "/opt/ssdm/m1/harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+   },
+   "n_ids": 47249,
+   "n_hashes": 48415,
+   "note": "",
+   "content_index": {
+    "path": "/tmp/m2-first-cell/out/guard/index-content-hashes.txt.gz",
+    "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+    "n": 24150
+   }
+  },
+  "max_k": 16,
+  "train_max_k": 255,
+  "cohort": {
+   "cohort": "m2-dev-cohort-v2",
+   "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 1670,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "train_set": {
+   "train_set": "bschema-draw-jev1 (data/jev1.py + scripts/jev1_build.py: JevBench-family draw from public train splits and deterministic generators)",
+   "pointer": "data/manifests/bschema-draw-jev1.pointer.json",
+   "pointer_sha256": "582ffe1cb34602473a847833758e06d69dbb6755594b4609e95f8fa39a2b464b",
+   "files_uncompressed_sha256": {
+    "records": "457351091067123f48de115f72124c2bae27696d37c42d7f0a00c7e347080dc5",
+    "manifest": "1d86bf2566f004a1d01100f68201c9f317f4c94b8a133f3512fa34458afa5674",
+    "content_map": "bc9c19adc0990f2b8541d92cbef8620daf5b6b4fb46b93c90c34bef21baf8ece"
+   },
+   "n_pool": 96000,
+   "heldout_excluded": [],
+   "drawn_heldout_scan": {
+    "n_texts": 96000,
+    "hits": 0,
+    "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5"
+   },
+   "held_out_in_set": {
+    "by_id": 0,
+    "by_content": 0
+   },
+   "n_drawn": 96000,
+   "draw_seed": 0,
+   "drawn_ids_sha256": "8faa38319bb5d8edf8f0fca11f534cd5e37d086805afd57e4b2febe7c370acab",
+   "lines_manifest_verified": 96000,
+   "cohort": {
+    "cohort": "m2-dev-cohort-v2",
+    "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+    "n": {
+     "dev": 835,
+     "calibration": 1000,
+     "retention": 1670,
+     "steer_dev": 1800,
+     "steer_gate": 1000
+    }
+   },
+   "cohort_v3_excluded": {
+    "n": 0,
+    "rule": "id OR normalized content OR source item OR key-free text held out by the cohort (train.cohort_v3)",
+    "cohort": {
+     "cohort": "m2-dev-cohort-v3",
+     "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+     "n": {
+      "dev": 835,
+      "calibration": 1000,
+      "retention": 39872,
+      "steer_dev": 1800,
+      "steer_gate": 1000
+     }
+    },
+    "drawn_overlap": 0
+   },
+   "attack_guard": {
+    "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+    "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+    "n_records": 96000,
+    "n_excluded": 0,
+    "excluded_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "per_set": {},
+    "per_template": {},
+    "n_heldout_excluded_overlap": 0,
+    "per_counts_include_heldout_excluded": true,
+    "check": "no hit",
+    "drawn_hits": 0
+   },
+   "doc_overlap_guard": {
+    "n_records": 96000,
+    "n_fail": 0,
+    "per_source_fail": {},
+    "per_reason": {},
+    "eval_rows_attributed_by_split": {},
+    "eval_rows_union_covered_by_split": {},
+    "secs": 54.0,
+    "jevbench": {
+     "n_fail": 0,
+     "n_fail_doc": 0,
+     "n_fail_exact": 0,
+     "index_sha256": "0fe994c40dfc70fa3a0cd711fa88abb7f439cb8f2546ecffd53e5ca232d3934b"
+    },
+    "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+    "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+    "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
+    "excluded_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "n_excluded": 0,
+    "allowlist_saved": {},
+    "n_heldout_excluded_overlap": 0,
+    "check": "no fail",
+    "drawn_fails": 0,
+    "n_pool_removed": 0
+   }
+  }
+ },
+ "weights_gb": 8.411531264,
+ "smoke": {
+  "rows": 2,
+  "rel_feature_diff": 0.013671875,
+  "grad_cos": 0.9986885190010071,
+  "pass": true,
+  "peak_gb": 9.354878976,
+  "lora_modules": {
+   "gdn": 72,
+   "attn": 32,
+   "mlp": 96
+  },
+  "pass_rule": {
+   "rows": 2,
+   "max_k": 4,
+   "max_t": 512,
+   "lora_rank": 8,
+   "max_rel_feature_diff": 0.03,
+   "min_grad_cos": 0.99
+  },
+  "act_ckpt": true
+ },
+ "cont_chunk_probe": {
+  "limit_gb": 64.6,
+  "candidates": [
+   8,
+   16,
+   32,
+   48,
+   64
+  ],
+  "points": {
+   "8": {
+    "ok": true,
+    "peak_gb": 11.104976896,
+    "step_s": 14.348603248596191
+   },
+   "16": {
+    "ok": true,
+    "peak_gb": 11.442384384,
+    "step_s": 11.757127046585083
+   },
+   "32": {
+    "ok": true,
+    "peak_gb": 11.442384384,
+    "step_s": 7.652520418167114
+   },
+   "48": {
+    "ok": true,
+    "peak_gb": 11.442384384,
+    "step_s": 7.073805332183838
+   },
+   "64": {
+    "ok": true,
+    "peak_gb": 11.442384384,
+    "step_s": 8.541443824768066
+   }
+  },
+  "chosen": 64,
+  "rows": [
+   {
+    "k": 5,
+    "t": 1677
+   },
+   {
+    "k": 5,
+    "t": 1609
+   },
+   {
+    "k": 5,
+    "t": 1481
+   },
+   {
+    "k": 5,
+    "t": 1469
+   },
+   {
+    "k": 5,
+    "t": 1447
+   },
+   {
+    "k": 12,
+    "t": 601
+   },
+   {
+    "k": 12,
+    "t": 599
+   },
+   {
+    "k": 5,
+    "t": 1434
+   }
+  ]
+ },
+ "ladder": {
+  "points": {
+   "512": {
+    "ok": true,
+    "peak_gb": 11.695118848,
+    "step_s": 11.761823415756226,
+    "row_len": 322,
+    "k": 16
+   },
+   "1024": {
+    "ok": true,
+    "peak_gb": 11.695118848,
+    "step_s": 7.567821264266968,
+    "row_len": 322,
+    "k": 16
+   },
+   "2048": {
+    "ok": true,
+    "peak_gb": 11.695118848,
+    "step_s": 7.605842351913452,
+    "row_len": 322,
+    "k": 16
+   }
+  },
+  "T_max": 2048,
+  "rate_check": {
+   "step_s": 7.567821264266968,
+   "minutes_left": 270,
+   "affordable_steps": 2140.642522371881,
+   "need_steps": 1121,
+   "too_slow": false
+  }
+ },
+ "dev_card_sample": {
+  "rows": 200,
+  "seed": 0,
+  "n": 200,
+  "n_pool": 1091,
+  "design": "hash-stratified by source: sha256(seed:id) within source, round-robin across sources",
+  "per_source": {
+   "anli": 17,
+   "boolq": 17,
+   "factchange": 17,
+   "gsm8k": 17,
+   "hellaswag": 17,
+   "mmlu_aux": 17,
+   "multi": 17,
+   "nq": 17,
+   "sst5": 16,
+   "toolace": 16,
+   "when2call": 16,
+   "winogrande": 16
+  },
+  "ids": [
+   "m2:anli:f72a52d8-bc79-4d01-9cac-0e2b588262cd/q1",
+   "m2:boolq:7138/choice",
+   "m2:factchange:stock:281:v1/reorder",
+   "m2:gsm8k:1817/field_1",
+   "m2:hellaswag:29296~inj:d1a:fake_correction/q1",
+   "m2:mmlu_aux:11565/field_1",
+   "m2:multi:m2:anli:618ebbc4-2082-4055-88ed-f402564989f9+m2:winogrande:38121/record_2_result",
+   "m2:nq:44060/doc_8",
+   "m2:sst5:7417/field_1",
+   "m2:toolace:9815/tool_6",
+   "m2:when2call:1008/field_1",
+   "m2:winogrande:28591/field_1",
+   "m2:anli:f2a12a5b-d176-4f66-a000-d2a375d90cf8/result",
+   "m2:boolq:6060/output",
+   "m2:factchange:schedule:279:v0/slot",
+   "m2:gsm8k:5828/answer",
+   "m2:hellaswag:8271/label",
+   "m2:mmlu_aux:58486/output",
+   "m2:multi:m2:sst5:6191+m2:boolq:6732/item_2_decision",
+   "m2:nq:74823/doc_15",
+   "m2:sst5:502/output",
+   "m2:toolace:10034/tool_1",
+   "m2:when2call:6103/choice",
+   "m2:winogrande:641/output",
+   "m2:anli:a0a7caff-822c-4fab-b14c-54fbd642a1bd/decision",
+   "m2:boolq:3839/field_1",
+   "m2:factchange:stock:239:v1/reorder",
+   "m2:gsm8k:4444/choice",
+   "m2:hellaswag:33919/output",
+   "m2:mmlu_aux:59992/result",
+   "m2:multi:m2:sst5:5556+m2:hellaswag:9567/ticket_1_q1",
+   "m2:nq:59831/doc_14",
+   "m2:sst5:3243/result",
+   "m2:toolace:2113/choice",
+   "m2:when2call:9588/field_1",
+   "m2:winogrande:16391/answer",
+   "m2:anli:b446ae0f-b599-40f7-8a77-66d812fc9e6c/choice",
+   "m2:boolq:446/output",
+   "m2:factchange:renewal:212:v1/refund",
+   "m2:gsm8k:3832/choice",
+   "m2:hellaswag:12348/field_1",
+   "m2:mmlu_aux:3074/output",
+   "m2:multi:m2:hellaswag:37992+m2:hellaswag:31014/case_1_decision",
+   "m2:nq:74823/doc_5",
+   "m2:sst5:1446/field_1",
+   "m2:toolace:4524/label",
+   "m2:when2call:13032/answer",
+   "m2:winogrande:23540/answer",
+   "m2:anli:4c9acad9-2409-4c38-9cad-2575549ceeb4/output",
+   "m2:boolq:322/q1",
+   "m2:factchange:spend_limit:202:v1/decision",
+   "m2:gsm8k:4196/result",
+   "m2:hellaswag:32058/output",
+   "m2:mmlu_aux:28771/answer",
+   "m2:multi:m2:anli:dcc2e3a1-5044-4212-b97b-8923d78b7ebc+m2:banking77:1876+m2:winogrande:38380+m2:anli:f115868d-3469-4f3b-a0ff-2ddd27e0cb8c/record_4_result",
+   "m2:nq:5989/doc_18",
+   "m2:sst5:87/decision",
+   "m2:toolace:9147/tool_1",
+   "m2:when2call:12892/result",
+   "m2:winogrande:12712/decision",
+   "m2:anli:07be24bb-6801-4639-9790-81cafe8441a4/field_1",
+   "m2:boolq:6579/choice",
+   "m2:factchange:spend_limit:10:v0/decision",
+   "m2:gsm8k:3505/output",
+   "m2:hellaswag:6388/label",
+   "m2:mmlu_aux:77182/output",
+   "m2:multi:m2:hellaswag:20878+m2:sst5:2719+m2:mmlu_aux:61961+m2:gsm8k:1457/ticket_1_label",
+   "m2:nq:43139/doc_12",
+   "m2:sst5:97/result",
+   "m2:toolace:8064/label",
+   "m2:when2call:12281/answer",
+   "m2:winogrande:7580/choice",
+   "m2:anli:ca5ce57a-e504-488e-919e-d77002a62f04/decision",
+   "m2:boolq:5896/choice",
+   "m2:factchange:spend_limit:376:v1~inj:d1a:system_note/decision",
+   "m2:gsm8k:250/label",
+   "m2:hellaswag:30898/label",
+   "m2:mmlu_aux:44872/label",
+   "m2:multi:m2:gsm8k:3969+m2:mmlu_aux:98415+m2:gsm8k:6430+m2:hellaswag:38584/record_1_decision",
+   "m2:nq:44060/doc_17",
+   "m2:sst5:6313/field_1",
+   "m2:toolace:9147/tool_4",
+   "m2:when2call:12914/field_1",
+   "m2:winogrande:34710/field_1",
+   "m2:anli:b6be2788-7376-4890-8326-c4d24739065f/field_1",
+   "m2:boolq:213/answer",
+   "m2:factchange:renewal:260:v0/refund",
+   "m2:gsm8k:4881/q1",
+   "m2:hellaswag:33182/answer",
+   "m2:mmlu_aux:99303/field_1",
+   "m2:multi:m2:anli:dcc2e3a1-5044-4212-b97b-8923d78b7ebc+m2:banking77:1876+m2:winogrande:38380+m2:anli:f115868d-3469-4f3b-a0ff-2ddd27e0cb8c/record_1_result",
+   "m2:nq:5989/doc_24",
+   "m2:sst5:1158/output",
+   "m2:toolace:5879/tool_0",
+   "m2:when2call:13440/field_1",
+   "m2:winogrande:18239/field_1",
+   "m2:anli:21546410-13eb-4ee1-9175-dbec36a1e465/choice",
+   "m2:boolq:4817/answer",
+   "m2:factchange:delivery:570:v1/next_step",
+   "m2:gsm8k:6383/answer",
+   "m2:hellaswag:5207/choice",
+   "m2:mmlu_aux:76691/output",
+   "m2:multi:m2:gsm8k:162+m2:banking77:2933/item_1_field_1",
+   "m2:nq:99113/doc_17",
+   "m2:sst5:405/decision",
+   "m2:toolace:5969/tool_3",
+   "m2:when2call:1023/label",
+   "m2:winogrande:12283/choice",
+   "m2:anli:c3f06916-90c0-4659-9e6a-394ff8796692~inj:d1a:fake_correction/label",
+   "m2:boolq:5095/q1",
+   "m2:factchange:stock:581:v0/reorder",
+   "m2:gsm8k:883~inj:d1a:fake_correction/label",
+   "m2:hellaswag:27731/output",
+   "m2:mmlu_aux:9257/output",
+   "m2:multi:m2:winogrande:18426+m2:winogrande:16819+m2:sst5:3568+m2:sst5:1592/item_2_result",
+   "m2:nq:8061/doc_8",
+   "m2:sst5:1991/field_1",
+   "m2:toolace:9147/tool_5",
+   "m2:when2call:10273~inj:hijack:disregard_task/q1",
+   "m2:winogrande:7138/label",
+   "m2:anli:6004f75b-3c95-49b2-af39-e9b3b544c722~inj:d1a:urgency/decision",
+   "m2:boolq:8527/result",
+   "m2:factchange:renewal:374:v0/refund",
+   "m2:gsm8k:4635/output",
+   "m2:hellaswag:26379/output",
+   "m2:mmlu_aux:80271/choice",
+   "m2:multi:m2:sst5:3167+m2:banking77:6827+m2:anli:28a8fd5a-a66c-4d20-953c-068d67093f88/ticket_3_decision",
+   "m2:nq:5989/doc_0",
+   "m2:sst5:2344/answer",
+   "m2:toolace:7613/tool_4",
+   "m2:when2call:13366/choice",
+   "m2:winogrande:32738/answer",
+   "m2:anli:10cf4d11-39d0-4488-9993-5e4d429a0214/answer",
+   "m2:boolq:1460/choice",
+   "m2:factchange:renewal:554:v0/refund",
+   "m2:gsm8k:3349~inj:d1a:authority/decision",
+   "m2:hellaswag:12508/answer",
+   "m2:mmlu_aux:9828/label",
+   "m2:multi:m2:winogrande:39440+m2:mmlu_aux:99166+m2:mmlu_aux:61765/record_3_output",
+   "m2:nq:99113/doc_14",
+   "m2:sst5:3727/choice",
+   "m2:toolace:7303/result",
+   "m2:when2call:677/field_1",
+   "m2:winogrande:313/q1",
+   "m2:anli:5a2a7b8d-bc9a-45ca-8b47-eeda905cc185/result",
+   "m2:boolq:6802/label",
+   "m2:factchange:renewal:8:v1/refund",
+   "m2:gsm8k:3271/q1",
+   "m2:hellaswag:24744/choice",
+   "m2:mmlu_aux:54068/label",
+   "m2:multi:m2:sst5:6191+m2:boolq:6732/item_1_q1",
+   "m2:nq:53399/doc_12",
+   "m2:sst5:3783/choice",
+   "m2:toolace:7613/tool_2",
+   "m2:when2call:5268/q1",
+   "m2:winogrande:34493/output",
+   "m2:anli:f8a6dc0f-2ae1-4357-b2e3-95941ede77da/label",
+   "m2:boolq:9140/output",
+   "m2:factchange:stock:131:v1/reorder",
+   "m2:gsm8k:5899/answer",
+   "m2:hellaswag:15265/q1",
+   "m2:mmlu_aux:73216/result",
+   "m2:multi:m2:anli:618ebbc4-2082-4055-88ed-f402564989f9+m2:winogrande:38121/record_1_choice",
+   "m2:nq:74823/doc_11",
+   "m2:sst5:4126/label",
+   "m2:toolace:9970/tool_0",
+   "m2:when2call:5831/answer",
+   "m2:winogrande:18290/output",
+   "m2:anli:4a85af11-86b9-4772-8061-1c0fec08245b/result",
+   "m2:boolq:1346/q1",
+   "m2:factchange:schedule:309:v0~inj:d1a:urgency/slot",
+   "m2:gsm8k:841/field_1",
+   "m2:hellaswag:6415/label",
+   "m2:mmlu_aux:40229/label",
+   "m2:multi:m2:winogrande:24442+m2:winogrande:14853+m2:banking77:7867/item_1_decision",
+   "m2:nq:59831/doc_20",
+   "m2:sst5:3336/choice",
+   "m2:toolace:5879/tool_1",
+   "m2:when2call:11343/output",
+   "m2:winogrande:11177/output",
+   "m2:anli:d5e585b7-ba62-48e7-8348-3c1f9375462d/field_1",
+   "m2:boolq:5794/answer",
+   "m2:factchange:stock:551:v1/reorder",
+   "m2:gsm8k:5114/label",
+   "m2:hellaswag:29215~inj:d1a:fake_correction/decision",
+   "m2:mmlu_aux:55746/answer",
+   "m2:multi:m2:winogrande:39440+m2:mmlu_aux:99166+m2:mmlu_aux:61765/record_1_choice",
+   "m2:nq:6133/doc_10",
+   "m2:sst5:2077/field_1",
+   "m2:toolace:5969/tool_2",
+   "m2:when2call:674/q1",
+   "m2:winogrande:175~inj:d1a:system_note/label",
+   "m2:anli:fbc6b379-a9eb-41ea-8d3f-6c49ab667422/answer",
+   "m2:boolq:8461/answer",
+   "m2:factchange:spend_limit:340:v1/decision",
+   "m2:gsm8k:1448/decision",
+   "m2:hellaswag:34079/answer",
+   "m2:mmlu_aux:72401~inj:d1a:urgency/decision",
+   "m2:multi:m2:sst5:5556+m2:hellaswag:9567/ticket_2_field_1",
+   "m2:nq:43139/doc_8"
+  ],
+  "ids_sha256": "0e344ef7a2aa214286269a60a6cd073c188de2a50c97e883fbfc09787a91b300"
+ },
+ "train_clock": {
+  "step": 1121,
+  "used_s": 9870.510790109634
+ },
+ "dev_cards": [
+  {
+   "step": 0,
+   "n_items": 200,
+   "nll": 1.1832402532709383,
+   "accuracy": 0.28,
+   "best": true
+  },
+  {
+   "step": 200,
+   "n_items": 200,
+   "nll": 0.7470039821100184,
+   "accuracy": 0.73,
+   "best": true
+  },
+  {
+   "step": 400,
+   "n_items": 200,
+   "nll": 0.6825571769268555,
+   "accuracy": 0.735,
+   "best": true
+  },
+  {
+   "step": 600,
+   "n_items": 200,
+   "nll": 0.691784481440324,
+   "accuracy": 0.725,
+   "best": false
+  },
+  {
+   "step": 800,
+   "n_items": 200,
+   "nll": 0.6561583887878658,
+   "accuracy": 0.74,
+   "best": true
+  },
+  {
+   "step": 1000,
+   "n_items": 200,
+   "nll": 0.6439930810305846,
+   "accuracy": 0.74,
+   "best": true
+  }
+ ],
+ "collapse_events": [],
+ "best": {
+  "step": 1000,
+  "nll": 0.6439930810305846,
+  "accuracy": 0.74,
+  "path": "ckpt-step0001000.pt"
+ },
+ "train_clock_resume": {
+  "resumed": false,
+  "step": 0,
+  "used_s_before": 0.0,
+  "left_s": 16200.0
+ },
+ "lr_horizon": {
+  "step": 753,
+  "fixed_at_step": 0,
+  "source": "lr_horizon_steps"
+ },
+ "train_rate_check": {
+  "step_s": 10.626237535476685,
+  "minutes_left": 268.22896027962366,
+  "affordable_steps": 1514.5283138125772,
+  "need_steps": 1111,
+  "too_slow": false
+ },
+ "train": {
+  "steps": 1121,
+  "resumed": false,
+  "T_max": 2048,
+  "cards": [
+   {
+    "step": 0,
+    "n_items": 1091,
+    "cohort": null,
+    "raw": {
+     "n": 1091,
+     "accuracy": 0.2832263978001833,
+     "nll": 1.0617576517676075,
+     "brier": 0.6263864096597861,
+     "ece_binned15": 0.11161619185800403,
+     "ece_debiased": {
+      "debiased_l2": 0.12412992181443362,
+      "debiased_sq": 0.015408237489657403,
+      "bins": 15
+     },
+     "mean_conf": 0.39484258965818736,
+     "by_length_bin": {
+      "[0,512)": {
+       "n": 955,
+       "accuracy": 0.2732984293193717,
+       "ece_debiased": {
+        "debiased_l2": 0.13206436033400473,
+        "debiased_sq": 0.017440995270429846,
+        "bins": 15
+       }
+      },
+      "[512,2048)": {
+       "n": 136,
+       "accuracy": 0.35294117647058826,
+       "ece_debiased": {
+        "debiased_l2": 0.07367027266704283,
+        "debiased_sq": 0.005427309074836438,
+        "bins": 15
+       }
+      }
+     }
+    },
+    "index_score": {
+     "status": "stub",
+     "reason": "no Index dev-slice rows/predictor passed"
+    },
+    "steer": {
+     "status": "stub",
+     "reason": "no steer variants/decider passed"
+    },
+    "seconds": 187.374
+   },
+   {
+    "step": 1121,
+    "n_items": 1091,
+    "cohort": null,
+    "raw": {
+     "n": 1091,
+     "accuracy": 0.8340971585701191,
+     "nll": 0.4512719399281628,
+     "brier": 0.22887528138877264,
+     "ece_binned15": 0.0504399674622757,
+     "ece_debiased": {
+      "debiased_l2": 0.0575329912322038,
+      "debiased_sq": 0.00331004508012484,
+      "bins": 15
+     },
+     "mean_conf": 0.8586153675393158,
+     "by_length_bin": {
+      "[0,512)": {
+       "n": 955,
+       "accuracy": 0.8303664921465969,
+       "ece_debiased": {
+        "debiased_l2": 0.060703143424614595,
+        "debiased_sq": 0.00368487162162933,
+        "bins": 15
+       }
+      },
+      "[512,2048)": {
+       "n": 136,
+       "accuracy": 0.8602941176470589,
+       "ece_debiased": {
+        "debiased_l2": 0.09183225423881756,
+        "debiased_sq": 0.008433162918582827,
+        "bins": 15
+       }
+      }
+     }
+    },
+    "index_score": {
+     "status": "stub",
+     "reason": "no Index dev-slice rows/predictor passed"
+    },
+    "steer": {
+     "status": "stub",
+     "reason": "no steer variants/decider passed"
+    },
+    "seconds": 190.934
+   }
+  ],
+  "lineage": {
+   "backbone": {
+    "spec": "qwen3.5-4b-stock",
+    "class": "Qwen3_5TextModel",
+    "config_sha256": "5180a154a329b975ba7ee22354176b7c1b67cc5d8fb69f19d5880d3094b35959",
+    "name_or_path": "",
+    "commit_hash": null,
+    "capture": "hidden_states",
+    "layer": -1,
+    "provenance": {
+     "kind": "qwen35-stock",
+     "repo": "Qwen/Qwen3.5-4B",
+     "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+     "config_sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+     "attention_free": false
+    },
+    "weights_digest": "39b8384b37181392c08057820e4e4eab23a1aca362e3e743e4624b7c37fc2e7b",
+    "weights_digest_mode": "sampled"
+   },
+   "tokenizer": [
+    "{\"kind\": \"hf\", \"name_or_path\": \"/hfcache/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a\", \"untrusted\": {\"id\": \"untrusted-split-special+cut-leaking-added-v1\", \"n_control_ids\": 33}, \"vocab_sha256\": \"7ef6def600d70a2dbf3c4f35b73db100a74bf2936b7f4b805e91ad184b7aabce\"}"
+   ],
+   "layout": {
+    "layouts": [
+     [
+      "g1v2",
+      "jrt-h2o-shim:qwen3.5-4b"
+     ]
+    ],
+    "body_version": "jrt-body-v2-segmented",
+    "layout_version": "m2-layout-v2"
+   },
+   "data": {
+    "n": 96000,
+    "sha256": "dabbc8be1c2d82b262b804df6f7bece097cd6446c2bc2752cb5a1f648572a4d1",
+    "order_fn": "randperm(seed*100003+epoch); batches = consecutive bs-slices; partial tail dropped"
+   }
+  },
+  "verdict": {
+   "pass": true,
+   "checks": {
+    "finite": true,
+    "enough_steps": true,
+    "loss_drop": true,
+    "eval_nll_improves": true,
+    "memory": true
+   },
+   "loss_first": 1.3320419390127063,
+   "loss_last": 0.6780438656173646,
+   "loss_drop_frac": 0.4909740859060919,
+   "eval_nll_first": 1.0617576517676075,
+   "eval_nll_last": 0.4512719399281628,
+   "peak_gb": 12.745596416
+  },
+  "anti_collapse": {
+   "horizon": 753,
+   "horizon_fixed": true,
+   "lr_scale": 1.0,
+   "dev_cards": [
+    {
+     "step": 0,
+     "n_items": 200,
+     "nll": 1.1832402532709383,
+     "accuracy": 0.28,
+     "best": true
+    },
+    {
+     "step": 200,
+     "n_items": 200,
+     "nll": 0.7470039821100184,
+     "accuracy": 0.73,
+     "best": true
+    },
+    {
+     "step": 400,
+     "n_items": 200,
+     "nll": 0.6825571769268555,
+     "accuracy": 0.735,
+     "best": true
+    },
+    {
+     "step": 600,
+     "n_items": 200,
+     "nll": 0.691784481440324,
+     "accuracy": 0.725,
+     "best": false
+    },
+    {
+     "step": 800,
+     "n_items": 200,
+     "nll": 0.6561583887878658,
+     "accuracy": 0.74,
+     "best": true
+    },
+    {
+     "step": 1000,
+     "n_items": 200,
+     "nll": 0.6439930810305846,
+     "accuracy": 0.74,
+     "best": true
+    }
+   ],
+   "best": {
+    "step": 1000,
+    "nll": 0.6439930810305846,
+    "accuracy": 0.74,
+    "path": "ckpt-step0001000.pt"
+   },
+   "collapse_events": [],
+   "stopped": null,
+   "guard_armed": true,
+   "guard_window": [
+    [
+     0.6186380386352539,
+     2.332405388355255
+    ],
+    [
+     0.3396105729043484,
+     2.0090599060058594
+    ],
+    [
+     0.8000590093433857,
+     1.8302063047885895
+    ],
+    [
+     1.1766334176063538,
+     1.7517566680908203
+    ],
+    [
+     0.5903260130435228,
+     2.3192496299743652
+    ],
+    [
+     1.358802653849125,
+     2.362090915441513
+    ],
+    [
+     0.47282477281987667,
+     2.347868025302887
+    ],
+    [
+     1.0058395881205797,
+     2.1438096463680267
+    ],
+    [
+     0.8090426307171583,
+     2.085471600294113
+    ],
+    [
+     0.5413598343729973,
+     2.133561849594116
+    ],
+    [
+     1.498745672404766,
+     2.030285745859146
+    ],
+    [
+     1.3783320132642984,
+     2.2389439940452576
+    ],
+    [
+     0.2658201064914465,
+     1.5943042933940887
+    ],
+    [
+     0.5466416273266077,
+     1.6235522031784058
+    ],
+    [
+     0.46142421290278435,
+     2.570818781852722
+    ],
+    [
+     0.8828627020120621,
+     1.6701951324939728
+    ],
+    [
+     0.41702045127749443,
+     2.471001833677292
+    ],
+    [
+     0.7879784200340509,
+     2.173722743988037
+    ],
+    [
+     0.348066009581089,
+     1.9746263325214386
+    ],
+    [
+     1.693286456167698,
+     2.4473811984062195
+    ],
+    [
+     0.8728387244045734,
+     2.2514891922473907
+    ],
+    [
+     0.7242756467312574,
+     2.3184714317321777
+    ],
+    [
+     1.1180157139897346,
+     2.2771627604961395
+    ],
+    [
+     0.917420782148838,
+     2.240368574857712
+    ],
+    [
+     0.9755114540457726,
+     1.9908307790756226
+    ],
+    [
+     0.3329235725104809,
+     1.500576913356781
+    ],
+    [
+     0.37632639333605766,
+     2.239286482334137
+    ],
+    [
+     0.5820170007646084,
+     2.053360104560852
+    ],
+    [
+     1.1522469148039818,
+     1.8120468854904175
+    ],
+    [
+     0.8000044673681259,
+     1.8726485967636108
+    ],
+    [
+     0.316165117546916,
+     1.855125218629837
+    ],
+    [
+     0.3646487183868885,
+     2.169043719768524
+    ],
+    [
+     0.324347123503685,
+     1.8305875658988953
+    ],
+    [
+     0.5831838697195053,
+     2.138411670923233
+    ],
+    [
+     0.9577115923166275,
+     1.9591929912567139
+    ],
+    [
+     0.31690921261906624,
+     1.9373942613601685
+    ],
+    [
+     0.31120445393025875,
+     1.7888981401920319
+    ],
+    [
+     0.2757242452353239,
+     1.6704272031784058
+    ],
+    [
+     0.40484866313636303,
+     2.0140182971954346
+    ],
+    [
+     0.4576228354126215,
+     1.9009000658988953
+    ],
+    [
+     1.1334207449108362,
+     2.1434122920036316
+    ],
+    [
+     0.5695470329374075,
+     2.0590599179267883
+    ],
+    [
+     0.5777309276163578,
+     2.174337923526764
+    ],
+    [
+     0.36543494649231434,
+     2.260969817638397
+    ],
+    [
+     0.9755866266787052,
+     1.937126338481903
+    ],
+    [
+     0.4306153133511543,
+     2.7271369993686676
+    ],
+    [
+     0.36457991413772106,
+     2.1937464773654938
+    ],
+    [
+     0.9250756055116653,
+     1.952942967414856
+    ],
+    [
+     0.9525692313909531,
+     2.3934693038463593
+    ],
+    [
+     0.4022831991314888,
+     1.9488481283187866
+    ]
+   ]
+  }
+ }
+}

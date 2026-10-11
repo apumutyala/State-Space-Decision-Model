@@ -1,0 +1,464 @@
+{
+ "schema": "m2-screen/v2",
+ "edition": "0.2.1",
+ "stage": "screen",
+ "readout": {
+  "name": "native",
+  "template": "jrt-h2o-shim:qwen3.5-4b",
+  "layout": "g1v2",
+  "native": true,
+  "reference_match": "cross",
+  "family": "h2o_shim"
+ },
+ "proxy": {
+  "ids_sha256": "7d42c398336e0934e4fba8d7d78bda07d0073967fc92a8af7b3a14253a9185e6",
+  "n_target": 600,
+  "design": "weight",
+  "seed": "proxy-v1",
+  "base_subset_ids_sha256": "6e4cb8dfac94a40a6e014e05744ff775aebcdf99d7a572190034e6bc026095c3",
+  "rows": 644
+ },
+ "scorer": "harness.score.decompose + harness.bootstrap.compare (case clusters, B=2000, seed 0) on the proxy rows",
+ "child": {
+  "point": 36.36059786539022,
+  "lo": 33.46467065901242,
+  "hi": 41.61078371092217,
+  "se": 2.0944295149566594
+ },
+ "parent_stock_readout": null,
+ "reference": {
+  "point": 37.7140200693248,
+  "lo": 34.179779370393994,
+  "hi": 42.9445036339034,
+  "se": 2.2466721101220437
+ },
+ "reference_identity": {
+  "how": "shipped",
+  "artifact": "art-zskmx",
+  "job": "job-39gnn",
+  "readout_template": "jrt-rwkv-g1-v3w",
+  "artifact_sha256": "dd017eb0e4f1ba31cf1f464cc01b533cf9e7dcdfa341af6725184b2302a12632",
+  "member": "./phases/final.tgz",
+  "member_sha256": "1ad5f899f8dca73a240b261c353178a9109b72c082c56e2bef095b471a517fb3",
+  "inner_member": "out/readout_ab/child.v3w.results.jsonl",
+  "units_sha256": "941af29e4e6d427b300703d3a7d29bd959e8c16af82292eb04e87b73b4474f02",
+  "shipped": "screen_reference/art-zskmx/child.v3w.results.jsonl",
+  "preset": "d1_v3w"
+ },
+ "parent_identity": {
+  "source": "none",
+  "readout_template": "jrt-h2o-shim:qwen3.5-4b"
+ },
+ "child_minus_parent": null,
+ "child_minus_reference": {
+  "point": -1.353422203934585,
+  "lo": -5.7256976169118445,
+  "hi": 3.594762349488982,
+  "se": 2.3562768646064147,
+  "p_le_zero": 0.67,
+  "excludes_zero": false
+ },
+ "areas": {
+  "child_minus_parent": null,
+  "child_minus_reference": {
+   "knowledge": {
+    "point": -2.682771866357129,
+    "lo": -12.418712906051873,
+    "hi": 6.617564538960209,
+    "se": 4.793240462438701
+   },
+   "language": {
+    "point": -6.866473811205559,
+    "lo": -15.167791757740497,
+    "hi": 4.613706967650729,
+    "se": 4.997626479414201
+   },
+   "retrieval": {
+    "point": 0.39528346251277924,
+    "lo": -11.620342138366508,
+    "hi": 9.506275710096972,
+    "se": 5.440516565310978
+   },
+   "tools": {
+    "point": 2.9354449842769057,
+    "lo": -5.125999460167533,
+    "hi": 11.855355620297678,
+    "se": 4.321824295086776
+   },
+   "arts": {
+    "point": 4.99305555555555,
+    "lo": -10.707437500000003,
+    "hi": 17.99517361111109,
+    "se": 7.152738893331034
+   }
+  }
+ },
+ "status": {
+  "child": {
+   "ok": 644
+  },
+  "parent": null,
+  "reference": {
+   "ok": 638,
+   "exhausted": 6
+  }
+ },
+ "rule": "DROP if child - reference < -2.5 Index points on the proxy (point), else PROMOTE to the full subset + full DEV; every arm under the same readout; a screen, never a promotion",
+ "verdict": "PROMOTE",
+ "warnings": {
+  "label_collapse": [
+   {
+    "family": "PhishNChips",
+    "benchmark": 56,
+    "question_type": "choice",
+    "label": "legitimate",
+    "gold_share": 0.3684,
+    "pred_share": 1.0,
+    "n": 38,
+    "direction": "always_predicted"
+   },
+   {
+    "family": "PhishNChips",
+    "benchmark": 56,
+    "question_type": "choice",
+    "label": "phishing",
+    "gold_share": 0.6316,
+    "pred_share": 0.0,
+    "n": 38,
+    "direction": "never_predicted"
+   }
+  ],
+  "label_collapse_count": 2,
+  "label_collapse_benchmarks": [
+   56
+  ],
+  "label_near_collapse": [],
+  "label_near_collapse_count": 0,
+  "label_near_collapse_benchmarks": [],
+  "groups_checked": 16,
+  "label_collapse_rule": "per (benchmark, question type, fixed label set): COLLAPSE if a label with gold share in [10%, 90%] has predicted share exactly 0% or 100%; NEAR-COLLAPSE if < 2% or > 98%; >= 20 counted questions; counted = gold not None and result status ok; NON-GATING (never changes a score or a gate)",
+  "gating": false,
+  "parent": null,
+  "reference": {
+   "label_collapse": [],
+   "label_collapse_count": 0,
+   "label_collapse_benchmarks": [],
+   "label_near_collapse": [],
+   "label_near_collapse_count": 0,
+   "label_near_collapse_benchmarks": [],
+   "groups_checked": 15,
+   "label_collapse_rule": "per (benchmark, question type, fixed label set): COLLAPSE if a label with gold share in [10%, 90%] has predicted share exactly 0% or 100%; NEAR-COLLAPSE if < 2% or > 98%; >= 20 counted questions; counted = gold not None and result status ok; NON-GATING (never changes a score or a gate)",
+   "gating": false
+  }
+ },
+ "cost": {
+  "elapsed_min": 197.0,
+  "runtime_usd": 12.41,
+  "usd_per_min": 0.063,
+  "build_minutes_not_included": true
+ },
+ "measured": true,
+ "comparators": {
+  "clef_flash": {
+   "comparator": {
+    "point": 59.03174582453604,
+    "lo": 54.92643722741521,
+    "hi": 62.34763386109744,
+    "se": 1.9246216466267558
+   },
+   "child": {
+    "point": 36.36059786539022,
+    "lo": 33.46467065901242,
+    "hi": 41.61078371092217,
+    "se": 2.0944295149566594
+   },
+   "child_minus_comparator": {
+    "point": -22.67114795914582,
+    "lo": -25.989078850493264,
+    "hi": -16.29459373378532,
+    "se": 2.531265228809107,
+    "p_le_zero": 1.0,
+    "excludes_zero": true
+   },
+   "source": "Clef-flash job-t5yg2 art-7pyk2 index/decide_32k_substituted/results.jsonl (sha256 2cb2e961...) restricted to the 644 proxy600 rows (59.03 on the proxy)",
+   "readout_template": "clef-native (decide_32k_substituted)",
+   "cross_readout": true,
+   "units_sha256": "ac320b08c722f23b5662c85f19b32aaa9cb1554cf5424f1d9e7fc29df005dc94"
+  },
+  "clef_27b": {
+   "comparator": {
+    "point": 64.56391228142911,
+    "lo": 61.20750651580023,
+    "hi": 68.26035577584315,
+    "se": 1.7983590750651715
+   },
+   "child": {
+    "point": 36.36059786539022,
+    "lo": 33.46467065901242,
+    "hi": 41.61078371092217,
+    "se": 2.0944295149566594
+   },
+   "child_minus_comparator": {
+    "point": -28.203314416038893,
+    "lo": -32.31705838518366,
+    "hi": -22.526317701398767,
+    "se": 2.460453567631226,
+    "p_le_zero": 1.0,
+    "excludes_zero": true
+   },
+   "source": "Clef 27B job-zfexa art-p93d4 index/decide_32k_substituted/results.jsonl (sha256 f5ad788b...) restricted to the 644 proxy600 rows (64.56 on the proxy)",
+   "readout_template": "clef-native (decide_32k_substituted)",
+   "cross_readout": true,
+   "units_sha256": "1040e563da0ba5d7394cbb8c7de54f2e389bd068ade8ddea9546443e725388f8"
+  }
+ },
+ "jevkit": {
+  "price": {
+   "kind": "size_class_estimate",
+   "usd_per_m_input": 0.03,
+   "usd_per_m_output": 0.0,
+   "source": "declared reference price for Qwen3.5-4B (A-PREREG-SIZECLIFF operator brief 2026-10-09; size-class reference: no list tariff)",
+   "as_of": "2026-10-09",
+   "listed_since": null,
+   "model": "Qwen/Qwen3.5-4B"
+  },
+  "lean_template": null,
+  "extra_templates": {},
+  "arms": {
+   "native": {
+    "report": "native.jevkit.json",
+    "report_sha256": "63f7f510f25856442f3eae63c8eee5b0084ae552e49fc972b6c01622a7aaf7ed",
+    "summary": {
+     "I": 51.18027019739005,
+     "C": 64.68632739152646,
+     "S": 85.25137428679938,
+     "K": 61.227052829294564,
+     "capability": 57.93329879445825,
+     "composite": {
+      "A": 63.43098605742579,
+      "B": 60.53309682595912,
+      "C": 46.15344365122753
+     },
+     "intelligence_basis": "open only (no sealed items; no gap penalty)",
+     "I_ci95": [
+      41.1852491359475,
+      60.47392868092205
+     ],
+     "C_ci95": [
+      52.90083683646486,
+      71.61207529008509
+     ],
+     "usd_per_1000": 0.019607922077922082,
+     "input_tokens_per_decision": {
+      "mean": 653.5974025974026,
+      "p50": 157.0,
+      "n": 231
+     },
+     "speed": {
+      "p50_s_raw": 0.19661767350044101,
+      "p95_s_raw": 0.1996910788024252,
+      "p50_s_adjusted": 0.543235347000882,
+      "p95_s_adjusted": 0.5493821576048504,
+      "adjustment": "x2 + 0.15 s",
+      "score": 85.25137428679938,
+      "n": 72,
+      "source": "pred latency_s on open standard+judge items"
+     },
+     "status": {
+      "ok": 231
+     }
+    }
+   },
+   "stock_shim": {
+    "report": "stock_shim.jevkit.json",
+    "report_sha256": "75a7f44350a1d01bf85c62a5e49f2dda48ff13657f1fe7fafeba9c9cc6cedd37",
+    "summary": {
+     "I": 57.04605492225829,
+     "C": 70.20980306466844,
+     "S": 89.63673151849318,
+     "K": 61.227052829294564,
+     "capability": 63.627928993463364,
+     "composite": {
+      "A": 67.49743443305977,
+      "B": 65.11162086150131,
+      "C": 61.01491299881152
+     },
+     "intelligence_basis": "open only (no sealed items; no gap penalty)",
+     "I_ci95": [
+      47.19602594166609,
+      65.95394110679563
+     ],
+     "C_ci95": [
+      60.286418242581014,
+      77.25321473262802
+     ],
+     "usd_per_1000": 0.019607922077922082,
+     "input_tokens_per_decision": {
+      "mean": 653.5974025974026,
+      "p50": 157.0,
+      "n": 231
+     },
+     "speed": {
+      "p50_s_raw": 0.06691991499974392,
+      "p95_s_raw": 0.11652413715200968,
+      "p50_s_adjusted": 0.28383982999948787,
+      "p95_s_adjusted": 0.38304827430401933,
+      "adjustment": "x2 + 0.15 s",
+      "score": 89.63673151849318,
+      "n": 72,
+      "source": "pred latency_s on open standard+judge items"
+     },
+     "status": {
+      "ok": 231
+     }
+    }
+   },
+   "native_shimcal": {
+    "report": "native_shimcal.jevkit.json",
+    "report_sha256": "387d921409b87c823fb5d1dc00ac7c6016170cee24d62c168e340e36daaac0c0",
+    "summary": {
+     "I": 56.63802683819559,
+     "C": 62.6110934981326,
+     "S": 85.25137428679938,
+     "K": 61.227052829294564,
+     "capability": 59.624560168164095,
+     "composite": {
+      "A": 64.84005885728355,
+      "B": 63.01495749720238,
+      "C": 57.777284916915136
+     },
+     "intelligence_basis": "open only (no sealed items; no gap penalty)",
+     "I_ci95": [
+      46.76256453627667,
+      66.02662575705158
+     ],
+     "C_ci95": [
+      50.72391158245912,
+      70.23248635631963
+     ],
+     "usd_per_1000": 0.019607922077922082,
+     "input_tokens_per_decision": {
+      "mean": 653.5974025974026,
+      "p50": 157.0,
+      "n": 231
+     },
+     "speed": {
+      "p50_s_raw": 0.19661767350044101,
+      "p95_s_raw": 0.1996910788024252,
+      "p50_s_adjusted": 0.543235347000882,
+      "p95_s_adjusted": 0.5493821576048504,
+      "adjustment": "x2 + 0.15 s",
+      "score": 85.25137428679938,
+      "n": 72,
+      "source": "pred latency_s on open standard+judge items"
+     },
+     "status": {
+      "ok": 231
+     }
+    }
+   }
+  },
+  "note": "open split only (the 231 pinned v1.2 public items, not the v1.6.1 P300 draw): Intelligence basis open-only, no gap penalty; latency in-process on this H100 (self-hosted x2 + 0.15 s lane)",
+  "vs_stock_shim": {
+   "native": {
+    "I": {
+     "point": -5.8657847248682415,
+     "ci95": [
+      -15.812124146496544,
+      5.107429461645505
+     ],
+     "a": 51.18027019739005,
+     "b": 57.04605492225829
+    },
+    "C": {
+     "point": -5.523475673141974,
+     "ci95": [
+      -17.61635878386482,
+      5.18413028430531
+     ],
+     "a": 64.68632739152646,
+     "b": 70.20980306466844
+    },
+    "capability": {
+     "point": -5.694630199005111,
+     "ci95": [
+      -15.757754930541257,
+      4.216838646665795
+     ],
+     "a": 57.93329879445825,
+     "b": 63.627928993463364
+    },
+    "composite_A": {
+     "point": -4.066448375633975,
+     "ci95": [
+      -25.635500292902712,
+      3.2209094671904817
+     ],
+     "a": 63.43098605742579,
+     "b": 67.49743443305977
+    },
+    "B": 1000,
+    "seed": 16,
+    "a": "native",
+    "b": "stock_shim"
+   },
+   "native_shimcal": {
+    "I": {
+     "point": -0.40802808406269975,
+     "ci95": [
+      -10.067647582028455,
+      10.524379116135771
+     ],
+     "a": 56.63802683819559,
+     "b": 57.04605492225829
+    },
+    "C": {
+     "point": -7.598709566535838,
+     "ci95": [
+      -19.247718089991494,
+      3.777480197954305
+     ],
+     "a": 62.6110934981326,
+     "b": 70.20980306466844
+    },
+    "capability": {
+     "point": -4.003368825299269,
+     "ci95": [
+      -14.094921152260033,
+      6.255348990744174
+     ],
+     "a": 59.624560168164095,
+     "b": 63.627928993463364
+    },
+    "composite_A": {
+     "point": -2.6573755757762143,
+     "ci95": [
+      -12.139105456571544,
+      6.416722066436392
+     ],
+     "a": 64.84005885728355,
+     "b": 67.49743443305977
+    },
+    "B": 1000,
+    "seed": 16,
+    "a": "native_shimcal",
+    "b": "stock_shim"
+   }
+  },
+  "primary": {
+   "arm": "native",
+   "baseline": "stock_shim",
+   "delta_composite_A": {
+    "point": -4.066448375633975,
+    "ci95": [
+     -25.635500292902712,
+     3.2209094671904817
+    ],
+    "a": 63.43098605742579,
+    "b": 67.49743443305977
+   },
+   "rule": "A-PREREG-JEV1-4B: SUCCESS iff delta Composite A > 0 with its 95% CI excluding 0",
+   "success": false
+  }
+ }
+}

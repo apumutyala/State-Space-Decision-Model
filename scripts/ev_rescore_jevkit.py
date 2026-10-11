@@ -20,7 +20,11 @@ and never reads a number out of ``screen.json`` except to diff against it:
 
 Usage (artifact = untrusted data: run with -I from a scripts dir outside it, the repo root on sys.path explicitly):
   python -I -X utf8 scripts/ev_rescore_jevkit.py --art <extracted artifact root> --out rescore.json \
-      [--baseline stock_shim] [--primary native] [--expect-steps 1121] [--price "<price spec>"]
+      [--baseline stock_shim] [--primary native] [--expect-steps 1121] [--price "<price spec>"] \
+      [--secondary-axes [--groups "COVERED=intent+extraction;UNCOVERED=..."]] [--vs h2o=<preds>::<price.json>]
+  --secondary-axes (EV-PREREG-SECONDARY-AXES): paired per-axis deltas with CIs, Composite-A bootstrap quantiles,
+  fraction of resamples with I < 50, top-1 + exact McNemar, choice NLL, per-family / per-group deltas.
+  --vs (EV-PREREG-COMPOSITE-LOCAL): an external system's preds scored with its own price, paired primary - it.
 Exit 0 = rescored with no FLAG; 3 = at least one FLAG (read ``flags``); 2 = inputs missing.
 """
 from __future__ import annotations
@@ -167,6 +171,136 @@ def paired(tables: dict, axes: dict, base: str, B: int, seed: int) -> dict:
     return out
 
 
+QS = (1, 2.5, 5, 25, 50, 75, 95, 97.5, 99)
+
+
+def _q(v) -> dict | None:
+    v = [x for x in v if x is not None]
+    return {str(q): float(np.percentile(v, q)) for q in QS} if v else None
+
+
+def _ci(v) -> list | None:
+    v = [x for x in v if x is not None]
+    return [float(np.percentile(v, 2.5)), float(np.percentile(v, 97.5))] if v else None
+
+
+def _mcnemar_exact(b: int, c: int) -> float:
+    """Two-sided exact McNemar (binomial on the discordant pairs, p = 1/2)."""
+    import math
+    n = b + c
+    if n == 0:
+        return 1.0
+    k = min(b, c)
+    return float(min(1.0, 2.0 * sum(math.comb(n, j) for j in range(k + 1)) / 2.0 ** n))
+
+
+def _nll(t, items) -> np.ndarray:
+    """-log p(gold) per item for choice items with a distribution (NaN elsewhere; p floored at 1e-12)."""
+    out = np.full(len(t.ids), np.nan)
+    by = {it.id: it for it in items}
+    for i, (iid, p) in enumerate(zip(t.ids, t.parsed)):
+        it = by[iid]
+        if it.type == "choice" and p.has_probs:
+            out[i] = -np.log(max(float(p.probs.get(str(it.expected), 0.0)), 1e-12))
+    return out
+
+
+def secondary_axes(tables: dict, axes: dict, items, base: str, arm: str, B: int, seed: int,
+                   groups: dict[str, list[str]] | None = None) -> dict:
+    """EV-PREREG-SECONDARY-AXES: paired per-axis deltas (I, C, S, K, capability, Composite A), Composite-A bootstrap
+    quantiles (per arm and of the delta), fraction of resamples with I < 50 per arm, paired top-1 (count, accuracy,
+    exact McNemar), paired mean NLL on choice items, per-family top-1 and per-group (I, C, top-1) deltas. The resamples
+    are the SAME as ``paired`` (default_rng(seed), strata of the base table, same draw order)."""
+    ta, tb = tables[arm], tables[base]
+    fam = np.array([{it.id: it.family for it in items}[i] for i in ta.ids])
+    nll_a, nll_b = _nll(ta, items), _nll(tb, items)
+    ch = ~np.isnan(nll_a) & ~np.isnan(nll_b)
+    groups = groups or {}
+    gmask = {g: np.isin(fam, list(fs)) for g, fs in groups.items()}
+
+    def ax(t, nm, idx):
+        r = JS.aggregate(t, idx, detail=False)
+        i, c = r["intelligence"]["I"], r["calibration"]["score"]
+        s, k = axes[nm]
+        return {"I": i, "C": c, "S": s, "K": k, "capability": JS.capability(i, c),
+                "composite_A": JS.composite(i, c, s, k, "A")}
+
+    full_a, full_b = ax(ta, arm, None), ax(tb, base, None)
+    rng = np.random.default_rng(seed)
+    st = JS.strata(tb)
+    keys = list(full_a)
+    d = {k: [] for k in keys}
+    va, vb = {k: [] for k in keys}, {k: [] for k in keys}
+    dacc, dnll = [], []
+    gd = {g: {"acc": [], "I": [], "C": []} for g in groups}
+    for _ in range(B):
+        idx = np.concatenate([rng.choice(s, size=len(s), replace=True) for s in st])
+        xa, xb = ax(ta, arm, idx), ax(tb, base, idx)
+        for k in keys:
+            va[k].append(xa[k])
+            vb[k].append(xb[k])
+            if xa[k] is not None and xb[k] is not None:
+                d[k].append(xa[k] - xb[k])
+        dacc.append(float(ta.correct[idx].mean() - tb.correct[idx].mean()))
+        ic = idx[ch[idx]]
+        dnll.append(float(nll_a[ic].mean() - nll_b[ic].mean()) if len(ic) else None)
+        for g, m in gmask.items():
+            ig = idx[m[idx]]
+            if not len(ig):
+                continue
+            gd[g]["acc"].append(float(ta.correct[ig].mean() - tb.correct[ig].mean()))
+            ra, rb = JS.aggregate(ta, ig, detail=False), JS.aggregate(tb, ig, detail=False)
+            for k, path in (("I", ("intelligence", "I")), ("C", ("calibration", "score"))):
+                x, y = ra[path[0]][path[1]], rb[path[0]][path[1]]
+                if x is not None and y is not None:
+                    gd[g][k].append(x - y)
+    per_axis = {k: {"point": None if full_a[k] is None or full_b[k] is None else full_a[k] - full_b[k],
+                    "ci95": _ci(d[k]), "a": full_a[k], "b": full_b[k],
+                    "held_fixed": k in ("S", "K")} for k in keys}
+    bothc = ta.correct & tb.correct
+    b_ = int((ta.correct & ~tb.correct).sum())
+    c_ = int((~ta.correct & tb.correct).sum())
+    n = len(ta.ids)
+    top1 = {"a_count": int(ta.correct.sum()), "b_count": int(tb.correct.sum()), "n": n,
+            "delta_count": int(ta.correct.sum() - tb.correct.sum()),
+            "delta_acc_pp": 100.0 * float(ta.correct.mean() - tb.correct.mean()),
+            "delta_acc_pp_ci95": [100.0 * x for x in _ci(dacc)], "both_correct": int(bothc.sum()),
+            "a_only": b_, "b_only": c_, "mcnemar_exact_p": _mcnemar_exact(b_, c_)}
+    nll = {"n_choice": int(ch.sum()), "a_mean": float(nll_a[ch].mean()), "b_mean": float(nll_b[ch].mean()),
+           "delta": float(nll_a[ch].mean() - nll_b[ch].mean()), "delta_ci95": _ci(dnll)}
+    fams = {}
+    for f in sorted(set(fam)):
+        m = fam == f
+        bb, cc = int((ta.correct & ~tb.correct & m).sum()), int((~ta.correct & tb.correct & m).sum())
+        fams[f] = {"n": int(m.sum()), "a_acc": float(ta.correct[m].mean()), "b_acc": float(tb.correct[m].mean()),
+                   "delta_pp": 100.0 * float(ta.correct[m].mean() - tb.correct[m].mean()), "a_only": bb, "b_only": cc,
+                   "mcnemar_exact_p": _mcnemar_exact(bb, cc),
+                   "group": next((g for g, fs in groups.items() if f in fs), None)}
+    grp = {}
+    for g, m in gmask.items():
+        ra, rb = JS.aggregate(ta, np.flatnonzero(m), detail=False), JS.aggregate(tb, np.flatnonzero(m), detail=False)
+        ia, ib = ra["intelligence"]["I"], rb["intelligence"]["I"]
+        ca, cb = ra["calibration"]["score"], rb["calibration"]["score"]
+        bb, cc = int((ta.correct & ~tb.correct & m).sum()), int((~ta.correct & tb.correct & m).sum())
+        grp[g] = {"families": sorted(groups[g]), "n": int(m.sum()),
+                  "a_acc": float(ta.correct[m].mean()), "b_acc": float(tb.correct[m].mean()),
+                  "delta_acc_pp": 100.0 * float(ta.correct[m].mean() - tb.correct[m].mean()),
+                  "delta_acc_pp_ci95": [100.0 * x for x in _ci(gd[g]["acc"])], "a_only": bb, "b_only": cc,
+                  "mcnemar_exact_p": _mcnemar_exact(bb, cc),
+                  "I": {"a": ia, "b": ib, "delta": None if ia is None or ib is None else ia - ib,
+                        "delta_ci95": _ci(gd[g]["I"])},
+                  "C": {"a": ca, "b": cb, "delta": None if ca is None or cb is None else ca - cb,
+                        "delta_ci95": _ci(gd[g]["C"])}}
+    return {"schema": "ev-secondary-axes/1", "a": arm, "b": base, "B": B, "seed": seed, "per_axis": per_axis,
+            "composite_A_quantiles": {"a": _q(va["composite_A"]), "b": _q(vb["composite_A"]),
+                                      "delta": _q(d["composite_A"])},
+            "I_quantiles": {"a": _q(va["I"]), "b": _q(vb["I"]), "delta": _q(d["I"])},
+            "frac_resamples_I_below_50": {"a": float(np.mean([x < 50 for x in va["I"] if x is not None])),
+                                          "b": float(np.mean([x < 50 for x in vb["I"] if x is not None]))},
+            "frac_resamples_delta_A_below_minus10": float(np.mean([x < -10 for x in d["composite_A"]])),
+            "top1": top1, "choice_nll": nll, "families": fams, "groups": grp}
+
+
 def cmp(flags: list, diffs: list, where: str, mine, theirs, tol: float) -> None:
     if isinstance(mine, (list, tuple)) and isinstance(theirs, (list, tuple)):
         for j, (m, t) in enumerate(zip(mine, theirs)):
@@ -198,6 +332,13 @@ def main(argv=None) -> int:
     ap.add_argument("--B", type=int, default=1000)
     ap.add_argument("--seed", type=int, default=16)
     ap.add_argument("--tol", type=float, default=0.05)
+    ap.add_argument("--secondary-axes", action="store_true",
+                    help="EV-PREREG-SECONDARY-AXES block for --primary vs --baseline (and vs every --vs comparator)")
+    ap.add_argument("--groups", default=None,
+                    help="family groups for the per-group deltas, 'NAME=fam1+fam2;NAME2=...'; with --secondary-axes")
+    ap.add_argument("--vs", action="append", default=[],
+                    help="external comparator NAME=PREDS::PRICE (price spec or price.json); paired --primary - NAME "
+                         "on the same draws (EV-PREREG-COMPOSITE-LOCAL)")
     a = ap.parse_args(argv)
 
     art = Path(a.art).resolve()
@@ -349,12 +490,45 @@ def main(argv=None) -> int:
     cell_chk["stock_arm_identity"] = {k: v for k, v in (jid.get("stock_shim") or {}).items()
                                       if k in ("arm", "shim", "lora", "lm_head", "n", "status", "temperature")}
 
+    # ---- EV-PREREG-SECONDARY-AXES and external comparators (EV-PREREG-COMPOSITE-LOCAL)
+    groups = None
+    if a.groups:
+        groups = {g.split("=", 1)[0].strip(): [f.strip() for f in g.split("=", 1)[1].split("+") if f.strip()]
+                  for g in a.groups.split(";") if "=" in g}
+    sec = {}
+    if a.secondary_axes and a.primary in tables and a.baseline in tables:
+        sec[f"{a.primary} - {a.baseline}"] = secondary_axes(tables, axes, items, a.baseline, a.primary, a.B, a.seed,
+                                                            groups)
+    external = {}
+    for spec_vs in a.vs:
+        nm, rest = spec_vs.split("=", 1)
+        pf_s, price_s = rest.split("::", 1)
+        pf = Path(pf_s).resolve()
+        preds = read_jsonl(pf)
+        chk = integrity(f"vs:{nm}", preds, items, flags)
+        rep = jevkit_cli(pf, price_s, work / f"vs-{nm}.rescore.jevkit.json")
+        t_ext = JS.build_table(items, preds_to_answers(preds))
+        ax_ext = (rep["axes"]["speed"], rep["axes"]["cost"])
+        if t_ext.ids != tables[a.primary].ids:
+            flags.append(f"vs:{nm}: item order differs from {a.primary}")
+        tt, aa = {nm: t_ext, a.primary: tables[a.primary]}, {nm: ax_ext, a.primary: axes[a.primary]}
+        pr = paired(tt, aa, nm, a.B, a.seed)[a.primary]
+        external[nm] = {"preds": str(pf), "preds_sha256": sha(pf), "price": price_s, "checks": chk,
+                        "I": rep["axes"]["intelligence"], "C": rep["axes"]["calibration"],
+                        "S": rep["axes"]["speed"], "K": rep["axes"]["cost"], "capability": rep["capability"],
+                        "composite": rep["scores"], "composite_ci95": (rep.get("ci95") or {}).get("composite"),
+                        "tokens_per_decision": tokens(preds),
+                        f"paired_{a.primary}_minus_{nm}": pr}
+        if a.secondary_axes:
+            sec[f"{a.primary} - {nm}"] = secondary_axes(tt, aa, items, nm, a.primary, a.B, a.seed, groups)
+
     res = {"schema": "ev-rescore-jevkit/1", "artifact": str(art), "screen_json": str(screen_p),
            "screen_json_sha256": sha(screen_p), "rescore_checkout": str(ROOT),
            "protocol": f"jevkit CLI per arm (--public, declared price); paired stratified bootstrap B={a.B} seed "
                        f"{a.seed} (strata of the baseline table), Speed/Cost held fixed; tol {a.tol}",
            "n_items": len(items), "same_item_ids_all_arms": same_ids, "price": price_chk, "arms": arms,
-           "pairs": out_pairs, "primary": primary, "cell": cell_chk, "diffs_vs_screen": diffs,
+           "pairs": out_pairs, "primary": primary, "secondary_axes": sec or None, "external": external or None,
+           "cell": cell_chk, "diffs_vs_screen": diffs,
            "max_abs_diff": max((d["abs_diff"] for d in diffs if d["abs_diff"] is not None), default=None),
            "flags": flags, "verdict": "AGREES" if not flags else "FLAGGED"}
     Path(a.out).write_text(json.dumps(res, indent=1, default=str) + "\n", encoding="utf-8")
