@@ -17,7 +17,11 @@ SOURCES = {"a": [("musique", DATA / "raw/jev2/musique/musique_ans_v1.0_train.jso
                  ("gsm8k", DATA / "m2/sources/gsm8k/train-00000-of-00001.parquet"),
                  ("boolq", DATA / "m2/sources/boolq/train-00000-of-00001.parquet"),
                  ("glaive_fc", DATA / "m2/sources/glaive_fc/0000.parquet")],
-           "b": []}
+           "b": [], "c": [("contractnli", DATA / "raw/jev2/contractnli/contract_nli_long.zip")],
+           "a2": [("musique", DATA / "raw/jev2/musique/musique_ans_v1.0_train.jsonl"),
+                  ("gsm8k", DATA / "m2/sources/gsm8k/train-00000-of-00001.parquet"),
+                  ("boolq", DATA / "m2/sources/boolq/train-00000-of-00001.parquet"),
+                  ("glaive_fc", DATA / "m2/sources/glaive_fc/0000.parquet")]}
 
 
 def sha(p: Path) -> str:
@@ -30,9 +34,9 @@ def sha(p: Path) -> str:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["a", "b"])
+    ap.add_argument("--stage", required=True, choices=["a", "b", "c", "a2"])
     a = ap.parse_args(argv)
-    build = f"bschema-draw-jev2{a.stage}"
+    build = {"a": "bschema-draw-jev2a", "b": "bschema-draw-jev2b", "c": "bschema-draw-jev2c", "a2": "bschema-draw-jev2a-v2"}[a.stage]
     rd = REPO / "receipts" / "2026-10-10-jev2-draw" / build
     work = DATA / "m2" / "build" / f"{build}-work"
     J = lambda n: json.loads((rd / n).read_text(encoding="utf-8"))  # noqa: E731
@@ -77,7 +81,15 @@ def main(argv=None) -> int:
                                                                 if k != "fingerprint_records_checked")
                          and z["row_gates_pass"] and z["frozen_heldout_refused"] == 0 and not z["d1b_heldout_hits"]
                          and z["gold_once_fail"] == 0 and all(g["gold_position_gate_p_ge_0.001"].values())
-                         and all(t["n_over_2048"] == 0 for t in g["tokens_jrt_h2o_shim_qwen35_4b"].values()))
+                         and all(t.get("n_over_cap", t["n_over_2048"]) == 0
+                                 for t in g["tokens_jrt_h2o_shim_qwen35_4b"].values()))
+    sg = rd / "shape-gate.json"
+    if sg.exists():  # JEV1_AUDIT fix 7: reported per pointer (schema statistics only); not part of all_pass
+        s = json.loads(sg.read_text(encoding="utf-8"))
+        g["shape_gate"] = {"all_pass": s["all_pass"], "families": {f: {"pass": v["pass"], "checks": v["checks"],
+                                                                       "draw": v["draw"], "public": v["public"]}
+                                                                   for f, v in s["families"].items()}}
+    g["score_rows"] = {f: fam[f]["types"].get("score", 0) for f in fam}
     (rd / "GATES.json").write_text(json.dumps(g, indent=1) + "\n", encoding="utf-8")
     print(json.dumps({"all_pass": g["all_pass"], "chi2_p": {f: v["p"] for f, v in g["gold_position_chi2_presented"].items()}}))
     return 0 if g["all_pass"] else 1

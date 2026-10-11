@@ -1,0 +1,33 @@
+{
+ "build": "bschema-draw-jev2c (data/jev2.py + scripts/jev2_build.py: TRAIN-ONLY rows for the JevBench families jev1 does not cover, stage c: long_policy)",
+ "location": "ssdm-data/m2/build/bschema-draw-jev2c/ (outside git; deterministic, a rerun reproduces it)",
+ "records_uncompressed_sha256": "0a297a5886b0b3318344165acbf44c7f1cbe187639dae6de1312aeb91e4ad50c",
+ "manifest": "bschema-draw-jev2c.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "aefdc2e63d93eb55344834b413fe7ca08054ccfbe9f9062dc7b59c93cc0f7244",
+ "content_map": "bschema-draw-jev2c.content.jsonl.gz",
+ "content_map_uncompressed_sha256": "d2e9d344925d808ef150514e91757af83a0acb7708e5fc01172219f36041209f",
+ "n_records": 1500,
+ "families": {
+  "long_policy": 1500
+ },
+ "schema": "ssdm-train-v0, one question per row (qid 'q'), JevBench request shape: state + question{type choice|noul|score, instructions, criteria}; jev1 row layout (aug.jev1.family8)",
+ "loader_contract": "option keys are NOT re-sorted: criteria order = the seeded per-row shuffle (the presented gold position); never json.dumps(sort_keys=True) a row before rendering",
+ "excludes_cohort": "m2-dev-cohort-v2 be6efe2b... and m2-dev-cohort-v3 498efa61... (id, content, source item, key-free text), Index DEV/TEST rows (content, key-free text, item text), JevBench public items (eval-only)",
+ "builder": {
+  "module": "scripts/jev2_build.py",
+  "generator": "data/jev2.py",
+  "commit": "32d31d7d64d7a8455b45e6d57e811815e012c466"
+ },
+ "receipt": "receipts/2026-10-10-jev2-draw/bschema-draw-jev2c/",
+ "templates_verified": [
+  "jrt-h2o-shim:qwen3.5-4b"
+ ],
+ "token_window": [
+  2000,
+  4096
+ ],
+ "target_provenance": {
+  "path": "receipts/2026-10-10-jev2-draw/bschema-draw-jev2c/target_provenance.json",
+  "sha256": "073fd511d76e053426322e58b43fdea6b261f8d18a01292f5aba42fedd8b562d"
+ }
+}
