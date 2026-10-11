@@ -25,6 +25,7 @@
 | 10 | D18 job-i8mcp / D19 job-fi5xf screens (joint head + v2e/v3b data) | lead | A | running |
 | 11 | D13 safety battery job-4yedh; heldout_v1 Clef arms | evidence | B | running / partly done |
 | 12 | HANDOFF.md finalised → operator starts the two new agents | both | A+B | DONE (all gates merged) |
-| 13 | D20 chained 3-link run (D19 recipe on v4 minus phish, 1,694 training min): link 1 job-7d3u9 running → package links 2 and 3 from JOB_SPEC "D20" | lead | new lead | running |
+| 13 | D20 chained 3-link run: link 1 job-7d3u9 running; links 2/3 packaged (stack/rwkv7/d20-v4-chain @bd7c7e78, scripts/d20_next_link.py). PARKED by the lead 2026-10-11: completing l2+l3 needs ~$113 of holds vs $104 credit, and l2 alone yields no screen. Link 1 artifact kept; resume if credit arrives. Credit goes to the Composite line (JEV2-4B, H2O-host eval). | lead | lead | parked |
 
+| 14 | Composite line (lead, 2026-10-11): JEV1-4B r2 FAILED (Delta Comp A -4.07 [-25.6,+3.2]; long_policy OOD in length+format, prose states absent, calibration). Gap vs H2O local 76.6 is INTELLIGENCE (+21 needed). Next: H2O-host eval-only arms (EV-PREREG-H2O-HOST; Apache-2.0) and JEV2-4B (sym-fork, jev1+jev2a/b/c, max_len 4096, LS 0.05, worst <= $80) once jev2c/jev2b gate. | lead | lead | packaging |
 Proposals: append below this line (one line each); only the lead reorders.
