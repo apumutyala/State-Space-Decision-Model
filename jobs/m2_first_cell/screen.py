@@ -595,6 +595,9 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: st
                          row_fn=lambda req: decider.backend._rows(req)[0])
         ident["g1"] = {"g1_pass": g1["g1_pass"], "rows_all_identical": g1.get("rows_all_identical"),
                        "n_perturbed": g1["n_perturbed"], "seconds": round(time.perf_counter() - t0, 2)}
+    if jk.get("tfit") and not data_dir:  # job-9fy9p: screen score had no --data (AttributeError after the proxy)
+        print("identity: jevkit.tfit needs screen score --data (the data root)", file=sys.stderr)
+        return 10
     if jk.get("tfit"):  # JEV2-4B: scalar T on the CALIB draw's native head log-probs (fit once, frozen before scoring)
         try:
             ident["tfit"] = fit_native_temperature(decider.backend, Path(data_dir) / jk["tfit"]["records"],
@@ -1311,6 +1314,7 @@ def main(argv=None) -> int:
     s.add_argument("--pool-dir", action="append", default=None)
     s.add_argument("--progress", default=None)
     s.add_argument("--device", default="cuda")
+    s.add_argument("--data", default=None, help="the data root (jevkit.tfit / slice_floor records: the calib slice)")
     s = sub.add_parser("report")
     for k in ("--params", "--index-rows", "--out-dir", "--parent-arm", "--parent-arm-sha256", "--reference", "--out"):
         s.add_argument(k, required=True)

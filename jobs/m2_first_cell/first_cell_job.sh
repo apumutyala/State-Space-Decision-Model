@@ -587,7 +587,7 @@ if [ "$STAGE" = screen ]; then
     --ckpt-dir "$CK/cell" --model-dir "$SNAP" "${GDN_ARGS[@]}" --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" \
     --guard-readiness "$WORK/out/guard/readiness.json" --index-rows "$WORK/index-rows.jsonl.gz" --resume-dir "$CK/screen" \
     --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --reference "$WORK/out/screen-reference.json" \
-    --out-dir "$WORK/out/screen" --progress "$WORK/logs/progress-screen.jsonl" > "$WORK/logs/screen.log" 2>&1; r=$?
+    --out-dir "$WORK/out/screen" --data "$DATA" --progress "$WORK/logs/progress-screen.jsonl" > "$WORK/logs/screen.log" 2>&1; r=$?
   gate "screen" $r; export_phase screen
   case $r in 0) ;; 124|137) fail 7 "screen timeout" ;; 15) fail 15 "screen: live rate past the cap" ;;
     10) fail 10 "screen identity (proxy / parent arm / checkpoint lineage / plan check)" ;; *) fail 9 "screen rc=$r" ;; esac

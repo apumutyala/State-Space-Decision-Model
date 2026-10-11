@@ -326,3 +326,20 @@ def test_tiny_host_lm_label_forward_backward(tmp_path):
         opt.step()
         losses.append(float(loss))
     assert losses[-1] < losses[0]
+
+
+def test_screen_score_gets_the_data_root():
+    """job-9fy9p: screen score crashed (no --data) right after the proxy600 rows, before the jevkit arms."""
+    job = (M / "first_cell_job.sh").read_text(encoding="utf-8")
+    line = next(ln for ln in job.splitlines() if "--out-dir \"$WORK/out/screen\"" in ln and "--progress" in ln)
+    assert '--data "$DATA"' in line
+    import argparse
+    from unittest import mock
+    from jobs.m2_first_cell import screen
+    seen = {}
+    with mock.patch.object(screen, "score", lambda a: seen.setdefault("a", a) and 0):
+        args = ["score"] + [x for k in ("--cell", "--ckpt-dir", "--model-dir", "--records", "--guard-readiness",
+                                        "--index-rows", "--resume-dir", "--out-dir", "--parent-arm",
+                                        "--parent-arm-sha256", "--reference") for x in (k, "x")] + ["--data", "/data"]
+        screen.main(args)
+    assert seen["a"].data == "/data"
