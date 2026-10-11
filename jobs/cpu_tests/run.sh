@@ -15,6 +15,9 @@ pip freeze > "$OUT/pip-freeze.txt" 2>&1
 echo "GMN_CPU_LIMIT=${GMN_CPU_LIMIT:-} OMP_NUM_THREADS=${OMP_NUM_THREADS:-}" >> "$OUT/env.txt"
 PYT="python -X utf8 -m pytest -v -rs -p no:cacheprovider"
 
+SUITES="${SUITES:-nupi g16 sym}"
+G_RC=0; N_RC=0
+if [[ " $SUITES " == *" nupi "* ]]; then
 # ---------------------------------------------------------------- 1. nupi (c3f3a3f9) + base golden (5e159437)
 log "golden: base 5e159437"
 (cd "$T/base" && PYTHONPATH="$T/base" timeout 600 python -X utf8 "$J/golden.py" > "$OUT/golden_base_losses.json" 2> "$OUT/golden.stderr")
@@ -28,9 +31,9 @@ log "nupi tests: $NUPI_TESTS"
 (cd "$T/nupi" && timeout 1200 $PYT --junitxml="$OUT/junit-nupi.xml" $NUPI_TESTS > "$OUT/nupi.log" 2>&1)
 N_RC=$?
 log "nupi rc=$N_RC"
+fi
 
-SUITES="${SUITES:-nupi g16 sym}"
-G16_RC=0; H_RC=0; S_RC=0
+G16_RC=0; H_RC=0; S_RC=0; J2_RC=0
 if [[ " $SUITES " == *" g16 "* ]]; then
 # ---------------------------------------------------------------- 2. g16-sym (2d913b3e)
 (cd "$T/g16" && timeout 900 $PYT --junitxml="$OUT/junit-g16.xml" tests/controlsafe/test_g16_sym.py > "$OUT/g16.log" 2>&1)
@@ -48,14 +51,22 @@ if [[ " $SUITES " == *" sym "* ]]; then
 S_RC=$?
 log "sym rc=$S_RC"
 fi
+if [[ " $SUITES " == *" jev2 "* ]]; then
+# ---------------------------------------------------------------- 4. jev2-4b (A-PREREG-JEV2-4B package checks)
+(cd "$T/jev2" && timeout 900 $PYT --junitxml="$OUT/junit-jev2.xml" tests/test_jev2_4b.py tests/test_backend_row_cache.py \
+   > "$OUT/jev2.log" 2>&1)
+J2_RC=$?
+log "jev2 rc=$J2_RC"
+fi
 
 # ---------------------------------------------------------------- summary
-python - "$OUT" "$G_RC" "$N_RC" "$G16_RC" "$H_RC" "$S_RC" <<'EOF' >> "$OUT/run.log" 2>&1
+python - "$OUT" "$SUITES" "$G_RC" "$N_RC" "$G16_RC" "$H_RC" "$S_RC" "$J2_RC" <<'EOF' >> "$OUT/run.log" 2>&1
 import hashlib, json, os, sys, xml.etree.ElementTree as ET
-out = sys.argv[1]
-rcs = dict(zip(["golden", "nupi", "g16", "g16_harness", "sym"], map(int, sys.argv[2:])))
+out, sel = sys.argv[1], sys.argv[2].split()
+rcs = dict(zip(["golden", "nupi", "g16", "g16_harness", "sym", "jev2"], map(int, sys.argv[3:])))
 suites = {}
-for name in [n for n in ["nupi", "g16", "g16-harness", "sym"] if os.path.isfile(os.path.join(out, f"junit-{n}.xml")) or n == "nupi"]:
+for name in [n for n in ["nupi", "g16", "g16-harness", "sym", "jev2"]
+             if os.path.isfile(os.path.join(out, f"junit-{n}.xml")) or (n == "nupi" and "nupi" in sel)]:
     f = os.path.join(out, f"junit-{name}.xml")
     s = {"passed": 0, "failed": 0, "skipped": 0, "failures": [], "skips": []}
     if os.path.isfile(f):

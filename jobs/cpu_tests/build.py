@@ -6,7 +6,10 @@ import hashlib, io, json, pathlib, subprocess, sys, tarfile
 import zstandard
 
 import os
-TREES = {"nupi": os.environ.get("NUPI_SHA", "c3f3a3f9"), "base": "5e159437", "g16": "2d913b3e", "sym": "42388c2c"}
+TREES = {"nupi": os.environ.get("NUPI_SHA", "c3f3a3f9"), "base": "5e159437", "g16": "2d913b3e", "sym": "42388c2c",
+         # stack/qwen35/jev2-4b (A-PREREG-JEV2-4B): row-cache bit-identity, LS per qtype, noul band gate, short-budget
+         # scheduler (suite "jev2"; JEV2_SHA overrides)
+         "jev2": os.environ.get("JEV2_SHA", "a5b4cb33")}
 SUITES = os.environ.get("SUITES", "nupi g16 sym")
 SKIP = ("receipts/", "docs/nupi_toy_traces.svg")  # not imported by any of the suites (third_party/ is: rwkv7_hf)
 KEEP = ("docs/nupi_toy_traces.json",)
@@ -63,7 +66,7 @@ def main():
               "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"}, "interval_s": 300,
                          "grace_period_s": 900, "fail_threshold": 2, "on_fail": "kill"}}
     sub = {"chip": "cpu-8", "mission": "ssdm-cpu-tests", "idempotency_key": f"ssdm-cpu-tests-{sha[:12]}",
-           "label": f"cpu_tests: suites [{SUITES}] nupi {TREES['nupi']} (+5e159437 golden), g16-sym 2d913b3e, sym-invariant 42388c2c",
+           "label": f"cpu_tests: suites [{SUITES}] nupi {TREES['nupi']} (+5e159437 golden), g16-sym 2d913b3e, sym-invariant 42388c2c, jev2 {TREES['jev2']}",
            "dockerfile_path": "Dockerfile", "build_timeout_minutes": 20, "command": "bash /opt/job/run.sh", "env": {"SUITES": SUITES},
            "max_duration_minutes": 45, "max_restarts": 0, "resume": "none", "queue_ttl_minutes": 1440,
            "hf_cache": False, "checks": checks}
