@@ -1,5 +1,9 @@
 # PROGRESS: rolling, 3–5 lines per session (did / learned / next). Older entries roll into history/.
 
+## 2026-10-11: evidence cluster-robust ratio LTT (B-PREREG-GUAR-CRR, prereg state 033906aa)
+- Did: opt-in jevkit ltt_select(cluster_test="crr") = Waudby-Smith-Ramdas betting on per-cluster Y_r = w_r(L_r - eps n_r)/c, w_r = min(1, c/s_r), cap c=8 (answer-free p95 rule); sim test (shared-fate clusters, 120 seeds): CRR 0 violations/107 certified, naive per-decision binomial 16/120 violations; full-DEV rerun @01738528 receipts/2026-10-10-ev-guar-crr/GUARANTEES_CRR.md.
+- Learned: CRR c=8 certifies NOTHING for any model (D19, D13, Clef-flash, Clef 27B; both configs, both alpha, marginal + per-area). Real cause, not just power: TEST R_8 at the published lambda is 8.7/5.1/6.3/6.5% > eps (big rows are the easy ones). At high lambda (R_8 1-2%) the Clefs reach ~6.5 of the 6.92 nats Bonferroni needs; D19 peaks at 4.3. c=1 secondary reproduces the one-per-row Clef certificates (0.490/0.559). No cluster-valid test certifies D19.
+- Next: (post-hoc idea, fresh-data prereg only) fixed-sequence CRR would need 2.30 nats (D19 and Clefs exceed it at top lambda in diag_crr.json); model side unchanged (lead).
 ## 2026-10-11: evidence independent rescore of JEV1-4B r2 (job-xt3ax, A-PREREG-JEV1-4B)
 - Did: self-downloaded art-mv9cr (sha matches autor), rescored raw preds with the frozen jevkit CLI + paired B1000 seed16; added --secondary-axes/--groups/--vs (EV-PREREG-SECONDARY-AXES) to scripts/ev_rescore_jevkit.py; receipts claude/ev-j1-rescore @e2b336c6 receipts/2026-10-10-ev-rescore-xt3ax/.
 - Learned: AGREES with screen.json (max |diff| 0.0); PRIMARY NOT SUCCESS, dA -4.07 [-25.64,+3.22] (best@1000). The -25.6 tail is the I floor (native I 51.2 sits on 50; 42% of draws below). Jev1 draw HURT covered families (-6.7pp, long_policy -31.6pp) and left uncovered flat; trained arm abstains on 10/74 noul. vs H2O dA -13.2 [-37.8,-7.6]: still far behind.
