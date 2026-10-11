@@ -85,6 +85,21 @@ Grouped deltas (paired bootstrap over the same draws, restricted to the group's 
 - The jevkit definition is the one that feeds I and the Composite, so it is the one to quote. The abstentions are themselves a finding: the trained arm has gone soft on noul.
 - Using the jevkit definition is my choice of what to quote. Choice-type items show the same −2.2 pp under both definitions.
 
+## Length vs jev1 priors: split by prompt length (> 2,048 vs ≤ 2,048 input tokens under the shim)
+Token counts come from the preds' `usage.input_tokens`, which are identical in both arms. Script: `scripts/ev_rescore_length.py`, output `length-xt3ax.json`. Paired bootstrap of Δ top-1 within each cell: iid item resample, B 1000, seed 16.
+
+| cell | n | median tok | top-1 native / stock | Δ pp [95% CI] | McNemar p | choice NLL native / stock (Δ) |
+|---|---|---|---|---|---|---|
+| > 2,048 (all) | 36 | 2571 | 16 / 20 | −11.1 [−30.6, +8.3] | 0.42 | 1.296 / 1.008 (+0.288) |
+| ≤ 2,048 (all) | 195 | 147 | 150 / 153 | −1.5 [−7.7, +4.1] | 0.73 | 0.543 / 0.520 (+0.023) |
+| **multi_hop > 2,048** (UNCOVERED) | 17 | 2337 | 12 / 10 | **+11.8** [−11.8, +35.3] | 0.63 | 0.880 / 0.931 (**−0.051**) |
+| **long_policy > 2,048** (COVERED; all 19 are long) | 19 | 2657 | 4 / 10 | **−31.6** [−58.0, 0.0] | 0.11 | 1.817 / 1.105 (**+0.712**) |
+
+- The only items over 2,048 tokens are long_policy (19) and multi_hop (17). The "> 2,048" row is therefore exactly these two families combined.
+- Below 2,048 the arms are flat: −1.5 pp under jevkit correctness, and +1.5 pp under argmax, since all 10 noul abstentions fall in this cell.
+- **Verdict: length is NOT the cause.** multi_hop is just as long, is not covered by jev1, and *improves* on both top-1 and NLL. Only long_policy drops, and it drops hard (6 items lost, NLL +0.71). That points to the jev1 draw's long_policy templates and priors teaching a wrong answer pattern for this family.
+- Caveat: the per-family cells are small (19 and 17 items), and neither family's CI excludes 0 on its own. The opposite signs at the same length are what carries the conclusion.
+
 ## EV-PREREG-COMPOSITE-LOCAL: trained `native` vs H2O-Lightning-4B v1.1 (our run, job-zbtbj, same 231 ids, same draws)
 - H2O preds sha 60a06842…53cc, own price.json (base_model_reference 0.03/0.15, Qwen/Qwen3.5-4B). The rescore reproduces H2O's in-job report: I 77.56, C 83.42, S 91.31, K 61.13, Capability 80.49, A 76.64.
 
@@ -102,4 +117,4 @@ The CI excludes 0 **against** us, so the trained arm is significantly worse than
 Caveat: these are open public items only, and the board's sealed split may rank differently. On H2O, the open→board I gap was measured at −17.6. None of these numbers are comparable to the board's 72.5.
 
 ## Files (this directory)
-`rescore-xt3ax-full.json` (all blocks), `rescore-xt3ax.json` (plain primary run), `diag-floor-xt3ax.json` (floor diagnostic + two top-1 definitions, from `scripts/ev_rescore_diag_floor.py`), `reports/*.rescore.jevkit.json` (frozen-CLI report per arm and for H2O), and `screen.in-job.json` / `cell.in-job.json` (the in-job files being diffed against).
+`rescore-xt3ax-full.json` (all blocks), `rescore-xt3ax.json` (plain primary run), `diag-floor-xt3ax.json` (floor diagnostic + two top-1 definitions, from `scripts/ev_rescore_diag_floor.py`), `length-xt3ax.json` (length split, `scripts/ev_rescore_length.py`), `reports/*.rescore.jevkit.json` (frozen-CLI report per arm and for H2O), and `screen.in-job.json` / `cell.in-job.json` (the in-job files being diffed against).
