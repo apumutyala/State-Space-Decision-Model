@@ -6,6 +6,8 @@ RUN pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.13.0"
       zstandard pytest
 RUN python -c "import torch, transformers; print('torch', torch.__version__, 'transformers', transformers.__version__)"
 COPY trees /opt/trees
+COPY tokenizers /opt/tokenizers
+ENV SSDM_TOKENIZERS=/opt/tokenizers
 COPY job /opt/job
 COPY CONTEXT_MANIFEST.json /opt/job/CONTEXT_MANIFEST.json
 WORKDIR /opt/job
