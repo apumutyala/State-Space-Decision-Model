@@ -1,0 +1,50 @@
+{
+ "content_map_rows": 30000,
+ "n_records": 30000,
+ "cohorts": {
+  "v2": {
+   "identity": {
+    "cohort": "m2-dev-cohort-v2",
+    "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+    "n": {
+     "dev": 835,
+     "calibration": 1000,
+     "retention": 1670,
+     "steer_dev": 1800,
+     "steer_gate": 1000
+    }
+   },
+   "hits": {},
+   "examples": {}
+  },
+  "v3": {
+   "identity": {
+    "cohort": "m2-dev-cohort-v3",
+    "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+    "n": {
+     "dev": 835,
+     "calibration": 1000,
+     "retention": 39872,
+     "steer_dev": 1800,
+     "steer_gate": 1000
+    }
+   },
+   "hits": {},
+   "examples": {}
+  }
+ },
+ "content_map_mismatch": [],
+ "frozen_heldout_check_record_refused": 0,
+ "frozen_heldout_examples": [],
+ "heldout_frozen_families": [
+  "20",
+  "22",
+  "31",
+  "32",
+  "33",
+  "44",
+  "58",
+  "64",
+  "9"
+ ]
+}

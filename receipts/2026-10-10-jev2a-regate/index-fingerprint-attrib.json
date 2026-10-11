@@ -1,0 +1,306 @@
+{
+ "rows_with_any_segment_hit": 1221,
+ "rows_with_state_segment_hit_by_family": {
+  "judge_hard": 6,
+  "multi_hop": 210
+ },
+ "rows_only_question_segment_hit_by_family": {
+  "fact": 4,
+  "tool_selection": 601,
+  "temporal_numeric": 167,
+  "multi_hop": 233
+ },
+ "segment_hits_by_role_and_wordlen": {
+  "question/6-12w": 448,
+  "question/13+w": 37,
+  "question/3-5w": 464,
+  "question/1-2w": 209,
+  "state/13+w": 7,
+  "state/3-5w": 91,
+  "state/1-2w": 118,
+  "state/6-12w": 16
+ },
+ "segment_hits_by_role_matcher": {
+  "question/edit": 399,
+  "question/contain": 21,
+  "question/minhash": 826,
+  "question/ngram13": 29,
+  "question/exact": 268,
+  "state/contain": 13,
+  "state/minhash": 208,
+  "state/edit": 50,
+  "state/exact": 162
+ },
+ "catalog_hits_top": [
+  [
+   "1",
+   443
+  ],
+  [
+   "36",
+   374
+  ],
+  [
+   "24",
+   312
+  ],
+  [
+   "33",
+   194
+  ],
+  [
+   "61",
+   190
+  ],
+  [
+   "57",
+   187
+  ],
+  [
+   "45",
+   74
+  ],
+  [
+   "2",
+   70
+  ],
+  [
+   "6",
+   39
+  ],
+  [
+   "58",
+   33
+  ],
+  [
+   "37",
+   33
+  ],
+  [
+   "41",
+   27
+  ],
+  [
+   "10",
+   26
+  ],
+  [
+   "26",
+   22
+  ],
+  [
+   "62",
+   14
+  ],
+  [
+   "11",
+   5
+  ],
+  [
+   "3",
+   3
+  ],
+  [
+   "56",
+   3
+  ],
+  [
+   "5",
+   2
+  ],
+  [
+   "27",
+   1
+  ]
+ ],
+ "state_segment_hits_ge6_words_examples": [
+  [
+   "m2:gsm8k:2814~view:jev2-judge-final",
+   17,
+   [
+    "contain"
+   ]
+  ],
+  [
+   "m2:gsm8k:2814~view:jev2-judge-final",
+   37,
+   [
+    "contain"
+   ]
+  ],
+  [
+   "m2:gsm8k:3392~view:jev2-judge-final",
+   13,
+   [
+    "minhash"
+   ]
+  ],
+  [
+   "m2:gsm8k:4920~view:jev2-judge-final",
+   14,
+   [
+    "minhash"
+   ]
+  ],
+  [
+   "m2:gsm8k:5660~view:jev2-judge-final",
+   22,
+   [
+    "contain"
+   ]
+  ],
+  [
+   "m2:gsm8k:657~view:jev2-judge-steps",
+   63,
+   [
+    "contain"
+   ]
+  ],
+  [
+   "m2:gsm8k:657~view:jev2-judge-steps",
+   17,
+   [
+    "contain"
+   ]
+  ],
+  [
+   "m2:musique:2hop__121310_7606~view:jev2-mh",
+   7,
+   [
+    "edit"
+   ]
+  ],
+  [
+   "m2:musique:2hop__149828_432788~view:jev2-mh",
+   7,
+   [
+    "edit",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:musique:2hop__149829_432788~view:jev2-mh",
+   7,
+   [
+    "edit",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:musique:2hop__27670_27737~view:jev2-mh",
+   6,
+   [
+    "contain",
+    "edit",
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:musique:2hop__27702_27668~view:jev2-mh",
+   6,
+   [
+    "contain",
+    "edit",
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:musique:2hop__27702_27737~view:jev2-mh",
+   6,
+   [
+    "contain",
+    "edit",
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:musique:2hop__27723_27669~view:jev2-mh",
+   6,
+   [
+    "contain",
+    "edit",
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:musique:2hop__27726_27669~view:jev2-mh",
+   6,
+   [
+    "contain",
+    "edit",
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:musique:2hop__384324_64214~view:jev2-mh",
+   6,
+   [
+    "edit"
+   ]
+  ],
+  [
+   "m2:musique:2hop__406282_61952~view:jev2-mh",
+   6,
+   [
+    "contain",
+    "edit",
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:musique:2hop__45324_576533~view:jev2-mh",
+   7,
+   [
+    "contain",
+    "edit",
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:musique:2hop__46110_27669~view:jev2-mh",
+   6,
+   [
+    "contain",
+    "edit",
+    "exact",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:musique:2hop__484670_90963~view:jev2-mh",
+   6,
+   [
+    "minhash"
+   ]
+  ],
+  [
+   "m2:musique:2hop__563921_149236~view:jev2-mh",
+   7,
+   [
+    "edit"
+   ]
+  ],
+  [
+   "m2:musique:2hop__611773_58057~view:jev2-mh",
+   6,
+   [
+    "minhash"
+   ]
+  ],
+  [
+   "m2:musique:2hop__85865_86706~view:jev2-mh",
+   6,
+   [
+    "edit",
+    "minhash"
+   ]
+  ]
+ ]
+}

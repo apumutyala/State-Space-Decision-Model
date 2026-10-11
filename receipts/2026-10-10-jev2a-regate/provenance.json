@@ -1,0 +1,77 @@
+{
+ "source_files": {
+  "musique": {
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\raw\\jev2\\musique\\musique_ans_v1.0_train.jsonl",
+   "sha256": "83a75b1e11e4e9bb8f8308e72ac40ca617ae4431b3a0d955b61cab259248490a"
+  },
+  "gsm8k": {
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\sources\\gsm8k\\train-00000-of-00001.parquet",
+   "sha256": "ea82612ea9582142387730c793eb67d3b12849002bc0b7fa6f8efafa7351419d"
+  },
+  "boolq": {
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\sources\\boolq\\train-00000-of-00001.parquet",
+   "sha256": "4f028e992c0bd4df30b9f056f4946b64f5c23028034ff0ed5ea467d8538cc623"
+  },
+  "glaive_fc": {
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\sources\\glaive_fc\\0000.parquet",
+   "sha256": "7e7e32f0466699513b38923bc4991858e192c9274df22e243b9e77eb2775b6e8"
+  }
+ },
+ "checks": {
+  "musique": {
+   "n_rows": 1856,
+   "n_source_ids": 1856,
+   "ids_found_in_train_file": 1856,
+   "ids_missing": [],
+   "rows_docs_subset_of_train_paragraphs": 1856,
+   "rows_docs_mismatch_examples": [],
+   "unexpected_id_prefix": []
+  },
+  "gsm8k": {
+   "n_rows": 2635,
+   "n_source_ids": 2635,
+   "parquet_rows": 7473,
+   "columns": [
+    "question",
+    "answer"
+   ],
+   "non_integer_source_ids": 0,
+   "rows_text_match_train_row": 2635,
+   "rows_text_mismatch": 0,
+   "mismatch_examples": [],
+   "max_source_id": 6078,
+   "choice_gold_equals_source_final_answer": 942,
+   "choice_gold_differs": 0,
+   "choice_gold_differs_examples": []
+  },
+  "boolq": {
+   "n_rows": 1453,
+   "n_source_ids": 1453,
+   "parquet_rows": 9427,
+   "columns": [
+    "question",
+    "answer",
+    "passage"
+   ],
+   "non_integer_source_ids": 0,
+   "rows_text_match_train_row": 1453,
+   "rows_text_mismatch": 0,
+   "mismatch_examples": [],
+   "max_source_id": 8462
+  },
+  "glaive_fc": {
+   "n_rows": 2997,
+   "n_source_ids": 2997,
+   "parquet_rows": 112960,
+   "columns": [
+    "system",
+    "chat"
+   ],
+   "non_integer_source_ids": 0,
+   "rows_text_match_train_row": 2997,
+   "rows_text_mismatch": 0,
+   "mismatch_examples": [],
+   "max_source_id": 82285
+  }
+ }
+}

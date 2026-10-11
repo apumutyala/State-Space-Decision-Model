@@ -1,0 +1,48 @@
+{
+ "identity": {
+  "_identity": {
+   "id": "jrt-h2o-shim:qwen3.5-4b",
+   "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+  },
+  "_pinned": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+ },
+ "tool": "builder scripts/jev1_tokcheck.py (trainer row builder ShimSpec.row) re-run on the FINAL records",
+ "errors": 0,
+ "by_family": {
+  "fact": {
+   "n": 6000,
+   "p50": 122,
+   "p99": 337,
+   "max": 496,
+   "n_over_2048": 0
+  },
+  "tool_selection": {
+   "n": 6000,
+   "p50": 147,
+   "p99": 185,
+   "max": 214,
+   "n_over_2048": 0
+  },
+  "judge_hard": {
+   "n": 6000,
+   "p50": 153,
+   "p99": 367,
+   "max": 547,
+   "n_over_2048": 0
+  },
+  "temporal_numeric": {
+   "n": 6000,
+   "p50": 212,
+   "p99": 305,
+   "max": 333,
+   "n_over_2048": 0
+  },
+  "multi_hop": {
+   "n": 6000,
+   "p50": 980,
+   "p99": 1345,
+   "max": 1789,
+   "n_over_2048": 0
+  }
+ }
+}

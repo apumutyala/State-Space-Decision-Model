@@ -1,0 +1,152 @@
+{
+ "identity": {
+  "version": "ssdm-dedup-v3",
+  "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+  "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+  "rows": 155390
+ },
+ "assert_production": true,
+ "npz_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\index-fp-v3.npz",
+ "n_records": 30000,
+ "item_tier_probe_hits_by_family": {},
+ "item_tier_examples": [],
+ "full_row_probe_hits_by_family": {
+  "fact": 4,
+  "tool_selection": 601,
+  "judge_hard": 6,
+  "temporal_numeric": 167,
+  "multi_hop": 443
+ },
+ "full_row_hits_by_matcher": {
+  "edit": 431,
+  "contain": 29,
+  "minhash": 910,
+  "ngram13": 29,
+  "exact": 374
+ },
+ "full_row_examples": [
+  [
+   "m2:boolq:1133~view:jev2-fact",
+   [
+    "edit"
+   ]
+  ],
+  [
+   "m2:boolq:1374~view:jev2-fact",
+   [
+    "contain"
+   ]
+  ],
+  [
+   "m2:boolq:2368~view:jev2-fact",
+   [
+    "contain"
+   ]
+  ],
+  [
+   "m2:boolq:6470~view:jev2-fact",
+   [
+    "edit"
+   ]
+  ],
+  [
+   "m2:glaive_fc:10013~view:jev2-tool",
+   [
+    "edit"
+   ]
+  ],
+  [
+   "m2:glaive_fc:10282~view:jev2-tool",
+   [
+    "edit"
+   ]
+  ],
+  [
+   "m2:glaive_fc:10372~view:jev2-tool",
+   [
+    "edit"
+   ]
+  ],
+  [
+   "m2:glaive_fc:10379~view:jev2-tool",
+   [
+    "minhash"
+   ]
+  ],
+  [
+   "m2:glaive_fc:10592~view:jev2-tool",
+   [
+    "edit"
+   ]
+  ],
+  [
+   "m2:glaive_fc:10634~view:jev2-tool",
+   [
+    "ngram13"
+   ]
+  ],
+  [
+   "m2:glaive_fc:11202~view:jev2-tool",
+   [
+    "minhash"
+   ]
+  ],
+  [
+   "m2:glaive_fc:11211~view:jev2-tool",
+   [
+    "minhash"
+   ]
+  ],
+  [
+   "m2:glaive_fc:11541~view:jev2-tool",
+   [
+    "minhash"
+   ]
+  ],
+  [
+   "m2:glaive_fc:11600~view:jev2-tool",
+   [
+    "edit"
+   ]
+  ],
+  [
+   "m2:glaive_fc:11608~view:jev2-tool",
+   [
+    "edit",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:glaive_fc:11810~view:jev2-tool",
+   [
+    "edit",
+    "minhash"
+   ]
+  ],
+  [
+   "m2:glaive_fc:11899~view:jev2-tool",
+   [
+    "minhash"
+   ]
+  ],
+  [
+   "m2:glaive_fc:11940~view:jev2-tool",
+   [
+    "minhash"
+   ]
+  ],
+  [
+   "m2:glaive_fc:12080~view:jev2-tool",
+   [
+    "edit"
+   ]
+  ],
+  [
+   "m2:glaive_fc:12223~view:jev2-tool",
+   [
+    "edit"
+   ]
+  ]
+ ],
+ "seconds": 128
+}

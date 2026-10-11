@@ -1,0 +1,874 @@
+{
+ "n_records": 30000,
+ "unique_ids": 30000,
+ "dup_ids": [],
+ "by_family": {
+  "fact": 6000,
+  "tool_selection": 6000,
+  "judge_hard": 6000,
+  "temporal_numeric": 6000,
+  "multi_hop": 6000
+ },
+ "type_by_family": {
+  "fact": {
+   "noul": 6000
+  },
+  "tool_selection": {
+   "choice": 6000
+  },
+  "judge_hard": {
+   "noul": 6000
+  },
+  "temporal_numeric": {
+   "choice": 4403,
+   "noul": 899,
+   "score": 698
+  },
+  "multi_hop": {
+   "choice": 5053,
+   "score": 402,
+   "noul": 545
+  }
+ },
+ "by_source": {
+  "boolq": 1453,
+  "glaive_fc": 2997,
+  "gsm8k": 2635,
+  "jev2synth": 21059,
+  "musique": 1856
+ },
+ "split_by_source": {
+  "boolq": {
+   "train": 1453
+  },
+  "glaive_fc": {
+   "train": 2997
+  },
+  "gsm8k": {
+   "train": 2635
+  },
+  "jev2synth": {
+   "synthetic": 21059
+  },
+  "musique": {
+   "train": 1856
+  }
+ },
+ "license_by_source": {
+  "boolq": {
+   "CC-BY-SA-3.0": 1453
+  },
+  "glaive_fc": {
+   "Apache-2.0": 2997
+  },
+  "gsm8k": {
+   "MIT": 2635
+  },
+  "jev2synth": {
+   "own generator (repo)": 21059
+  },
+  "musique": {
+   "CC-BY-4.0 (MuSiQue v1.0, StonyBrookNLP; HF mirror bdsaglam/musique)": 1856
+  }
+ },
+ "missing_license": 0,
+ "missing_license_ids": [],
+ "state_type_by_family": {
+  "fact": {
+   "str": 6000
+  },
+  "tool_selection": {
+   "str": 6000
+  },
+  "judge_hard": {
+   "dict": 6000
+  },
+  "temporal_numeric": {
+   "str": 942,
+   "dict": 5058
+  },
+  "multi_hop": {
+   "dict": 6000
+  }
+ },
+ "gold_failures": {},
+ "gold_position_presented": {
+  "tool_selection": {
+   "n_tested": 6000,
+   "chi2": 1.81,
+   "df": 4,
+   "p": 0.7736,
+   "per_k": {
+    "5": {
+     "n": 6000,
+     "positions": [
+      1214,
+      1216,
+      1162,
+      1193,
+      1215
+     ]
+    }
+   }
+  },
+  "temporal_numeric": {
+   "n_tested": 4403,
+   "chi2": 11.15,
+   "df": 14,
+   "p": 0.6747,
+   "per_k": {
+    "3": {
+     "n": 703,
+     "positions": [
+      244,
+      237,
+      222
+     ]
+    },
+    "4": {
+     "n": 1028,
+     "positions": [
+      241,
+      262,
+      247,
+      278
+     ]
+    },
+    "5": {
+     "n": 1683,
+     "positions": [
+      323,
+      341,
+      325,
+      346,
+      348
+     ]
+    },
+    "6": {
+     "n": 989,
+     "positions": [
+      170,
+      140,
+      170,
+      161,
+      176,
+      172
+     ]
+    }
+   }
+  },
+  "multi_hop": {
+   "n_tested": 5053,
+   "chi2": 11.71,
+   "df": 12,
+   "p": 0.4699,
+   "per_k": {
+    "4": {
+     "n": 2977,
+     "positions": [
+      756,
+      738,
+      735,
+      748
+     ]
+    },
+    "5": {
+     "n": 1584,
+     "positions": [
+      325,
+      325,
+      339,
+      298,
+      297
+     ]
+    },
+    "6": {
+     "n": 492,
+     "positions": [
+      80,
+      75,
+      84,
+      88,
+      67,
+      98
+     ]
+    }
+   }
+  }
+ },
+ "choice_keys_already_sorted": {
+  "tool_selection": {
+   "n_choice": 6000,
+   "n_sorted": 54,
+   "expected_if_shuffled": 50.0
+  },
+  "temporal_numeric": {
+   "n_choice": 4403,
+   "n_sorted": 185,
+   "expected_if_shuffled": 175.4
+  },
+  "multi_hop": {
+   "n_choice": 5053,
+   "n_sorted": 135,
+   "expected_if_shuffled": 137.9
+  }
+ },
+ "empty_criteria_rows": {
+  "multi_hop": {
+   "n": 402,
+   "examples": [
+    "m2:jev2synth:ref_chase:1003~view:jev2-count",
+    "m2:jev2synth:ref_chase:1015~view:jev2-count",
+    "m2:jev2synth:ref_chase:1020~view:jev2-count",
+    "m2:jev2synth:ref_chase:1029~view:jev2-count",
+    "m2:jev2synth:ref_chase:102~view:jev2-count"
+   ]
+  },
+  "temporal_numeric": {
+   "n": 698,
+   "examples": [
+    "m2:jev2synth:temporal:1008~view:jev2-days_late",
+    "m2:jev2synth:temporal:1010~view:jev2-days_late",
+    "m2:jev2synth:temporal:1032~view:jev2-days_late",
+    "m2:jev2synth:temporal:1057~view:jev2-days_late",
+    "m2:jev2synth:temporal:1060~view:jev2-days_late"
+   ]
+  }
+ },
+ "empty_option_description_rows": {},
+ "noul_criteria_variants": {
+  "fact": {
+   "n_variants": 2,
+   "top": [
+    [
+     "{\"false\": \"no: the text says otherwise or does not say it\", \"true\": \"yes: the text states this explicitly\"}",
+     4547
+    ],
+    [
+     "{\"false\": \"no, according to the text\", \"true\": \"yes, according to the text\"}",
+     1453
+    ]
+   ]
+  },
+  "judge_hard": {
+   "n_variants": 3,
+   "top": [
+    [
+     "{\"false\": \"the response has an error or misses a requirement\", \"true\": \"the response is correct and meets every requirement\"}",
+     4307
+    ],
+    [
+     "{\"false\": \"the final answer is wrong\", \"true\": \"the final answer is correct\"}",
+     1214
+    ],
+    [
+     "{\"false\": \"at least one calculation is wrong\", \"true\": \"every calculation in the response is correct\"}",
+     479
+    ]
+   ]
+  },
+  "multi_hop": {
+   "n_variants": 1,
+   "top": [
+    [
+     "{\"false\": \"no\", \"true\": \"yes\"}",
+     545
+    ]
+   ]
+  },
+  "temporal_numeric": {
+   "n_variants": 1,
+   "top": [
+    [
+     "{\"false\": \"no\", \"true\": \"yes\"}",
+     899
+    ]
+   ]
+  }
+ },
+ "label_dist_by_family_sub": {
+  "fact/boolq": {
+   "true": 882,
+   "false": 571
+  },
+  "tool_selection/glaive": {
+   "n_distinct": 233,
+   "top5": [
+    [
+     "calculate_age",
+     212
+    ],
+    [
+     "convert_currency",
+     206
+    ],
+    [
+     "calculate_bmi",
+     204
+    ],
+    [
+     "calculate_tip",
+     204
+    ],
+    [
+     "calculate_discount",
+     175
+    ]
+   ]
+  },
+  "judge_hard/gsm_final": {
+   "true": 774,
+   "false": 440
+  },
+  "judge_hard/gsm_steps": {
+   "false": 234,
+   "true": 245
+  },
+  "temporal_numeric/gsm_choice": {
+   "n_distinct": 288,
+   "top5": [
+    [
+     "v_4",
+     35
+    ],
+    [
+     "v_5",
+     29
+    ],
+    [
+     "v_6",
+     26
+    ],
+    [
+     "v_8",
+     26
+    ],
+    [
+     "v_3",
+     26
+    ]
+   ]
+  },
+  "fact/fact_flight": {
+   "true": 336,
+   "false": 228
+  },
+  "fact/fact_account": {
+   "false": 317,
+   "true": 262
+  },
+  "fact/fact_staff": {
+   "true": 311,
+   "false": 252
+  },
+  "fact/fact_room": {
+   "false": 293,
+   "true": 263
+  },
+  "fact/fact_invoice": {
+   "true": 277,
+   "false": 284
+  },
+  "fact/fact_loan": {
+   "true": 279,
+   "false": 289
+  },
+  "fact/fact_product": {
+   "true": 237,
+   "false": 315
+  },
+  "fact/fact_order": {
+   "false": 320,
+   "true": 284
+  },
+  "judge_hard/judge_subject": {
+   "false": 277,
+   "true": 254
+  },
+  "judge_hard/judge_sort": {
+   "true": 265,
+   "false": 265
+  },
+  "judge_hard/judge_weekday": {
+   "true": 223,
+   "false": 284
+  },
+  "judge_hard/judge_units": {
+   "true": 258,
+   "false": 271
+  },
+  "judge_hard/judge_letters": {
+   "true": 126,
+   "false": 149
+  },
+  "judge_hard/judge_json": {
+   "true": 265,
+   "false": 265
+  },
+  "judge_hard/judge_sum": {
+   "true": 266,
+   "false": 257
+  },
+  "judge_hard/judge_date": {
+   "false": 268,
+   "true": 249
+  },
+  "judge_hard/judge_price": {
+   "false": 177,
+   "true": 188
+  },
+  "multi_hop/ref_chase_city": {
+   "n_distinct": 40,
+   "top5": [
+    [
+     "tucson",
+     36
+    ],
+    [
+     "cluj",
+     32
+    ],
+    [
+     "nantes",
+     32
+    ],
+    [
+     "tampere",
+     31
+    ],
+    [
+     "bologna",
+     30
+    ]
+   ]
+  },
+  "multi_hop/ref_chase_contact": {
+   "n_distinct": 441,
+   "top5": [
+    [
+     "tomas_horvat",
+     6
+    ],
+    [
+     "uma_toivonen",
+     5
+    ],
+    [
+     "yara_jansen",
+     5
+    ],
+    [
+     "nuno_jansen",
+     5
+    ],
+    [
+     "chen_rossi",
+     5
+    ]
+   ]
+  },
+  "multi_hop/ref_chase_owner": {
+   "n_distinct": 1396,
+   "top5": [
+    [
+     "thapra_systems",
+     3
+    ],
+    [
+     "simjas_services",
+     2
+    ],
+    [
+     "kaquel_ops",
+     2
+    ],
+    [
+     "narul_infra",
+     2
+    ],
+    [
+     "ashjas_support_cell",
+     2
+    ]
+   ]
+  },
+  "multi_hop/ref_chase_count": {
+   "3": 8,
+   "1": 138,
+   "0": 214,
+   "2": 42
+  },
+  "multi_hop/ref_chase_contact_yn": {
+   "false": 74,
+   "true": 62
+  },
+  "multi_hop/ref_chase_city_yn": {
+   "false": 85,
+   "true": 98
+  },
+  "multi_hop/ref_chase_owner_yn": {
+   "false": 119,
+   "true": 107
+  },
+  "temporal_numeric/temporal_tenure_yn": {
+   "false": 175,
+   "true": 172
+  },
+  "temporal_numeric/temporal_late_fee": {
+   "n_distinct": 51,
+   "top5": [
+    [
+     "fee_0_00",
+     363
+    ],
+    [
+     "fee_72_00",
+     19
+    ],
+    [
+     "fee_36_00",
+     19
+    ],
+    [
+     "fee_108_00",
+     17
+    ],
+    [
+     "fee_24_00",
+     16
+    ]
+   ]
+  },
+  "temporal_numeric/temporal_sla": {
+   "n_distinct": 430,
+   "top5": [
+    [
+     "d_august_21_2026",
+     3
+    ],
+    [
+     "d_2025_10_09",
+     3
+    ],
+    [
+     "d_13_november_2026",
+     3
+    ],
+    [
+     "d_15_may_2026",
+     3
+    ],
+    [
+     "d_2025_02_11",
+     3
+    ]
+   ]
+  },
+  "temporal_numeric/temporal_tz": {
+   "n_distinct": 102,
+   "top5": [
+    [
+     "t_13_30_on_10_march",
+     22
+    ],
+    [
+     "t_17_30_on_10_march",
+     19
+    ],
+    [
+     "t_12_30_on_10_march",
+     17
+    ],
+    [
+     "t_10_30_on_10_march",
+     16
+    ],
+    [
+     "t_08_30_on_10_march",
+     15
+    ]
+   ]
+  },
+  "temporal_numeric/temporal_return": {
+   "n_distinct": 250,
+   "top5": [
+    [
+     "d_2025_12_29",
+     3
+    ],
+    [
+     "d_9_june_2026",
+     2
+    ],
+    [
+     "d_5_november_2025",
+     2
+    ],
+    [
+     "d_2026_07_22",
+     2
+    ],
+    [
+     "d_24_december_2026",
+     2
+    ]
+   ]
+  },
+  "temporal_numeric/temporal_days_late": {
+   "0": 335,
+   "2": 116,
+   "1": 137,
+   "3": 110
+  },
+  "temporal_numeric/temporal_prorate": {
+   "n_distinct": 285,
+   "top5": [
+    [
+     "amt_18_00",
+     9
+    ],
+    [
+     "amt_14_00",
+     8
+    ],
+    [
+     "amt_21_00",
+     8
+    ],
+    [
+     "amt_1_00",
+     7
+    ],
+    [
+     "amt_3_00",
+     7
+    ]
+   ]
+  },
+  "temporal_numeric/temporal_warranty": {
+   "n_distinct": 544,
+   "top5": [
+    [
+     "d_2027_04_30",
+     6
+    ],
+    [
+     "d_april_30_2026",
+     5
+    ],
+    [
+     "d_may_31_2027",
+     5
+    ],
+    [
+     "d_july_31_2026",
+     5
+    ],
+    [
+     "d_30_november_2027",
+     4
+    ]
+   ]
+  },
+  "temporal_numeric/temporal_sla_yn": {
+   "true": 52,
+   "false": 84
+  },
+  "temporal_numeric/temporal_return_yn": {
+   "true": 235,
+   "false": 181
+  },
+  "tool_selection/tool_weather": {
+   "get_air_quality": 157,
+   "get_forecast": 135
+  },
+  "tool_selection/tool_travel": {
+   "check_flight_status": 63,
+   "search_flights": 57,
+   "book_hotel": 78,
+   "convert_currency": 81
+  },
+  "tool_selection/tool_media": {
+   "play_music": 105,
+   "get_news": 113,
+   "find_movie_times": 99
+  },
+  "tool_selection/tool_work": {
+   "start_timer": 68,
+   "translate_text": 83,
+   "create_ticket": 73,
+   "set_reminder": 80
+  },
+  "tool_selection/tool_finance": {
+   "split_bill": 72,
+   "transfer_funds": 72,
+   "get_stock_price": 79,
+   "get_balance": 70
+  },
+  "tool_selection/tool_calendar": {
+   "cancel_event": 86,
+   "list_events": 60,
+   "create_event": 92,
+   "find_free_slot": 69
+  },
+  "tool_selection/tool_home": {
+   "lock_door": 92,
+   "set_thermostat": 93,
+   "toggle_lights": 117
+  },
+  "tool_selection/tool_email": {
+   "search_inbox": 115,
+   "send_email": 96,
+   "archive_email": 113
+  },
+  "tool_selection/tool_shopping": {
+   "add_to_cart": 93,
+   "start_return": 107,
+   "track_package": 119
+  },
+  "tool_selection/tool_food": {
+   "nutrition_facts": 92,
+   "order_takeout": 79,
+   "find_recipe": 95
+  },
+  "multi_hop/musique": {
+   "n_distinct": 730,
+   "top5": [
+    [
+     "halifax_regional_municipality",
+     13
+    ],
+    [
+     "warner_bros",
+     12
+    ],
+    [
+     "pittsburgh",
+     9
+    ],
+    [
+     "badruddin_tayyab_ji",
+     9
+    ],
+    [
+     "a_portuguese_professional_footballer",
+     9
+    ]
+   ]
+  }
+ },
+ "dup_state_by_sub": {
+  "tool_selection/glaive": {
+   "rows_in_dup_groups": 2232
+  },
+  "temporal_numeric/temporal_prorate": {
+   "rows_in_dup_groups": 360
+  },
+  "temporal_numeric/temporal_warranty": {
+   "rows_in_dup_groups": 97
+  },
+  "tool_selection/tool_weather": {
+   "rows_in_dup_groups": 27
+  },
+  "tool_selection/tool_home": {
+   "rows_in_dup_groups": 165
+  },
+  "tool_selection/tool_travel": {
+   "rows_in_dup_groups": 58
+  },
+  "tool_selection/tool_food": {
+   "rows_in_dup_groups": 65
+  },
+  "tool_selection/tool_shopping": {
+   "rows_in_dup_groups": 99
+  },
+  "tool_selection/tool_work": {
+   "rows_in_dup_groups": 104
+  },
+  "tool_selection/tool_finance": {
+   "rows_in_dup_groups": 110
+  },
+  "tool_selection/tool_email": {
+   "rows_in_dup_groups": 77
+  },
+  "tool_selection/tool_media": {
+   "rows_in_dup_groups": 85
+  },
+  "tool_selection/tool_calendar": {
+   "rows_in_dup_groups": 22
+  }
+ },
+ "judge_corruption_vs_label": {
+  "gsm_final/step": {
+   "true": 168
+  },
+  "gsm_steps/step": {
+   "false": 234
+  },
+  "gsm_final/final": {
+   "false": 440
+  },
+  "gsm_final/clean": {
+   "true": 606
+  },
+  "gsm_steps/clean": {
+   "true": 245
+  }
+ },
+ "words_by_family": {
+  "fact": {
+   "p50": 41,
+   "p99": 215,
+   "max": 277
+  },
+  "tool_selection": {
+   "p50": 59,
+   "p99": 87,
+   "max": 102
+  },
+  "judge_hard": {
+   "p50": 61,
+   "p99": 200,
+   "max": 348
+  },
+  "temporal_numeric": {
+   "p50": 68,
+   "p99": 92,
+   "max": 144
+  },
+  "multi_hop": {
+   "p50": 384,
+   "p99": 607,
+   "max": 835
+  }
+ },
+ "dup_exact_text": {
+  "groups_gt1": 0,
+  "extra_rows": 0
+ },
+ "dup_examples": {},
+ "dup_state_within_family": {
+  "tool_selection": {
+   "groups": 626,
+   "extra_rows": 2418
+  },
+  "temporal_numeric": {
+   "groups": 208,
+   "extra_rows": 249
+  }
+ },
+ "near_dup_digits_masked_within_family": {
+  "fact": {
+   "groups": 230,
+   "extra_rows": 302
+  },
+  "judge_hard": {
+   "groups": 480,
+   "extra_rows": 1105
+  },
+  "temporal_numeric": {
+   "groups": 383,
+   "extra_rows": 2719
+  }
+ }
+}
