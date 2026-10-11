@@ -171,3 +171,5 @@ Read r2's `screen.json` `jevkit.primary` (A-PREREG-JEV1-4B: delta Composite A vs
   mixed -> JEV2-4B.
 
 **Update (A-PREREG-JEV2-4B Amendment 2, 2026-10-10):** r2 was FLAT, so JEV1-DIAG is folded (the jev1 audit explains r2) and JEV2-4B is the next cell. It is registered as `jobs/m2_first_cell/job_params_jev2_q35_4b.json` (mode `jev2_q35_4b`, stack/qwen35/jev2-4b). Shape: 586 rows per family (adequacy 293) x 18 families = 10,255 rows, 1,281 steps, clock 462, max_duration 604 min, worst case $79.88 (operator hard cap $80), expected ~$28.7. It waits on jev2b + jev2c: rebuild the mix with them and refill the PROVISIONAL pins.
+
+**JEV2-4B SMALL fallback (2026-10-11):** registered as `jobs/m2_first_cell/job_params_jev2s_q35_4b.json` (mode `jev2s_q35_4b`): 163 rows per family (adequacy 81) x 18 = 2852 rows, 356 steps, clock 129, max_duration 271 min, worst case $37.93 (<= $38). Use it if the balance cannot hold the full variant's $79.88.

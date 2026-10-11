@@ -288,7 +288,9 @@
    "receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt",
    "data/manifests/bschema-draw-jev2c.pointer.json",
    "receipts/2026-10-10-jev2b-regate/jev2b_exclude_ids.txt",
-   "data/manifests/bschema-draw-jev2b.pointer.json"
+   "data/manifests/bschema-draw-jev2b.pointer.json",
+   "receipts/2026-10-11-jev2c-v2-regate/jev2c-v2_exclude_ids.txt",
+   "data/manifests/bschema-draw-jev2c-v2.pointer.json"
   ]
  },
  "mode": "jev2_q35_4b",
@@ -324,7 +326,7 @@
    "records": "m2-jev2mix-calib/records.jsonl.gz",
    "lo": 0.25,
    "hi": 4.0,
-   "ids_sha256": "792127c9e8ac0d98b3353d77340a01f36d25b591c4a892f576c859001432179f"
+   "ids_sha256": "4f12f90101024ca64eb879ae18e8dcd83a9e022684fdc1e5958e9f12d90fc75a"
   },
   "perturb_ops": [
    "option_reverse",

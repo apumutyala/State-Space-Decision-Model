@@ -651,3 +651,5 @@ The text below is ready to paste.
     - **Reverted:** the empty-level-criteria score down-weighting (a checker false positive; the real count is 0).
     - **No truncation:** the cell fails closed on any training row dropped for length (`assert_no_truncation`), and the screen fails closed on any JevBench item refused for length.
     - **Unchanged:** budget (worst case $79.88), steps (max 1,281, floor 600, short-budget continuation), loss (noul eps 0, choice/score 0.05), the noul band gate, PRIMARY, CI method and G1.
+
+- **Amendment 2 addendum 3 (2026-10-11, before submission):** long_policy now comes from jev2c-v2 (claude/ev-jev2a-regate @c76f150a, pointer 86960d90, empty exclusion list, 1,500 rows, max 3,981 tokens, 0 over 4,096) instead of jev2c. A SMALL fallback variant `jev2s_q35_4b` (worst case <= $38) has the same recipe and gates, but 163 rows per family (adequacy 81) x 18 and fewer steps.
