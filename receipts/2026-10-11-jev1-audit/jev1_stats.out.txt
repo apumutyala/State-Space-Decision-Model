@@ -1,0 +1,207 @@
+﻿TOTAL 96000
+FAM {'policy': 12000, 'intent': 12000, 'adequacy': 12000, 'state_tracking': 12000, 'long_policy': 12000, 'routing': 12000, 'enum': 12000, 'severity': 12000}
+ORDER runs (first 40): [['policy', 7118], ['intent', 8530], ['adequacy', 6622], ['policy', 4882], ['adequacy', 5378], ['state_tracking', 9189], ['long_policy', 12000], ['routing', 4338], ['enum', 9796], ['severity', 9829], ['routing', 4032], ['intent', 1], ['enum', 1], ['routing', 1], ['enum', 1], ['routing', 1], ['intent', 1], ['routing', 3], ['enum', 1], ['routing', 2], ['intent', 2], ['routing', 1], ['intent', 1], ['routing', 1], ['intent', 1], ['enum', 1], ['routing', 2], ['intent', 1], ['routing', 1], ['enum', 2], ['intent', 4], ['enum', 1], ['routing', 2], ['intent', 3], ['enum', 1], ['routing', 2], ['intent', 1], ['enum', 1], ['intent', 2], ['enum', 1]] nruns 6030
+
+===== adequacy 12000
+ subs {'jev1_hs2_bar': 2182, 'jev1_hs2_score': 2645, 'jev1_hs2_pref': 1795, 'jev1_agent_audit_yn': 2507, 'jev1_agent_audit_count': 1425, 'jev1_agent_audit_first': 1446}
+ sources {'helpsteer2': 4827, 'hs2pref': 1795, 'jev1synth': 5378}
+ type {'noul': 4689, 'score': 4070, 'choice': 3241}
+ target {None: 12000}
+ label_source {None: 12000}
+ K [(2, 6484), (4, 1940), (5, 3139), (6, 437)]
+ gold top [('true', 2910), ('false', 1779), ('0', 1219), ('4', 1065), ('response_a', 918), ('response_b', 877), ('1', 849), ('none', 673), ('3', 522), ('2', 415), ('R1', 270), ('R2', 203)] ndistinct 15
+ gold pos [(0, 4072), (1, 3000), (2, 295), (3, 335), (4, 149), (5, 79), ('NA:0', 1219), ('NA:1', 849), ('NA:2', 415), ('NA:3', 522), ('NA:4', 1065)]
+   K=2 pos [(0, 3770), (1, 2714)]
+   K=4 pos [(0, 126), (1, 127), (2, 119), (3, 143)]
+   K=5 pos [(0, 100), (1, 96), (2, 106), (3, 111), (4, 81)]
+   K=6 pos [(0, 76), (1, 63), (2, 70), (3, 81), (4, 68), (5, 79)]
+ criteria-sorted? {False: 11050, True: 950}
+ crit sigs [(('true', 'false'), 4689), (('no requirement is violated', 'exactly one requirement is violated', 'exactly two requirements are violated', 'three or more requirements are violated'), 1425), (('response_a', 'response_b'), 917), (('response_b', 'response_a'), 878), (('incoherent or unreadable', 'mostly unclear, hard to follow', 'partly clear with noticeable contradictions or confusion', 'mostly clear and consistent', 'perfectly clear and self-consistent'), 624), (('not helpful at all: ignores or fails the request', 'slightly helpful: addresses little of the request', 'partially helpful: useful but misses key parts', 'mostly helpful: covers the request with minor gaps', 'fully helpful: completely satisfies the request'), 623)]
+ instr [("Does the agent's trace satisfy every listed requirement?", 2507), ("Which is the first listed requirement (lowest number) that the agent's trace violates?", 1446), ("How many of the listed requirements does the agent's trace violate?", 1425), ('Does the AI response meet this bar: factually correct with at most minor errors or omissio', 1160), ('Does the AI response meet this bar: mostly or fully helpful for what the user asked (3 or ', 1022), ('Which response better serves the user?', 632)] ndistinct 17
+ state keys [(('agent_trace', 'requirements', 'task'), 5378), (('ai_response', 'user_request'), 4827), (('response_a', 'response_b', 'user_request'), 1795)]
+ chars p50/p90/p99/max 1339 4050 6017 7367
+
+===== enum 12000
+ subs {'jev1_notice_carrier_yn': 243, 'jev1_notice_status': 1376, 'jev1_notice_currency': 1389, 'jev1_notice_payment_method': 1382, 'jev1_notice_plan_yn': 244, 'jev1_notice_priority_yn': 134, 'jev1_notice_carrier': 1393, 'jev1_notice_priority_level': 792, 'jev1_notice_plan': 1398, 'jev1_notice_currency_yn': 264, 'jev1_notice_payment_method_yn': 245, 'jev1_notice_priority': 688, 'jev1_notice_status_yn': 248, 'jev1_massive_slot_value': 1029, 'jev1_massive_slot_type': 1175}
+ sources {'jev1synth': 9796, 'massive': 2204}
+ type {'noul': 1378, 'choice': 9830, 'score': 792}
+ target {None: 12000}
+ label_source {None: 12000}
+ K [(0, 1378), (4, 3877), (5, 3126), (6, 2839), (7, 201), (8, 199), (9, 198), (10, 182)]
+ gold top [('false', 714), ('true', 664), ('starter', 294), ('business', 289), ('growth', 280), ('nonprofit', 274), ('enterprise', 261), ('rejected', 251), ('gift_card', 249), ('on_hold', 243), ('paypal', 238), ('approved', 233)] ndistinct 100
+ gold pos [(0, 1907), (1, 2006), (2, 1988), (3, 1963), (4, 1189), (5, 561), (6, 87), (7, 65), (8, 45), (9, 19), ('NA:0', 202), ('NA:1', 216), ('NA:2', 197), ('NA:3', 177), ('NA:false', 714), ('NA:true', 664)]
+   K=4 pos [(0, 732), (1, 773), (2, 786), (3, 794)]
+   K=5 pos [(0, 607), (1, 658), (2, 634), (3, 607), (4, 620)]
+   K=6 pos [(0, 469), (1, 486), (2, 462), (3, 462), (4, 478), (5, 482)]
+   K=7 pos [(0, 39), (1, 25), (2, 29), (3, 33), (4, 28), (5, 20), (6, 27)]
+ criteria-sorted? {True: 1547, False: 10453}
+ crit sigs [((), 1378), (('low', 'normal', 'high', 'urgent'), 818), (('K=7',), 201), (('K=8',), 199), (('K=9',), 198), (('K=10',), 182)]
+ instr [('What is the CURRENT priority stated in the document?', 1480), ('What is the CURRENT plan stated in the document?', 1398), ('What is the CURRENT carrier stated in the document?', 1393), ('What is the CURRENT currency stated in the document?', 1389), ('What is the CURRENT payment method stated in the document?', 1382), ('What is the CURRENT status stated in the document?', 1376)] ndistinct 842
+ state keys [(('document_type', 'text'), 9796), (('utterance',), 2204)]
+ chars p50/p90/p99/max 399 481 537 592
+
+===== intent 12000
+ subs {'jev1_banking77_intent': 3251, 'jev1_banking77_intent_yn': 808, 'jev1_clinc150_intent': 3577, 'jev1_clinc150_intent_yn': 894, 'jev1_massive_intent': 2794, 'jev1_massive_intent_yn': 676}
+ sources {'banking77': 4059, 'clinc150': 4471, 'massive': 3470}
+ type {'choice': 9622, 'noul': 2378}
+ target {None: 12000}
+ label_source {None: 12000}
+ K [(0, 2378), (6, 846), (7, 896), (8, 870), (9, 878), (10, 847), (11, 943), (12, 866), (13, 870), (14, 903), (15, 854), (16, 849)]
+ gold top [('true', 1214), ('false', 1164), ('calendar_set', 195), ('play_music', 174), ('general_quirky', 144), ('qa_factoid', 144), ('calendar_query', 137), ('weather_query', 130), ('news_query', 119), ('email_query', 107), ('email_sendemail', 91), ('calendar_remove', 79)] ndistinct 288
+ gold pos [(0, 968), (1, 949), (10, 390), (11, 324), (12, 214), (13, 197), (14, 114), (15, 51), (2, 972), (3, 962), (4, 947), (5, 933), (6, 782), (7, 724), (8, 600), (9, 495), ('NA:false', 1164), ('NA:true', 1214)]
+   K=6 pos [(0, 144), (1, 129), (2, 148), (3, 149), (4, 133), (5, 143)]
+   K=7 pos [(0, 138), (1, 113), (2, 131), (3, 123), (4, 136), (5, 120), (6, 135)]
+   K=8 pos [(0, 101), (1, 120), (2, 97), (3, 107), (4, 117), (5, 125), (6, 102), (7, 101)]
+ criteria-sorted? {False: 9620, True: 2380}
+ crit sigs [((), 2378), (('K=11',), 943), (('K=14',), 903), (('K=7',), 896), (('K=9',), 878), (('K=8',), 870)]
+ instr [('Classify the message into one of the intents.', 3275), ('Which intent label fits this message best?', 3178), ("What is the user's intent?", 3169), ("Is the user's intent 'calendar set'?", 32), ("Is the user's intent 'play music'?", 31), ("Is the user's intent 'news query'?", 30)] ndistinct 288
+ state keys [(('user_request',), 4471), (('customer_message',), 4059), (('utterance',), 3470)]
+ chars p50/p90/p99/max 528 800 1009 1267
+
+===== long_policy 12000
+ subs {'jev1_lp_expense': 4005, 'jev1_lp_returns': 4008, 'jev1_lp_leave': 3987}
+ sources {'jev1synth': 12000}
+ type {'noul': 4627, 'choice': 6383, 'score': 990}
+ target {None: 12000}
+ label_source {None: 12000}
+ K [(0, 4627), (3, 1468), (4, 3888), (5, 2017)]
+ gold top [('false', 3061), ('not_returnable', 1941), ('true', 1566), ('approve_partial', 1010), ('L6', 660), ('full_refund', 659), ('1', 438), ('L3', 362), ('L4', 299), ('2', 288), ('reject_all', 239), ('L5', 225)] ndistinct 234
+ gold pos [(0, 1562), (1, 1655), (2, 1580), (3, 1143), (4, 443), ('NA:0', 181), ('NA:1', 438), ('NA:2', 288), ('NA:3', 83), ('NA:false', 3061), ('NA:true', 1566)]
+   K=3 pos [(0, 505), (1, 497), (2, 466)]
+   K=4 pos [(0, 696), (1, 732), (2, 729), (3, 741)]
+   K=5 pos [(0, 361), (1, 426), (2, 385), (3, 402), (4, 443)]
+ criteria-sorted? {True: 5022, False: 6978}
+ crit sigs [((), 4627), (('nothing', 'less than half of the claimed total', 'at least half, but not all', 'the full claimed total'), 990), (('approve_partial', 'reject_all', 'approve_full'), 245), (('reject_all', 'approve_partial', 'approve_full'), 233), (('approve_full', 'approve_partial', 'reject_all'), 232), (('approve_partial', 'approve_full', 'reject_all'), 223)]
+ instr [('What does the returns policy allow for this case?', 2841), ('Should the leave request be approved under the policy?', 2379), ('Which clause decides this request? (Check L7, then L4, L5, L3 and finally L6.)', 1608), ('Applying the policy to the case, what is the outcome of the claim?', 1367), ('Can the customer get money back (a refund of any size, not store credit) for this item?', 1167), ('What share of the claimed total does the policy reimburse?', 990)] ndistinct 11
+ state keys [(('case', 'policy_document'), 12000)]
+ chars p50/p90/p99/max 3951 4572 5003 5292
+
+===== policy 12000
+ subs {'jev1_aegis_unsafe': 5493, 'jev1_aegis_category': 1625, 'jev1_access_policy_yn': 3699, 'jev1_access_policy_ground': 1183}
+ sources {'aegis2': 7118, 'jev1synth': 4882}
+ type {'noul': 10817, 'choice': 1183}
+ target {'prompt': 5721, 'response': 1397, None: 4882}
+ label_source {'human': 6344, 'llm_jury': 774, None: 4882}
+ K [(2, 10817), (5, 1183)]
+ gold top [('false', 5886), ('true', 4931), ('allow', 605), ('deny_clearance', 463), ('deny_purpose', 47), ('deny_hours', 40), ('deny_mfa', 28)] ndistinct 7
+ gold pos [(0, 5152), (1, 6148), (2, 219), (3, 243), (4, 238)]
+   K=2 pos [(0, 4931), (1, 5886)]
+   K=5 pos [(0, 221), (1, 262), (2, 219), (3, 243), (4, 238)]
+ criteria-sorted? {False: 11990, True: 10}
+ crit sigs [(('true', 'false'), 10817), (('deny_clearance', 'deny_purpose', 'deny_hours', 'allow', 'deny_mfa'), 17), (('allow', 'deny_mfa', 'deny_clearance', 'deny_hours', 'deny_purpose'), 17), (('deny_purpose', 'allow', 'deny_mfa', 'deny_clearance', 'deny_hours'), 17), (('deny_mfa', 'allow', 'deny_purpose', 'deny_clearance', 'deny_hours'), 16), (('deny_hours', 'deny_clearance', 'allow', 'deny_mfa', 'deny_purpose'), 16)]
+ instr [('Is the user message unsafe under the content policy (any category, or otherwise clearly ha', 2101), ('Should the user message be flagged as unsafe?', 1995), ('Should the access be granted?', 1853), ('Is this access request permitted by the policy?', 1846), ('What is the policy decision for this request, and on which ground? (When several grounds d', 1183), ('Should the assistant reply be flagged as unsafe?', 715)] ndistinct 29
+ state keys [(('access_policy', 'access_request'), 4882), (('content_policy', 'user_message'), 4096), (('user_message',), 1625), (('assistant_reply', 'content_policy', 'user_message'), 1397)]
+ chars p50/p90/p99/max 979 1594 3180 11315
+
+===== routing 12000
+ subs {'jev1_model_routing_yn': 1104, 'jev1_model_routing': 3234, 'jev1_ticket_routing': 3252, 'jev1_ticket_routing_yn': 780, 'jev1_massive_scenario': 2693, 'jev1_massive_scenario_yn': 937}
+ sources {'jev1synth': 8370, 'massive': 3630}
+ type {'noul': 2821, 'choice': 9179}
+ target {None: 12000}
+ label_source {None: 12000}
+ K [(0, 2821), (4, 376), (5, 985), (6, 1038), (7, 1031), (8, 1059), (9, 1038), (10, 400), (11, 1623), (12, 1629)]
+ gold top [('true', 1475), ('no_eligible_model', 1423), ('false', 1346), ('support_l1', 538), ('vip_desk', 524), ('sales_inbound', 441), ('calendar', 398), ('play', 330), ('identity_access', 313), ('qa', 275), ('billing_general', 267), ('legal_review', 243)] ndistinct 48
+ gold pos [(0, 1224), (1, 1174), (10, 283), (11, 149), (2, 1211), (3, 1142), (4, 1078), (5, 918), (6, 717), (7, 556), (8, 405), (9, 322), ('NA:false', 1346), ('NA:true', 1475)]
+   K=4 pos [(0, 79), (1, 100), (2, 106), (3, 91)]
+   K=5 pos [(0, 189), (1, 192), (2, 223), (3, 184), (4, 197)]
+   K=6 pos [(0, 170), (1, 152), (2, 174), (3, 174), (4, 187), (5, 181)]
+   K=7 pos [(0, 157), (1, 138), (2, 137), (3, 139), (4, 151), (5, 154), (6, 155)]
+   K=8 pos [(0, 154), (1, 128), (2, 134), (3, 124), (4, 115), (5, 152), (6, 137), (7, 115)]
+ criteria-sorted? {True: 2851, False: 9149}
+ crit sigs [((), 2821), (('K=12',), 1629), (('K=11',), 1623), (('K=8',), 1059), (('K=9',), 1038), (('K=7',), 1031)]
+ instr [('Apply the routing rule to the catalog. Where does the request go?', 1628), ('Which model should serve this request under the routing rule?', 1606), ('Is at least one catalog model eligible for this request under the routing rule?', 1104), ('Using the numbered routing rules (first match wins), route the ticket.', 1096), ('Apply the routing policy in order; the first matching rule decides. Which queue receives t', 1088), ('Which queue does the routing policy send this ticket to? Rules are checked top to bottom a', 1068)] ndistinct 28
+ state keys [(('model_catalog', 'request', 'routing_rule'), 4338), (('routing_policy', 'ticket'), 4032), (('channel', 'utterance'), 2693), (('utterance',), 937)]
+ chars p50/p90/p99/max 1715 2325 2396 2497
+
+===== severity 12000
+ subs {'jev1_sev_complaint': 1957, 'jev1_sev_facility': 1961, 'jev1_sev_finance': 1967, 'jev1_sev_it_outage': 1977, 'jev1_sev_security': 1967, 'jev1_sst5_intensity': 2171}
+ sources {'jev1synth': 9829, 'sst5': 2171}
+ type {'score': 12000}
+ target {None: 12000}
+ label_source {None: 12000}
+ K [(4, 5885), (5, 6115)]
+ gold top [('1', 3634), ('2', 3391), ('3', 2741), ('0', 1634), ('4', 600)] ndistinct 5
+ gold pos [('NA:0', 1634), ('NA:1', 3634), ('NA:2', 3391), ('NA:3', 2741), ('NA:4', 600)]
+ criteria-sorted? {False: 11421, True: 579}
+ crit sigs [(('routine: first contact, no risk signals', 'watch: repeat contact', 'priority: threatens to leave, or an enterprise customer with a repeat contact', 'urgent: mentions a regulator or ombudsman'), 1391), (('very negative', 'negative', 'neutral', 'positive', 'very positive'), 1093), (('very positive', 'positive', 'neutral', 'negative', 'very negative'), 1078), (('urgent: mentions a regulator or ombudsman', 'priority: threatens to leave, or an enterprise customer with a repeat contact', 'watch: repeat contact', 'routine: first contact, no risk signals'), 566), (('cosmetic: no hazard', 'minor: a hazard, but fewer than 8 people exposed or the area closed', 'serious: hazard with 8+ people exposed and the area still open', 'critical: any injury'), 249), (('cosmetic: no hazard', 'minor: a hazard, but fewer than 2 people exposed or the area closed', 'serious: hazard with 2+ people exposed and the area still open', 'critical: any injury'), 243)]
+ instr [('Which severity level does the rubric assign to this report?', 3315), ("Grade the report's severity on the rubric.", 3293), ('Apply the severity rubric to the report.', 3221), ('Grade the sentiment intensity of the review on the scale.', 1099), ('How strongly negative or positive is this movie review excerpt?', 1072)] ndistinct 5
+ state keys [(('report', 'rubric_rule'), 9829), (('review',), 2171)]
+ chars p50/p90/p99/max 648 678 693 701
+
+===== state_tracking 12000
+ subs {'jev1_events_order': 2295, 'jev1_events_ticket': 2304, 'jev1_events_reservation': 2298, 'jev1_events_account': 2292, 'jev1_woz_value': 1963, 'jev1_woz_value_yn': 848}
+ sources {'jev1synth': 9189, 'multiwoz22': 2811}
+ type {'choice': 8185, 'noul': 3336, 'score': 479}
+ target {None: 12000}
+ label_source {None: 12000}
+ K [(0, 3336), (3, 1091), (4, 1960), (5, 3842), (6, 939), (7, 523), (8, 309)]
+ gold top [('true', 1748), ('false', 1588), ('opt_a', 367), ('opt_d', 323), ('opt_b', 317), ('held', 315), ('opt_e', 314), ('opt_c', 302), ('1', 295), ('cancelled', 214), ('3', 204), ('4_harbour_rd', 201)] ndistinct 132
+ gold pos [(0, 1807), (1, 1803), (2, 1725), (3, 1405), (4, 1050), (5, 262), (6, 101), (7, 32), ('NA:0', 91), ('NA:1', 201), ('NA:2', 90), ('NA:3', 97), ('NA:false', 1588), ('NA:true', 1748)]
+   K=3 pos [(0, 366), (1, 381), (2, 344)]
+   K=4 pos [(0, 355), (1, 358), (2, 392), (3, 376)]
+   K=5 pos [(0, 804), (1, 797), (2, 728), (3, 744), (4, 769)]
+   K=6 pos [(0, 155), (1, 145), (2, 148), (3, 170), (4, 158), (5, 163)]
+   K=7 pos [(0, 83), (1, 78), (2, 71), (3, 72), (4, 75), (5, 74), (6, 70)]
+   K=8 pos [(0, 44), (1, 44), (2, 42), (3, 43), (4, 48), (5, 25), (6, 31), (7, 32)]
+ criteria-sorted? {False: 8410, True: 3590}
+ crit sigs [((), 3336), (('K=7',), 523), (('low', 'normal', 'high', 'urgent'), 491), (('K=8',), 309), (('plus', 'basic', 'premium'), 104), (('confirmed', 'cancelled', 'held'), 102)]
+ instr [('Is the account frozen after the last event?', 787), ('What is the delivery address after the last event?', 768), ('How many units are in the order after the last event?', 757), ('What is the account balance after the last event?', 745), ('What is the ticket priority after the last event?', 698), ('What is the reservation status after the last event?', 554)] ndistinct 420
+ state keys [(('entity', 'event_log', 'note'), 9189), (('dialogue',), 2811)]
+ chars p50/p90/p99/max 687 941 1646 2931
+
+EXACT dup rows (beyond first): 0
+NEAR dup rows by family: {'adequacy': 754, 'state_tracking': 60, 'enum': 645, 'severity': 310, 'routing': 66}
+
+SUB gold:
+  jev1_access_policy_ground 1183 [('allow', 605), ('deny_clearance', 463), ('deny_purpose', 47), ('deny_hours', 40)]
+  jev1_access_policy_yn 3699 [('true', 1878), ('false', 1821)]
+  jev1_aegis_category 1625 [('false', 1213), ('true', 412)]
+  jev1_aegis_unsafe 5493 [('false', 2852), ('true', 2641)]
+  jev1_agent_audit_count 1425 [('0', 680), ('1', 528), ('2', 185), ('3', 32)]
+  jev1_agent_audit_first 1446 [('none', 673), ('R1', 270), ('R2', 203), ('R3', 179)]
+  jev1_agent_audit_yn 2507 [('false', 1361), ('true', 1146)]
+  jev1_banking77_intent 3251 [('balance_not_updated_after_cheque_or_cash_deposit', 70), ('transaction_charged_twice', 69), ('wrong_amount_of_cash_received', 68), ('direct_debit_payment_not_recognised', 67)]
+  jev1_banking77_intent_yn 808 [('true', 425), ('false', 383)]
+  jev1_clinc150_intent 3577 [('book_flight', 36), ('accept_reservations', 36), ('book_hotel', 34), ('carry_on', 34)]
+  jev1_clinc150_intent_yn 894 [('false', 451), ('true', 443)]
+  jev1_events_account 2292 [('true', 591), ('false', 419), ('plus', 198), ('basic', 196)]
+  jev1_events_order 2295 [('4_harbour_rd', 201), ('12_elm_st', 193), ('created', 182), ('88_king_ave', 171)]
+  jev1_events_reservation 2298 [('true', 348), ('false', 346), ('held', 315), ('standard', 165)]
+  jev1_events_ticket 2304 [('false', 277), ('true', 266), ('1', 201), ('open', 162)]
+  jev1_hs2_bar 2182 [('true', 1764), ('false', 418)]
+  jev1_hs2_pref 1795 [('response_a', 918), ('response_b', 877)]
+  jev1_hs2_score 2645 [('4', 1065), ('0', 539), ('3', 490), ('1', 321)]
+  jev1_lp_expense 4005 [('approve_partial', 1010), ('false', 708), ('1', 438), ('true', 373)]
+  jev1_lp_leave 3987 [('false', 1513), ('true', 866), ('L6', 660), ('L3', 362)]
+  jev1_lp_returns 4008 [('not_returnable', 1941), ('false', 840), ('full_refund', 659), ('true', 327)]
+  jev1_massive_intent 2794 [('calendar_set', 195), ('play_music', 152), ('general_quirky', 144), ('qa_factoid', 144)]
+  jev1_massive_intent_yn 676 [('true', 346), ('false', 330)]
+  jev1_massive_scenario 2693 [('calendar', 398), ('play', 330), ('qa', 275), ('email', 241)]
+  jev1_massive_scenario_yn 937 [('true', 482), ('false', 455)]
+  jev1_massive_slot_type 1175 [('date', 157), ('place_name', 103), ('person', 92), ('event_name', 81)]
+  jev1_massive_slot_value 1029 [('opt_a', 195), ('opt_b', 187), ('opt_c', 178), ('opt_d', 172)]
+  jev1_model_routing 3234 [('no_eligible_model', 1423), ('brisk-mini', 143), ('ember-code', 133), ('cobalt-7', 131)]
+  jev1_model_routing_yn 1104 [('true', 615), ('false', 489)]
+  jev1_notice_carrier 1393 [('fedex', 197), ('dhl', 180), ('usps', 179), ('dpd', 177)]
+  jev1_notice_carrier_yn 243 [('false', 132), ('true', 111)]
+  jev1_notice_currency 1389 [('eur', 187), ('jpy', 186), ('chf', 185), ('inr', 179)]
+  jev1_notice_currency_yn 264 [('false', 138), ('true', 126)]
+  jev1_notice_payment_method 1382 [('gift_card', 249), ('paypal', 238), ('invoice_net_30', 231), ('credit_card', 231)]
+  jev1_notice_payment_method_yn 245 [('true', 124), ('false', 121)]
+  jev1_notice_plan 1398 [('starter', 294), ('business', 289), ('growth', 280), ('nonprofit', 274)]
+  jev1_notice_plan_yn 244 [('false', 125), ('true', 119)]
+  jev1_notice_priority 688 [('normal', 196), ('high', 175), ('low', 165), ('urgent', 152)]
+  jev1_notice_priority_level 792 [('1', 216), ('0', 202), ('2', 197), ('3', 177)]
+  jev1_notice_priority_yn 134 [('false', 69), ('true', 65)]
+  jev1_notice_status 1376 [('rejected', 251), ('on_hold', 243), ('approved', 233), ('cancelled', 230)]
+  jev1_notice_status_yn 248 [('false', 129), ('true', 119)]
+  jev1_sev_complaint 1957 [('2', 754), ('1', 750), ('3', 232), ('0', 221)]
+  jev1_sev_facility 1961 [('1', 677), ('2', 527), ('0', 446), ('3', 311)]
+  jev1_sev_finance 1967 [('1', 674), ('2', 657), ('0', 361), ('3', 275)]
+  jev1_sev_it_outage 1977 [('3', 910), ('1', 584), ('2', 239), ('4', 125)]
+  jev1_sev_security 1967 [('2', 789), ('3', 431), ('1', 382), ('0', 198)]
+  jev1_sst5_intensity 2171 [('3', 582), ('1', 567), ('2', 425), ('4', 308)]
+  jev1_ticket_routing 3252 [('support_l1', 538), ('vip_desk', 524), ('sales_inbound', 441), ('identity_access', 313)]
+  jev1_ticket_routing_yn 780 [('false', 402), ('true', 378)]
+  jev1_woz_value 1963 [('opt_a', 367), ('opt_d', 323), ('opt_b', 317), ('opt_e', 314)]
+  jev1_woz_value_yn 848 [('false', 430), ('true', 418)]
