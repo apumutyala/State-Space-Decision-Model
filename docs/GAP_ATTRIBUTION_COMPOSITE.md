@@ -28,6 +28,9 @@ board's 72.5.
   0.79–1.00 I points, against 0.17–0.38 for a choice miss.
 - **By family, only probability is robustly behind for all three candidates, and temporal_numeric for stock and JEV1.** Every other family
   is unresolved at 4–24 items per family. The earlier "six families hold 66–81%" claim is **retracted** (it was post hoc and optimistic; see §2).
+- **H2O-host training (§5–5c).** JEV2-H2O and JEV2-H2O-L gain +4.44 and +8.97 pp in-distribution, but public Δ Comp A is −0.41 and −0.97
+  (both CIs span 0; Holm claims neither). The remaining gap is attributed to the **training-data distribution** (headroom, conventions, shape), not to
+  capacity or the readout.
 - **Causes, all measured:** (a) a train/eval data shape mismatch (the jev1 audit); (b) noul indecision, where the 0.2–0.8 band counts as
   wrong; (c) a slow native readout (0.197 s vs 0.067 s); (d) 0.093 epoch of training. Post-hoc calibration on H2O itself buys
   at most +0.5 Composite (not significant), so **the remaining gap is answer quality, not calibration.**
@@ -46,6 +49,8 @@ board's 72.5.
 | ST | origin/state @9b47aca5 | BOARD.md, PREREG.md, results/ledger.tsv |
 | RV | claude/ev-review-gap-attr @f2a04059 | docs/REVIEW_GAP_ATTRIBUTION.md, receipts/2026-10-11-ev-review-gap-attr/ (independent review: reproduction + Shapley CONFIRMED; 5 edits applied here) |
 | JH | stack/qwen35/jev2-h2o @b5aa2645 | receipts/2026-10-11-jev2-h2o-x7c42/ (job-x7c42 landing) |
+| XR | claude/ev-x7c42-rescore @bf706854 | receipts/2026-10-11-ev-x7c42-rescore/RESCORE_X7C42.md |
+| JL | stack/qwen35/jev2-h2o @c5a2fb33 | receipts/2026-10-11-jev2-h2o-L-q668q/ (job-q668q landing) |
 | HRN | local notes (not in git) | ssdm-wt/b-landscape/H2O_RECIPE.md (web research 2026-10-10; summarised pages) |
 | **GA** | **this branch** | **scripts/gap_attribution.py, receipts/2026-10-11-gap-attribution/** (gap_attribution.json, cfg.json, run.log, SHA256SUMS) |
 
@@ -201,7 +206,7 @@ The balance at the time of these decisions was about $104 (BOARD #13, ST). Each 
 | **Consistency-view training** + **νPI λ ablation** (stack/qwen35/consistency @d517df9c) | CPU tests 13/13, OFF path bit-identical (job-xejp8) | no GPU run funded. Its effect on noul indecision (C2) and calibration is unmeasured. | ST ledger 2026-10-11T08:10Z |
 | **D20 links 2–3** (stack/rwkv7/d20-v4-chain @bd7c7e78) | link 1 artifact kept; PARKED | l2 + l3 need ~$113 of holds vs $104 credit, and l2 alone yields no screen (BOARD #13). The 13.3B line also carries the S + K penalty (5.3 points). | ST BOARD.md |
 | **H2O comparator rev 0940cbd7** (post-v1.1, multimodal, per-type T) | not measured | EV-PREREG-H2O-HOST amendment 1: a different, newer model. If measured it is a raised bar, never our host retroactively. | ST PREREG.md |
-| JEV2-H2O-L (17,959 rows, about 1 epoch) | submitted as job-q668q; Holm with JEV2-H2O | pending, see §5b | ST PREREG.md, ledger |
+| JEV2-H2O-L (17,959 rows) | LANDED job-q668q, flat (§5b) | – | JL |
 
 ## (5) JEV2-H2O result: LANDED, FLAT (job-x7c42)
 Source tag **JH**: stack/qwen35/jev2-h2o @b5aa2645, receipts/2026-10-11-jev2-h2o-x7c42/ (README.md, landing.json, slice_floor.json; art-cwk49
@@ -232,6 +237,22 @@ The job was billed $2.66.
 - **Other readouts:** tfit T 0.93, ΔA −2.66 [−5.36, −0.99]. G1 (shim mode, reported only) fails: the labelled prompt is not invariant.
 - Per-family deltas: JH landing.json (`by_family_public`, `slice_floor.per_family`). They are descriptive only (§2, §6).
 
+**Independent rescore** (source tag **XR**: claude/ev-x7c42-rescore @bf706854, receipts/2026-10-11-ev-x7c42-rescore/RESCORE_X7C42.md). It AGREES on
+95 fields (max |Δ| 0). The primary is not met: the 97.5% CI is [−2.06, +1.58] and one-sided p = 0.565, so Holm cannot claim it in any order.
+Corrections and context:
+- **Slice levels.** The exact slice levels are **84.61% vs 80.17%** (the 85.0 / 80.0 above are rounded). Δ +4.44 pp [+3.47, +5.31], McNemar p 3e-19.
+- **Control path.** This job's control is **76.57**, against 76.78 (4g6m8) and 76.64 (zbtbj). It runs H2O through the SSDM lm_label readout path
+  rather than the vendored shim forward. Top-1 is identical (205 on 231/231 items) and the drift is float-level (max |dp| 0.019). The primary is
+  paired in-job, so it is valid, but "vs zbtbj" would read about 0.2 A differently.
+- **Nondeterminism.** GPU training is nondeterministic run to run. Step 0 is bitwise equal to job-9fy9p, but the trained steps diverge from step 1
+  (NLL Δ ≤ 0.0011, top-1 ±3/360). Both runs select step 200, and step 200 was scored.
+- **Transfer table** (XR §7). The six families with significant slice gains (tradeoff +15.5, adversarial +14.5, trap +10.0, adequacy +8.5,
+  ambiguous +8.0, policy +7.0 pp) are **saturated on public**: the control gets 83–100% top-1, with 3 errors in 51 items. **23 of the 26 public
+  errors** sit in temporal_numeric (10), judge_hard (5), long_policy (5) and multi_hop (3). On the slice these show no gain or a small one
+  (+3.0 n.s., 0.0, +1.5 n.s., +3.5).
+- **Shape shift** at the schema level: dict vs string states, a different question-type mix, different K, and public states 2–6x longer.
+- **Score is the only type whose gain transfers:** slice +10.27 pp, public cc +6.08 [+0.15, +10.51].
+
 **Why the slice gain did not transfer: UNTESTED hypotheses**, in the evidence lane's ranking. None of them has a receipt yet.
 1. **Headroom mismatch.** The slice starts at 80.0%, but H2O already gets 205/231 public items right (I 77.6), so there is little room left
    on the public items. Most of the slice gain may come from items H2O-like public items already get right.
@@ -239,21 +260,49 @@ The job was billed $2.66.
    policy, ambiguous). Training on the former can raise slice accuracy and still not move public answers. This is jev3 proposal (a) on BOARD (state 0d3dda70).
 3. **Shape.** Remaining length and format gaps between the draw and the public items: the jev2b families and 3 jev2a-v2 families, and prose
    states (C1; jev3 proposal (c)).
-4. **Under-training.** 333 steps on 2,664 rows, with the best checkpoint at step 200. JEV2-H2O-L tests this directly.
+4. **Under-training.** 333 steps on 2,664 rows, with the best checkpoint at step 200. **Disfavoured by JEV2-H2O-L (§5b):** 7x the data doubled the slice gain and
+   left public flat-to-worse.
 
-## (5b) JEV2-H2O-L: PENDING (placeholder)
-A-PREREG-JEV2-H2O-L: the same cell on bschema-draw-jev2h-L (17,959 rows, 2,244 steps, about 1 epoch) with the same selection slice 142a593a. It runs as
-job-q668q (stack/qwen35/jev2-h2o @1e12ec12; worst case $33.64; ST ledger 2026-10-11T15:40Z).
-- **Multiplicity:** Holm over JEV2-H2O and JEV2-H2O-L (A-PREREG-JEV2-H2O am. 3). JEV2-H2O's p is not below 0.025 (its CI spans 0 at 95%), so
-  L must reach p < 0.025 (97.5% CI excluding 0) on its own.
-- **To fill on landing:**
-  - Δ Composite A with its 97.5% and 95% CIs;
-  - the step-0 floor;
-  - ΔI per type;
-  - the noul band;
-  - a GA rerun with its preds vs the in-job control.
+## (5b) JEV2-H2O-L: LANDED, FLAT (job-q668q)
+Source tag **JL**: stack/qwen35/jev2-h2o @c5a2fb33, receipts/2026-10-11-jev2-h2o-L-q668q/ (README.md, landing.json; art-5si2g tar sha 91287177…;
+billed $9.39).
 
-  Together these test hypothesis 4 (under-training) against the other three.
+**Setup.** The same cell on bschema-draw-jev2h-L (17,959 rows). The step-10 rate (3.93 s/step) shortened the plan to 1,832 of 2,244 steps, and
+1,845 ran. Step 750 was selected by dev-card NLL (0.4031 vs 0.4908 at step 0), frozen before any public-231 prediction.
+
+| quantity | JEV2-H2O-L (q668q) | JEV2-H2O (x7c42) |
+|---|---|---|
+| rows / selected step | 17,959 / 750 | 2,664 / 200 |
+| **slice floor** (3,600 decisions) | **89.0% vs 80.0%, +8.97 pp [+7.69, +10.22]** | 84.61 vs 80.17, +4.44 pp [+3.47, +5.31] |
+| **Δ Comp A (public-231)** | **−0.97, 95% [−3.38, +1.12], 97.5% [−3.73, +1.41]** | −0.41, 95% [−1.75, +1.39], 97.5% [−2.06, +1.58] |
+| ΔI / ΔC / ΔCap | −2.98 [−8.26, +1.89] / −0.59 / −1.79 | +0.64 / −2.13 / −0.74 |
+| ΔI per type: choice / noul / score | −3.42 / −0.63 / −4.90 | −1.14 / −3.01 / +6.08 |
+| slice-vs-public transfer correlation (per family) | **−0.32** | +0.15 |
+| noul band, native_shimcal / raw native | 0/74 / 16/74 | 0/74 / 16/74 |
+
+- **Holm (A-PREREG-JEV2-H2O am. 3): neither arm is claimable.**
+- Training **about 7x more** jev2 data doubles the in-distribution gain (+4.4 to +9.0 pp). On public, Composite A gets slightly worse
+  (−0.41 to −0.97), and the per-family transfer correlation turns negative. The score-type transfer seen in x7c42 (+6.08) reverses (−4.90).
+  No change here has a CI that excludes 0 on public.
+- JL is the lead's landing, not yet independently rescored.
+
+## (5c) Conclusion: the remaining gap is attributed to the training-data distribution
+Two runs on H2O's own host (x7c42, q668q) separate the candidate causes:
+- **Not capacity.** The same 4B host learns the jev2 distribution, and learns more of it with more data: slice +4.44 then +8.97 pp, both
+  CIs > 0, on ids disjoint from training and from public (XR §5).
+- **Not readout.** The shim readout keeps the noul band at 0/74 in every arm. S and K are within 0.6 of the control. The control itself is H2O on
+  the same path.
+- **The training-data distribution.** More of our data raises in-distribution accuracy and lowers public accuracy (transfer correlation
+  +0.15 then −0.32). The slice gains fall in families already saturated on public, and public's errors (23/26) fall where the data teaches nothing
+  measurable. So the remaining Composite gap, here and in §1–§3 (C1), is attributed to the data's distribution relative to the public/board items:
+  - **headroom:** gains where H2O is already right;
+  - **gold conventions:** rule-engine vs human-rubric golds;
+  - **shape:** state type, length, K, type mix.
+
+  It is not attributed to model capacity or the readout.
+- **What is not separated.** Which of headroom, conventions and shape dominates is untested; that is hypotheses 1–3 in §5, with
+  under-training (4) now disfavoured by q668q. The jev3 proposal (BOARD, state 0d3dda70) targets all three. Any jev3 effect is judged only on the
+  pre-registered overall Composite A (§6 caveat).
 
 ## (6) Sealed-split caveat
 - jevkit's public-231 Intelligence is not on the board's scale. H2O scores I 77.6 locally vs 60.0 on the board, with an identical 205/231 card
