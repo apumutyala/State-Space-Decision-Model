@@ -800,3 +800,51 @@ before any public-231 answer of a trained JEV2-H2O checkpoint existed.
   - **MULTIPLICITY (Holm over 2 arms):** both JEV2-H2O (job-x7c42) and JEV2-H2O-L may claim "H2O-Lightning-4B v1.1 +
     SSDM beats H2O". Holm: the arm with the smaller p must have p < 0.025 (its 97.5% paired CI on delta Composite A
     excludes 0), and only then the other arm is tested at 0.05 (95% CI). Each arm also needs its step-0 floor to pass.
+
+## Modes `jev3_sym_s0` / `jev3_sym_s1` (A-PREREG-JEV3-SYM DRAFT; not on state yet; NOT submitted)
+
+Our stack only (operator directive):
+- **Model:** STOCK Qwen/Qwen3.5-4B (GDN hybrid) with the sym-fork head (layout sym-fork: reorder / relabel invariance by
+  construction) and consistency-view training (stack/qwen35/consistency @d517df9c: view_frac 0.25, families format /
+  instruction / option, FIXED lambda 0.5; the nuPI controller merge is not clean).
+- **Branch:** stack/qwen35/jev3-sym = jev2-4b @683b6f64 + jev2-h2o (runner fixes: screen score --data, checkpoint
+  export right after the cell, min_train_items sized to the data, slice floor) + sym-invariant @55bfdd39 + consistency
+  @d517df9c + jev3-h2o's `slice_first`.
+- **Training settings:** no label smoothing on yes/no rows (0.05 on choice / score), the yes/no 0.2-0.8 band gate,
+  max_len 4,096 with 0-truncation asserts (training and eval).
+- **Data:** the jev3 draw, PLACEHOLDER pins (`data_pins.status`), so the runner refuses before any download. The stub =
+  bschema-draw-jev2-mix-s, so the package and `sf_submit --dry` validate.
+
+**Budget (each seed):** 260 steps (2,080 rows), floor 130. s/step 6.39 = 3.93 MEASURED (4B shim, job-q668q; range
+2.55-3.93) x 1.3 (sym-fork per-option forwards) x 1.25 (consistency views). Clock 40 = ceil(260 x 6.39 x 1.15 / 60) + 8.
+Schedule: setup 15 + guard 5 + heldout 5 + cell 55 + screen 50 + report 5 + reserve 7 = 142 min. Quoted hold $8.95;
+**worst case** (60 + 2 x 142) x $0.063 = **$21.67** (hard cap $22). Expected ~$5.6.
+
+PRE-REGISTRATION TEXT (paste on origin/state before seed 0 is submitted):
+
+- **A-PREREG-JEV3-SYM (lead, DRAFT 2026-10-11, registered BEFORE any JEV3-SYM run).**
+  - **Cell:** as above. In-job arms: the trained sym-fork model ("native") and the IN-JOB control, STOCK Qwen3.5-4B +
+    the H2O shim (stock_shim: the same loaded weights with LoRA off).
+  - **PRIMARY (a new claim family, alpha 0.05):** the seed-0 paired delta Composite A, native minus the in-job stock
+    control, on the 231 public JevBench items (`screen.paired_vs`, same items, same bootstrap draws B = 1,000 seed 16).
+  - **Seeds:** seed 0 and seed 1 are pre-registered and submitted SEQUENTIALLY (one <= $22 hold fits at a time).
+    - Seed 1 runs only if the post-seed-0 balance covers its worst-case hold. Until then the result is reported as
+      "single seed, replication pending", NOT as a claim.
+    - CLAIM iff seed 0's delta Composite A 95% CI > 0 AND both seeds' point estimates > 0 (seed 1 = replication).
+  - **G1 (KEEP gate, both seeds):** on each TRAINED checkpoint, `jobs.sym_eval.perturb_eval` with option_reverse,
+    option_shuffle and key_relabel must give bitwise 0 flips. Every op must have n > 0 and 0 invalid answers, max |dp| =
+    0, the rows must be bit-identical, and the file order is asserted. A checkpoint that loses invariance is not a
+    candidate (`g1_keep_gate`: primary success = false).
+  - **Selection:** only on the jev3 held-out selection slice. The step-0 floor is computed on that slice, and the
+    selection timestamps come before any public prediction (`slice_first`: tfit + floor run before the first screen row;
+    slice_first.json records UTC times). The slice shares no STATE text with any training row, asserted at build (the
+    draw fails closed) and in job (`slice_state_disjoint`, exit 10).
+  - **SECONDARY (reported, not gates):**
+    - Gap to TARGET: H2O-Lightning-4B v1.1 = 76.6 locally is a target, not a comparator. It is computed paired against
+      H2O's EXISTING preds from job-zbtbj (same 231 ids, same bootstrap draws), with NO new H2O run. Caveat: S / K come
+      from different jobs (~2.7 S-pt cross-job noise) and H2O ran through the vendored-shim path.
+    - All 8 jevkit flip operators on the trained model vs the stock-shim receipt (7.55% average).
+    - delta I / C / Capability; native_shimcal and native_tfit.
+    - The yes/no band rate (native <= stock); per-family deltas.
+    - The in-job consistency traces (cons_kl, cons_lambda).
+  - **Caveat:** open-split Intelligence only, never claimed as a board score.

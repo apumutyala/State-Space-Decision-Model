@@ -1,0 +1,23 @@
+{
+ "PLACEHOLDER": "the jev3 draw; STUB = bschema-draw-jev2-mix-s until it lands",
+ "build": "bschema-draw-jev2-mix-s (scripts/jev12_balanced_draw.py over bschema-draw-jev1, bschema-draw-jev2a, bschema-draw-jev2c-v2, bschema-draw-jev2b)",
+ "location": "ssdm-data/m2/build/bschema-draw-jev2-mix-s/ (outside git; deterministic)",
+ "records_uncompressed_sha256": "2c7b954e79d93a4ebc0c21ce76e0ff807c97acc85230e55993da8bc1ba1c4753",
+ "manifest": "bschema-draw-jev2-mix-s.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "30d1bb90a46e4098d846d561156f5184ffed724edf1ad9127302b982998d7e18",
+ "content_map": "bschema-draw-jev2-mix-s.content.jsonl.gz",
+ "content_map_uncompressed_sha256": "9db774c8151a37869a432bb4e02358fc889d01bf6c438b803f2707ea922b882f",
+ "n_records": 2852,
+ "role": "train",
+ "ids_sha256": "447ca54ec230709cb834869fbb6f89535511a3163b211e5c2291f797d0c8d6f7",
+ "schema": "ssdm-train-v0, one question per row (qid 'q'), JevBench request shape",
+ "excludes_cohort": "inherited from every source draw's own gates (each source pointer's excludes_cohort)",
+ "builder": {
+  "module": "scripts/jev12_balanced_draw.py",
+  "seed": 20261010
+ },
+ "templates_verified": [
+  "jrt-h2o-shim:qwen3.5-4b"
+ ],
+ "build_command": "python -X utf8 -I scripts/jev12_balanced_draw.py --src <data>/m2/build/bschema-draw-jev1 --src <data>/m2/build/bschema-draw-jev2a --src <data>/m2/build/bschema-draw-jev2c-v2 --src <data>/m2/build/bschema-draw-jev2b --exclude long_policy=bschema-draw-jev1 --family-cap adequacy=81 --score-share 0.25 --pool-exclude bschema-draw-jev2a=receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt --pool-exclude-sha bschema-draw-jev2a=aeb8027aaaebdb6fad2b24f8b5bee9d37c4e176fcc4e18ad0d366acf1b579705 --pool-rows bschema-draw-jev2a=29895 --pool-exclude bschema-draw-jev2b=receipts/2026-10-10-jev2b-regate/jev2b_exclude_ids.txt --pool-exclude-sha bschema-draw-jev2b=01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b --pool-rows bschema-draw-jev2b=7500 --pool-exclude bschema-draw-jev2c-v2=receipts/2026-10-11-jev2c-v2-regate/jev2c-v2_exclude_ids.txt --pool-exclude-sha bschema-draw-jev2c-v2=01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b --pool-rows bschema-draw-jev2c-v2=1500 --exclude-sub prob_indep --dedupe-source glaive_fc --train-per-family 163 --calib-per-family 200 --name bschema-draw-jev2-mix-s --out <data>/m2/build"
+}

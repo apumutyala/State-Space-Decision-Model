@@ -208,6 +208,9 @@ PARENT=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("
 # JEV2-H2O jev1 switch: a cell with jev1 ON refuses (exit 5) until its verbatim-leaf exclusion list has landed
 python -I -c 'import json,sys; j=json.load(open(sys.argv[1])).get("jev1") or {}; sys.exit(1 if j.get("enabled") and (j.get("exclusion") or {}).get("status") != "landed" else 0)' "$CELL" \
   || fail 5 "jev1 is ON but jev1.exclusion.status != landed (the jev1 verbatim-leaf exclusion list is PENDING)"
+# JEV3-H2O: a cell whose data pins are still placeholders (data_pins.status != final) refuses before any download
+python -I -c 'import json,sys; d=json.load(open(sys.argv[1])).get("data_pins") or {}; sys.exit(1 if d and d.get("status") != "final" else 0)' "$CELL" \
+  || fail 5 "data_pins.status != final (the draw pins are PLACEHOLDERS; fill them from the final draw first)"
 GDN_ARGS=()
 case "$PARENT" in rwkv7) ;; q9af) GDN_ARGS=(--gdn-ckpt "$DATA/gdn/gdn_converted.pt") ;; qwen35) ;;
   *) fail 5 "cell parent $PARENT: rwkv7, q9af or qwen35" ;; esac

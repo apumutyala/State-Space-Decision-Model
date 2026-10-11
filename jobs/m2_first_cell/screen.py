@@ -478,7 +478,11 @@ def jevkit_block(params: dict, template: str) -> dict | None:
                   | ({"covered_families": sorted(jk["covered_families"])} if jk.get("covered_families") else {})
                   | ({"assert_no_truncation": True} if jk.get("assert_no_truncation") else {})
                   | ({"slice_floor": True} if jk.get("slice_floor") else {})
-                  | ({"by_family": True} if jk.get("by_family") else {}))
+                  | ({"by_family": True} if jk.get("by_family") else {})
+                  | ({"slice_first": True} if jk.get("slice_first") else {})
+                  # JEV3-SYM: bitwise G1 KEEP gate, the 8-op flip battery, the H2O target reference, slice/train disjointness
+                  | {k: jk[k] for k in ("g1_max_dp", "g1_keep_gate", "flip_ops_all", "flip_reference", "target_ref",
+                                        "slice_state_disjoint") if k in jk})
     if jk.get("slice_floor") and not (stock and tfit):
         raise ScreenError("jevkit.slice_floor needs stock_shim (step 0 = the untrained host) and tfit (the slice)", 5)
     return {**extra_keys, "price": jk["price"], "price_parsed": price, "lean_template": lean, "extra_templates": extra,
@@ -510,6 +514,11 @@ def score(a) -> int:
         return 10
     out = Path(a.out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    jk0 = rec.get("jevkit") or {}
+    if jk0.get("slice_first"):  # JEV3-H2O: tfit + the step-0 floor on the held-out slice BEFORE any screen row is scored
+        rc = slice_first(jk0, decider, a.model_dir, out / "jevkit", getattr(a, "data", None))
+        if rc:
+            return rc
     (out / "identity-child.json").write_text(json.dumps({**ident, "readout": ro, "plan_check": plan,
                                                          "proxy": prox["ids_sha256"]}, indent=1, default=str),
                                              encoding="utf-8")
@@ -592,13 +601,32 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: st
         from jobs.sym_eval.perturb_eval import run as perturb_run
         t0 = time.perf_counter()
         g1 = perturb_run(decider, items, out_dir / "g1", ops=jk["perturb_ops"], seeds=(0,),
-                         row_fn=lambda req: decider.backend._rows(req)[0])
+                         row_fn=lambda req: decider.backend._rows(req)[0], max_dp=float(jk.get("g1_max_dp", 1e-3)))
         ident["g1"] = {"g1_pass": g1["g1_pass"], "rows_all_identical": g1.get("rows_all_identical"),
                        "n_perturbed": g1["n_perturbed"], "seconds": round(time.perf_counter() - t0, 2)}
-    if jk.get("tfit") and not data_dir:  # job-9fy9p: screen score had no --data (AttributeError after the proxy)
+    if jk.get("flip_ops_all"):  # JEV3-SYM: every jevkit perturb operator (8) on the native arm (report only)
+        from jevkit.perturb import OPERATORS
+        from jobs.sym_eval.perturb_eval import run as perturb_run
+        t0 = time.perf_counter()
+        f8 = perturb_run(decider, items, out_dir / "flip8", ops=list(OPERATORS), seeds=(0,), max_dp=1.0)
+        ident["flip8"] = {"n_perturbed": f8["n_perturbed"], "seconds": round(time.perf_counter() - t0, 2)}
+    if jk.get("target_ref"):  # JEV3-SYM: H2O's EXISTING preds (job-zbtbj), copied into the report dir if pinned
+        tr = jk["target_ref"]
+        src = Path(data_dir) / tr["preds"] if data_dir else None
+        if src is not None and src.is_file() and len(tr.get("sha256") or "") == 64 \
+                and hashlib.sha256(src.read_bytes()).hexdigest() == tr["sha256"]:
+            (out_dir / "target_ref.preds.jsonl").write_bytes(src.read_bytes())
+            ident["target_ref"] = {"preds": tr["preds"], "sha256": tr["sha256"], "status": "copied"}
+        else:
+            ident["target_ref"] = {"preds": tr.get("preds"), "status": "UNAVAILABLE (missing or sha256 mismatch)"}
+    first = None
+    if jk.get("slice_first"):  # tfit.json / calib_probs.jsonl / slice_floor.json were written before the screen
+        first = json.loads((out_dir / "slice_first.json").read_text(encoding="utf-8"))
+        ident.update(first)
+    if jk.get("tfit") and not data_dir and first is None:  # job-9fy9p: screen score had no --data (AttributeError after the proxy)
         print("identity: jevkit.tfit needs screen score --data (the data root)", file=sys.stderr)
         return 10
-    if jk.get("tfit"):  # JEV2-4B: scalar T on the CALIB draw's native head log-probs (fit once, frozen before scoring)
+    if jk.get("tfit") and first is None:  # JEV2-4B: scalar T on the CALIB draw's native head log-probs (fit once, frozen before scoring)
         try:
             ident["tfit"] = fit_native_temperature(decider.backend, Path(data_dir) / jk["tfit"]["records"],
                                                    out_dir / "tfit.json", float(jk["tfit"].get("lo", 0.25)),
@@ -619,7 +647,7 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: st
                 f.write(json.dumps(r, separators=(",", ":"), default=str) + "\n")
         ident["stock_shim"] = {**eng.identity(), "seconds": round(time.perf_counter() - t0, 2), "n": len(recs),
                                "status": _count(r["status"] for r in recs)}
-        if jk.get("slice_floor") and jk.get("tfit"):  # A-PREREG-JEV2-H2O: step 0 (the untrained host) on the slice
+        if jk.get("slice_floor") and jk.get("tfit") and first is None:  # A-PREREG-JEV2-H2O: step 0 on the slice
             t0 = time.perf_counter()
             try:
                 ident["slice_floor"] = slice_floor(eng, Path(data_dir) / jk["tfit"]["records"], out_dir / "calib_probs.jsonl",
@@ -716,6 +744,61 @@ class StockShimEngine:
             lab = torch.tensor([self.spec.label_ids[x] for x in labels], device=self.W.device)
             lp = (self.W.index_select(0, lab).float() @ h.to(self.W.device)).tolist()
         return [str(n) for n in names], lp
+
+
+def _state_key(r: dict) -> str:
+    """The state text key (== scripts/jev12_balanced_draw._request_key: sha256 of the canonical JSON of ``state``)."""
+    s = json.dumps(r.get("state"), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(s.encode()).hexdigest()[:24]
+
+
+def slice_state_disjoint(slice_records: Path, train_records: Path) -> dict:
+    """Fail closed (ValueError) if any selection-slice row shares an identical STATE text with any training row."""
+    import gzip
+
+    def keys(p):
+        with gzip.open(p, "rt", encoding="utf-8") as f:
+            return {_state_key(json.loads(x)) for x in f if x.strip()}
+
+    s, t = keys(slice_records), keys(train_records)
+    clash = s & t
+    if clash:
+        raise ValueError(f"{len(clash)} selection-slice state text(s) also appear in the training records")
+    return {"slice_states": len(s), "train_states": len(t), "shared": 0}
+
+
+def slice_first(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: str | None) -> int:
+    """JEV3-H2O: the held-out slice work (native_tfit's calib probabilities + T, and the step-0 floor vs the untrained
+    host) done BEFORE any screen row, so the selection-slice evidence is fixed before public-231 is touched. Writes
+    tfit.json, calib_probs.jsonl, slice_floor.json, slice_floor_rows.jsonl and slice_first.json (with UTC times)."""
+    if not (jk.get("tfit") and jk.get("slice_floor") and jk.get("stock_shim")):
+        print("identity: slice_first needs jevkit.tfit, slice_floor and stock_shim", file=sys.stderr)
+        return 5
+    if not data_dir:
+        print("identity: slice_first needs screen score --data (the data root)", file=sys.stderr)
+        return 10
+    out_dir.mkdir(parents=True, exist_ok=True)
+    ident = {"slice_first": {"started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}}
+    if jk.get("slice_state_disjoint"):  # JEV3-SYM: no slice row may share a STATE text with any training row
+        try:
+            ident["slice_state_disjoint"] = slice_state_disjoint(
+                Path(data_dir) / jk["tfit"]["records"], Path(data_dir) / jk["slice_state_disjoint"]["train_records"])
+        except (OSError, ValueError, KeyError) as e:
+            print(f"identity: slice_state_disjoint: {type(e).__name__}: {e}", file=sys.stderr)
+            return 10
+    try:
+        ident["tfit"] = fit_native_temperature(decider.backend, Path(data_dir) / jk["tfit"]["records"],
+                                               out_dir / "tfit.json", float(jk["tfit"].get("lo", 0.25)),
+                                               float(jk["tfit"].get("hi", 4.0)), jk["tfit"].get("ids_sha256"))
+        eng = StockShimEngine(decider.backend, model_dir)
+        ident["slice_floor"] = slice_floor(eng, Path(data_dir) / jk["tfit"]["records"], out_dir / "calib_probs.jsonl",
+                                           out_dir / "slice_floor.json", jk["tfit"].get("ids_sha256"))
+    except (OSError, ValueError, KeyError) as e:
+        print(f"identity: slice_first: {type(e).__name__}: {e}", file=sys.stderr)
+        return 10
+    ident["slice_first"]["done_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    (out_dir / "slice_first.json").write_text(json.dumps(ident, indent=1, default=str), encoding="utf-8")
+    return 0
 
 
 def slice_floor(eng: "StockShimEngine", records_path: Path, calib_probs: Path, out: Path,
@@ -1198,10 +1281,43 @@ def jevkit_report(jk: dict, d: Path) -> dict:
                                  "native": nb, "stock_shim": sb, "pass": bool(nb is not None and sb is not None and nb <= sb)}
     if jk.get("perturb_ops"):  # JEV2-4B G1 (guarantee check beside the primary)
         g1 = json.loads((d / "g1" / "perturb_report.json").read_text(encoding="utf-8"))
-        out["g1"] = {k: g1.get(k) for k in ("ops", "n_base", "n_perturbed", "g1_pass", "rows_all_identical",
-                                            "duplicate_tie_items", "max_dp_bound", "status")} | {
+        out["g1"] = {k: g1.get(k) for k in ("ops", "n_base", "n_perturbed", "g1_pass", "g1_failures",
+                                            "rows_all_identical", "duplicate_tie_items", "max_dp_bound", "status")} | {
             "per_operator": g1["flip_report"]["per_operator"],
-            "rule": "A-PREREG-JEV2-4B G1: 0 flips, 0 invalid, max |dp| <= 1e-3 on every op (jobs.sym_eval.perturb_eval)"}
+            "rule": f"G1: 0 flips, 0 invalid, every op n > 0, rows bit-identical, max |dp| <= {g1.get('max_dp_bound')} "
+                    "(jobs.sym_eval.perturb_eval.g1_verdict, fail closed; file order asserted)"}
+        if jk.get("g1_keep_gate"):  # A-PREREG-JEV3-SYM: a checkpoint that loses invariance is not a candidate
+            keep = bool(g1.get("g1_pass"))
+            out["g1"]["keep_gate_pass"] = keep
+            if "primary" in out:
+                out["primary"]["g1_keep_gate_pass"] = keep
+                if not keep:
+                    out["primary"]["success"] = False
+                    out["primary"]["candidate"] = False
+                    out["primary"]["g1_verdict"] = "NOT A CANDIDATE: the trained checkpoint fails the bitwise G1 gate"
+    if jk.get("flip_ops_all") and (d / "flip8" / "perturb_report.json").is_file():  # all 8 jevkit ops (report)
+        f8 = json.loads((d / "flip8" / "perturb_report.json").read_text(encoding="utf-8"))
+        fr = f8["flip_report"]
+        out["flip_all_ops"] = {"per_operator": fr["per_operator"], "average_flip_rate": fr.get("average_flip_rate"),
+                               "pooled": fr.get("pooled"), "reference": jk.get("flip_reference")}
+    tp = d / "target_ref.preds.jsonl"
+    if jk.get("target_ref"):  # A-PREREG-JEV3-SYM secondary: gap to the H2O target, paired on its EXISTING preds
+        if tp.is_file():
+            rp = d / "target_ref.jevkit.json"
+            if JC.main(["score", "--public", "--pred", str(tp), "--price", jk["price"], "--out", str(rp)]) != 0:
+                raise ScreenError("jevkit score target_ref failed", 9)
+            rr = json.loads(rp.read_text(encoding="utf-8"))
+            tpreds = [json.loads(x) for x in tp.read_text(encoding="utf-8").splitlines() if x.strip()]
+            tables["target_ref"] = JS.build_table(items, preds_to_answers(tpreds))
+            axes["target_ref"] = (rr["axes"]["speed"], rr["axes"]["cost"])
+            prim = jk.get("paired_primary") or "native"
+            out["gap_to_target"] = {"arm": prim, "target": jk["target_ref"].get("name"),
+                                    "paired": paired_vs(tables, axes, prim, "target_ref"),
+                                    "target_summary": {"composite": rr["scores"], "S": rr["axes"]["speed"],
+                                                       "K": rr["axes"]["cost"]},
+                                    "caveat": jk["target_ref"].get("caveat")}
+        else:
+            out["gap_to_target"] = {"status": "UNAVAILABLE: target_ref preds not shipped / sha mismatch"}
     cov = jk.get("covered_families")
     if cov and "stock_shim" in tables:  # JEV2-4B secondary: the paired deltas on covered vs uncovered families
         out["by_coverage"] = {}

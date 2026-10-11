@@ -84,6 +84,7 @@ def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
     family_cap = family_cap or {}
     force_calib = force_calib or set()
     forced: dict[str, tuple[str, str]] = {}
+    forced_skey: dict[str, str] = {}
     heaps: dict[str, list] = collections.defaultdict(list)
     full: dict[str, list] = collections.defaultdict(list)
     seen: set[str] = set()
@@ -124,11 +125,12 @@ def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
             counts[fam] += 1
             if rid in force_calib:
                 forced[rid] = (fam, "calib")
+                forced_skey[rid] = _request_key(r)
                 continue
             if score_share is not None:  # per-type quota: keep every (rank, id, type) of the family (ids only, small)
                 q = r["questions"]["q"]
                 full[fam].append((int(rank(seed, rid)[:16], 16), rid, (q.get("type") or "choice"), _empty_levels(q),
-                                  _request_key(r) if r.get("source") in dedupe_sources else None))
+                                  _request_key(r) if r.get("source") in dedupe_sources else None, _request_key(r)))
                 continue
             item = (-int(rank(seed, rid)[:16], 16), rid)  # max-heap of the smallest ranks
             h = heaps[fam]
@@ -155,6 +157,8 @@ def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
         nts = {fam: min(n_train, family_cap.get(fam, n_train)) for fam in full}
         quota = score_quotas({f: sum(1 for x in v if x[2] == "score") for f, v in full.items()}, nts, score_share,
                              n_calib, {f: sum(1 for x in v if x[2] != "score") for f, v in full.items()})
+        trains: dict[str, list] = {}
+        calib_skeys: set[str] = set()
         for fam, rows in full.items():
             rows.sort()
             # score rows with rubric text first; empty-level rows (bare numbers) only if needed
@@ -173,12 +177,33 @@ def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
             train = take + ns[: nts[fam] - len(take)]
             if len(train) < nts[fam]:  # not enough non-score rows: top up with more score rows
                 train += rest_sc[: nts[fam] - len(train)]
-            chosen = {x[1] for x in train}
-            calib = [] if fam in forced_fams else [x for x in rows if x[1] not in chosen][:n_calib]  # by rank
-            for x in train:
+            trains[fam] = train
+        # JEV3-SYM: the selection slice shares NO state text with any training row (state-level dedupe, any family);
+        # slice candidates whose state is a training state are skipped, then the disjointness is asserted (fail closed)
+        train_skeys = {x[5] for t in trains.values() for x in t}
+        for fam, rows in full.items():
+            chosen = {x[1] for x in trains[fam]}
+            pool = [x for x in rows if x[1] not in chosen]
+            calib, skipped = [], 0
+            if fam not in forced_fams:
+                for x in pool:
+                    if len(calib) >= n_calib:
+                        break
+                    if x[5] in train_skeys:
+                        skipped += 1
+                        continue
+                    calib.append(x)
+            stats.setdefault("calib_state_overlap_skipped", collections.Counter())[fam] += skipped
+            for x in trains[fam]:
                 roles[x[1]] = (fam, "train")
             for x in calib:
                 roles[x[1]] = (fam, "calib")
+            calib_skeys.update(x[5] for x in calib)
+        calib_skeys.update(forced_skey.values())
+        clash = calib_skeys & train_skeys
+        if clash:
+            raise SystemExit(f"selection slice shares {len(clash)} state text(s) with training rows (state-level dedupe)")
+        stats["calib_state_disjoint"] = True
         roles.update(forced)
         return roles, dict(counts)
     for fam, h in heaps.items():
@@ -348,6 +373,8 @@ def main(argv=None) -> int:
            "pool_exclusions": pex_rec, "global_exclude": gex_rec or None, "force_calib": fcal_rec, "pool_rows_after_exclude": dict(stats["pool_rows_after_exclude"]),
            "dedupe_sources": sorted(a.dedupe_source), "deduped_by_family": dict(stats["deduped"]),
            "excluded_subs": dict(stats.get("sub_excluded", {})),
+           "calib_state_disjoint": stats.get("calib_state_disjoint"),
+           "calib_state_overlap_skipped": dict(stats.get("calib_state_overlap_skipped", {})),
            "deprioritize_empty_score": a.deprioritize_empty_score,
            "empty_score_short_by_family": dict(stats.get("empty_score_capped", {})),
            "train_type_mix": {t: round(n / max(1, sum(types["train"].values())), 4) for t, n in types["train"].items()},
