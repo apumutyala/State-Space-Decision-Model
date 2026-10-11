@@ -58,3 +58,32 @@ same pinned weights (tolerance 3 top-1 items, the H2O anchor rule; `decision.jso
 The board cells themselves (P300 open + 1,200 sealed) cannot be reproduced from the 231 public items (H2O: local I 77.6
 vs board 60.0, but 205/231 = its card). **Cost.** Hold 120 min x $0.063 = $7.56. Worst case (costs.worst_case_usd):
 **$14.85** (hard cap $15). Expected ~60 min, ~$3.
+
+## Mode h2o_eval (`job_params_h2o_eval.json`, runner `h2o_eval.sh`, code `h2o_eval.py`): EV-PREREG-H2O-HOST eval-only arms
+
+Pre-registered on state PREREG.md (EV-PREREG-H2O-HOST, with EV-PREREG-COMPOSITE-LOCAL, EV-PREREG-SECONDARY-AXES and
+EV-PREREG-AREA-TEMP/a). **Weights:** h2oai/h2o-lightning-4b at the lead-pinned revision **0940cbd7** (Apache-2.0); the
+job fails closed (exit 10) unless the snapshot commit, the HF-resolved sha and every loaded file (LFS sha256 / git blob
+id from the HF API at that revision) match; LICENSE (and NOTICE / README when present; there is no NOTICE file at this
+revision) are copied into the artifact. This revision is NOT the v1.1 tag the host scan / kit parity ran (193ad740): new
+weights (multimodal Qwen3_5ForConditionalGeneration checkpoint, text path read), a new shim and per-type temperatures
+(choice 0.75 / noul 0.8 / score 0.65). The control therefore runs the revision's OWN shim from the pinned snapshot.
+
+| arm | what | role |
+|---|---|---|
+| `h2o` | the revision's shim (prompt, labels, per-type T, yes/no floor 0.801), one transformers forward, fp32 head | CONTROL |
+| `a_T` | scalar T_J fitted by NLL on the held-out jev2a slice, floor kept | (a) contender |
+| `a_Ttype` / `a_Tfam` | one T per question type / per jev2a family (>= 200 decisions, else T_J), slice-fitted | (a) secondary |
+| `b_native` / `b_shimcal` | raw reading (T 1, no floor) / screen.shim_calibrate semantics on it | (b); on H2O b_shimcal == control algebraically |
+| `c_symfork` | sym-fork rows (jrt-h2o-shim format) scored by LM continuation likelihood, no head | (c) G1 probe, NOT a contender |
+
+**Held-out slice:** bschema-draw-jev2a (TRAIN draw, pointer sha256 53416094...), 200 ids per family by smallest
+sha256(salt + id), 1,000 ids, ids sha256 **204e9bfe...2a9c** (committed: `h2o_slice_ids.txt`; re-derived in-job from the
+pinned records and asserted). Never the public items. **Report:** per arm the jevkit axes / Composite A / Capability;
+paired vs the control on the SAME bootstrap draws (B = 1000, seed 16): Δ Composite A 95% CI (primary per contender),
+Δ I / C CIs, Δ S / K, Δ top-1 with exact McNemar p, Δ mean NLL on choice items, fraction of resamples with I < 50,
+Composite-A quantiles; a per-TYPE breakdown (choice 139 / noul 74 / score 18); the G1 flip report (option_reverse,
+option_shuffle, key_relabel, seed 0) for c_symfork and the control. Every report carries the sealed-split caveat.
+
+**Caps.** setup 14 (download cap 10) + run 30 (rate-guarded) + summarize 8 + reserve 8 = 60 min. **Cost.** Hold
+60 x $0.063 = $3.78. Worst case (costs.worst_case_usd): **$11.34** (hard cap $12). Expected ~33 min, ~$2.08.
