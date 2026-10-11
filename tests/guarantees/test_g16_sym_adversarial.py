@@ -352,11 +352,9 @@ def test_g15_bpe_fuzz_trusted_ids_and_lo_hi_bitwise_real_qwen():
 
 
 # ------------------------------------------------------------------------------------------- (3) per-row judge
-_DUP_LEAK = pytest.mark.xfail(strict=True, reason="SYM_CHECK r2: duplicates' E (batched D stream) depends on the batch "
-                                                  "row at hidden 128; lo/hi equal, score/decision not")
-
-
-@pytest.mark.parametrize("hidden", [32, pytest.param(128, marks=_DUP_LEAK)])
+# SYM_CHECK r2 found duplicates' E (batched D stream) row-dependent at hidden 128; fixed in G16SymHead.streams_unique
+# (each distinct (continuation, trust) computed once and copied), so these now run as plain tests.
+@pytest.mark.parametrize("hidden", [32, 128])
 def test_per_row_judge_duplicates_bitwise_any_position(hidden):
     """Duplicates must get bitwise-equal (a, b, lo, hi, score) wherever the content sort places them, also with a
     wider backbone (larger GEMMs in the batched P stream, which the per-row judge does NOT cover)."""
@@ -425,8 +423,6 @@ def test_per_row_judge_untrusted_edits_never_move_lo_hi_wide(hidden):
 
 
 @pytest.mark.parametrize("stream_mode", ["recompute", "cache"])
-@pytest.mark.xfail(strict=True, reason="SYM_CHECK r2 minimal repro: relabeling ids among exact duplicates changes the "
-                                       "served decision (a single duplicate id, not None) at hidden 128")
 def test_relabel_among_duplicates_never_changes_score_or_decision_hidden128(stream_mode):
     import itertools
 
@@ -457,3 +453,125 @@ def test_relabel_among_duplicates_never_changes_score_or_decision_hidden128(stre
         got = {inv[o]: float(s) for o, s in zip(out.option_ids, out.score)}
         assert got == ref, perm
         assert (inv[out.decision] if out.decision else None) == base.decision, perm
+
+
+# ------------------------------------------------------------------------------------------- round 3 (9bc4845b)
+# Duplicates are now merged: each distinct (continuation, trust mask) runs once. New attack surface: the NUMBER of
+# distinct rows and their batch order now depend on untrusted text (two undeclared options with equal untrusted text
+# merge), so trusted options can change batch position under untrusted edits.
+import itertools  # noqa: E402
+
+R3_FILLS = ["filler 344524", "a", "zzzzzzzzzzzzzzzzzzzz", "x y", "filler 1", "0"]
+R3_DUPS = ["dup 11 zzzz", "dup A", "b", "the same", "dup 11 zzzzzzzzzzzz", "q"]
+
+
+def _r3_head(hidden: int, stream_mode: str, seed: int = 4):
+    from controlsafe import monitor as M
+    from controlsafe import trust_gate as TG
+    from heads.backbone import tiny_hf_backbone
+
+    key = ("r3", hidden, stream_mode, seed)
+    if key not in _HEADS:
+        fm = "cache" if stream_mode == "cache" else "recompute"
+        bb = tiny_hf_backbone("q9af", seed=seed, hidden=hidden, fork_mode=fm)
+        M.long_memory_(bb.model, seed=seed)
+        g = TG.TrustGatedBackbone(bb, bridge_rank=4, stream_fork=fm)
+        h = GS.G16SymHead(g, r=8, c=1.0, seed=seed, stream_mode=stream_mode)
+        gen = torch.Generator().manual_seed(seed + 1)
+        with torch.no_grad():
+            for p in h.own_parameters():
+                p.copy_(torch.randn(p.shape, generator=gen) * 0.5)
+            for br in g.bridges:
+                br.lora_B.copy_(torch.randn(br.lora_B.shape, generator=gen) * 0.1)
+        _HEADS[key] = h.float().eval()
+    return _HEADS[key]
+
+
+def _scores(out):
+    return {o: (float(s), float(l), float(hh)) for o, s, l, hh in zip(out.option_ids, out.score, out.lo, out.hi)}
+
+
+R3_GRID = [(h, sm) for h in (32, 128, 256) for sm in ("recompute", "cache")]
+
+
+@pytest.mark.parametrize("hidden,stream_mode", R3_GRID)
+def test_r3_duplicate_sweep_36_sets_relabel_invariant(hidden, stream_mode):
+    """The round-2 sweep: o0 (undeclared filler) + 4 declared exact duplicates; 8 relabels among the duplicates
+    (incl. reversal) must leave per-id (score, lo, hi), decision_set and decision bitwise unchanged."""
+    h = _r3_head(hidden, stream_mode)
+    dups = ["o1", "o2", "o3", "o4"]
+    perms = list(itertools.permutations(dups))
+    sel = [perms[0], perms[-1]] + random.Random(hidden).sample(perms[1:-1], 6)
+    bad = []
+    for fill, dup in itertools.product(R3_FILLS, R3_DUPS):
+        opts = [("o0", fill)] + [(o, dup) for o in dups]
+        base = run(h, "state 11", opts, undeclared=("o0",))
+        ref = _scores(base)
+        assert len({ref[o] for o in dups}) == 1, (fill, dup)  # duplicates bitwise equal
+        if set(dups) & set(base.decision_set):
+            assert set(dups) <= set(base.decision_set) and base.decision is None, (fill, dup, base.decision_set)
+        for perm in sel:
+            sig = dict(zip(dups, perm), o0="o0")
+            inv = {v: k for k, v in sig.items()}
+            out = run(h, "state 11", [(sig[o], d) for o, d in opts], undeclared=("o0",))
+            got = {inv[o]: v for o, v in _scores(out).items()}
+            if (got != ref or sorted(inv[o] for o in out.decision_set) != sorted(base.decision_set)
+                    or (inv[out.decision] if out.decision else None) != base.decision):
+                bad.append((fill, dup, perm))
+    assert not bad, bad[:3]
+
+
+@pytest.mark.parametrize("hidden,stream_mode", R3_GRID)
+def test_r3_near_duplicates_not_merged_and_relabel_invariant(hidden, stream_mode):
+    h = _r3_head(hidden, stream_mode)
+    opts = [("a", "q"), ("b", "q"), ("c", "q."), ("d", "Q"), ("e", "q"), ("f", "q ")]  # f strips to "q": a duplicate
+    base = run(h, "near dup", opts)
+    ref = _scores(base)
+    assert ref["a"] == ref["b"] == ref["e"] == ref["f"]
+    assert ref["c"] != ref["a"] and ref["d"] != ref["a"]  # 1-char variants are different contents
+    rng = random.Random(hidden)
+    for _ in range(6):
+        o2 = opts[:]
+        rng.shuffle(o2)
+        sig = {o: f"z{rng.randrange(10 ** 6)}_{i}" for i, (o, _) in enumerate(opts)}
+        inv = {v: k for k, v in sig.items()}
+        out = run(h, "near dup", [(sig[o], d) for o, d in o2])
+        assert {inv[o]: v for o, v in _scores(out).items()} == ref
+        assert sorted(inv[o] for o in out.decision_set) == sorted(base.decision_set)
+
+
+@pytest.mark.parametrize("hidden,stream_mode", R3_GRID)
+def test_r3_same_text_different_trust_not_merged(hidden, stream_mode):
+    h = _r3_head(hidden, stream_mode)
+    opts = [("t1", "Refund."), ("u1", "Refund."), ("t2", "Close."), ("u2", "Close.")]
+    req = PLUG.request_for("trust split", opts)
+    for o in ("u1", "u2"):
+        req["ssdm"]["provenance"]["segments"].pop(f"/questions/q/criteria/{o}")
+    row = PLUG.row_for(req)
+    with torch.no_grad():
+        _, _, idx = h.streams_unique(row)
+        out = h(row)
+    ix = {o: i for i, o in enumerate(row.option_ids)}
+    assert idx[ix["t1"]] != idx[ix["u1"]] and idx[ix["t2"]] != idx[ix["u2"]]  # not merged across trust
+    s = _scores(out)
+    assert s["t1"][1:] != s["u1"][1:]  # trusted vs untrusted description: different intervals
+    assert s["u1"][1:] == s["u2"][1:]  # both undeclared: the description is data, intervals collapse
+
+
+@pytest.mark.parametrize("hidden,stream_mode", R3_GRID)
+def test_r3_g15_merging_attack_never_moves_trusted_lo_hi(hidden, stream_mode):
+    """Untrusted edits that change how many distinct rows exist (undeclared options made equal / distinct / long) and
+    where they sort must not move any declared option's [lo, hi] bitwise."""
+    h = _r3_head(hidden, stream_mode)
+    decl = [("d0", "Refund the customer."), ("d1", "Escalate."), ("d2", "Close the ticket."), ("d3", "a")]
+    variants = [["x", "y", "z"], ["x", "x", "x"], ["x", "x", "z"], ["same", "same", "zzzz " * 40],
+                ["0", "\u65e5", "~~~"], ["a", "a", "a"], ["Refund the customer.", "Escalate.", "q"]]
+    ref = None
+    for v, und_txt in enumerate(variants):
+        und = [(f"u{i}", t) for i, t in enumerate(und_txt)]
+        for st in ("s", "long untrusted state " * 30):
+            out = run(h, st, decl + und, undeclared=tuple(o for o, _ in und))
+            iv = {o: x[1:] for o, x in _scores(out).items() if o.startswith("d")}
+            if ref is None:
+                ref = iv
+            assert iv == ref, (v, und_txt, st[:10])

@@ -192,3 +192,31 @@ fuzz); per-row judge G15; perturb_eval fail-closed; select_actions content-hash 
 FAILS: G16-sym duplicates at a realistic width (E is batch-row-dependent). Relabel can change the served decision, so
 claim (1) "every float op identical for any reorder/relabel" does not hold for duplicates. `act`/robust sets (lo/hi
 only) are unaffected. A5's residual is real here too (2.86e-8) but is not the only one. New jevkit CLI sort_keys bug.
+
+---
+
+# Round 3 (2026-10-11): G16-sym @ 9bc4845b (distinct (continuation, trust mask) computed once, copied to duplicates)
+One fresh detached worktree at 9bc4845b (removed afterwards). CPU, torch 2.14.1. The diff 9e44eb36..9bc4845b touches
+only `controlsafe/g16_sym.py` and the lead's import of our `test_g16_sym_adversarial.py`.
+
+| # | property | verdict |
+|---|---|---|
+| 1 | Lead's copy of our test vs ours @ 6ed476e1 | **CONFIRMED identical** apart from the two removed strict-xfail markers (+ one explanatory comment replacing the `_DUP_LEAK` definition). This branch's copy now drops the markers too and adds the round-3 tests. |
+| 2 | Harness: `sym_fork_score` / `ordered_score` (teeth) / G16 plug | 11/11 / relabel FAIL (7 flips) / 11/11 |
+| 2 | `test_sym_fork_adversarial.py` (seeds 0,1,2,3,7) | 74/74 |
+| 2 | `test_g16_sym_adversarial.py` (incl. round 3, markers removed) + `test_sym_r2_checks.py` | **90 passed**, 1 strict-xfail (the jevkit CLI sort_keys bug; still present), 1 opt-in skip. Batch-vs-single unchanged: 2.86e-8, 0 flips. |
+| 3a | 36-option-set duplicate sweep (4 declared duplicates + undeclared filler, 8 relabels incl. reversal) at hidden **32, 128, 256** x recompute/cache | **CONFIRMED**: per-id (score, lo, hi), decision_set and decision bitwise invariant. Duplicates bitwise equal; when a duplicate wins, all 4 are in `decision_set` and `decision is None`. (Round 2: 23/36 and 25/36 sets failed at 128.) |
+| 3b | Near-duplicates (`"q"`, `"q."`, `"Q"`) mixed with duplicates (`"q"`, `"q "` strips to `"q"`): not merged, relabel+shuffle invariant, 6 grid points | **CONFIRMED** |
+| 3c | Same text, different trust (`"Refund."` declared vs undeclared) | **CONFIRMED not merged**: separate distinct rows, different intervals; the two undeclared options collapse to equal intervals, as designed |
+| 4a | G15 under the new merging/batch order: untrusted edits that change the NUMBER of distinct rows and their order (undeclared texts made equal/distinct/long, state 1x vs 30x) must not move declared [lo, hi] | **CONFIRMED** at hidden 32/128/256 x both modes. **Non-vacuous**: the probe shows U going 7 -> 5 -> 6 and every declared option's batch row shifting by up to 2. |
+| 4b | 1000-case real-Qwen3.5-4B BPE fuzz through `build_row` (trusted ids + [lo, hi]) | **CONFIRMED**: 1000 cases, 0 mismatches (613 extra draws refused, all literal control tokens) |
+
+**Residual risk (not a failure here):** merging makes the P-stream batch SIZE, as well as row positions, a function
+of untrusted text. Round 2 had K fixed, positions varying only among equal trusted keys. G15 on [lo, hi] now relies
+on the batched P-stream forward being invariant to batch size and row position (A1-type kernel assumption). That holds
+bitwise on this CPU at hidden up to 256 (4a). On other hardware or kernels (the lead's cpu-8 / torch 2.13, or a GPU)
+it is an assumption until re-run there. Cheap insurance: run the P stream per distinct row, as the judge and evidence
+already are, or pad the P batch to a host-fixed size.
+
+Round-3 verdict: the duplicate leak is **FIXED**; all requested properties **CONFIRMED** on this machine. Open items:
+the jevkit `cli.py perturb make` sort_keys bug, and A5 (2.86e-8 cross-question residual).
