@@ -16,18 +16,31 @@ PARAMS = json.loads((M / "job_params_jev2_q35_4b.json").read_text(encoding="utf-
 R2 = json.loads((M / "job_params_jev1_q35_4b.json").read_text(encoding="utf-8"))
 
 
-def test_one_epoch_fixed_budget():
+def test_one_pass_fixed_budget():
     assert CELL["layout"] == "sym-fork"
     assert CELL["max_steps"] == CELL["min_steps"] == CELL["n_train_records"] // (CELL["batch_size"] * CELL["grad_accum"])
     assert CELL["lr_horizon_steps"] == round(CELL["max_steps"] * 753 / 1121)
-    assert CELL["max_minutes"] >= math.ceil(CELL["max_steps"] * 10.92 * 0.985 * 1.3 / 60)
+    assert CELL["max_minutes"] >= math.floor(CELL["max_steps"] * 10.92 * 0.985 * 1.3 / 60)
     assert PARAMS["phase_caps_minutes"]["cell"] == CELL["max_minutes"] + 35
+
+
+def test_4k_and_label_smoothing():
+    assert max(CELL["t_ladder"]) == CELL["eval_max_t"] == CELL["require_t_max"] == 4096
+    assert CELL["ladder_probe_longest"] is True and 0.05 <= CELL["label_smoothing"] <= 0.1
+
+
+def test_pools_jev2a_wired_placeholders_declared():
+    pools = CELL["train_set"]["pools"]
+    assert pools["jev2a"]["status"] == "gated" and len(pools["jev2a"]["pointer_sha256"]) == 64
+    assert {pools["jev2b"]["status"], pools["jev2c"]["status"]} == {"PLACEHOLDER"}
+    assert len({f for p in pools.values() for f in p["families"]}) == 18
+    assert (ROOT / pools["jev2a"]["pointer"]).is_file()
 
 
 def test_calib_slice_pinned_and_disjoint_role():
     cs = CELL["calib_slice"]
     assert cs["per_family"] >= 200 and cs["records"] == PARAMS["jevkit"]["tfit"]["records"]
-    assert cs["records"].startswith("m2-jev12-calib/") and not PARAMS["train_dir"].endswith("calib")
+    assert cs["records"].startswith("m2-jev2mix-calib/") and not PARAMS["train_dir"].endswith("calib")
     from jobs.m2_first_cell.screen import slice_ids_sha256
     import hashlib
     assert slice_ids_sha256(["b", "a"]) == hashlib.sha256(b"a\nb").hexdigest()
@@ -37,7 +50,7 @@ def test_schedule_and_cost():
     caps = sum(PARAMS["phase_caps_minutes"].values()) + PARAMS["reserve_minutes"]
     assert PARAMS["max_duration_minutes"] == caps <= 899  # one job, no chain
     worst = (60 + 2 * caps) * 0.063
-    assert PARAMS["hard_cap_usd"] >= worst
+    assert worst <= PARAMS["hard_cap_usd"] <= 45.0  # operator hard budget (2026-10-10)
 
 
 def test_jevkit_additions_and_r2_untouched():

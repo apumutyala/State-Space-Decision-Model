@@ -1,0 +1,66 @@
+{
+ "PLACEHOLDER": "replace with <out>/bschema-draw-jev2-mix/pointer.json from scripts/jev12_balanced_draw.py",
+ "build": "bschema-draw-jev2-mix (scripts/jev12_balanced_draw.py over the gated pools)",
+ "pools": {
+  "jev1": {
+   "dir": "m2/build/bschema-draw-jev1",
+   "pointer": "data/manifests/bschema-draw-jev1.pointer.json",
+   "pointer_sha256": "582ffe1cb34602473a847833758e06d69dbb6755594b4609e95f8fa39a2b464b",
+   "status": "gated",
+   "families": [
+    "adequacy",
+    "enum",
+    "intent",
+    "long_policy",
+    "policy",
+    "routing",
+    "severity",
+    "state_tracking"
+   ]
+  },
+  "jev2a": {
+   "dir": "m2/build/bschema-draw-jev2a",
+   "pointer": "data/manifests/bschema-draw-jev2a.pointer.json",
+   "pointer_sha256": "53416094f957a6aebb6514dceaaef11b18473da1a6a910c89057639865c24eda",
+   "status": "gated",
+   "branch": "claude/ev-jev2-draw@77065b1c",
+   "families": [
+    "multi_hop",
+    "judge_hard",
+    "temporal_numeric",
+    "fact",
+    "tool_selection"
+   ]
+  },
+  "jev2b": {
+   "dir": "m2/build/bschema-draw-jev2b",
+   "pointer": "data/manifests/bschema-draw-jev2b.pointer.json",
+   "pointer_sha256": null,
+   "status": "PLACEHOLDER",
+   "families": [
+    "probability",
+    "trap",
+    "ambiguous",
+    "tradeoff",
+    "adversarial"
+   ]
+  },
+  "jev2c": {
+   "dir": "m2/build/bschema-draw-jev2c",
+   "pointer": "data/manifests/bschema-draw-jev2c.pointer.json",
+   "pointer_sha256": null,
+   "status": "PLACEHOLDER",
+   "families": [
+    "long_policy"
+   ],
+   "note": "rebuilt long_policy, prose state 2-4.5k tokens; replaces jev1's long_policy via --family-src"
+  }
+ },
+ "n_records": 4104,
+ "records_uncompressed_sha256": null,
+ "manifest": "bschema-draw-jev2-mix.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": null,
+ "content_map": "bschema-draw-jev2-mix.content.jsonl.gz",
+ "content_map_uncompressed_sha256": null,
+ "templates_verified": []
+}

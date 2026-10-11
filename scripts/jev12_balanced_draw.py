@@ -57,18 +57,24 @@ def rank(seed: int, rid: str) -> str:
     return hashlib.sha256(f"{seed}:{rid}".encode()).hexdigest()
 
 
-def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int) -> tuple[dict, dict]:
-    """Pass 1: per family the (n_train + n_calib) smallest-rank ids; returns ({id: (family, role)}, family counts)."""
+def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
+         family_src: dict[str, str] | None = None) -> tuple[dict, dict]:
+    """Pass 1: per family the (n_train + n_calib) smallest-rank ids; returns ({id: (family, role)}, family counts).
+    ``family_src`` {family: source dir name}: that family is drawn ONLY from that source (e.g. long_policy from the
+    rebuilt 2-4.5k-token jev2c pool instead of jev1's short typed-JSON rows)."""
     keep = n_train + n_calib
     heaps: dict[str, list] = collections.defaultdict(list)
     seen: set[str] = set()
     counts = collections.Counter()
+    family_src = family_src or {}
     for d in srcs:
         for line in _lines(d / "records.jsonl.gz"):
             r = json.loads(line)
             rid, fam = r["id"], family_of(r)
             if fam is None:
                 raise SystemExit(f"{d}: {rid} has no aug.<draw>.family8 / family")
+            if fam in family_src and family_src[fam] != d.name:
+                continue
             if rid in seen:
                 raise SystemExit(f"duplicate id across sources: {rid}")
             seen.add(rid)
@@ -96,11 +102,16 @@ def main(argv=None) -> int:
     ap.add_argument("--name", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--allow-short", action="store_true")
+    ap.add_argument("--family-src", action="append", default=[],
+                    help="FAMILY=SRC_DIR_NAME: draw FAMILY only from that source (repeatable)")
     a = ap.parse_args(argv)
     from train.cohort import record_content_hash
 
     srcs = [Path(s) for s in a.src]
-    roles, counts = plan(srcs, a.train_per_family, a.calib_per_family, a.seed)
+    fsrc = dict(x.split("=", 1) for x in a.family_src)
+    if any(v not in {s.name for s in srcs} for v in fsrc.values()):
+        raise SystemExit(f"--family-src names a source that is not a --src: {fsrc}")
+    roles, counts = plan(srcs, a.train_per_family, a.calib_per_family, a.seed, fsrc)
     short = {f: n for f, n in counts.items() if n < a.train_per_family + a.calib_per_family}
     if short and not a.allow_short:
         raise SystemExit(f"families below train + calib: {short} (pass --allow-short to accept)")
@@ -142,7 +153,8 @@ def main(argv=None) -> int:
     clash = content["train"] & content["calib"]
     if clash:
         raise SystemExit(f"{len(clash)} content hash(es) in both train and calib (rebuild with another seed)")
-    rep = {"name": a.name, "seed": a.seed, "sources": [str(s) for s in srcs], "source_family_rows": counts,
+    rep = {"name": a.name, "seed": a.seed, "sources": [str(s) for s in srcs], "family_src": fsrc,
+           "source_family_rows": counts,
            "train_per_family": a.train_per_family, "calib_per_family": a.calib_per_family, "short_families": short,
            "train_rows": dict(per["train"]), "calib_rows": dict(per["calib"]),
            "n_train": sum(per["train"].values()), "n_calib": sum(per["calib"].values()), "content_disjoint": True,

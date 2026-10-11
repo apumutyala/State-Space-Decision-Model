@@ -580,3 +580,31 @@ s/step x the sym-fork v2 factor 0.985 (42388c2c `sym_reprice_note`), so clock = 
 Placeholders until the jev2 draw lands: the pointer, `data_jev2.sha256`, `calib_slice.ids_sha256` and
 `jevkit.tfit.ids_sha256`. New screen keys (opt-in; r2's jevkit block is unchanged when they are absent): `jevkit.tfit`,
 `jevkit.perturb_ops`, `jevkit.covered_families`.
+
+### A-PREREG-JEV2-4B AMENDMENT 1 (lead decisions after r2 FLAT; supersedes the cell / data / budget lines above)
+
+The text below is ready to paste. Everything not restated here is unchanged: PRIMARY, CI method, G1 and the secondaries.
+
+- **Trigger:** r2 was FLAT (delta Composite A -4.07 [-25.64, +3.22]). JEV2-4B now launches as the data-fix cell, not
+  as the "r2 won, scale it" cell. The JEV1-DIAG eval-only cell is folded: the jev1 audit (claude/ev-jev1-audit
+  @13c63fdc) already explains r2.
+- **max_len 4,096:** training (t_ladder top rung 4,096; `require_t_max` 4,096 fails closed instead of dropping rows;
+  `ladder_probe_longest` steps the longest rows of each rung) and eval (`eval_max_t` 4,096). Why: the public
+  long_policy items are 2,350-3,952 tokens, while jev1 long_policy train rows are p50 935, max 1,263.
+- **Data:** the balanced mix `bschema-draw-jev2-mix` over the gated pools:
+  - jev1, 8 families, with its long_policy de-emphasised: drawn only from jev2c once jev2c gates.
+  - jev2a, 5 families: gated, pointer 53416094, claude/ev-jev2-draw @77065b1c.
+  - jev2b, 5 families: placeholder.
+  - jev2c, the long_policy rebuild with 2-4.5k-token prose states: placeholder.
+  - Total 18 families, 228 rows per family = 4,104 rows, seen once (~2.7% of the pooled rows).
+- **Steps:** 513 fixed steps, cosine horizon 345.
+- **Loss:** label smoothing 0.05 on every row. Why: r2's head is under-confident (shim T 0.8 sharpening raised its
+  Capability 57.93 -> 59.62), and smoothing pulls toward uniform.
+- **Calibration:** T is fitted only on the held-out calibration slice (200 per family, ids sha256 pinned at the build;
+  EV-PREREG-AREA-TEMP addendum). native_shimcal is kept.
+- **Budget (hard):** worst-case hold <= $45. max_duration 327 min, worst $44.98, quoted hold $20.60, expected ~$15.3.
+  - The s/step of 16.6 is an ESTIMATE: r2's 10.92 x 0.985 x 1.54 (tokens per row of the 4k mix vs jev1). The step-10
+    rate check exits 26 if the real rate is slower.
+  - 600 rows per family x 18 does not fit the cap: it needs ~374 min of training, worst ~$79.
+- **Readout speed fix:** DecisionModelBackend builds each request's rows once (plan + score). Outputs are
+  bit-identical (tests/test_backend_row_cache.py, remote test job). It is measured on the Speed axis, not claimed.

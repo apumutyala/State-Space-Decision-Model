@@ -88,6 +88,10 @@ class DecisionModelBackend:
         self.g16_certify_k = g16_certify_k
         self.shared_prefix = shared_prefix
         self.encode = encode
+        # (request key, rows) of the last request: decide.adapter calls plan() then score() on the SAME request, and
+        # build_row is a pure function of (request, qid, encoder, template, layout), so score reuses plan's rows
+        # instead of tokenizing every question twice (JEV1-4B r2: the native readout's per-decision overhead)
+        self._row_cache: tuple[str, list[LayoutRow]] | None = None
         from .layout import resolve_template
 
         self.template = resolve_template(template)
@@ -117,15 +121,26 @@ class DecisionModelBackend:
                           "model_id": ident["backbone"]["spec"], **ident}
         return self._revision
 
+    @staticmethod
+    def _request_key(request: dict[str, Any]) -> str:
+        """Content key of a request (canonical JSON): a mutated or different request never hits the row cache."""
+        return hashlib.sha256(json.dumps(request, sort_keys=True, ensure_ascii=False, default=repr)
+                              .encode("utf-8")).hexdigest()
+
     def _rows(self, request: dict[str, Any]) -> list[LayoutRow]:
+        key = self._request_key(request)
+        if self._row_cache is not None and self._row_cache[0] == key:
+            return self._row_cache[1]
         try:
             # G16: rows carry NO host allowed set (unvetoed logits); the veto is the adapter's conditioned stage
-            return [build_row(request, qid, self.encode, template=self.template, layout=self.layout)
+            rows = [build_row(request, qid, self.encode, template=self.template, layout=self.layout)
                     for qid in request["questions"]]
         except ControlTokenError as exc:  # before ValueError: it subclasses ValueError
             raise BackendUnsupported(exc.code, str(exc)) from exc
         except ValueError as exc:
             raise BackendUnsupported("tokenization_failed", str(exc)) from exc
+        self._row_cache = (key, rows)
+        return rows
 
     def plan(self, request: dict[str, Any]) -> Plan:
         rows = self._rows(request)

@@ -1,5 +1,5 @@
 {
- "_comment": "Mode jev2_q35_4b (A-PREREG-JEV2-4B, packaged 2026-10-10, NOT submitted): jev1_q35_4b r2 on stack/qwen35/sym-invariant (layout sym-fork) trained 1 epoch on the family-balanced jev1+jev2 draw (1000/family x 19 = 19000 rows, 2375 steps), plus (a) G1 = jevkit perturb ops 4-6 on the native arm, (b) native_tfit = scalar T fitted on the disjoint calib draw (200/family), (c) the covered/uncovered family breakdown. Schedule: setup 20 + guard 5 + heldout 10 + cell 590 + screen 65 + report 5 + reserve 7 = 717. Quoted hold 717 x $0.063 = $45.17; worst case (60 + 2 x 717) x 0.063 = $94.12 (jobs/common/rates.py BATCH_USD_PER_MIN; hard cap $95). Expected (no restart) ~542 min = $34.15. BLOCKED until: the jev2 draw lands + the merged pointer and data_jev2.sha256 are filled; r2 lands WIN.",
+ "_comment": "Mode jev2_q35_4b (A-PREREG-JEV2-4B, NOT submitted): sym-fork, max_len 4,096, LS 0.05, the balanced jev1 + jev2a (+ jev2b / jev2c placeholders) mix 228/family x 18 = 4104 rows, 513 steps (seen once); G1 (sym_eval.perturb_eval), native_tfit (calib slice 200/family), native_shimcal, covered/uncovered breakdown. Schedule: setup 20 + guard 5 + heldout 10 + cell 220 + screen 60 + report 5 + reserve 7 = 327. Quoted hold 327 x $0.063 = $20.6; worst case (60 + 2 x 327) x 0.063 = $44.98 <= $45 hard budget (jobs/common/rates.py). Expected ~243 min = $15.31.",
  "test_env": {
   "transformers": "5.17.0",
   "with": [
@@ -23,10 +23,10 @@
   "image": "jobs/probe9b/Dockerfile"
  },
  "job": "m2-first-cell-jev2-q35-4b",
- "status": "A-PREREG-JEV2-4B: JEV1-4B + sym-fork, 1 epoch of jev1+jev2 balanced (19000 rows), 2375 steps",
+ "status": "A-PREREG-JEV2-4B: JEV1-4B + sym-fork + 4k + LS 0.05 on the balanced jev2 mix (4104 rows), 513 steps",
  "chip": "h100",
  "chip_count": 1,
- "max_duration_minutes": 717,
+ "max_duration_minutes": 327,
  "build_timeout_minutes": 60,
  "max_restarts": 0,
  "assumed_restart_floor": 1,
@@ -34,14 +34,14 @@
  "resume": "checkpoint",
  "hf_cache": true,
  "batch_usd_per_min": 0.063,
- "hard_cap_usd": 95.0,
+ "hard_cap_usd": 45.0,
  "phase_caps_minutes": {
   "setup": 20,
   "guard": 5,
   "heldout": 10,
-  "cell": 590,
-  "screen": 80,
-  "report": 5
+  "screen": 60,
+  "report": 5,
+  "cell": 220
  },
  "reserve_minutes": 7,
  "expected_minutes": {
@@ -49,8 +49,8 @@
   "setup": 10,
   "guard": 3,
   "heldout": 5,
-  "cell": 451,
-  "screen": 55,
+  "cell": 167,
+  "screen": 40,
   "report": 3
  },
  "evals_fixed_minutes": {
@@ -65,8 +65,8 @@
  "parent": "qwen35",
  "model": "Qwen/Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a (stock Qwen3.5 hybrid, LoRA r64 + fork head)",
  "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_jev2_q35_4b.json",
- "train_set_pointer": "data/manifests/bschema-draw-jev12-bal1000.pointer.json",
- "train_dir": "m2-jev12",
+ "train_set_pointer": "data/manifests/bschema-draw-jev2-mix.pointer.json",
+ "train_dir": "m2-jev2mix",
  "cohort": "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
  "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
  "guard_pin": "jobs/m2_pilot/guard_pin.json",
@@ -90,7 +90,7 @@
   },
   "key": "m2-first-cell-jev2-q35-4b-r1",
   "clock_lock": true,
-  "label": "A-PREREG-JEV2-4B jev2_q35_4b: Qwen3.5-4B + H2O shim, sym-fork, LoRA r64, 1 epoch of jev1+jev2 balanced (19000), 2375 steps, clock 555 [jevkit paired vs stock + shim; G1; tfit]",
+  "label": "A-PREREG-JEV2-4B jev2_q35_4b: Qwen3.5-4B + H2O shim, sym-fork, 4k, LS 0.05, balanced jev2 mix (4104), 513 steps, clock 185 [jevkit paired vs stock + shim; G1; tfit]",
   "checks": {
    "success": {
     "check": {
@@ -119,7 +119,7 @@
   }
  },
  "context": {
-  "_comment": "the jev1 r2 context with m2-jev1/ replaced by the balanced jev1+jev2 draw (m2-jev12/) and its calib draw (m2-jev12-calib/, tfit only), both pinned by data_jev2.sha256 (PLACEHOLDER until the draw lands)",
+  "_comment": "the jev1 r2 context with m2-jev1/ replaced by the balanced jev2 mix (m2-jev2mix/) and its calib slice (m2-jev2mix-calib/, tfit only), pinned by data_jev2.sha256 (filled when the mix is built)",
   "dockerfile": "jobs/probe9b/Dockerfile",
   "cmd_rewrite": [
    "jobs/probe9b/probe_job.sh",
@@ -242,23 +242,23 @@
     "pin_sha256": "1040e563da0ba5d7394cbb8c7de54f2e389bd068ade8ddea9546443e725388f8"
    },
    {
-    "src": "m2/build/bschema-draw-jev12-bal1000/bschema-draw-jev12-bal1000.content.jsonl.gz",
-    "dest": "m2-jev12/bschema-draw-jev12-bal1000.content.jsonl.gz",
+    "src": "m2/build/bschema-draw-jev2-mix/bschema-draw-jev2-mix.content.jsonl.gz",
+    "dest": "m2-jev2mix/bschema-draw-jev2-mix.content.jsonl.gz",
     "pin": "jobs/m2_first_cell/data_jev2.sha256"
    },
    {
-    "src": "m2/build/bschema-draw-jev12-bal1000/bschema-draw-jev12-bal1000.manifest.jsonl.gz",
-    "dest": "m2-jev12/bschema-draw-jev12-bal1000.manifest.jsonl.gz",
+    "src": "m2/build/bschema-draw-jev2-mix/bschema-draw-jev2-mix.manifest.jsonl.gz",
+    "dest": "m2-jev2mix/bschema-draw-jev2-mix.manifest.jsonl.gz",
     "pin": "jobs/m2_first_cell/data_jev2.sha256"
    },
    {
-    "src": "m2/build/bschema-draw-jev12-bal1000/records.jsonl.gz",
-    "dest": "m2-jev12/records.jsonl.gz",
+    "src": "m2/build/bschema-draw-jev2-mix/records.jsonl.gz",
+    "dest": "m2-jev2mix/records.jsonl.gz",
     "pin": "jobs/m2_first_cell/data_jev2.sha256"
    },
    {
-    "src": "m2/build/bschema-draw-jev12-bal1000-calib/records.jsonl.gz",
-    "dest": "m2-jev12-calib/records.jsonl.gz",
+    "src": "m2/build/bschema-draw-jev2-mix-calib/records.jsonl.gz",
+    "dest": "m2-jev2mix-calib/records.jsonl.gz",
     "pin": "jobs/m2_first_cell/data_jev2.sha256"
    }
   ],
@@ -278,10 +278,13 @@
    "third_party/h2o_lightning_shim/serve_config.json",
    "train/jevbench_guard.py",
    "jobs/m2_first_cell/screen.py",
-   "data/manifests/bschema-draw-jev12-bal1000.pointer.json",
+   "data/manifests/bschema-draw-jev2-mix.pointer.json",
+   "data/manifests/bschema-draw-jev2a.pointer.json",
    "jobs/m2_first_cell/data_jev2.sha256",
    "jobs/m2_first_cell/m2_first_cell_rwkv7_jev2_q35_4b.json",
-   "heads/symmetric.py"
+   "heads/symmetric.py",
+   "heads/decide_backend.py",
+   "jobs/sym_eval/perturb_eval.py"
   ]
  },
  "mode": "jev2_q35_4b",
@@ -314,7 +317,7 @@
   "stock_shim": true,
   "paired_primary": "native",
   "tfit": {
-   "records": "m2-jev12-calib/records.jsonl.gz",
+   "records": "m2-jev2mix-calib/records.jsonl.gz",
    "lo": 0.25,
    "hi": 4.0,
    "ids_sha256": "PLACEHOLDER: draw-report calib_ids_sha256"
@@ -336,5 +339,5 @@
   ]
  },
  "cohort_note": "pins cohort v2 deliberately (no G13 here); the training draw excludes cohort v3 regardless (#105). The G13 gate of this checkpoint is a separate job on v3 (~16-17 H100-h at job-tkfaj rates).",
- "jevkit_note": "covered_families = the jev1 families (the 120-item coverage at r2); JEV2 adds jev2's 11 families, so the breakdown reads 'jev1-covered' vs 'jev2-only' items. G1 rule: 0 flips, 0 invalid, max |dp| <= 1e-3 per op (jobs.sym_eval.perturb_eval.run, in the screen process, with the row bit-identity check)."
+ "jevkit_note": "covered_families = the jev1 families (r2's 120-item coverage); by_coverage reads jev1-covered vs the rest. native_shimcal kept. G1: 0 flips, 0 invalid, max |dp| <= 1e-3 per op (jobs.sym_eval.perturb_eval.run in the screen process, with the row bit-identity check)."
 }

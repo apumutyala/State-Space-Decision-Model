@@ -571,7 +571,10 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
 
     return TrainConfig(head=cfg["head"], head_kwargs=cfg.get("head_kwargs") or {}, layout=cfg["layout"],
                        fork_mode="cache", lora_rank=cfg["lora_rank"],
-                       loss=LossConfig(arm=cfg["loss_arm"], **kd_fields(cfg), **order_consistency_fields(cfg)),
+                       loss=LossConfig(arm=cfg["loss_arm"], **kd_fields(cfg), **order_consistency_fields(cfg),
+                                       # opt-in (JEV2-4B); absent = LossConfig's default 0.1, so old hashes are unchanged
+                                       **({"label_smoothing": float(cfg["label_smoothing"])}
+                                          if "label_smoothing" in cfg else {})),
                        lr_head=cfg["lr_head"], lr_lora=cfg["lr_lora"], batch_size=cfg["batch_size"],
                        warmup_steps=int(cfg.get("warmup_steps") or 0),
                        grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=bf16, grad_checkpointing=False,
@@ -1121,10 +1124,41 @@ def _main(argv=None, ctx: dict | None = None):
                 bb.model.zero_grad(set_to_none=True)
                 remove_lora(bb.model)
                 reset_peak()
-        fits = [int(T) for T, r in lad.items() if r.get("ok") and r["peak_gb"] <= cfg["pass_rule"]["max_peak_gb"]]
+            if cfg.get("ladder_probe_longest"):
+                # JEV2-4B (4k rows): the rung above measures the max-K rows, which are short; ALSO step the LONGEST rows
+                # <= T (then max K) so a 4k-token prefix with its forks is measured before T is declared to fit
+                its_l = sorted((x for x in train_items if item_context_len(x) <= T),
+                               key=lambda x: (-item_context_len(x), -x.row.n_options))
+                reset_peak()
+                tr = None
+                try:
+                    tr = make_trainer(1)
+                    tr.train_items = its_l[: cfg["batch_size"] * cfg["grad_accum"]]
+                    t0 = time.time()
+                    with fla_strict():
+                        loss = tr.train_step()
+                    if cuda:
+                        torch.cuda.synchronize()
+                    lad[f"{T}_longest"] = {"ok": math.isfinite(loss), "peak_gb": peak(), "step_s": time.time() - t0,
+                                           "row_len": item_context_len(its_l[0]), "k": its_l[0].row.n_options}
+                except torch.OutOfMemoryError as e:
+                    lad[f"{T}_longest"] = {"ok": False, "oom": str(e)[:200], "peak_gb": peak()}
+                finally:
+                    del tr
+                    bb.model.zero_grad(set_to_none=True)
+                    remove_lora(bb.model)
+                    reset_peak()
+        cap_gb = cfg["pass_rule"]["max_peak_gb"]
+        fits = [int(T) for T, r in lad.items() if "_" not in T and r.get("ok") and r["peak_gb"] <= cap_gb
+                and (not cfg.get("ladder_probe_longest")
+                     or (lad.get(f"{T}_longest", {}).get("ok") and lad[f"{T}_longest"]["peak_gb"] <= cap_gb))]
         cell["ladder"] = {"points": lad, "T_max": max(fits) if fits else None}
         save()
         if not fits:
+            return EXIT["no_T_fits"]
+        if cfg.get("require_t_max") and max(fits) < int(cfg["require_t_max"]):
+            # fail closed instead of silently dropping every training row longer than the measured T_max
+            print(f"ladder: T_max {max(fits)} < require_t_max {cfg['require_t_max']} ({lad})", flush=True)
             return EXIT["no_T_fits"]
         # measured stop condition 1: even the fastest fitting rung's MEASURED step time (worst rows of that rung)
         # cannot reach the pass rule's step count inside max_minutes -> exit 26 before any training spend
