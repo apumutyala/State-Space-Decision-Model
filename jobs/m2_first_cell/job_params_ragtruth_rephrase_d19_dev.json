@@ -1,0 +1,321 @@
+{
+ "_comment": "Mode ragtruth_rephrase_d19_dev (B-PREREG-RAGTRUTH-REPHRASE STAGE 2, D19 arm; stage 1 PASSED: job-wpi5n RT1 AUROC 0.919 [0.884,0.948], out-of-draw 0.923). D19 (art-p3gpi best2800) scores the 255 Index DEV catalog-59 rows outside proxy600 (ids pinned in dev_stage, PREREG addendum 1) under the original wording AND RT1, one model load; report-dev checks the original-wording rows against the landed full-DEV rows (shipped subset of b6bab803..., pinned). The pre-registered Index delta (RT1 - original on DEV minus proxy600, n 11,460, frozen score + bootstrap B 2000 seed 0) is computed at landing by analysis/ragtruth_rephrase_land.py; no DEV number feeds back into the wording. Pricing as ragtruth_rephrase_d19 (load 21.75 min measured; 2 x 3.4 min). Caps setup 7 / guard 2 / checkpoint 4 / score_d19 39 / report 3 + reserve 7 = 62 (hold $3.91); worst case $9.11.",
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo; checked on the PR that pins them"
+   }
+  ],
+  "image": "jobs/rwkv7/Dockerfile"
+ },
+ "job": "m2-first-cell-ragtruth-rephrase-d19-dev",
+ "status": "B-PREREG-RAGTRUTH-REPHRASE stage 2, D19 arm: original + RT1 on the 255 DEV RAGTruth rows outside proxy600",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 62,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "checkpoint",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 15.0,
+ "phase_caps_minutes": {
+  "setup": 7,
+  "guard": 2,
+  "checkpoint": 4,
+  "score_d19": 39,
+  "report": 3
+ },
+ "reserve_minutes": 7,
+ "expected_minutes": {
+  "build": 15,
+  "setup": 2,
+  "guard": 1,
+  "checkpoint": 2,
+  "score_d19": 28.6,
+  "report": 1
+ },
+ "evals_fixed_minutes": {
+  "d19": 21.75
+ },
+ "score_minutes_per_wording": 3.4,
+ "score_setup_cap_minutes": {
+  "d19": 28
+ },
+ "max_input_tokens": 65536,
+ "readout": "v3w",
+ "eval_only": "ragtruth_rephrase",
+ "arms": {
+  "d19": {
+   "block": "checkpoint",
+   "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_ragtruth_rephrase_d19_dev.json",
+   "train_dir": "m2/build/bschema-draw-v3b",
+   "wordings": [
+    "original",
+    "rt1"
+   ]
+  }
+ },
+ "measured_rates_reference": {
+  "TOK_S": 3757,
+  "CALL_S": 0.117,
+  "source": "job-tkfaj probe.json (the runner requires them; this mode prices from evals_fixed_minutes + score_minutes_per_wording)"
+ },
+ "parent": "rwkv7",
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_ragtruth_rephrase_d19_dev.json",
+ "train_set_pointer": "data/manifests/bschema-draw-v3b.pointer.json",
+ "cohort": "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "guard_pin": "jobs/m2_pilot/guard_pin.json",
+ "guard_content_index_sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+ "checkpoint": {
+  "_note": "D19 = job-fi5xf, art-p3gpi, BEST step 2800 inference export (as job_params_devcal_d19_v3w.json / fulldev_eval_d19_v3w_s1of2); url_env CKPT_URL_D19 filled at submit",
+  "artifact": "art-p3gpi",
+  "job": "job-fi5xf",
+  "artifact_sha256": "b898dbc495dea1637e06b78694bbd724bacbc5b1cdcc318ef698612d03404622",
+  "member": "./ckpt/trainable-step0002800.safetensors",
+  "ckpt_sha256": "31062f4850713672a5ae7a8bb472455fda699e35b7176a6fc0d331e17b96d215",
+  "sidecar_sha256": "6d1f1adf5485eef16731f7998149860df7fa96ca8f20f836521fedd6776e1669",
+  "latest_json_sha256": "14d830fe30caae224d3559627b7b2da973f76a0f70090ab901d34fad0b7da77b",
+  "cell_json_sha256": "52905cc97265343da5125cc481ae0d542c1599baf7bdbd6e2240e1f7fffa223a",
+  "select": "best",
+  "url_env": "CKPT_URL"
+ },
+ "ragtruth": {
+  "_note": "the ragtruth_polarity items (job-3zmj2), unchanged; the job refuses unless the shipped file's sha256 equals items_sha256 here AND in ragtruth_polarity_selection.json",
+  "items_sha256": "dbbca4ff03f141b8b0f5d17c17fe0cfbb2593df226f4f80793dff84366349fd4",
+  "ids_sha256": "794bcce30da94f7da3696b522a1a20d1e8719b51286970dc2a47ac7fc8ab9295",
+  "n": 300,
+  "selection": "jobs/m2_first_cell/ragtruth_polarity_selection.json"
+ },
+ "reference_results_sha256": {
+  "_note": "unused by this mode",
+  "rwkv7_stock_tkfaj": null,
+  "clef_flash": null
+ },
+ "mission": "m2-first-cell",
+ "decision_rule": null,
+ "runner": "jobs/m2_first_cell/first_cell_job.sh",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py). TOK_S / CALL_S = the job-tkfaj probe's measured rates (the runner exits 4 without them).",
+  "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh ragtruth_rephrase_d19_dev",
+  "env": {
+   "TOK_S": "3757",
+   "CALL_S": "0.117",
+   "CKPT_URL": "<CKPT_URL>"
+  },
+  "key": "m2-first-cell-ragtruth-rephrase-d19-dev-best2800-20261011a",
+  "clock_lock": true,
+  "label": "ragtruth_rephrase_d19_dev: original + RT1 on the 255 DEV RAGTruth rows outside proxy600, D19 (art-p3gpi best2800), v3w, no training",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/M2_FIRST_CELL_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "D19's lineage data (records, DEV rows (setup's data check; none scored), bschema-draw-v3b, suite-0.2, the doc-overlap index, its cell.json) + the RAGTruth TRAIN items; the checkpoint is fetched from CKPT_URL and checked byte for byte.",
+  "dockerfile": "jobs/rwkv7/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/rwkv7/rwkv7_job.sh",
+   "jobs/m2_first_cell/first_cell_job.sh"
+  ],
+  "data": [
+   {
+    "src": "m2/build/sample-20000-seed20261006/records.jsonl.gz",
+    "dest": "m2/records.jsonl.gz",
+    "pin": "jobs/rwkv7/records.sha256"
+   },
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   },
+   {
+    "src": "suite-0.2/selected-rows.jsonl.gz",
+    "dest": "suite-0.2/selected-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/added-rows.jsonl.gz",
+    "dest": "suite-0.2/added-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/excluded-questions.json",
+    "dest": "suite-0.2/excluded-questions.json",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw-v3b/records.jsonl.gz",
+    "dest": "m2/build/bschema-draw-v3b/records.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw-v3b/bschema-draw-v3b.manifest.jsonl.gz",
+    "dest": "m2/build/bschema-draw-v3b/bschema-draw-v3b.manifest.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw-v3b/bschema-draw-v3b.content.jsonl.gz",
+    "dest": "m2/build/bschema-draw-v3b/bschema-draw-v3b.content.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/df.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/df.npy",
+    "pin_sha256": "ee411d5c067934e5f6bd3e2919ca98ce1fbc48830140f478f06b1f47f96bbe55"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/ent.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/ent.npy",
+    "pin_sha256": "02c60e18c646c91ebce8e26423ca8e75bf06e48584fd810f3ee8224a8f9989d3"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/fl.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/fl.npy",
+    "pin_sha256": "ba2f466ab74e51e04f3a9111017e31089b951691b72a405d0e80ebc9e23c5044"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/h.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/h.npy",
+    "pin_sha256": "ff1a0b35f1888b666f79029639618d0241046c9c235e23bc7402fc7fd55ef040"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/meta.json",
+    "dest": "m2/doc-overlap/0eaf89305948075a/meta.json",
+    "pin_sha256": "51bce25703df08ceae16785ade19294b70b97a458d488b8296343310b3732651"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/pcnt.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/pcnt.npy",
+    "pin_sha256": "c1eeccb3e574db7da3a8d1c3ac8f28311389282071df14606fdf94be2f68d752"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/post.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/post.npy",
+    "pin_sha256": "2da265e7ce19d5733cecb9bc53f2ab520d955f2061959beed87ab53a73cb761a"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/pstart.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/pstart.npy",
+    "pin_sha256": "f5b2fc433ed465334c087219e5323500303488aa85f5edef6fb2a48b132f5549"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_allow.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_allow.npy",
+    "pin_sha256": "09f4da80c85152221cd854f64168ef28cd98e6b9b445101ae7cf27b9f0da49e0"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_den.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_den.npy",
+    "pin_sha256": "03cc2ef0b3c39d8c395b7cf5e9c8b554cfb520b22111dd425d5ca353b71458ad"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_field.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_field.npy",
+    "pin_sha256": "294bb8ec9c9ca13a56e0fcd1f87043ca6514b279c35bf5aeab6f1ed72402fbf0"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_row.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_row.npy",
+    "pin_sha256": "806b6699f847e039018840b9cb5da57e94086addcd44416d02fedbc7a06848f0"
+   },
+   {
+    "src": "m2/checkpoints/job-fi5xf/cell.json",
+    "dest": "checkpoint/cell.json",
+    "pin_json": [
+     "jobs/m2_first_cell/job_params_ragtruth_rephrase_d19_dev.json",
+     "checkpoint",
+     "cell_json_sha256"
+    ]
+   },
+   {
+    "src": "m2/ragtruth-polarity/items.jsonl.gz",
+    "dest": "ragtruth/items.jsonl.gz",
+    "pin_json": [
+     "jobs/m2_first_cell/job_params_ragtruth_rephrase_d19_dev.json",
+     "ragtruth",
+     "items_sha256"
+    ]
+   },
+   {
+    "src": "m2/ragtruth-rephrase/landed/d19.ragtruth.results.jsonl",
+    "dest": "landed/d19.ragtruth.results.jsonl",
+    "pin_json": [
+     "jobs/m2_first_cell/job_params_ragtruth_rephrase_d19_dev.json",
+     "dev_stage",
+     "landed",
+     "d19",
+     "ragtruth_rows_sha256"
+    ]
+   }
+  ],
+  "manifest_files": [
+   "jobs/m2_first_cell/first_cell_job.sh",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7.json",
+   "jobs/m2_pilot/guard_pin.json",
+   "data/manifests/bschema-draw-v3b.pointer.json",
+   "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+   "jobs/rwkv7/snapshot.sha256",
+   "jobs/m2_first_cell/data.sha256",
+   "jobs/m2_first_cell/data_d19_bschema_v3b.sha256",
+   "jobs/common/dev_proxy600.json",
+   "jobs/common/dev_subset_m1.json",
+   "jobs/m2_first_cell/ragtruth_polarity_selection.json",
+   "jobs/m2_first_cell/ragtruth_polarity.py",
+   "jobs/m2_first_cell/ragtruth_rephrase.py",
+   "jobs/m2_first_cell/ragtruth_rephrase_d19_indraw.json",
+   "decide/ragtruth_rephrase.py",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_ragtruth_rephrase_d19_dev.json",
+   "jobs/m2_first_cell/job_params_ragtruth_rephrase_d19_dev.json"
+  ],
+  "doc_overlap_index_note": "as job_params_devcal_d19_v3w.json: train.doc_overlap_guard's pinned eval hash index, needed by D19's lineage check"
+ },
+ "cohort_note": "no cohort role is scored; no temperature fit (untempered readout, both arms)",
+ "mode": "ragtruth_rephrase_d19_dev",
+ "train_dir": "m2/build/bschema-draw-v3b",
+ "rows": "dev_minus_proxy600",
+ "dev_stage": {
+  "n": 255,
+  "ids_sha256": "5a1d4896f6cdffd50d3414d1459fe9ada70bffe669800b77892f446bb9706776",
+  "landed": {
+   "d19": {
+    "source": "C:/Users/apumu/d19_fulldev_land/merged/fulldev/child.results.jsonl (b6bab803...), the 255 rows",
+    "ragtruth_rows_sha256": "4d672024270c1afeb742f60fe2a1d99f6715bcb78e78a316e1631d72209e7f48"
+   }
+  }
+ },
+ "no_verdict_reason": "measurement; the B-PREREG-RAGTRUTH-REPHRASE stage-2 rule (Index delta CI lower bound > 0 on DEV minus proxy600) is applied at landing by analysis/ragtruth_rephrase_land.py"
+}

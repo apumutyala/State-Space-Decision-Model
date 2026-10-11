@@ -188,7 +188,7 @@ EOF
   say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}, eval-only $EVAL_ONLY"
   [ "$EVAL_ONLY" = fulldev ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_result DECISION=$WORK/out/fulldev_eval_result.json
   [ "$EVAL_ONLY" = devcal ] && VALIDATOR=jobs.m2_first_cell.devcal_eval:valid_result DECISION=$WORK/out/devcal/devcal-score.json
-  [ "$EVAL_ONLY" = ragtruth_rephrase ] && VALIDATOR=jobs.m2_first_cell.ragtruth_rephrase:valid_result DECISION=$WORK/out/ragtruth_rephrase_result.json
+  [ "$EVAL_ONLY" = ragtruth_rephrase ] && VALIDATOR=jobs.m2_first_cell.ragtruth_rephrase:valid_any DECISION=$WORK/out/ragtruth_rephrase_result.json
   [ "$STAGE" = screen ] && VALIDATOR=jobs.m2_first_cell.screen:valid_result DECISION=$WORK/out/screen.json
 fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
@@ -330,6 +330,14 @@ if [ "$EVAL_ONLY" = ragtruth_rephrase ]; then  # -- eval-only: D13 then D19 on t
   # each arm: checkpoint_loader --block (every byte pinned), then ONE model load scoring every wording of the arm
   # (rate guard: a slow load stops with 15 before any item is scored); D13's original wording = job-3zmj2's pinned rows
   RR_ARMS=$(python -I -c 'import json,sys; print(" ".join(json.load(open(sys.argv[1]))["arms"]))' "$PARAMS") || fail 5 "job_params arms"
+  # params "rows": "train" (default: the 300 RAGTruth TRAIN items) or "dev_minus_proxy600" (stage 2: the 255 DEV
+  # catalog-59 rows outside proxy600, ids pinned by params dev_stage; B-PREREG-RAGTRUTH-REPHRASE addendum 1)
+  RR_ROWS=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("rows", "train"))' "$PARAMS") || fail 5 "job_params rows"
+  case $RR_ROWS in
+    train) RR_ITEMS=(--items "$RT_ITEMS" --selection "$RT_SEL") ;;
+    dev_minus_proxy600) RR_ITEMS=(--dev-rows "$DATA/slices/dev-rows.jsonl.gz" --params "$PARAMS") ;;
+    *) fail 5 "job_params rows $RR_ROWS: train or dev_minus_proxy600" ;;
+  esac
   for ARMNAME in $RR_ARMS; do
     read -r BLOCK ACELL ATRAIN AWORDS <<< "$(python -I -c 'import json,sys; a=json.load(open(sys.argv[1]))["arms"][sys.argv[2]]; print(a["block"], a["cell_config"], a["train_dir"], ",".join(a["wordings"]))' "$PARAMS" "$ARMNAME")" \
       || fail 5 "job_params arms.$ARMNAME"
@@ -350,7 +358,7 @@ if [ "$EVAL_ONLY" = ragtruth_rephrase ]; then  # -- eval-only: D13 then D19 on t
     python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-$PH.jsonl" --cap-min "$(cap $PH)" \
       --setup-cap-min "$SCAP" --report "$WORK/out/rate-$PH.json" -- \
       timeout --kill-after=30s $(cap $PH)m python -X utf8 -m jobs.m2_first_cell.ragtruth_rephrase score --arm "$ARMNAME" --wordings "$AWORDS" \
-      --items "$RT_ITEMS" --selection "$RT_SEL" --cell "$WORK/out/cell-$ARMNAME.json" --ckpt-dir "$CKCELL" --ckpt "$CKPT" \
+      "${RR_ITEMS[@]}" --cell "$WORK/out/cell-$ARMNAME.json" --ckpt-dir "$CKCELL" --ckpt "$CKPT" \
       --model-dir "$SNAP" --records "$RECORDS" --train-dir "$DATA/$ATRAIN" --guard-readiness "$WORK/out/guard/readiness.json" \
       --resume-dir "$CK/ragtruth_rephrase" --out-dir "$WORK/out/ragtruth_rephrase" --progress "$WORK/logs/progress-$PH.jsonl" > "$WORK/logs/$PH.log" 2>&1; r=$?
     [ $r -eq 0 ] || { say "$PH rc=$r; last 40 lines of logs/$PH.log:"; tail -n 40 "$WORK/logs/$PH.log" 2> /dev/null | sed "s/^/[$PH.log] /"; }
@@ -358,11 +366,17 @@ if [ "$EVAL_ONLY" = ragtruth_rephrase ]; then  # -- eval-only: D13 then D19 on t
     case $r in 0) ;; 124|137) fail 7 "$PH timeout" ;; 15) fail 15 "$PH: load past its setup cap or live rate past its cap" ;;
       10) fail 10 "$PH identity (items / checkpoint lineage / cohort)" ;; *) fail 9 "$PH rc=$r" ;; esac
   done
-  say "phase report"
-  timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.ragtruth_rephrase report --out-dir "$WORK/out/ragtruth_rephrase" \
-    --params "$PARAMS" --items "$RT_ITEMS" --selection "$RT_SEL" \
-    --manifest "$DATA/$D19_TRAIN/bschema-draw-v3b.manifest.jsonl.gz" --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$DECISION" \
-    > "$WORK/logs/report.log" 2>&1; r=$?
+  say "phase report ($RR_ROWS)"
+  if [ "$RR_ROWS" = train ]; then
+    timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.ragtruth_rephrase report --out-dir "$WORK/out/ragtruth_rephrase" \
+      --params "$PARAMS" --items "$RT_ITEMS" --selection "$RT_SEL" \
+      --manifest "$DATA/$D19_TRAIN/bschema-draw-v3b.manifest.jsonl.gz" --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$DECISION" \
+      > "$WORK/logs/report.log" 2>&1; r=$?
+  else
+    timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.ragtruth_rephrase report-dev --out-dir "$WORK/out/ragtruth_rephrase" \
+      --params "$PARAMS" --dev-rows "$DATA/slices/dev-rows.jsonl.gz" --landed-dir "$DATA/landed" --out "$DECISION" \
+      > "$WORK/logs/report.log" 2>&1; r=$?
+  fi
   gate "report" $r
   [ $r -eq 0 ] || fail 9 "ragtruth_rephrase result missing or invalid (rc=$r): $(tail -1 "$WORK/logs/report.log")"
   sample "$DECISION" "ragtruth-rephrase"

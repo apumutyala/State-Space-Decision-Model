@@ -292,6 +292,13 @@ bschema-draw-v3b); D13 (rt1) runs on `claude/ev-ragtruth-rephrase-d13` (from a1b
 runner's ragtruth_rephrase branch loops over params `arms`. Caps setup 7 / guard 2 / checkpoint 4 / score_d19 39 /
 report 3 + reserve 7 = 62; quoted hold $3.91, worst case (60 + 2 x 62) x 0.0495 = $9.11 (cap $15).
 
+### Mode `ragtruth_rephrase_d19_dev`: stage 2, D19 arm
+
+Params `"rows": "dev_minus_proxy600"`: the 255 DEV catalog-59 rows outside proxy600 (ids sha 5a1d4896..., pinned in
+`dev_stage`) replace the TRAIN items; `report-dev` (schema `.dev`, validator `valid_any`) gives AUROC per wording and the
+reproduction of the original rows against the landed full DEV (shipped subset, pinned). The pre-registered Index delta
+is computed at landing (`analysis/ragtruth_rephrase_land.py`). Same caps as `ragtruth_rephrase_d19`: worst case $9.11.
+
 ## Mode `devcal_d19_v3w`: D19's per-question probabilities on its own cohort-dev pool (temperature fit)
 
 B-PREREG-D19-TEMP (state PREREG.md, addendum 1). art-p3gpi keeps D19's dev cards as aggregates only, and D19 drew the

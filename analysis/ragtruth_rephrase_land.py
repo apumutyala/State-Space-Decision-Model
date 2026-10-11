@@ -33,7 +33,13 @@ EDITION = "0.2.1"
 B = 2000
 CATALOG = 59
 #: B-PREREG-CLAIM addendum 2 lineage exclusions (D17/D18/D19 lineage), matched by run_id substring
-LINEAGE4 = ("SATA-Bench test:1427", "BRIGHT earth_science:54", "Amazon-ESCI test:2163000", "HoVer candidates-v3:61:461ff029")
+#: (run_ids look like "37:Amazon-ESCI:Amazon-ESCI:test:2163000"; each pair must all appear; exactly 4 DEV rows match)
+LINEAGE4 = (("SATA", "test:1427"), ("BRIGHT", "earth_science:54"), ("Amazon-ESCI", "test:2163000"),
+            ("HoVer", "candidates-v3:61:461ff029"))
+
+
+def lineage4(rid):
+    return any(all(t in rid for t in pair) for pair in LINEAGE4)
 
 
 def read_pred(p):
@@ -98,7 +104,9 @@ def main():
            "dev_minus_proxy600_excl_overlength51": pair(rows_x, cand, landed),
            "sensitivity_vs_job_original": pair(rows, cand, base_job)}
     if arm == "d19":
-        rows_l = [r for r in rows if not any(t in r["_evaluation"]["run_id"] for t in LINEAGE4)]
+        hit = [r["_evaluation"]["run_id"] for r in dev if lineage4(r["_evaluation"]["run_id"])]
+        assert len(hit) == 4, hit
+        rows_l = [r for r in rows if not lineage4(r["_evaluation"]["run_id"])]
         out["dev_minus_proxy600_minus_lineage4"] = pair(rows_l, cand, landed)
     lo = out["primary_dev_minus_proxy600"]["delta"]["lo"]
     out["success"] = bool(lo > 0)

@@ -1,0 +1,361 @@
+{
+ "schema": "ssdm.m2.ragtruth_rephrase.v1",
+ "prereg": "B-PREREG-RAGTRUTH-REPHRASE (state PREREG.md @0683fa7c)",
+ "split": "RAGTruth TRAIN (never Index DEV)",
+ "readout": "v3w",
+ "candidate": "rt1",
+ "n_items": 300,
+ "ids_sha256": "794bcce30da94f7da3696b522a1a20d1e8719b51286970dc2a47ac7fc8ab9295",
+ "items_sha256": "dbbca4ff03f141b8b0f5d17c17fe0cfbb2593df226f4f80793dff84366349fd4",
+ "decision_rule": "per arm: PASS iff RT1's AUROC 95% percentile-bootstrap lower bound (2000 item resamples, seed 20261009) > 0.5 on the 300 RAGTruth TRAIN items; D19 additionally needs RT1's point AUROC > 0.5 on the items outside its training draw (else 'in-draw driven', no DEV stage). Only a passing arm gets the DEV-minus-proxy600 stage.",
+ "d19_in_draw": {
+  "n": 175,
+  "ids_sha256": "cb2af857b64b2b6820bb553ca607605e0f07adc8801cdc20ad22c1ae00454f3a",
+  "manifest_sha256": "2836d3d2270c6c2e0ce56de7e550cf702898725b9f0f3f459a43d1b6818dd607",
+  "rebuilt_from_manifest": true
+ },
+ "arms_expected": [
+  "d13",
+  "d19"
+ ],
+ "arms": {
+  "d13": {
+   "wordings": {
+    "original": {
+     "status": {
+      "ok": 300
+     },
+     "n_scored": 300,
+     "auroc": {
+      "point": 0.4176829268292683,
+      "lo": 0.35284278924413703,
+      "hi": 0.48143958977207535,
+      "level": 0.95,
+      "B": 2000,
+      "seed": 20261009,
+      "skipped_single_class": 0,
+      "n": 300,
+      "n_pos": 136
+     },
+     "auroc_flipped": {
+      "point": 0.5823170731707317,
+      "lo": 0.5185604102279247,
+      "hi": 0.647157210755863,
+      "level": 0.95,
+      "B": 2000,
+      "seed": 20261009,
+      "skipped_single_class": 0,
+      "n": 300,
+      "n_pos": 136
+     },
+     "mean_p_hallucinated": 0.49863633333333335,
+     "frac_pred_hallucinated": 0.4533333333333333,
+     "f1_hallucinated_at_0p5": 0.34558823529411764,
+     "accuracy_at_0p5": 0.4066666666666667,
+     "by_track_auroc": {
+      "Data2txt": {
+       "n": 105,
+       "auroc": 0.537029109589041
+      },
+      "QA": {
+       "n": 101,
+       "auroc": 0.5218360071301248
+      },
+      "Summary": {
+       "n": 94,
+       "auroc": 0.3296875
+      }
+     },
+     "in_draw": {
+      "n": 0,
+      "n_pos": 0,
+      "auroc": NaN
+     },
+     "out_of_draw": {
+      "n": 300,
+      "n_pos": 136,
+      "auroc": 0.4176829268292683
+     },
+     "results_sha256": "bab92081a876e65b88d2dd7c497e7dd342af6fab12657074a3476ca56253d83d",
+     "source": "job-3zmj2 art-srefc (pinned)"
+    },
+    "rt1": {
+     "status": {
+      "ok": 300
+     },
+     "n_scored": 300,
+     "auroc": {
+      "point": 0.5885939741750359,
+      "lo": 0.5209226200648314,
+      "hi": 0.6538896138678167,
+      "level": 0.95,
+      "B": 2000,
+      "seed": 20261009,
+      "skipped_single_class": 0,
+      "n": 300,
+      "n_pos": 136
+     },
+     "auroc_flipped": {
+      "point": 0.4114060258249641,
+      "lo": 0.34611038613218326,
+      "hi": 0.47907737993516863,
+      "level": 0.95,
+      "B": 2000,
+      "seed": 20261009,
+      "skipped_single_class": 0,
+      "n": 300,
+      "n_pos": 136
+     },
+     "mean_p_hallucinated": 0.2904293333333333,
+     "frac_pred_hallucinated": 0.12,
+     "f1_hallucinated_at_0p5": 0.2441860465116279,
+     "accuracy_at_0p5": 0.5666666666666667,
+     "by_track_auroc": {
+      "Data2txt": {
+       "n": 105,
+       "auroc": 0.6862157534246576
+      },
+      "QA": {
+       "n": 101,
+       "auroc": 0.6720142602495544
+      },
+      "Summary": {
+       "n": 94,
+       "auroc": 0.6567708333333333
+      }
+     },
+     "in_draw": {
+      "n": 0,
+      "n_pos": 0,
+      "auroc": NaN
+     },
+     "out_of_draw": {
+      "n": 300,
+      "n_pos": 136,
+      "auroc": 0.5885939741750359
+     },
+     "results_sha256": "41a6878ade2446ad7696cc697270712def44a66b288308e1facbd649e9bf1185",
+     "source": "this job"
+    }
+   },
+   "paired_dauroc_rt1_minus_original": {
+    "point": 0.17091104734576762,
+    "lo": 0.09821293599190228,
+    "hi": 0.24420654029067893,
+    "B": 2000,
+    "seed": 20261009,
+    "skipped_single_class": 0,
+    "n": 300
+   },
+   "decision": "pass: run the DEV-minus-proxy600 stage",
+   "n_in_draw": 0,
+   "checkpoint_loaded": {
+    "path": "trainable-step0001600.safetensors",
+    "step": 1600,
+    "sha256": "61c19d162acb5e97183361ffd839c5e7f5d6978e40da01063a16ec196a657d7b"
+   },
+   "readout_loaded": {
+    "name": "v3w",
+    "template": "jrt-rwkv-g1-v3w",
+    "layout": "g1v2",
+    "native": false
+   },
+   "wordings_loaded": null
+  },
+  "d19": {
+   "wordings": {
+    "original": {
+     "status": {
+      "ok": 300
+     },
+     "n_scored": 300,
+     "auroc": {
+      "point": 0.9115405308464849,
+      "lo": 0.876337369588345,
+      "hi": 0.9419403645710998,
+      "level": 0.95,
+      "B": 2000,
+      "seed": 20261009,
+      "skipped_single_class": 0,
+      "n": 300,
+      "n_pos": 136
+     },
+     "auroc_flipped": {
+      "point": 0.08845946915351506,
+      "lo": 0.05805963542890023,
+      "hi": 0.12366263041165508,
+      "level": 0.95,
+      "B": 2000,
+      "seed": 20261009,
+      "skipped_single_class": 0,
+      "n": 300,
+      "n_pos": 136
+     },
+     "mean_p_hallucinated": 0.45713066666666663,
+     "frac_pred_hallucinated": 0.41333333333333333,
+     "f1_hallucinated_at_0p5": 0.823076923076923,
+     "accuracy_at_0p5": 0.8466666666666667,
+     "by_track_auroc": {
+      "Data2txt": {
+       "n": 105,
+       "auroc": 0.8681506849315068
+      },
+      "QA": {
+       "n": 101,
+       "auroc": 0.9151069518716578
+      },
+      "Summary": {
+       "n": 94,
+       "auroc": 0.8796875
+      }
+     },
+     "in_draw": {
+      "n": 175,
+      "n_pos": 72,
+      "auroc": 0.9091154261057174
+     },
+     "out_of_draw": {
+      "n": 125,
+      "n_pos": 64,
+      "auroc": 0.9152151639344263
+     },
+     "results_sha256": "a1b019549a97708a94628c0d4c657ef2561524ea7c013b211cac524e11e2f5c8",
+     "source": "this job"
+    },
+    "rt1": {
+     "status": {
+      "ok": 300
+     },
+     "n_scored": 300,
+     "auroc": {
+      "point": 0.9186692969870875,
+      "lo": 0.88441484897282,
+      "hi": 0.9476256332606923,
+      "level": 0.95,
+      "B": 2000,
+      "seed": 20261009,
+      "skipped_single_class": 0,
+      "n": 300,
+      "n_pos": 136
+     },
+     "auroc_flipped": {
+      "point": 0.08133070301291248,
+      "lo": 0.052374366739307635,
+      "hi": 0.11558515102718,
+      "level": 0.95,
+      "B": 2000,
+      "seed": 20261009,
+      "skipped_single_class": 0,
+      "n": 300,
+      "n_pos": 136
+     },
+     "mean_p_hallucinated": 0.46038466666666666,
+     "frac_pred_hallucinated": 0.4266666666666667,
+     "f1_hallucinated_at_0p5": 0.8181818181818182,
+     "accuracy_at_0p5": 0.84,
+     "by_track_auroc": {
+      "Data2txt": {
+       "n": 105,
+       "auroc": 0.865582191780822
+      },
+      "QA": {
+       "n": 101,
+       "auroc": 0.9251336898395722
+      },
+      "Summary": {
+       "n": 94,
+       "auroc": 0.896875
+      }
+     },
+     "in_draw": {
+      "n": 175,
+      "n_pos": 72,
+      "auroc": 0.9165992448759439
+     },
+     "out_of_draw": {
+      "n": 125,
+      "n_pos": 64,
+      "auroc": 0.9232838114754098
+     },
+     "results_sha256": "5506bfa7cb42dcdfbfab733c96b3fc72f5813aeb8caf7af36cb266f6d2f6b810",
+     "source": "this job"
+    }
+   },
+   "paired_dauroc_rt1_minus_original": {
+    "point": 0.007128766140602649,
+    "lo": 0.0008741163414075409,
+    "hi": 0.014198123133961517,
+    "B": 2000,
+    "seed": 20261009,
+    "skipped_single_class": 0,
+    "n": 300
+   },
+   "decision": "pass: run the DEV-minus-proxy600 stage",
+   "n_in_draw": 175,
+   "checkpoint_loaded": {
+    "path": "trainable-step0002800.safetensors",
+    "step": 2800,
+    "sha256": "31062f4850713672a5ae7a8bb472455fda699e35b7176a6fc0d331e17b96d215"
+   },
+   "readout_loaded": {
+    "name": "v3w",
+    "template": "jrt-rwkv-g1-v3w",
+    "layout": "g1v2",
+    "native": true
+   },
+   "wordings_loaded": {
+    "original": "e367e63e8f1f15b80d751c1e103514d785e6fa7998d468068df1e2332c3f93a8",
+    "rt1": "3eb9de4b32f84357bf35e407f11b7b657832773e50f3ad350ae8d0f2c9e052fa"
+   },
+   "timing": {
+    "original": {
+     "seconds_this_attempt": 206.09874182299245,
+     "rows_this_attempt": 300,
+     "sum_row_wall_s": 206.02894657006254
+    },
+    "rt1": {
+     "seconds_this_attempt": 216.47181230899878,
+     "rows_this_attempt": 300,
+     "sum_row_wall_s": 216.43975162405695
+    }
+   }
+  }
+ },
+ "wording_sha256": {
+  "original": "e367e63e8f1f15b80d751c1e103514d785e6fa7998d468068df1e2332c3f93a8",
+  "rt1": "3eb9de4b32f84357bf35e407f11b7b657832773e50f3ad350ae8d0f2c9e052fa"
+ },
+ "cost": {
+  "elapsed_min": 0.0,
+  "runtime_usd_batch": 0.0,
+  "worst_case_usd": 10.79,
+  "hard_cap_usd": 15.0
+ },
+ "checkpoints": {
+  "d13": {
+   "artifact": "art-cr9a2",
+   "job": "job-hjwpq",
+   "artifact_sha256": "ff586289941e5477793c8acef2254128428ebd8fcd238a48cb98973a2d385fd5",
+   "member": "./ckpt/trainable-step0001600.safetensors",
+   "ckpt_sha256": "61c19d162acb5e97183361ffd839c5e7f5d6978e40da01063a16ec196a657d7b",
+   "sidecar_sha256": "a873c26fbbb1f5c037256c7801130099fd6b50a4a343f24a16683a45971ebf41",
+   "latest_json_sha256": "4b6d0463f90f74fd547fc1b3eb02c5840756371712d76fc5f5a11535172e1810",
+   "cell_json_sha256": "ac919ff8db76c34af2e8492c340a066148336b0e8143d82762552de9abeb80a6",
+   "select": "best",
+   "url_env": "CKPT_URL"
+  },
+  "d19": {
+   "artifact": "art-p3gpi",
+   "job": "job-fi5xf",
+   "artifact_sha256": "b898dbc495dea1637e06b78694bbd724bacbc5b1cdcc318ef698612d03404622",
+   "member": "./ckpt/trainable-step0002800.safetensors",
+   "ckpt_sha256": "31062f4850713672a5ae7a8bb472455fda699e35b7176a6fc0d331e17b96d215",
+   "sidecar_sha256": "6d1f1adf5485eef16731f7998149860df7fa96ca8f20f836521fedd6776e1669",
+   "latest_json_sha256": "14d830fe30caae224d3559627b7b2da973f76a0f70090ab901d34fad0b7da77b",
+   "cell_json_sha256": "52905cc97265343da5125cc481ae0d542c1599baf7bdbd6e2240e1f7fffa223a",
+   "select": "best",
+   "url_env": "CKPT_URL_D19"
+  }
+ },
+ "verdict": "measured"
+}

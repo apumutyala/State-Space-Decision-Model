@@ -405,6 +405,24 @@ def valid_result(d: Any) -> bool:
         return False
 
 
+def valid_result_dev(d: Any) -> bool:
+    """Stage 2 validator: every expected arm with both wordings on every row, finite AUROCs."""
+    try:
+        fin = lambda x: isinstance(x, (int, float)) and math.isfinite(x)  # noqa: E731
+        ok = d.get("schema") == SCHEMA + ".dev" and d.get("verdict") == "measured" and bool(d["arms"])
+        for m in d["arms"].values():
+            ok = ok and set(m["wordings"]) == set(WORDINGS)
+            for mw in m["wordings"].values():
+                ok = ok and mw["n_scored"] == d["n_rows"] and fin(mw["auroc"]["point"])
+        return bool(ok)
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def valid_any(d: Any) -> bool:
+    return valid_result_dev(d) if str(d.get("schema", "")).endswith(".dev") else valid_result(d)
+
+
 # ------------------------------------------------------------------------------------------------ CPU: pricing
 def estimate(params: dict) -> dict[str, Any]:
     """Setup preflight (exit 15 BEFORE any checkpoint is fetched). Per arm: load = ``evals_fixed_minutes[arm]``
