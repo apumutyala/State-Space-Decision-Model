@@ -66,7 +66,9 @@ CONTROL_RESEARCH mechanism #3. It combines G15/G16 with split conformal (`CONFOR
 - So `{S^0_{n+1} ≤ q̂} ⊆ {Y_{n+1} ∈ C_rob}`.
 - The left event has probability ≥ 1 − α by exchangeability of the clean scores, which needs (i). ∎
 
-Theorem B needs more than Theorem A: clean calibration text plus box containment. Its sets are also never smaller (Proposition C).
+Theorem B as proved above needs more than Theorem A: clean calibration text plus box containment. Its sets are also never smaller (Proposition C).
+
+**Remark B′ (review 2026-10-10): (i) can be dropped if box containment holds on the calibration rows too.** If every calibration logit, injected or not, lies in its box, then each observed calibration score is `≥ s_lo(P_i, Y_i)`, so `q̂_obs ≥ q̂_lo` and `C_rob ⊇ C_lo`, which covers by Theorem A. Injected calibration text can lower `q̂_obs`, but never below `q̂_lo`. So the clean-calibrated set fails only when A5 fails on calibration rows (wrong trust labels), not merely because calibration text was injected. Tested: `test_robust_set_with_injected_calibration_text_still_covers`.
 
 ### Proposition C: which bound to calibrate on
 
@@ -76,7 +78,7 @@ Theorem B needs more than Theorem A: clean calibration text plus box containment
 - All three cover ≥ 1 − α: the first by Theorem A, and the other two because they contain it.
 - Only the matched set is exact, i.e. not over-covering beyond `1/(n+1)` for continuous scores.
 
-**Proof.** `s_lo(P_i, Y_i) ≤ S_i^0 ≤ s_hi(P_i, Y_i)` pointwise. Order statistics preserve pointwise order, so the quantiles are ordered. The sets are monotone in the threshold. ∎
+**Proof.** `s_lo(P_i, Y_i) ≤ S_i^0 ≤ s_hi(P_i, Y_i)` pointwise, by box containment (A5) **on every calibration row**; without it the middle quantile can fall outside the other two and the inclusions fail. Order statistics preserve pointwise order, so the quantiles are ordered. The sets are monotone in the threshold. ∎
 
 **In conformity form,** the task's framing. Write `π_y^{hi} = 1 − s_lo` for the largest probability of y over the box, and `π^{lo}` for the smallest. Then the matched set is `C* = {y : π_y^{hi} ≥ τ}`, with `τ` the conformal lower quantile of `π_{Y_i}^{hi}` over calibration. **Calibrate on the upper bounds of the gold labels, the same bound you threshold.**
 - Calibrating `τ` on the lower bounds `π_{Y_i}^{lo}` is valid by dominance, but it is the `C_{lo|hi}` set: the most conservative (3.86 vs 2.30 labels in the synthetic run).
@@ -113,10 +115,12 @@ Theorem B needs more than Theorem A: clean calibration text plus box containment
 | A2 | **G15 holds bitwise** for these weights (`P` features invariant to `U`) | A, B, E | Tested structurally in `tests/controlsafe`. A kernel that mixes streams voids it. |
 | A3 | **`(P, Y)` exchangeable** between calibration and deployment | A, B, E | Distribution shift on the trusted side breaks coverage, as in ordinary conformal. The attacker cannot cause this through `U`. |
 | A4 | **The gold label is defined by the clean task** | A, B | If untrusted content legitimately changes the right answer, "attack" and "evidence" are the same thing. The guarantee is then about the clean-task label, and a trusted-only set can only cover it by inflating. |
-| A5 | **Box containment**: clean logits lie in `[lo, hi]` | B only | Exact in real arithmetic, because `tanh ∈ (−1, 1)`. In floating point, `tanh` can round to ±1 and `b + a·E` can round past `b ± c‖a‖₁` by a few ulps. Compute `lo`/`hi` with an outward-rounded margin (jevkit `_inside` uses 1e-9). Theorem A does not need A5. |
-| A6 | **Clean calibration text** | B only | Injected text in calibration can lower `q̂_clean`. Theorem A is immune. |
+| A5 | **Box containment**: clean logits lie in `[lo, hi]` (test row for Theorem B; every calibration row for Proposition C and Remark B′) | B, C | Exact in real arithmetic, because `tanh ∈ (−1, 1)`. In floating point, `tanh` can round to ±1 and `b + a·E` can round past `b ± c‖a‖₁` by a few ulps. Compute `lo`/`hi` with an outward-rounded margin. Note: jevkit `_inside` only *checks* containment with a 1e-9 slack; `robust_set` / `robust_min_score` use the intervals as given and do not widen them. Theorem A does not need A5. |
+| A6 | **Clean calibration text** | B's proof only | Injected text in calibration can lower `q̂_clean`, but by Remark B′ never below `q̂_lo` while A5 holds on the calibration rows. Theorem A is immune. |
 | A7 | **Fixed weights** across calibration and deployment | all | Recalibrate per checkpoint. |
 | A8 | **Mondrian groups are functions of `P`** | Mondrian variants | A group that reads `U` would let the attacker pick the threshold. |
+| A9 | **The score is fixed before calibration**: the G16 weights, the box scale `c` and the grid of `c` values are not fitted or chosen on the calibration (or test) rows | all | Choosing `c` by looking at calibration coverage or set size makes `T` data-dependent and breaks exchangeability of the calibration scores, as in ordinary conformal. Report one pre-registered `c`, or recalibrate on a fresh split per `c`. |
+| A10 | **The option set is trusted**: `K`, the option ids and the option contents that define the box are part of `P` | all | If untrusted text can add or remove options (e.g. options parsed out of a retrieved page), the attacker changes which labels the set ranges over. Options must come from the host, and vetoes (`lo = hi = −∞`) must be host decisions. jevkit `robust_set` refuses non-finite intervals, so a vetoed option has to be dropped from `intervals` before the call (it is never in the set). |
 
 ## 4. Cost: set inflation
 

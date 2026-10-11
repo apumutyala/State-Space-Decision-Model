@@ -194,12 +194,34 @@ def test_jevkit_report_agrees_and_flags_out_of_box_attacks():
 
 
 def test_qhat_rank_matches_theorem():
-    for n in (1, 5, 9, 10, 19, 99, 150):
-        for a in (0.05, 0.1, 0.2):
+    # the theorem's rank in exact rational arithmetic (a float ceil here would share any rounding bug with the code)
+    from fractions import Fraction
+    for n in list(range(1, 200)) + [999, 1000, 8599, 8600, 17233, 20000]:
+        for a in (0.01, 0.02, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3):
+            q = (n + 1) * (1 - Fraction(str(a)))
+            k = -((-q.numerator) // q.denominator)
             xs = [i / n for i in range(n)]
-            k = math.ceil((n + 1) * (1 - a))
-            want = math.inf if k > n else sorted(xs)[k - 1]
-            assert conformal_qhat(xs, a) == want
+            want = math.inf if k > n else xs[k - 1]
+            assert conformal_qhat(xs, a) == want, (n, a)
+
+
+def test_robust_set_with_injected_calibration_text_still_covers():
+    """A6 is not needed when calibration logits stay in their boxes (A5): any in-box calibration scores are >= s_lo,
+    so q_hat(injected clean scores) >= q_lo and C_rob contains the matched set C_lo (Theorem A)."""
+    covs = []
+    for seed in range(40):
+        rng = random.Random(f"injcal|{seed}")
+        cal = [draw(rng) for _ in range(N_CAL)]
+        test = [draw(rng) for _ in range(N_TEST)]
+        q_lo = conformal_qhat([s_lo(r["iv"], r["y"]) for r in cal], ALPHA)
+        # strongest calibration attack: every calibration row's logits at the corner that minimises its gold score
+        q_inj = conformal_qhat([1.0 - softmax({k: (v[1] if k == r["y"] else v[0]) for k, v in r["iv"].items()})[r["y"]]
+                                for r in cal], ALPHA)
+        q_rand = conformal_qhat([1.0 - softmax({k: rng.uniform(*v) for k, v in r["iv"].items()})[r["y"]]
+                                 for r in cal], ALPHA)
+        assert q_inj == q_lo and q_lo <= q_rand
+        covs.append(sum(r["y"] in robust_set(r["iv"], q_inj) for r in test) / N_TEST)
+    assert sum(covs) / len(covs) >= TARGET - 0.02, sum(covs) / len(covs)
 
 
 def test_print_summary(capsys):

@@ -6,7 +6,7 @@ CONTROL_RESEARCH mechanism #1. Status: **proof + property-test harness**. The re
 
 - If every option's score is computed from (trusted state, option content) only, with no option position and no option id, and the scores go through softmax over the set, then reordering, reversing or shuffling the options cannot change any option's probability. Reorder flip rate is exactly 0. This is a proof, not a sample.
 - Relabel invariance needs one more condition: the id never enters the score, or it enters only through a code that is a function of the option content.
-- In floating point, "exactly" becomes "within a stated tolerance". Bitwise equality holds when the per-option arithmetic is the same and the softmax sums in a fixed (canonical) order. Otherwise `max|Δp| ≤ δ/2 + γ_K` and the argmax is unchanged whenever the top-two logit margin exceeds `2δ` (definitions in section 4).
+- In floating point, "exactly" becomes "within a stated tolerance". Bitwise equality holds when the per-option arithmetic is the same and the softmax sums in a fixed (canonical) order. Otherwise `max|Δp| ≤ δ/2 + γ_{2K}` and the argmax is unchanged whenever the top-two logit margin exceeds `2δ` (definitions in section 4).
 - **Finding on the current code.** `controlsafe/g16.py` adds per-option-position parameters `u_k` and `beta_k` to the judge (`a_k = A h_P[k] + u_k`, `b_k = w·h_P[k] + beta_k`). That is condition (C2) below failing by design. The G16 head is reorder-invariant only if the canonical order it uses is a function of the option set. If that order sorts by id, it is still not relabel-invariant. The sym-invariant G16 head must drop `u_k` and `beta_k` or replace them with a position-free term.
 
 ## 1. Setup
@@ -27,7 +27,7 @@ CONTROL_RESEARCH mechanism #1. Status: **proof + property-test harness**. The re
 
 - **(C1) Shared state is order-free.** `x` is computed without reading the option list, or it reads the list only in a canonical order that is a function of the multiset `{c_i}` (for example, sorted by a content hash).
 - **(C2) Per-option score is position-free and id-free.** There is a function `f` with `z_i = f(x, c_i) ∈ ℝ ∪ {−∞}`. In particular, no option-slot embeddings, no per-slot parameters, and no id tokens in the continuation.
-- **(C3) Set normaliser.** `p_i = exp(z_i) / Σ_j exp(z_j)`, or any normaliser `g` with `g(z∘π) = g(z)∘π` (temperature, top-k masking by value, and vetoes that are a function of `(x, c_i)` all qualify).
+- **(C3) Set normaliser.** `p_i = exp(z_i) / Σ_j exp(z_j)`, or any normaliser `g` with `g(z∘π) = g(z)∘π` (temperature, top-k masking by value, and vetoes that are a function of `(x, c_i)` all qualify; top-k only if ties at the k-th value are all kept or all dropped, since keeping "the first" tied one is a position rule).
 - **(C4) Order-free tie-breaking.** The predicted label is chosen by a rule that does not look at position: either the full argmax set, or a deterministic tie-break on content.
 
 **Claim.**
@@ -43,7 +43,7 @@ CONTROL_RESEARCH mechanism #1. Status: **proof + property-test harness**. The re
 - By (C2), the score at new position `k` is `z'_k = f(x, c_{π(k)}) = z_{π(k)}`, so `z' = z∘π`.
 - By (C3), the denominator `Σ_k exp(z'_k) = Σ_j exp(z_j)`, because finite sums in ℝ are invariant to order. Hence `p'_k = exp(z_{π(k)})/Σ_j exp(z_j) = p_{π(k)}`.
 - The option at new position `k` has id `id_{π(k)}`, so `P_{O^π}(id_{π(k)}) = p_{π(k)} = P_O(id_{π(k)})`. This holds for every id.
-- (C4): the argmax set of `z'` is the image of the argmax set of `z` under `π^{-1}`, which contains the same ids. A content-based tie-break picks the same content, and therefore the same id.
+- (C4): the argmax set of `z'` is the image of the argmax set of `z` under `π^{-1}`, which contains the same ids. A content-based tie-break picks the same content, and therefore the same id **when contents are distinct**. If two ids share the maximal content, no position-free and id-free rule can choose between them: the decision must be reported as the set of tied ids (the per-id distribution is still exactly invariant; only a single-id decision is undefined).
 - Relabel: `c_i` is unchanged and ids are read nowhere, so `z` is literally the same vector. The ids attached to each position are `σ(id_i)`, and the result follows. ∎
 
 **Relabel with id-agnostic codes.** If the model needs a short handle per option (for example, a letter it emits), assign handles by a rule `code_i = h(c_i, {c_j})`, such as the rank of `c_i` in the content-sorted multiset. Then a relabel leaves every code unchanged, because the codes never see the ids. The wire id is a pure lookup applied after scoring. Two failure points:
@@ -72,9 +72,9 @@ Real arithmetic gives exact equality. Machine arithmetic gives two error sources
 1. **Logit perturbation.** Suppose each option's logit is computed with a backend whose result depends on its batch slot or on the run (tiling, atomics). Write `δ = max_i |z'_i − z_{π(i)}|`. This is measured, not derived. Log it as `max|Δlogit|`.
    - The softmax Jacobian `J = diag(p) − p pᵀ` has max-row-sum norm `max_i 2 p_i (1 − p_i) ≤ 1/2`. By the mean value theorem, `‖Δp‖_∞ ≤ δ/2`.
    - The argmax set is unchanged whenever the top-two logit margin exceeds `2δ`.
-2. **Normaliser summation order.** With identical logits, summing `exp(z_j)` in a different order changes `Z` by a relative error of at most `γ_{K−1}`. With a standard `exp`, each `p_i` then changes by a relative error of at most about `γ_{K+2}`, so `|Δp_i| ≤ p_i·γ_{K+2} ≤ γ_{K+2}`. In fp32 with K ≤ 256, that is ≤ 1.6e-5. Summing in a canonical order removes this term.
+2. **Normaliser summation order.** With identical logits, the per-option work (`z_i − m`, `exp`) is the same operation sequence in both orders, so `e_i = fl(exp(z_i − m))` is bitwise identical; only the sum differs. Recursive summation of K positive terms gives `Ẑ = Z(1 + θ)` and `Ẑ' = Z(1 + θ')` with `|θ|, |θ'| ≤ γ_{K−1}`, and the final division adds one rounding to each side. The two computed values therefore differ by the ratio `(1+θ')(1+η)/((1+θ)(1+η'))`, a product of at most `2(K−1) + 2 = 2K` factors `(1 + u_j)^{±1}`, so by Higham's Lemma 3.3 `|p̂_i/p̂'_i − 1| ≤ γ_{2K}` and `|Δp_i| ≤ p_i·γ_{2K} ≤ γ_{2K}`. In fp32 with K ≤ 256, that is ≤ 3.1e-5. (An earlier version of this section stated `γ_{K+2}`, which bounds each computed `p̂_i` against the exact `p_i`, not two computed values against each other; the difference of two such errors is up to twice as large.) Summing in a canonical order removes this term.
 
-**Tolerance to assert:** `max|Δp| ≤ tol = δ/2 + γ_{K+2}`. Assert argmax equality only when the margin exceeds `2δ`. Otherwise report the decision as a tie, not a flip.
+**Tolerance to assert:** `max|Δp| ≤ tol = δ/2 + γ_{2K}` (first order in `u`). Assert argmax equality only when the margin exceeds `2δ`. Otherwise report the decision as a tie, not a flip.
 
 **Bitwise equality is achievable** when all three hold:
 - each option is scored by the same sequence of operations, i.e. the same batch shape and kernel, or one option per call;

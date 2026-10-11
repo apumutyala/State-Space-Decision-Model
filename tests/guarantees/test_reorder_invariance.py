@@ -98,8 +98,9 @@ def check_relabel(score_fn: ScoreFn, state: Any, options: Sequence[Option], n_re
 
 
 def fp_tolerance(k: int, delta_logit: float = 0.0, unit_roundoff: float = 2.0 ** -24) -> float:
-    """REORDER_INVARIANCE.md section 4: tol = delta/2 + gamma_{K+2}; fp32 unit roundoff by default."""
-    n = k + 2
+    """REORDER_INVARIANCE.md section 4: tol = delta/2 + gamma_{2K}; fp32 unit roundoff by default. (Two computed
+    softmaxes over differently ordered sums differ by a ratio of 2K rounding factors, not K + 2.)"""
+    n = 2 * k
     return delta_logit / 2 + n * unit_roundoff / (1 - n * unit_roundoff)
 
 
@@ -224,10 +225,13 @@ def test_id_dependent_heads_pass_reorder_but_fail_relabel(head):
 def test_float_nonassociativity_is_within_the_stated_tolerance():
     worst = 0.0
     for s, o in _cases(30, seed=1):
-        for r in assert_invariant(naive_sum_head, s, o):  # default tol = gamma_{K+2} (fp32 constant is conservative
-            worst = max(worst, r["max_abs_dp"])            # for fp64 Python floats)
+        # Python floats are fp64: check against gamma_{2K} at the fp64 unit roundoff, the arithmetic actually used
+        # (the fp32 default is ~1e9 times looser and could not fail)
+        for r in assert_invariant(naive_sum_head, s, o, tol=fp_tolerance(len(o), unit_roundoff=2.0 ** -53)):
+            worst = max(worst, r["max_abs_dp"])
             assert r["flips"] == 0
-    assert worst <= fp_tolerance(9)
+    assert worst > 0.0  # non-vacuous: the left-to-right sum really is order-dependent on these cases
+    assert worst <= fp_tolerance(9, unit_roundoff=2.0 ** -53)
 
 
 def test_all_k_factorial_orders_for_small_k():
