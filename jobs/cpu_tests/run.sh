@@ -65,6 +65,18 @@ if [[ " $SUITES " == *" sym "* ]]; then
 S_RC=$?
 log "sym rc=$S_RC"
 fi
+R_RC=0; RH_RC=0
+if [[ " $SUITES " == *" rsc "* ]]; then
+# ---------------------------------------------------------------- 3c. stack/rwkv7/sym-contractive (D21 A + B, OFF = d20 parent)
+(cd "$T/d20" && PYTHONPATH="$T/d20" timeout 600 python -X utf8 "$T/rsc/tests/rsc_off_golden.py" > "$OUT/rsc_parent_golden.json" 2> "$OUT/rsc_parent_golden.stderr")
+log "rsc parent golden rc=$? $(wc -c < "$OUT/rsc_parent_golden.json") bytes"
+(cd "$T/rsc" && RSC_PARENT_GOLDEN="$OUT/rsc_parent_golden.json" timeout 1500 $PYT --junitxml="$OUT/junit-rsc.xml"    tests/test_sym_contractive.py tests/test_joint_record_head.py tests/test_g1v3w_train_rows.py tests/test_equivariance.py    tests/test_heads.py tests/test_policy_actions.py tests/test_conformance.py tests/test_m2_gates.py > "$OUT/rsc.log" 2>&1)
+R_RC=$?
+log "rsc rc=$R_RC"
+(cd "$T/rsc" && SSDM_INV_HEAD=heads.inv_adapters:rwkv7_sym_fork timeout 900 $PYT --junitxml="$OUT/junit-rsc-harness.xml"    tests/guarantees/test_reorder_invariance.py > "$OUT/rsc-harness.log" 2>&1)
+RH_RC=$?
+log "rsc harness rc=$RH_RC"
+fi
 J2_RC=0
 if [[ " $SUITES " == *" jev2 "* ]]; then
 # ---------------------------------------------------------------- 3a. jev2-4b (A-PREREG-JEV2-4B package checks)
@@ -93,13 +105,13 @@ log "symall rc=$A_RC (informational, not gating)"
 fi
 
 # ---------------------------------------------------------------- summary
-python - "$OUT" "$G_RC" "$N_RC" "$G16_RC" "$H_RC" "$S_RC" "$J2_RC" <<'EOF' >> "$OUT/run.log" 2>&1
+python - "$OUT" "$G_RC" "$N_RC" "$G16_RC" "$H_RC" "$S_RC" "$J2_RC" "$R_RC" "$RH_RC" <<'EOF' >> "$OUT/run.log" 2>&1
 import hashlib, json, os, sys, xml.etree.ElementTree as ET
 out = sys.argv[1]
-rcs = dict(zip(["golden", "nupi", "g16", "g16_harness", "sym", "jev2"], map(int, sys.argv[2:])))
+rcs = dict(zip(["golden", "nupi", "g16", "g16_harness", "sym", "jev2", "rsc", "rsc_harness"], map(int, sys.argv[2:])))
 suites = {}
 want = os.environ.get("SUITES", "nupi g16 sym").split()
-for name in [n for n in ["nupi", "g16", "g16-harness", "sym", "jev2", "baseline-g16old", "baseline-g16v2", "baseline-sym", "symall"]
+for name in [n for n in ["nupi", "g16", "g16-harness", "sym", "jev2", "rsc", "rsc-harness", "baseline-g16old", "baseline-g16v2", "baseline-sym", "symall"]
              if os.path.isfile(os.path.join(out, f"junit-{n}.xml")) or n.split("-")[0] in want]:
     f = os.path.join(out, f"junit-{name}.xml")
     s = {"passed": 0, "failed": 0, "skipped": 0, "failures": [], "skips": []}

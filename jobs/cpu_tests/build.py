@@ -16,6 +16,13 @@ TREES = {"nupi": os.environ.get("NUPI_SHA", "c3f3a3f9"), "base": "5e159437",
          "jev2": os.environ.get("JEV2_SHA", "a5b4cb33")}
 # BASELINE="g16old=2d913b3e symold=42388c2c": extra trees for the "baseline" suite (same tests on the pre-fix shas)
 TREES.update(dict(x.split("=", 1) for x in os.environ.get("BASELINE", "").split()))
+# stack/rwkv7/sym-contractive (suite "rsc"): RSC_SHA = the branch tree, "d20" = its parent (OFF-path golden)
+TREES.update({"rsc": os.environ.get("RSC_SHA", "c6cc6a5e"), "d20": os.environ.get("D20_SHA", "9323085c")})
+#: TREES_ONLY="rsc d20": package only these trees (low RAM on the laptop)
+if os.environ.get("TREES_ONLY"):
+    TREES = {k: v for k, v in TREES.items() if k in os.environ["TREES_ONLY"].split()}
+#: MAX_MIN caps the job clock (cpu-8 $0.27 per 30 min): e.g. MAX_MIN=10 for a <= $0.10 run
+MAX_MIN = int(os.environ.get("MAX_MIN", "75"))
 SUITES = os.environ.get("SUITES", "nupi g16 sym")
 #: tokenizer files only (no weights) for the real-tokenizer tests: <dir name> under SSDM_TOKENIZERS=/opt/tokenizers
 TOK_ROOT = pathlib.Path(os.environ.get("TOK_ROOT", r"C:\Users\apumu\research\CHLabs\ssdm-data\tokenizers"))
@@ -88,13 +95,13 @@ def main():
               "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"}, "interval_s": 300,
                          "grace_period_s": 900, "fail_threshold": 2, "on_fail": "kill"}}
     sub = {"chip": "cpu-8", "mission": "ssdm-cpu-tests", "idempotency_key": f"ssdm-cpu-tests-{sha[:12]}",
-           "label": f"cpu_tests: suites [{SUITES}] nupi {TREES['nupi']} (+5e159437 golden), g16-sym {TREES['g16']}, "
-                    f"sym-invariant {TREES['sym']}, ev {TREES['ev']}, jev2 {TREES['jev2']}",
+           "label": f"cpu_tests: suites [{SUITES}] trees " + " ".join(f"{k}={v}" for k, v in TREES.items()),
            "dockerfile_path": "Dockerfile", "build_timeout_minutes": 20, "command": "bash /opt/job/run.sh", "env": {"SUITES": SUITES},
-           "max_duration_minutes": 75, "max_restarts": 0, "resume": "none", "queue_ttl_minutes": 1440,
+           "max_duration_minutes": MAX_MIN, "max_restarts": 0, "resume": "none", "queue_ttl_minutes": 1440,
            "hf_cache": False, "checks": checks}
     receipt = {"job": "cpu_tests", "trees": shas, "context": {"file": str(f), "sha256": sha, "size_bytes": len(blob)},
-               "cost": {"worst_case_usd": 0.68, "basis": "validate_job cpu-8: $0.27 per 30 min -> 75 min"},
+               "cost": {"worst_case_usd": round(0.27 * MAX_MIN / 30, 3),
+                        "basis": f"validate_job cpu-8: $0.27 per 30 min -> {MAX_MIN} min"},
                "calls": [{"tool": "open_mission", "args": {"name": "ssdm-cpu-tests"}},
                          {"tool": "submit_job", "args": sub}]}
     (out / "submit.json").write_text(json.dumps(receipt, indent=1) + "\n", encoding="utf-8", newline="\n")
