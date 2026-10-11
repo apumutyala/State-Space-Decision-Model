@@ -1,5 +1,0 @@
-owner: evidence
-job: job-ixpzj (D19 dev) + job-qhf6k (D13 dev); stage 1 done (job-wpi5n, job-3f7q7 PASS)
-start_utc: 2026-10-10T22:10Z
-time_limit: 2026-10-11T05:00Z
-item: B-PREREG-RAGTRUTH-REPHRASE stage 1 (RT1 vs original, 300 RAGTruth TRAIN items) claude/ev-ragtruth-rephrase@acdf8501 + claude/ev-ragtruth-rephrase-d13@51f53eb3; stage 2 (DEV minus proxy600, 255 rows) only for a passing arm
