@@ -38,6 +38,9 @@ class Item:
     #: in another order, and view option k -> base option view_perm[k]. Training-only; never an eval / gate input.
     view: "Item | None" = None
     view_perm: tuple[int, ...] | None = None
+    #: consistency cells only (train.consistency_views.attach_views): the same question with a semantics-preserving
+    #: surface change (format / instruction / option wording), same option ids and gold. Training-only.
+    cview: "Item | None" = None
 
 
 def items_from_records(records: Iterable[dict[str, Any]], encode: EncodeFn, layout: str = "ordered",
