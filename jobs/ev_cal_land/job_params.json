@@ -1,0 +1,47 @@
+{
+ "_comment": "Evidence lane, CPU-only analysis on the SF box (laptop has < 1 GB free RAM; land_fulldev needs ~4 GB): full-DEV Decision Index of the D19 calibrated variant (B-PREREG-D19-TEMP, T 0.806211, rows tempered independently by the evidence rescore) paired vs Clef 27B / Clef-flash, the untempered rows as identity check, per-area ECE. No model loaded, no GPU work.",
+ "job": "ev-cal-land",
+ "test_env": {"transformers": null},
+ "chip": "h100",
+ "chip_count": 1,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 0,
+ "queue_ttl_minutes": 720,
+ "resume": "none",
+ "batch_usd_per_min": 0.063,
+ "runner": "jobs/ev_cal_land/ev_cal_land_job.sh",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement of a pre-registered secondary row (B-PREREG-D19-TEMP calibrated variant) under the unchanged B-PREREG-CLAIM rule; land_fulldev reports beats_both, nothing is promoted or selected by this job",
+ "mission": "ssdm-evidence-rescore",
+ "max_duration_minutes": 40,
+ "hf_cache": false,
+ "hard_cap_usd": 6.3,
+ "reserve_minutes": 5,
+ "phase_caps_minutes": {"setup": 3, "preflight": 3, "land": 22, "area_ece": 6, "final": 1},
+ "expected_minutes": {"build": 6, "setup": 1, "preflight": 1, "land": 10, "area_ece": 3, "final": 1},
+ "model": "none: CPU-only analysis of shipped prediction files",
+ "submit": {
+  "command": "bash /opt/ssdm/m1/jobs/ev_cal_land/ev_cal_land_job.sh",
+  "key": "ev-cal-land-d19",
+  "env": {},
+  "label": "evidence: D19 calibrated full-DEV Index + area ECE (CPU-only landing)",
+  "checks": {
+   "success": {"check": {"all_of": [{"type": "file_exists", "path": "/output/EV_CAL_LAND_DONE"},
+                                    {"type": "file_exists", "path": "/output/MANIFEST.jsonl"}]}},
+   "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"}, "interval_s": 300, "grace_period_s": 900,
+              "fail_threshold": 2, "on_fail": "kill"}
+  }
+ },
+ "context": {
+  "dockerfile": "jobs/ev_cal_land/Dockerfile",
+  "data": [
+   {"src": "slices/dev-rows.jsonl.gz", "dest": "slices/dev-rows.jsonl.gz", "pin": "jobs/ev_cal_land/data.sha256"},
+   {"src": "cand/calibrated.results.jsonl", "dest": "cand/calibrated.results.jsonl", "pin": "jobs/ev_cal_land/data.sha256"},
+   {"src": "cand/untempered.results.jsonl", "dest": "cand/untempered.results.jsonl", "pin": "jobs/ev_cal_land/data.sha256"},
+   {"src": "clef/clef27b.results.jsonl", "dest": "clef/clef27b.results.jsonl", "pin": "jobs/ev_cal_land/data.sha256"},
+   {"src": "clef/clef_flash.results.jsonl", "dest": "clef/clef_flash.results.jsonl", "pin": "jobs/ev_cal_land/data.sha256"}
+  ],
+  "manifest_files": ["jobs/ev_cal_land/data.sha256"]
+ }
+}
