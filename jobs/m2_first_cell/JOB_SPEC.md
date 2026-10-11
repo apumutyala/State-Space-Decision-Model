@@ -758,3 +758,39 @@ ONE mode (default shim).
     (raw) and native_tfit arms; G1 (a KEEP gate only in `jev2_h2o_sym`).
   - **Caveat:** open-split Intelligence only (the sealed split is not reproducible locally); never claimed as a board
     score. The control is the same revision.
+
+## Mode `jev2_h2o_shim_l` (A-PREREG-JEV2-H2O-L: the same cell, ~1 epoch of a larger cleared draw)
+
+Why: job-9fy9p measured **2.55 s/step** for the jev2_h2o_shim cell (lm_label head, no fork pass, LoRA r16; cell.json
+`ladder.rate_check.step_s`), 6.6x faster than the 16.9 s/step estimate that sized JEV2-H2O at 333 steps. At the measured
+rate ~1 epoch of a 1,000-per-family draw costs about $9. This is justified by the measured cost only; it was registered
+before any public-231 answer of a trained JEV2-H2O checkpoint existed.
+
+- **Same recipe and pins as `jev2_h2o_shim`:** host H2O-Lightning-4B v1.1 @193ad740 (fail-closed), head lm_label,
+  LoRA r16, lr_lora 4e-5 / lr_head 3e-4, cosine with horizon 0.6717 x plan, LS 0.05 on choice / score and 0 on noul,
+  max_len 4,096 with 0 truncation, the same cleared mix components and exclusion lists (c0c175f5, 5cebf60b), prob_indep
+  dropped, score rows ~25 %, the same PRIMARY (native_shimcal vs the in-job H2O control on public-231, B 1,000 seed 16),
+  the same step-0 floor, the same secondaries.
+- **Data:** `bschema-draw-jev2h-L` (pointer `data/manifests/bschema-draw-jev2h-L.pointer.json`, files
+  `data_jev2hL.sha256`): 1,000 train rows per family x 18 (tool_selection 959 after the Glaive dedupe) = 17,959 rows.
+  The **selection slice is the SAME 3,600 ids (142a593a)**: forced into calib (`--force-calib
+  jobs/m2_first_cell/jev2h_selection_slice_ids.txt`, sha e09721b7), never trained; its records file is byte-identical
+  to JEV2-H2O's (b40cac9c).
+- **Steps:** 2,244 = the whole draw once (~1 epoch); min_steps 1,000; dev cards every 250 steps (360 slice rows).
+- **Schedule and cost** (clock from the MEASURED rate): clock 120 = ceil(2,244 x 2.55 x 1.15 / 60) + 10 dev-card
+  minutes, rounded up to 5. Caps: setup 15 + guard 5 + heldout 5 + cell 150 + screen 50 + report 5 + reserve 7 =
+  237 min; quoted hold $14.93; **worst case $33.64** (hard cap $34; fits the balance after job-x7c42); expected ~143
+  billed min, about $9 (the build is not billed). The screen runs after the cell, so public-231 stays untouched until
+  L's selection is frozen. The inference checkpoint is exported right after the cell.
+- Submits only after job-x7c42 lands (the holds serialise).
+
+### A-PREREG-JEV2-H2O-L (lead, 2026-10-11; registered on origin/state BEFORE job-x7c42 lands and before any public-231 answer of a trained JEV2-H2O checkpoint)
+
+- **A-PREREG-JEV2-H2O-L:** the jev2_h2o_shim cell (A-PREREG-JEV2-H2O + amendments 1-2) run for ~1 epoch of the
+  1,000-per-family cleared draw bschema-draw-jev2h-L (17,959 rows, 2,244 steps), justified by the measured 2.55 s/step
+  (job-9fy9p), not by results. Recipe, pins, PRIMARY, floor and secondaries are identical. Selection only on the SAME
+  slice 142a593a (forced, never trained); public-231 is untouched until L's selection is frozen. Worst case $33.64.
+  Label "H2O-Lightning-4B v1.1 + SSDM jev2 data (L)".
+  - **MULTIPLICITY (Holm over 2 arms):** both JEV2-H2O (job-x7c42) and JEV2-H2O-L may claim "H2O-Lightning-4B v1.1 +
+    SSDM beats H2O". Holm: the arm with the smaller p must have p < 0.025 (its 97.5% paired CI on delta Composite A
+    excludes 0), and only then the other arm is tested at 0.05 (95% CI). Each arm also needs its step-0 floor to pass.

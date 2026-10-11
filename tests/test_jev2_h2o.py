@@ -350,3 +350,26 @@ def test_screen_stage_exports_the_checkpoint_right_after_the_cell():
     job = (M / "first_cell_job.sh").read_text(encoding="utf-8")
     i, j = job.index('gate "cell" $r; export_phase cell'), job.index("stage screen: ONE proxy600")
     assert "train.ckpt_export inference" in job[i:j] and 'ckpt-export-early.log' in job[i:j]
+
+
+def test_jev2_h2o_l_same_recipe_and_selection_slice():
+    """A-PREREG-JEV2-H2O-L: the jev2_h2o_shim recipe / pins on the 1,000-per-family draw, the SAME selection slice."""
+    from jobs.common import costs
+
+    c, p = cell("jev2_h2o_shim_l"), params("jev2_h2o_shim_l")
+    s = cell("jev2_h2o_shim")
+    for k in SAME + ("head", "layout", "lora_rank", "lr_lora", "qwen35", "jev1", "label_smoothing", "label_smoothing_noul"):
+        assert c.get(k) == s.get(k), k
+    assert c["calib_slice"]["ids_sha256"] == s["calib_slice"]["ids_sha256"] == c["dev_card_records"]["ids_sha256"]
+    assert c["n_train_records"] == 17959 and c["max_steps"] == 17959 // 8 and c["min_train_items"] == 17959
+    ptr = json.loads((ROOT / c["train_set"]["pointer"]).read_text(encoding="utf-8"))
+    assert ptr["n_records"] == 17959 and "--train-per-family 1000" in ptr["build_command"]
+    assert hashlib.sha256((ROOT / c["train_set"]["force_calib"]["file"]).read_bytes()).hexdigest() == c["train_set"]["force_calib"]["sha256"]
+    for f, sh in EXCL.items():
+        assert f"--global-exclude {f}={sh}" in ptr["build_command"]
+    assert p["jevkit"]["paired_primary"] == "native_shimcal" and p["jevkit"]["slice_floor"]
+    caps = sum(p["phase_caps_minutes"].values()) + p["reserve_minutes"]
+    assert p["max_duration_minutes"] == caps and costs.worst_case_usd(p) <= p["hard_cap_usd"] <= 34.0
+    assert c["max_minutes"] >= math.ceil(c["max_steps"] * 2.55 * 1.15 / 60)
+    assert f"{costs.worst_case_usd(p):.2f}" in (M / "JOB_SPEC.md").read_text(encoding="utf-8")
+    assert "job_params_jev2_h2o_shim_l.json" in (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
