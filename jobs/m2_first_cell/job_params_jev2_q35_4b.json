@@ -1,5 +1,5 @@
 {
- "_comment": "Mode jev2_q35_4b (A-PREREG-JEV2-4B, NOT submitted): sym-fork, max_len 4,096, LS 0.05, the balanced jev1 + jev2a (+ jev2b / jev2c placeholders) mix 228/family x 18 = 4104 rows, 513 steps (seen once); G1 (sym_eval.perturb_eval), native_tfit (calib slice 200/family), native_shimcal, covered/uncovered breakdown. Schedule: setup 20 + guard 5 + heldout 10 + cell 220 + screen 60 + report 5 + reserve 7 = 327. Quoted hold 327 x $0.063 = $20.6; worst case (60 + 2 x 327) x 0.063 = $44.98 <= $45 hard budget (jobs/common/rates.py). Expected ~243 min = $15.31.",
+ "_comment": "Mode jev2_q35_4b (A-PREREG-JEV2-4B, NOT submitted): sym-fork, max_len 4,096, LS 0.05, the balanced jev1 + jev2a (+ jev2b / jev2c placeholders) mix 570/family x 18 = 10260 rows, 1282 steps (seen once); G1 (sym_eval.perturb_eval), native_tfit (calib slice 200/family), native_shimcal, covered/uncovered breakdown. Schedule: setup 20 + guard 5 + heldout 10 + cell 497 + screen 60 + report 5 + reserve 7 = 604. Quoted hold 604 x $0.063 = $38.05; worst case (60 + 2 x 604) x 0.063 = $79.88 <= $80 hard budget (jobs/common/rates.py). Expected ~456 min = $28.73.",
  "test_env": {
   "transformers": "5.17.0",
   "with": [
@@ -23,10 +23,10 @@
   "image": "jobs/probe9b/Dockerfile"
  },
  "job": "m2-first-cell-jev2-q35-4b",
- "status": "A-PREREG-JEV2-4B: JEV1-4B + sym-fork + 4k + LS 0.05 on the balanced jev2 mix (4104 rows), 513 steps",
+ "status": "A-PREREG-JEV2-4B: JEV1-4B + sym-fork + 4k + LS 0.05 on the balanced jev2 mix (10260 rows), 1282 steps",
  "chip": "h100",
  "chip_count": 1,
- "max_duration_minutes": 327,
+ "max_duration_minutes": 604,
  "build_timeout_minutes": 60,
  "max_restarts": 0,
  "assumed_restart_floor": 1,
@@ -34,14 +34,14 @@
  "resume": "checkpoint",
  "hf_cache": true,
  "batch_usd_per_min": 0.063,
- "hard_cap_usd": 45.0,
+ "hard_cap_usd": 80.0,
  "phase_caps_minutes": {
   "setup": 20,
   "guard": 5,
   "heldout": 10,
   "screen": 60,
   "report": 5,
-  "cell": 220
+  "cell": 497
  },
  "reserve_minutes": 7,
  "expected_minutes": {
@@ -49,7 +49,7 @@
   "setup": 10,
   "guard": 3,
   "heldout": 5,
-  "cell": 167,
+  "cell": 380,
   "screen": 40,
   "report": 3
  },
@@ -90,7 +90,7 @@
   },
   "key": "m2-first-cell-jev2-q35-4b-r1",
   "clock_lock": true,
-  "label": "A-PREREG-JEV2-4B jev2_q35_4b: Qwen3.5-4B + H2O shim, sym-fork, 4k, LS 0.05, balanced jev2 mix (4104), 513 steps, clock 185 [jevkit paired vs stock + shim; G1; tfit]",
+  "label": "A-PREREG-JEV2-4B jev2_q35_4b: Qwen3.5-4B + H2O shim, sym-fork, 4k, LS 0.05, balanced jev2 mix (10260), 1282 steps, clock 462 [jevkit paired vs stock + shim; G1; tfit]",
   "checks": {
    "success": {
     "check": {

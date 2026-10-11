@@ -1247,7 +1247,8 @@ def _main(argv=None, ctx: dict | None = None):
             cell["train_cards"] = tr.cards
         save()
         step0 = tr.step
-        if cfg.get("lr_horizon_steps") and tr.cfg.lr_schedule == "cosine":
+        frac = cfg.get("lr_horizon_frac")  # JEV2-4B: horizon = frac x the step-10-projected final step (see below)
+        if cfg.get("lr_horizon_steps") and tr.cfg.lr_schedule == "cosine" and not frac:
             # A-PREREG-SIZECLIFF Amendment 2 (step parity): the cosine horizon of the arm this one matches (its
             # cell.json lr_horizon.step), fixed before the first step; warmup precedes the decay, so the LR at every
             # step equals that arm's. The step-10 clock projection then leaves it alone (set_horizon is fixed once).
@@ -1266,8 +1267,17 @@ def _main(argv=None, ctx: dict | None = None):
                 # horizon = min(max_steps, clock-projected final step over the WHOLE max_minutes clock); fixed once,
                 # stored in the checkpoint (a resumed attempt or chain link keeps it, and its record)
                 if tr.cfg.lr_schedule == "cosine" and not tr.horizon_fixed:
-                    tr.set_horizon(tr.step + int(chk["affordable_steps"]))
-                    cell["lr_horizon"] = {"step": tr.horizon, "fixed_at_step": tr.step}
+                    if frac:  # opt-in: the planned final step = min(max_steps, clock projection); horizon = frac x it
+                        final = min(int(cfg["max_steps"]), tr.step + int(chk["affordable_steps"]))
+                        tr.set_horizon(max(tr.step + 1, round(float(frac) * final)))
+                        cell["lr_horizon"] = {"step": tr.horizon, "fixed_at_step": tr.step, "planned_final_step": final,
+                                              "frac": float(frac)}
+                        if final < int(cfg["max_steps"]):  # continue with the affordable steps (>= min_steps)
+                            cell["train_budget_shortened"] = {"planned_final_step": final,
+                                                              "max_steps": int(cfg["max_steps"]), **chk}
+                    else:
+                        tr.set_horizon(tr.step + int(chk["affordable_steps"]))
+                        cell["lr_horizon"] = {"step": tr.horizon, "fixed_at_step": tr.step}
                 save()
                 if chk["too_slow"]:
                     tr.save()

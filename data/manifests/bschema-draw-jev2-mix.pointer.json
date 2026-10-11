@@ -56,7 +56,7 @@
    "note": "rebuilt long_policy, prose state 2-4.5k tokens; replaces jev1's long_policy via --family-src"
   }
  },
- "n_records": 4104,
+ "n_records": 10260,
  "records_uncompressed_sha256": null,
  "manifest": "bschema-draw-jev2-mix.manifest.jsonl.gz",
  "manifest_uncompressed_sha256": null,

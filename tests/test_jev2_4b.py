@@ -18,8 +18,9 @@ R2 = json.loads((M / "job_params_jev1_q35_4b.json").read_text(encoding="utf-8"))
 
 def test_one_pass_fixed_budget():
     assert CELL["layout"] == "sym-fork"
-    assert CELL["max_steps"] == CELL["min_steps"] == CELL["n_train_records"] // (CELL["batch_size"] * CELL["grad_accum"])
-    assert CELL["lr_horizon_steps"] == round(CELL["max_steps"] * 753 / 1121)
+    assert CELL["max_steps"] == CELL["n_train_records"] // (CELL["batch_size"] * CELL["grad_accum"])
+    assert CELL["min_steps"] == 600 <= CELL["max_steps"]  # step-10 projection continues down to this floor
+    assert "lr_horizon_steps" not in CELL and abs(CELL["lr_horizon_frac"] - 753 / 1121) < 1e-3
     assert CELL["max_minutes"] >= math.floor(CELL["max_steps"] * 10.92 * 0.985 * 1.3 / 60)
     assert PARAMS["phase_caps_minutes"]["cell"] == CELL["max_minutes"] + 35
 
@@ -50,7 +51,7 @@ def test_schedule_and_cost():
     caps = sum(PARAMS["phase_caps_minutes"].values()) + PARAMS["reserve_minutes"]
     assert PARAMS["max_duration_minutes"] == caps <= 899  # one job, no chain
     worst = (60 + 2 * caps) * 0.063
-    assert worst <= PARAMS["hard_cap_usd"] <= 45.0  # operator hard budget (2026-10-10)
+    assert worst <= PARAMS["hard_cap_usd"] <= 80.0  # operator hard budget (2026-10-10, D20 links 2-3 parked)
 
 
 def test_jevkit_additions_and_r2_untouched():
