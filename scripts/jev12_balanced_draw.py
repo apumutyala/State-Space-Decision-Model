@@ -73,7 +73,8 @@ def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
          family_cap: dict[str, int] | None = None, score_share: float | None = None,
          pool_exclude: dict[str, set[str]] | None = None, dedupe_sources: set[str] | None = None,
          deprioritize_empty_score: bool = False, stats: dict | None = None,
-         exclude_subs: set[str] | None = None, force_calib: set[str] | None = None) -> tuple[dict, dict]:
+         exclude_subs: set[str] | None = None, force_calib: set[str] | None = None,
+         global_exclude: set[str] | None = None) -> tuple[dict, dict]:
     """Pass 1: per family the (n_train_f + n_calib) smallest-rank ids; returns ({id: (family, role)}, family counts).
     ``family_src`` {family: source dir name}: that family is drawn ONLY from that source. ``exclude`` {(family, source
     dir name)}: that family's rows of that source are never drawn (e.g. jev1's long_policy). ``family_cap`` {family:
@@ -101,6 +102,9 @@ def plan(srcs: list[Path], n_train: int, n_calib: int, seed: int,
             rid, fam = r["id"], family_of(r)
             if fam is None:
                 raise SystemExit(f"{d}: {rid} has no aug.<draw>.family8 / family")
+            if global_exclude and rid in global_exclude:  # cross-pool exclusion lists (sha-pinned files)
+                stats["global_excluded"] = stats.get("global_excluded", 0) + 1
+                continue
             if rid in pool_exclude.get(d.name, ()):  # per-pool verbatim-leaf / leak exclusion (sha-pinned file)
                 stats["pool_excluded"][d.name] += 1
                 continue
@@ -239,7 +243,19 @@ def main(argv=None) -> int:
     ap.add_argument("--force-calib", default=None,
                     help="ids file: never trained, always calib (its families get only these as calib)")
     ap.add_argument("--force-calib-sha", default=None, help="sha256 of the --force-calib file (required with it)")
+    ap.add_argument("--global-exclude", action="append", default=[],
+                    help="PATH=SHA256: ids dropped from EVERY pool (repeatable; sha asserted; every id must be found)")
     a = ap.parse_args(argv)
+    gex, gex_rec = set(), []
+    for spec in a.global_exclude:
+        path, want = spec.rsplit("=", 1)
+        b = Path(path).read_bytes()
+        got = hashlib.sha256(b).hexdigest()
+        if got != want:
+            raise SystemExit(f"--global-exclude {path}: sha256 {got} != pinned {want}")
+        ids_ = {ln.strip() for ln in b.decode("utf-8").splitlines() if ln.strip()}
+        gex |= ids_
+        gex_rec.append({"file": path, "sha256": got, "n_ids": len(ids_)})
     fcal, fcal_rec = set(), None
     if a.force_calib:
         b = Path(a.force_calib).read_bytes()
@@ -269,7 +285,11 @@ def main(argv=None) -> int:
         pex_rec[name] = {"file": str(path), "sha256": got, "n_ids": len(ids_)}
     stats: dict = {}
     roles, counts = plan(srcs, a.train_per_family, a.calib_per_family, a.seed, fsrc, excl, caps, a.score_share,
-                         pex, set(a.dedupe_source), a.deprioritize_empty_score, stats, set(a.exclude_sub), fcal)
+                         pex, set(a.dedupe_source), a.deprioritize_empty_score, stats, set(a.exclude_sub), fcal, gex)
+    if gex_rec:
+        if stats["global_excluded"] != len(gex):
+            raise SystemExit(f"--global-exclude: {stats['global_excluded']} of {len(gex)} ids found in the pools")
+        gex_rec = {"files": gex_rec, "n_ids": len(gex), "found": stats["global_excluded"]}
     if fcal_rec is not None:  # forced ids missing from the pools (e.g. removed by a pool exclusion) are reported
         fcal_rec.update(found=stats["forced_calib_found"], by_family=stats["forced_calib_by_family"])
     for name, n in (x.split("=", 1) for x in a.pool_rows):
@@ -325,7 +345,7 @@ def main(argv=None) -> int:
         raise SystemExit(f"{len(clash)} content hash(es) in both train and calib (rebuild with another seed)")
     rep = {"name": a.name, "seed": a.seed, "sources": [str(s) for s in srcs], "family_src": fsrc,
            "exclude": sorted("=".join(x) for x in excl), "family_cap": caps, "score_share_target": a.score_share,
-           "pool_exclusions": pex_rec, "force_calib": fcal_rec, "pool_rows_after_exclude": dict(stats["pool_rows_after_exclude"]),
+           "pool_exclusions": pex_rec, "global_exclude": gex_rec or None, "force_calib": fcal_rec, "pool_rows_after_exclude": dict(stats["pool_rows_after_exclude"]),
            "dedupe_sources": sorted(a.dedupe_source), "deduped_by_family": dict(stats["deduped"]),
            "excluded_subs": dict(stats.get("sub_excluded", {})),
            "deprioritize_empty_score": a.deprioritize_empty_score,

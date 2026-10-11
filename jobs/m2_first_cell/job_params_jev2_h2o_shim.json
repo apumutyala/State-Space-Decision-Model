@@ -1,5 +1,5 @@
 {
- "_comment": "Mode jev2_h2o_shim (A-PREREG-JEV2-H2O, NOT submitted): H2O-Lightning-4B v1.1 @193ad740 + SSDM jev2 data (2,728 rows: jev2a - 105, jev2b - prob_indep, jev2c-v2 (248 per family), jev1 OFF), layout g1v2, LoRA r16 LR 4e-5, max 341 steps; primary native_shimcal vs stock_shim (= H2O v1.1 untrained + its shim) on public-231, B 1000 seed 16; step-0 floor + selection on the held-out slice (1,594 rows, c3a0782a). Schedule: setup 20 + guard 5 + heldout 10 + screen 50 + report 5 + cell 170 + reserve 7 = 267. Quoted hold $16.82; worst case (60 + 2 x 267) x 0.063 = $37.42 <= $38. Expected ~183 min = $11.53.",
+ "_comment": "Mode jev2_h2o_shim (A-PREREG-JEV2-H2O, NOT submitted): H2O-Lightning-4B v1.1 @193ad740 + SSDM jev2 data (2,664 rows = 148 per family x 18 from the cleared bschema-mix-jev1-jev2 components (jev1 gated build minus long_policy, jev2a-v2 minus 127 excluded ids, jev2b minus prob_indep, jev2c-v2)), layout g1v2, LoRA r16 LR 4e-5, max 333 steps; primary native_shimcal vs stock_shim (= H2O v1.1 untrained + its shim) on public-231, B 1000 seed 16; step-0 floor + selection on the held-out slice (3,600 rows, 142a593a). Schedule: setup 20 + guard 5 + heldout 10 + screen 55 + report 5 + cell 165 + reserve 7 = 267. Quoted hold $16.82; worst case (60 + 2 x 267) x 0.063 = $37.42 <= $38. Expected ~185 min = $11.65.",
  "test_env": {
   "transformers": "5.17.0",
   "with": [
@@ -23,7 +23,7 @@
   "image": "jobs/probe9b/Dockerfile"
  },
  "job": "m2-first-cell-jev2-h2o-shim",
- "status": "A-PREREG-JEV2-H2O (jev2_h2o_shim): jev1 OFF, g1v2, r16, LR 4e-5, 341 steps; NOT submitted",
+ "status": "A-PREREG-JEV2-H2O (jev2_h2o_shim): final cleared data, g1v2, r16, LR 4e-5, 333 steps; NOT submitted",
  "chip": "h100",
  "chip_count": 1,
  "max_duration_minutes": 267,
@@ -39,9 +39,9 @@
   "setup": 20,
   "guard": 5,
   "heldout": 10,
-  "screen": 50,
+  "screen": 55,
   "report": 5,
-  "cell": 170
+  "cell": 165
  },
  "reserve_minutes": 7,
  "expected_minutes": {
@@ -49,8 +49,8 @@
   "setup": 10,
   "guard": 3,
   "heldout": 5,
-  "cell": 117,
-  "screen": 30,
+  "cell": 114,
+  "screen": 35,
   "report": 3
  },
  "evals_fixed_minutes": {
@@ -65,8 +65,8 @@
  "parent": "qwen35",
  "model": "h2oai/h2o-lightning-4b@193ad740925b176a3b70a5a13a7cff2f2fadd01e (H2O-Lightning-4B v1.1, Apache-2.0, already-tuned Qwen3.5-4B hybrid; LoRA r64 + fork head)",
  "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_jev2_h2o_shim.json",
- "train_set_pointer": "data/manifests/bschema-draw-jev2h-nojev1.pointer.json",
- "train_dir": "m2-jev2hn",
+ "train_set_pointer": "data/manifests/bschema-draw-jev2h-final.pointer.json",
+ "train_dir": "m2-jev2hf",
  "cohort": "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
  "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
  "guard_pin": "jobs/m2_pilot/guard_pin.json",
@@ -90,7 +90,7 @@
   },
   "key": "m2-first-cell-jev2-h2o-shim-r1",
   "clock_lock": true,
-  "label": "A-PREREG-JEV2-H2O jev2_h2o_shim: H2O-Lightning-4B v1.1 + SSDM jev2 data (jev1 OFF), g1v2, r16 LR 4e-5, 341 steps, clock 135 [paired vs H2O v1.1 + shim; step-0 floor on the held-out slice]",
+  "label": "A-PREREG-JEV2-H2O jev2_h2o_shim: H2O-Lightning-4B v1.1 + SSDM jev2 data (final cleared mix), g1v2, r16 LR 4e-5, 333 steps, clock 130 [paired vs H2O v1.1 + shim; step-0 floor on the held-out slice]",
   "checks": {
    "success": {
     "check": {
@@ -119,7 +119,7 @@
   }
  },
  "context": {
-  "_comment": "the JEV2 context with the training mix replaced by bschema-draw-jev2h-nojev1 (m2-jev2hn/) and its selection slice (m2-jev2hn-calib/), pinned by data_jev2hn.sha256",
+  "_comment": "the JEV2 context with the training mix replaced by bschema-draw-jev2h-final (m2-jev2hf/) and its selection slice (m2-jev2hf-calib/), pinned by data_jev2hf.sha256",
   "dockerfile": "jobs/probe9b/Dockerfile",
   "cmd_rewrite": [
    "jobs/probe9b/probe_job.sh",
@@ -242,24 +242,24 @@
     "pin_sha256": "1040e563da0ba5d7394cbb8c7de54f2e389bd068ade8ddea9546443e725388f8"
    },
    {
-    "src": "m2/build/bschema-draw-jev2h-nojev1/records.jsonl.gz",
-    "dest": "m2-jev2hn/records.jsonl.gz",
-    "pin": "jobs/m2_first_cell/data_jev2hn.sha256"
+    "src": "m2/build/bschema-draw-jev2h-final/records.jsonl.gz",
+    "dest": "m2-jev2hf/records.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_jev2hf.sha256"
    },
    {
-    "src": "m2/build/bschema-draw-jev2h-nojev1/bschema-draw-jev2h-nojev1.manifest.jsonl.gz",
-    "dest": "m2-jev2hn/bschema-draw-jev2h-nojev1.manifest.jsonl.gz",
-    "pin": "jobs/m2_first_cell/data_jev2hn.sha256"
+    "src": "m2/build/bschema-draw-jev2h-final/bschema-draw-jev2h-final.manifest.jsonl.gz",
+    "dest": "m2-jev2hf/bschema-draw-jev2h-final.manifest.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_jev2hf.sha256"
    },
    {
-    "src": "m2/build/bschema-draw-jev2h-nojev1/bschema-draw-jev2h-nojev1.content.jsonl.gz",
-    "dest": "m2-jev2hn/bschema-draw-jev2h-nojev1.content.jsonl.gz",
-    "pin": "jobs/m2_first_cell/data_jev2hn.sha256"
+    "src": "m2/build/bschema-draw-jev2h-final/bschema-draw-jev2h-final.content.jsonl.gz",
+    "dest": "m2-jev2hf/bschema-draw-jev2h-final.content.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_jev2hf.sha256"
    },
    {
-    "src": "m2/build/bschema-draw-jev2h-nojev1-calib/records.jsonl.gz",
-    "dest": "m2-jev2hn-calib/records.jsonl.gz",
-    "pin": "jobs/m2_first_cell/data_jev2hn.sha256"
+    "src": "m2/build/bschema-draw-jev2h-final-calib/records.jsonl.gz",
+    "dest": "m2-jev2hf-calib/records.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_jev2hf.sha256"
    }
   ],
   "manifest_files": [
@@ -289,10 +289,12 @@
    "third_party/h2o_lightning_shim/LICENSE",
    "third_party/h2o_lightning_shim/NOTICE.md",
    "data/manifests/bschema-draw-jev2c-v2.pointer.json",
-   "jobs/m2_first_cell/h2o_v11_heldout_jev2a_ids.txt",
-   "data/manifests/bschema-draw-jev2h-nojev1.pointer.json",
-   "jobs/m2_first_cell/data_jev2hn.sha256",
-   "jobs/m2_first_cell/m2_first_cell_rwkv7_jev2_h2o_shim.json"
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_jev2_h2o_shim.json",
+   "data/manifests/bschema-draw-jev2h-final.pointer.json",
+   "jobs/m2_first_cell/data_jev2hf.sha256",
+   "data/manifests/bschema-mix-jev1-jev2.json",
+   "receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt",
+   "receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt"
   ]
  },
  "mode": "jev2_h2o_shim",
@@ -325,10 +327,10 @@
   "stock_shim": true,
   "paired_primary": "native_shimcal",
   "tfit": {
-   "records": "m2-jev2hn-calib/records.jsonl.gz",
+   "records": "m2-jev2hf-calib/records.jsonl.gz",
    "lo": 0.25,
    "hi": 4.0,
-   "ids_sha256": "c3a0782a45d3f28b0963a7bdbc96d83197f6245b918f001f6fb1f9a3d80256de"
+   "ids_sha256": "142a593a1257d6729b5480fe67647b1af0c5678d2a929654f6325e128fce00be"
   },
   "perturb_ops": [
    "option_reverse",

@@ -1,5 +1,5 @@
 {
- "_comment": "JEV2-H2O (jev2_h2o_sym, A-PREREG-JEV2-H2O, NOT submitted): H2O-Lightning-4B v1.1 @193ad740 + SSDM jev2 data (2,728 rows: jev2a - 105, jev2b - prob_indep, jev2c-v2 (248 per family), jev1 OFF), layout sym-fork, LoRA r16 LR 4e-5, 320 steps; selection + step-0 floor on the fixed held-out slice (1,594 rows incl. the H2O eval's jev2a slice); worst-case hold <= $38",
+ "_comment": "JEV2-H2O (jev2_h2o_sym, A-PREREG-JEV2-H2O, NOT submitted): H2O-Lightning-4B v1.1 @193ad740 + SSDM jev2 data (2,664 rows = 148 per family x 18 from the cleared bschema-mix-jev1-jev2 components (jev1 gated build minus long_policy, jev2a-v2 minus 127 excluded ids, jev2b minus prob_indep, jev2c-v2)), layout sym-fork, LoRA r16 LR 4e-5, 320 steps; selection + step-0 floor on the held-out slice (3,600 rows, 142a593a); worst-case hold <= $38",
  "seed": 0,
  "head": "fork",
  "head_kwargs": {},
@@ -19,7 +19,7 @@
   2048,
   4096
  ],
- "n_train_records": 2728,
+ "n_train_records": 2664,
  "n_eval_records": 0,
  "min_train_items": 5000,
  "max_steps": 320,
@@ -47,7 +47,7 @@
  "parent": "qwen35",
  "eval_max_t": 4096,
  "train_set": {
-  "pointer": "data/manifests/bschema-draw-jev2h-nojev1.pointer.json",
+  "pointer": "data/manifests/bschema-draw-jev2h-final.pointer.json",
   "heldout_excluded": {
    "ids": [],
    "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
@@ -58,90 +58,80 @@
     "dir": "m2/build/bschema-draw-jev1",
     "pointer": "data/manifests/bschema-draw-jev1.pointer.json",
     "pointer_sha256": "582ffe1cb34602473a847833758e06d69dbb6755594b4609e95f8fa39a2b464b",
-    "status": "OFF (jev1 switch: cleared set only)",
+    "status": "gated",
     "families": [
      "adequacy",
      "enum",
      "intent",
-     "long_policy",
      "policy",
      "routing",
      "severity",
      "state_tracking"
-    ]
+    ],
+    "note": "long_policy excluded (replaced by jev2c-v2)"
    },
-   "jev2a": {
-    "dir": "m2/build/bschema-draw-jev2a",
-    "pointer": "data/manifests/bschema-draw-jev2a.pointer.json",
-    "pointer_sha256": "53416094f957a6aebb6514dceaaef11b18473da1a6a910c89057639865c24eda",
-    "status": "gated + re-gated (claude/ev-jev2a-regate @97d55f2e)",
-    "branch": "claude/ev-jev2-draw@77065b1c",
+   "jev2a-v2": {
+    "dir": "m2/build/bschema-draw-jev2a-v2",
+    "pointer": "data/manifests/bschema-draw-jev2a-v2.pointer.json",
+    "pointer_sha256": "eba70d2c7fccbca43a127d8f3e47c4153c9fbd727c59e4fd789be8f935c87946",
+    "status": "gated",
     "families": [
-     "multi_hop",
-     "judge_hard",
-     "temporal_numeric",
      "fact",
+     "judge_hard",
+     "multi_hop",
+     "temporal_numeric",
      "tool_selection"
     ],
-    "exclude": {
-     "file": "receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt",
-     "sha256": "aeb8027aaaebdb6fad2b24f8b5bee9d37c4e176fcc4e18ad0d366acf1b579705",
-     "n_ids": 105,
-     "rows_after": 29895,
-     "rule": "97 Glaive rows whose tool descriptions are verbatim in JevBench easy tool_selection items + 8 MuSiQue rows; asserted at build (sha + count)"
-    }
+    "exclude": [
+     {
+      "file": "receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt",
+      "sha256": "c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad",
+      "n_ids": 23
+     },
+     {
+      "file": "receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt",
+      "sha256": "5cebf60bfa489d462a7e7d9b82e152a4968f30e1dc7ea50a2155e491a1ef37ab",
+      "n_ids": 104
+     }
+    ],
+    "rows_after": 7373
    },
    "jev2b": {
     "dir": "m2/build/bschema-draw-jev2b",
     "pointer": "data/manifests/bschema-draw-jev2b.pointer.json",
     "pointer_sha256": "35620f5f47c6e48bb61de0a336ccfb54dad5bf11f606a15f30b32fe48fee4127",
-    "status": "gated + re-gated (claude/ev-jev2a-regate @7a742d6a: empty exclusion list)",
-    "branch": "claude/ev-jev2-draw@a4aaa7de",
+    "status": "gated",
     "families": [
-     "probability",
-     "trap",
+     "adversarial",
      "ambiguous",
+     "probability",
      "tradeoff",
-     "adversarial"
+     "trap"
     ],
-    "exclude": {
-     "file": "receipts/2026-10-10-jev2b-regate/jev2b_exclude_ids.txt",
-     "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
-     "n_ids": 0,
-     "rows_after": 7500
-    },
-    "excluded_subs": {
-     "prob_indep": 124,
-     "why": "constant gold 'same' in all 124 rows"
-    }
+    "excluded_subs": [
+     "prob_indep"
+    ]
    },
-   "jev2c": {
+   "jev2c-v2": {
     "dir": "m2/build/bschema-draw-jev2c-v2",
     "pointer": "data/manifests/bschema-draw-jev2c-v2.pointer.json",
     "pointer_sha256": "86960d903d613bc88eca9ee131b486a749afa9a89c9cebca77744178721c5a99",
-    "status": "gated + re-gated (claude/ev-jev2a-regate @c76f150a: leak-free, empty exclusion list)",
-    "branch": "claude/ev-jev2-draw@1be15168",
+    "status": "gated",
     "families": [
      "long_policy"
-    ],
-    "note": "jev2c-v2: 1,500 long_policy rows, 12 prose domains, score 19.6%, 2,007-3,981 tokens (p90 3,650 >= public 3,606); the ONLY long_policy source"
+    ]
    }
   },
-  "note": "build: python -X utf8 -I scripts/jev12_balanced_draw.py --src <data>/m2/build/bschema-draw-jev2a --src <data>/m2/build/bschema-draw-jev2c-v2 --src <data>/m2/build/bschema-draw-jev2b --score-share 0.25 --pool-exclude bschema-draw-jev2a=receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt --pool-exclude-sha bschema-draw-jev2a=aeb8027aaaebdb6fad2b24f8b5bee9d37c4e176fcc4e18ad0d366acf1b579705 --pool-rows bschema-draw-jev2a=29895 --pool-exclude bschema-draw-jev2b=receipts/2026-10-10-jev2b-regate/jev2b_exclude_ids.txt --pool-exclude-sha bschema-draw-jev2b=01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b --pool-rows bschema-draw-jev2b=7500 --pool-rows bschema-draw-jev2c-v2=1500 --exclude-sub prob_indep --dedupe-source glaive_fc --train-per-family 248 --calib-per-family 100 --force-calib jobs/m2_first_cell/h2o_v11_heldout_jev2a_ids.txt --force-calib-sha 204e9bfe20d29ca95bd895ff368cf26f7b282635d615aeb85df47e69fcba2a9c --name bschema-draw-jev2h-nojev1 --out <data>/m2/build. 2,728 rows: jev2a - 105, jev2b - prob_indep, jev2c-v2 (248 per family), jev1 OFF. n_train_records == n_train: the whole draw once at 341 steps.",
+  "note": "build: python -X utf8 -I scripts/jev12_balanced_draw.py --src <data>/m2/build/bschema-draw-jev1 --src <data>/m2/build/bschema-draw-jev2a-v2 --src <data>/m2/build/bschema-draw-jev2c-v2 --src <data>/m2/build/bschema-draw-jev2b --exclude long_policy=bschema-draw-jev1 --global-exclude receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt=c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad --global-exclude receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt=5cebf60bfa489d462a7e7d9b82e152a4968f30e1dc7ea50a2155e491a1ef37ab --pool-rows bschema-draw-jev1=96000 --pool-rows bschema-draw-jev2a-v2=7373 --pool-rows bschema-draw-jev2b=7500 --pool-rows bschema-draw-jev2c-v2=1500 --exclude-sub prob_indep --dedupe-source glaive_fc --score-share 0.25 --train-per-family 148 --calib-per-family 200 --name bschema-draw-jev2h-final --out <data>/m2/build. 2,664 rows = 148 per family x 18 from the cleared bschema-mix-jev1-jev2 components (jev1 gated build minus long_policy, jev2a-v2 minus 127 excluded ids, jev2b minus prob_indep, jev2c-v2). Selection slice = the draw's calib (200 per family).",
   "score_share": 0.25,
-  "type_mix_note": "train type mix {'noul': 0.3116, 'choice': 0.4362, 'score': 0.2522} (draw-report)",
-  "force_calib": {
-   "file": "jobs/m2_first_cell/h2o_v11_heldout_jev2a_ids.txt",
-   "sha256": "204e9bfe20d29ca95bd895ff368cf26f7b282635d615aeb85df47e69fcba2a9c",
-   "found": 994,
-   "by_family": {
-    "fact": 200,
-    "tool_selection": 195,
-    "judge_hard": 200,
-    "temporal_numeric": 200,
-    "multi_hop": 199
-   },
-   "why": "the H2O v1.1 eval's fixed jev2a held-out slice (claude/lead-h2o-eval @f5615683): never trained, always in the selection slice, so the step-0 floor is comparable to that eval; 6 ids are absent because the 105-id re-gate exclusion removed them"
+  "mix_manifest": {
+   "file": "data/manifests/bschema-mix-jev1-jev2.json",
+   "sha256": "71b503ebb91b991f4a02b70f1dabc5150315f14c5843eb6fc53b8f0a65a48198"
+  },
+  "type_mix": {
+   "noul": 0.2995,
+   "choice": 0.4467,
+   "score": 0.2538
   }
  },
  "act_ckpt": true,
@@ -203,24 +193,39 @@
  "lr_horizon_frac": 0.6717,
  "lr_horizon_note": "lr_horizon_frac 0.6717 (= r2's 753 / 1,121): at the step-10 rate check the planned final step = min(max_steps 1281, step + the clock-affordable steps at the MEASURED s/step) and the cosine horizon = frac x that, fixed once. If the projection is short of max_steps the run CONTINUES (cell.json train_budget_shortened records it) down to min_steps 600; below that, exit 26. Planned (estimate holds): horizon 860.",
  "calib_slice": {
-  "records": "m2-jev2hn-calib/records.jsonl.gz",
-  "per_family": "100 (jev1 / jev2b / jev2c-v2, by rank) + the forced H2O jev2a slice (194-200 per jev2a family)",
-  "n": 1594,
-  "ids_sha256": "c3a0782a45d3f28b0963a7bdbc96d83197f6245b918f001f6fb1f9a3d80256de",
-  "rule": "id AND content disjoint from training (checked at build); never JevBench items",
-  "use": "the fixed held-out SELECTION slice: dev-card checkpoint selection (360 hash-sampled rows), the step-0 floor (all rows, trained vs untrained H2O), native_tfit T; never public-231"
+  "records": "m2-jev2hf-calib/records.jsonl.gz",
+  "per_family": 200,
+  "n": 3600,
+  "ids_sha256": "142a593a1257d6729b5480fe67647b1af0c5678d2a929654f6325e128fce00be",
+  "rule": "per family, the next 200 by sha256('<seed>:<id>') after the train rows; id AND content disjoint from training (checked at build); never JevBench items",
+  "use": "the fixed held-out SELECTION slice: dev-card selection (360 hash-sampled rows), the step-0 floor (all rows: trained vs untrained H2O), native_tfit; never public-231"
  },
  "assert_no_truncation": true,
  "assert_no_truncation_note": "fail closed (run_cell exit 25 'data') if ANY drawn training question is dropped by the K / T filter at tokenization or by the measured T_max; jev2c has 1,448 / 1,500 rows > 2,048 tokens (max 3,347), all inside 4,096. The screen fails (9) if any JevBench item is refused for input length (jevkit.assert_no_truncation).",
  "dev_card_records": {
-  "records": "m2-jev2hn-calib/records.jsonl.gz",
-  "ids_sha256": "c3a0782a45d3f28b0963a7bdbc96d83197f6245b918f001f6fb1f9a3d80256de"
+  "records": "m2-jev2hf-calib/records.jsonl.gz",
+  "ids_sha256": "142a593a1257d6729b5480fe67647b1af0c5678d2a929654f6325e128fce00be"
  },
- "host_init_note": "Anti-forgetting guards (continued fine-tuning of an already-tuned model): LoRA r16 (vs r64 in r2 / JEV2; alpha = rank, scale 1), lr_lora 4e-5 = 0.4x r2's 1e-4 (<= r2's LR), a fixed small budget of 320 steps (2,560 rows, the whole draw once at most), selection only on the fixed held-out slice with the untrained host (step 0) as a FLOOR. The fork head is NEW (random init), so lr_head stays 3e-4. The step-10 measured-rate logic is unchanged (plan = min(max_steps, affordable), horizon 0.6717 x plan, continue down to min_steps 200, exit 26 below).",
+ "host_init_note": "Anti-forgetting guards (continued fine-tuning of an already-tuned model): LoRA r16 (vs r64 in r2 / JEV2; alpha = rank, scale 1), lr_lora 4e-5 = 0.4x r2's 1e-4 (<= r2's LR), a fixed small budget of 320 steps (2,560 rows), selection only on the fixed held-out slice with the untrained host (step 0) as a FLOOR. The fork head is NEW (random init), so lr_head stays 3e-4. The step-10 measured-rate logic is unchanged (plan = min(max_steps, affordable), horizon 0.6717 x plan, continue down to min_steps 200, exit 26 below).",
  "dev_card_note": "dev_card_records: best-checkpoint selection (dev-card NLL) and the collapse guard read 360 hash-sampled rows of the held-out calib slice (m2-jev2mix-calib, id- and content-disjoint from training, ids sha pinned = calib_slice.ids_sha256; train.run_cell.dev_card_source fails closed on any other ids), never public-231 and never the cohort. The same slice also fits native_tfit (calibration); both are pre-registered held-out uses.",
  "min_steps_note": "floor 200 steps (1,600 rows); the step-10 rate check exits 26 below it",
  "jev1": {
-  "enabled": false,
-  "why": "lead data rule 2026-10-11: ONLY the cleared set (jev2a - 105, jev2b - prob_indep, jev2c-v2) until the evidence lane's jev1 verbatim-leaf exclusion list lands"
+  "enabled": true,
+  "exclusion": {
+   "status": "landed",
+   "files": [
+    {
+     "file": "receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt",
+     "sha256": "c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad",
+     "n_ids": 23
+    },
+    {
+     "file": "receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt",
+     "sha256": "5cebf60bfa489d462a7e7d9b82e152a4968f30e1dc7ea50a2155e491a1ef37ab",
+     "n_ids": 104
+    }
+   ]
+  },
+  "why": "lead 2026-10-11: the FINAL cleared data; jev1 IN (minus long_policy)"
  }
 }

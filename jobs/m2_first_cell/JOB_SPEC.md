@@ -670,37 +670,29 @@ against the pin and the LICENSE / README git blob ids (f938136e / 3e2b14d5), and
 tokenizer / chat-template files are byte-identical to Qwen/Qwen3.5-4B@851bf6e, so the pinned shim template identity
 (f0be274c) binds unchanged; the vendored `third_party/h2o_lightning_shim` files equal the snapshot's own shim files.
 
-**Data: the cleared set only, with a jev1 switch** (lead data rule 2026-10-11: jev2a with the 105-id exclusion + jev2b
-minus prob_indep + jev2c-v2; never jev2a beside jev2a-v2 or jev2c beside jev2c-v2). Both mixes: jev2a minus the 105
-re-gate ids (sha aeb8027a..., 29,895 rows asserted), jev2b minus prob_indep (7,500 rows asserted, empty exclusion
-pinned), jev2c-v2 (pointer 86960d90..., 1,500 rows asserted; the only long_policy source), score rows ~25 %, Glaive
-deduped; build commands in the pointers.
-- **jev1 OFF (default; modes `jev2_h2o_shim`, `jev2_h2o_sym`): `bschema-draw-jev2h-nojev1`** (`data_jev2hn.sha256`):
-  248 rows per jev2 family x 11 = 2,728 rows (341 steps = the whole draw once; sym 320), type mix choice 43.6 / noul
-  31.2 / score 25.2.
-- **jev1 ON (mode `jev2_h2o_shim_jev1`): `bschema-draw-jev2h-mix`** (`data_jev2h.sha256`): 192 per jev2 family + jev1
-  minus long_policy at half weight (96 per family, adequacy 48) = 2,736 rows (342 steps). Its `jev1.exclusion` is a
-  PENDING placeholder: the runner (setup, exit 5) and train.run_cell refuse the cell until the evidence lane's
-  consolidated jev1 verbatim-leaf exclusion list lands; then add it as `--pool-exclude bschema-draw-jev1=<file>
-  --pool-exclude-sha ...`, rebuild, refill the pointer / `data_jev2h.sha256` / the calib ids sha and set it `landed`.
-  If submission comes before the list, submit with jev1 OFF.
+**Data: the FINAL cleared mix** (lead 2026-10-11). Source = the components of `data/manifests/bschema-mix-jev1-jev2.json`
+(sha256 71b503eb..., claude/ev-jev2-draw @282a4867; 18 families; local component records verified against its
+`records_uncompressed_sha256` before the build): jev1 gated build (pointer 582ffe1c) minus long_policy, jev2a-v2
+(eba70d2c), jev2b (35620f5f) minus prob_indep, jev2c-v2 (86960d90; the only long_policy source). Two exclusion lists
+from claude/ev-jev2a-regate @91b66644, sha256 asserted at build (`--global-exclude`), every id found (127, all in
+jev2a-v2; 7,373 jev2a-v2 rows asserted): `receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt` (23 ids,
+c0c175f5...) and `receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt` (104 ids,
+5cebf60b...). Draw `bschema-draw-jev2h-final` (pointer `data/manifests/bschema-draw-jev2h-final.pointer.json`, files
+pinned by `data_jev2hf.sha256`, build command in the pointer): equal_family, 148 train rows per family x 18 = 2,664
+rows; score rows 25.4 % (choice 44.7 / noul 30.0 / score 25.4); Glaive deduped. max_len 4,096 with `require_t_max`, the
+longest-row probe and `assert_no_truncation` (train and the 231 items). LS 0.05 on choice / score rows, 0 on noul rows.
 
-max_len 4,096 with `require_t_max`, the longest-row probe and `assert_no_truncation` (train and the 231 items). LS 0.05
-on choice / score rows, 0 on noul rows.
-
-**Selection slice (fixed, held out):** the H2O v1.1 eval's fixed jev2a slice (ids sha 204e9bfe, claude/lead-h2o-eval
-@f5615683; forced into calib by the new `--force-calib` draw option, never trained; 994 of its 1,000 ids remain, 6 were
-removed by the 105-id leak exclusion) + 100 rows per family by rank for jev2b and jev2c-v2 (and jev1 when ON): jev1 OFF
-1,594 rows, ids sha c3a0782a...; jev1 ON 2,294 rows, ids sha a73f2383.... Id- and content-disjoint from training
-(checked at build), never JevBench items. Used for: dev-card
-checkpoint selection (`dev_card_records`, 360 hash-sampled rows every 100 steps, NLL), the step-0 floor (all rows), and
-native_tfit. Nothing is selected or fitted on public-231.
+**Selection slice (fixed, held out, re-derived from the mix):** the draw's calib role, the next 200 rows per family by
+sha256(seed:id) after the train rows = 3,600 rows, ids sha **142a593a...**; id- and content-disjoint from training
+(checked at build), never JevBench items. (The H2O eval's slice 204e9bfe was jev2a-v1 ids; jev2a-v2 shares source items
+with v1, so it is not reused.) Used for: dev-card checkpoint selection (`dev_card_records`, 360 hash-sampled rows every
+100 steps, NLL), the step-0 floor (all rows), and native_tfit. Nothing is selected or fitted on public-231.
 
 **Anti-forgetting guards and LR.** LoRA **r16** (alpha = rank, scale 1; r2 / JEV2 used r64), `lr_lora` **4e-5** = 0.4x
 r2's 1e-4: H2O's features already carry its 77.6 open-I, so the LoRA should be a small correction (4k long_policy, the
 noul band, score rows, the jev2 families); a full-rate update on a tuned init is the forgetting regime, and r2 at the
 full rate did not beat its own untrained control. `lr_head` stays 3e-4 because the fork head is NEW on any host. Fixed
-small budget: max 341 steps (shim, jev1 OFF) / 342 (jev1 ON) / 320 (sym), min 200, the step-10 measured-rate plan unchanged (plan = min(max,
+small budget: max 333 steps (shim) / 320 (sym), min 200, the step-10 measured-rate plan unchanged (plan = min(max,
 affordable), horizon 0.6717 x plan, exit 26 below 200).
 
 **Readout.** Default `jev2_h2o_shim`: layout g1v2 under the H2O shim template = H2O's own single-pass prompt; the PRIMARY
@@ -720,9 +712,8 @@ step-0 fork head.
 
 | Mode | layout | s/step (est.) | steps | clock | caps | max_duration | quoted hold | worst case | expected |
 |---|---|---|---|---|---|---|---|---|---|
-| `jev2_h2o_shim` (jev1 OFF, default) | g1v2 | 16.9 | 341 | 135 | setup 20 + guard 5 + heldout 10 + cell 170 + screen 50 + report 5 + reserve 7 | 267 | $16.82 | **$37.42** | ~183 min, ~$11.53 |
-| `jev2_h2o_shim_jev1` (jev1 ON) | g1v2 | 16.9 | 342 | 135 | setup 20 + guard 5 + heldout 10 + cell 170 + screen 50 + report 5 + reserve 7 | 267 | $16.82 | **$37.42** | ~183 min, ~$11.53 |
-| `jev2_h2o_sym` (jev1 OFF) | sym-fork | 16.6 | 320 | 125 | setup 20 + guard 5 + heldout 10 + cell 160 + screen 60 + report 5 + reserve 7 | 267 | $16.82 | **$37.42** | ~185 min, ~$11.65 |
+| `jev2_h2o_shim` (default) | g1v2 | 16.9 | 333 | 130 | setup 20 + guard 5 + heldout 10 + cell 165 + screen 55 + report 5 + reserve 7 | 267 | $16.82 | **$37.42** | ~185 min, ~$11.65 |
+| `jev2_h2o_sym` | sym-fork | 16.6 | 320 | 125 | setup 20 + guard 5 + heldout 10 + cell 160 + screen 60 + report 5 + reserve 7 | 267 | $16.82 | **$37.42** | ~185 min, ~$11.65 |
 
 clock = ceil(steps x s/step x 1.3 / 60) + 8 dev-card minutes, rounded up to 5. s/step is JEV2's 16.6 estimate (r64,
 sym-fork; g1v2 / 0.985); the step-10 check re-measures it and shortens the plan (down to 200) if it is slower. Submit
@@ -735,21 +726,23 @@ ONE mode (default shim).
     +0.51 Composite A vs H2O; both CIs span 0). The evidence for training is weak, and this line says so.
   - **Hypothesis:** continued fine-tuning of H2O-Lightning-4B v1.1 (@193ad740, Apache-2.0) on the jev2 data with the SSDM
     fork head ("H2O-Lightning-4B v1.1 + SSDM jev2 data") raises the local jevkit Composite A over H2O v1.1 itself.
-  - **Cell:** stack/qwen35/jev2-h2o, mode `jev2_h2o_shim` (default, jev1 OFF), `jev2_h2o_shim_jev1` (jev1 ON, only
-    after the jev1 verbatim-leaf exclusion list lands) or `jev2_h2o_sym`. Host loaded sha256-verified, fail-closed.
-    Data = the cleared set only: jev2a minus the 105 re-gate ids (sha aeb8027a asserted), jev2b minus prob_indep,
-    jev2c-v2 (86960d90) (bschema-draw-jev2h-nojev1, 2,728 rows), plus jev1 minus long_policy at half weight when ON
-    (bschema-draw-jev2h-mix, 2,736 rows); score rows ~25 %; no label smoothing on noul; max_len 4,096 with 0
-    truncation asserted. Worst-case hold <= $38.
-  - **Anti-forgetting guards:** LoRA r16, lr_lora 4e-5 (<= r2's 1e-4), a fixed small budget (max 341 / 342 steps shim,
-    320 sym, min 200, the step-10 measured-rate plan).
+  - **Cell:** stack/qwen35/jev2-h2o, mode `jev2_h2o_shim` (default) or `jev2_h2o_sym`. Host loaded sha256-verified,
+    fail-closed. Worst-case hold <= $38.
+  - **Data (final, cleared):** the components of bschema-mix-jev1-jev2 (manifest sha256 71b503eb...,
+    claude/ev-jev2-draw @282a4867): jev1 gated build minus long_policy, jev2a-v2, jev2b minus prob_indep, jev2c-v2.
+    Exclusion lists asserted by sha256 at build (claude/ev-jev2a-regate @91b66644): mix_exclude_ids.txt (23 ids,
+    c0c175f5...) and jev2a-v2_musique_provenance_unverified_ids.txt (104 ids, 5cebf60b...). Draw
+    bschema-draw-jev2h-final: equal_family, 148 per family x 18 = 2,664 rows; score rows ~25 %; no label smoothing on
+    noul; max_len 4,096 with 0 truncation asserted.
+  - **Anti-forgetting guards:** LoRA r16, lr_lora 4e-5 (<= r2's 1e-4), a fixed small budget (max 333 steps shim / 320
+    sym, min 200, the step-10 measured-rate plan).
   - **PRIMARY:** the paired delta Composite A of the trained arm vs the IN-JOB H2O v1.1 control (rev 193ad740, the same
     231 public items, the same B = 1,000 seed-16 bootstrap draws, the same shim readout: native_shimcal vs stock_shim,
     both T 0.8 + floor 0.801). SUCCESS iff the 95% CI excludes 0 on the positive side AND the step-0 floor passes.
-  - **Selection and step-0 floor:** the checkpoint is selected ONLY on the fixed held-out selection slice (ids sha
-    c3a0782a... with jev1 OFF / a73f2383... with jev1 ON; it contains the H2O eval's jev2a slice 204e9bfe minus 6
-    leak-excluded ids, plus jev2b / jev2c-v2 (/ jev1) held-out rows). Step 0 (untrained H2O) is scored on the same slice in job as a FLOOR: if no checkpoint beats
-    it, we report step 0 = no change and call the run negative. We never select or fit anything on public-231.
+  - **Selection and step-0 floor:** the checkpoint is selected ONLY on the fixed held-out selection slice re-derived
+    from the mix (200 per family by hashed id, 3,600 rows, ids sha 142a593a..., excluded from training). Step 0
+    (untrained H2O) is scored on the same slice in job as a FLOOR: if no checkpoint beats it, we report step 0 = no
+    change and call the run negative. We never select or fit anything on public-231.
   - **SECONDARY (EV-PREREG-SECONDARY-AXES, reported, not gates):** the paired per-axis CIs (delta I, C, S, K,
     Capability); per-family deltas on the slice and on public-231; the noul 0.2-0.8 band rate vs the control; native
     (raw) and native_tfit arms; G1 (a KEEP gate only in `jev2_h2o_sym`).

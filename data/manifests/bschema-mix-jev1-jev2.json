@@ -1,0 +1,203 @@
+{
+ "mix": "bschema-mix-jev1-jev2",
+ "n_families": 18,
+ "n_records": 100500,
+ "default_option": "equal_family",
+ "options": {
+  "equal_family": "sample a family uniformly (each 1/18 of the draws), then a row uniformly within it; small families repeat rows, large ones subsample",
+  "natural": "concatenate every row once (a family's share = its row share)"
+ },
+ "components": [
+  {
+   "pointer": "data/manifests/bschema-draw-jev1.pointer.json",
+   "pointer_sha256": "582ffe1cb34602473a847833758e06d69dbb6755594b4609e95f8fa39a2b464b",
+   "build": "bschema-draw-jev1",
+   "records_uncompressed_sha256": "457351091067123f48de115f72124c2bae27696d37c42d7f0a00c7e347080dc5",
+   "n_records": 96000,
+   "families": {
+    "policy": 12000,
+    "intent": 12000,
+    "adequacy": 12000,
+    "state_tracking": 12000,
+    "long_policy (excluded: replaced)": 12000,
+    "routing": 12000,
+    "enum": 12000,
+    "severity": 12000
+   }
+  },
+  {
+   "pointer": "data/manifests/bschema-draw-jev2a-v2.pointer.json",
+   "pointer_sha256": "eba70d2c7fccbca43a127d8f3e47c4153c9fbd727c59e4fd789be8f935c87946",
+   "build": "bschema-draw-jev2a-v2",
+   "records_uncompressed_sha256": "00a1d722310f8923b8d7e998243bf7632909bb4fd03a0edfff1bc7a573dbdf27",
+   "n_records": 7500,
+   "families": {
+    "fact": 1500,
+    "tool_selection": 1500,
+    "judge_hard": 1500,
+    "temporal_numeric": 1500,
+    "multi_hop": 1500
+   }
+  },
+  {
+   "pointer": "data/manifests/bschema-draw-jev2b.pointer.json",
+   "pointer_sha256": "35620f5f47c6e48bb61de0a336ccfb54dad5bf11f606a15f30b32fe48fee4127",
+   "build": "bschema-draw-jev2b",
+   "records_uncompressed_sha256": "9406ae088c20f1c2916c35053042974d61dca1fe101601f078b46067f60d69c0",
+   "n_records": 7500,
+   "families": {
+    "adversarial": 1500,
+    "ambiguous": 1500,
+    "probability": 1500,
+    "tradeoff": 1500,
+    "trap": 1500
+   }
+  },
+  {
+   "pointer": "data/manifests/bschema-draw-jev2c-v2.pointer.json",
+   "pointer_sha256": "86960d903d613bc88eca9ee131b486a749afa9a89c9cebca77744178721c5a99",
+   "build": "bschema-draw-jev2c-v2",
+   "records_uncompressed_sha256": "0bdb1ac6902f99cd0df9f0ab1a5c8d8bbe6a418f1da18997c82c4d41fecb28dc",
+   "n_records": 1500,
+   "families": {
+    "long_policy": 1500
+   }
+  }
+ ],
+ "families": {
+  "adequacy": {
+   "draw": "bschema-draw-jev1",
+   "rows": 12000,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 4.6296296296296296e-06,
+   "weight_natural": 0.119403
+  },
+  "adversarial": {
+   "draw": "bschema-draw-jev2b",
+   "rows": 1500,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 3.7037037037037037e-05,
+   "weight_natural": 0.014925
+  },
+  "ambiguous": {
+   "draw": "bschema-draw-jev2b",
+   "rows": 1500,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 3.7037037037037037e-05,
+   "weight_natural": 0.014925
+  },
+  "enum": {
+   "draw": "bschema-draw-jev1",
+   "rows": 12000,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 4.6296296296296296e-06,
+   "weight_natural": 0.119403
+  },
+  "fact": {
+   "draw": "bschema-draw-jev2a-v2",
+   "rows": 1500,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 3.7037037037037037e-05,
+   "weight_natural": 0.014925
+  },
+  "intent": {
+   "draw": "bschema-draw-jev1",
+   "rows": 12000,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 4.6296296296296296e-06,
+   "weight_natural": 0.119403
+  },
+  "judge_hard": {
+   "draw": "bschema-draw-jev2a-v2",
+   "rows": 1500,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 3.7037037037037037e-05,
+   "weight_natural": 0.014925
+  },
+  "long_policy": {
+   "draw": "bschema-draw-jev2c-v2",
+   "rows": 1500,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 3.7037037037037037e-05,
+   "weight_natural": 0.014925
+  },
+  "multi_hop": {
+   "draw": "bschema-draw-jev2a-v2",
+   "rows": 1500,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 3.7037037037037037e-05,
+   "weight_natural": 0.014925
+  },
+  "policy": {
+   "draw": "bschema-draw-jev1",
+   "rows": 12000,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 4.6296296296296296e-06,
+   "weight_natural": 0.119403
+  },
+  "probability": {
+   "draw": "bschema-draw-jev2b",
+   "rows": 1500,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 3.7037037037037037e-05,
+   "weight_natural": 0.014925
+  },
+  "routing": {
+   "draw": "bschema-draw-jev1",
+   "rows": 12000,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 4.6296296296296296e-06,
+   "weight_natural": 0.119403
+  },
+  "severity": {
+   "draw": "bschema-draw-jev1",
+   "rows": 12000,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 4.6296296296296296e-06,
+   "weight_natural": 0.119403
+  },
+  "state_tracking": {
+   "draw": "bschema-draw-jev1",
+   "rows": 12000,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 4.6296296296296296e-06,
+   "weight_natural": 0.119403
+  },
+  "temporal_numeric": {
+   "draw": "bschema-draw-jev2a-v2",
+   "rows": 1500,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 3.7037037037037037e-05,
+   "weight_natural": 0.014925
+  },
+  "tool_selection": {
+   "draw": "bschema-draw-jev2a-v2",
+   "rows": 1500,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 3.7037037037037037e-05,
+   "weight_natural": 0.014925
+  },
+  "tradeoff": {
+   "draw": "bschema-draw-jev2b",
+   "rows": 1500,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 3.7037037037037037e-05,
+   "weight_natural": 0.014925
+  },
+  "trap": {
+   "draw": "bschema-draw-jev2b",
+   "rows": 1500,
+   "weight_equal": 0.055556,
+   "row_weight_equal": 3.7037037037037037e-05,
+   "weight_natural": 0.014925
+  }
+ },
+ "replace": {
+  "long_policy": "bschema-draw-jev2c-v2"
+ },
+ "max_len_shim_tokens": 4096,
+ "max_len_note": "every component row is <= its build's token cap (jev1 / jev2b 2,048; jev2a-v2 / jev2c-v2 4,096) under jrt-h2o-shim:qwen3.5-4b, so max_len 4,096 truncates nothing",
+ "cross_draw_content_overlap": {},
+ "cross_draw_content_overlap_total": 0,
+ "loader_contract": "rows keep their stored criteria order (never re-sort option keys); family = aug.jev1.family8"
+}

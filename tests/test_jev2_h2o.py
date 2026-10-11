@@ -16,10 +16,12 @@ sys.path.insert(0, str(ROOT))
 M = ROOT / "jobs/m2_first_cell"
 JEV2 = json.loads((M / "m2_first_cell_rwkv7_jev2_q35_4b.json").read_text(encoding="utf-8"))
 JEV2_P = json.loads((M / "job_params_jev2_q35_4b.json").read_text(encoding="utf-8"))
-MODES = {"jev2_h2o_shim": ("g1v2", 16.9, 341, "off"), "jev2_h2o_sym": ("sym-fork", 16.6, 320, "off"),
-         "jev2_h2o_shim_jev1": ("g1v2", 16.9, 342, "on")}
-MIX = {"off": ("bschema-draw-jev2h-nojev1", "m2-jev2hn", "data_jev2hn.sha256"),
-       "on": ("bschema-draw-jev2h-mix", "m2-jev2hmix", "data_jev2h.sha256")}
+MODES = {"jev2_h2o_shim": ("g1v2", 16.9, 333, "final"), "jev2_h2o_sym": ("sym-fork", 16.6, 320, "final")}
+MIX = {"final": ("bschema-draw-jev2h-final", "m2-jev2hf", "data_jev2hf.sha256")}
+MIX_SHA = "71b503ebb91b991f4a02b70f1dabc5150315f14c5843eb6fc53b8f0a65a48198"
+EXCL = {"receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt": "c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad",
+        "receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt":
+            "5cebf60bfa489d462a7e7d9b82e152a4968f30e1dc7ea50a2155e491a1ef37ab"}
 REV = "193ad740925b176a3b70a5a13a7cff2f2fadd01e"
 H2O_SLICE_SHA = "204e9bfe20d29ca95bd895ff368cf26f7b282635d615aeb85df47e69fcba2a9c"
 #: recipe keys that must equal JEV2-4B's (loss, smoothing, lengths, head, template, optimiser schedule shape)
@@ -68,21 +70,22 @@ def test_data_pins(mode):
     ptr = json.loads((ROOT / ts["pointer"]).read_text(encoding="utf-8"))
     bc = ptr["build_command"] + " "
     assert ptr["n_records"] == c["n_train_records"] and "--exclude-sub prob_indep" in bc
-    # the cleared set only: never jev2c (v1) or jev2a-v2 beside their counterparts
-    assert "--src <data>/m2/build/bschema-draw-jev2c-v2 " in bc and "bschema-draw-jev2c " not in bc
-    assert "bschema-draw-jev2a-v2" not in bc and "--pool-rows bschema-draw-jev2a=29895" in bc
-    assert f"--force-calib-sha {H2O_SLICE_SHA}" in bc
-    if MODES[mode][3] == "off":
-        assert "bschema-draw-jev1" not in bc and c["jev1"]["enabled"] is False
-    else:
-        assert "--exclude long_policy=bschema-draw-jev1" in bc and c["jev1"]["enabled"] is True
-        assert c["jev1"]["exclusion"]["status"] == "PENDING"  # run_cell + the runner refuse until it lands
-    jc = ts["pools"]["jev2c"]
-    assert jc["pointer_sha256"] == hashlib.sha256((ROOT / jc["pointer"]).read_bytes()).hexdigest()
-    assert jc["pointer_sha256"].startswith("86960d90")
-    ex = ts["pools"]["jev2a"]["exclude"]
-    assert hashlib.sha256((ROOT / ex["file"]).read_bytes()).hexdigest() == ex["sha256"].strip() and ex["n_ids"] == 105
-    assert hashlib.sha256((M / "h2o_v11_heldout_jev2a_ids.txt").read_bytes()).hexdigest() == H2O_SLICE_SHA
+    # the FINAL cleared mix components only: jev1 (minus long_policy), jev2a-v2, jev2b, jev2c-v2; never v1 beside v2
+    for src in ("jev1", "jev2a-v2", "jev2b", "jev2c-v2"):
+        assert f"--src <data>/m2/build/bschema-draw-{src} " in bc
+    assert "bschema-draw-jev2c " not in bc and "bschema-draw-jev2a " not in bc
+    assert "--exclude long_policy=bschema-draw-jev1" in bc and "--force-calib" not in bc
+    for f, s in EXCL.items():  # both exclusion lists, sha asserted at build
+        assert f"--global-exclude {f}={s}" in bc
+        assert hashlib.sha256((ROOT / f).read_bytes()).hexdigest() == s
+    assert hashlib.sha256((ROOT / ts["mix_manifest"]["file"]).read_bytes()).hexdigest() == ts["mix_manifest"]["sha256"] == MIX_SHA
+    mix = json.loads((ROOT / ts["mix_manifest"]["file"]).read_text(encoding="utf-8"))
+    for comp in mix["components"]:  # every pool = a mix component, pointer sha pinned
+        pool = next(p for p in ts["pools"].values() if p["dir"].endswith(comp["build"]))
+        assert pool["pointer_sha256"] == comp["pointer_sha256"]
+        assert hashlib.sha256((ROOT / pool["pointer"]).read_bytes()).hexdigest() == comp["pointer_sha256"]
+    assert c["jev1"]["enabled"] is True and c["jev1"]["exclusion"]["status"] == "landed"
+    assert c["calib_slice"]["per_family"] == 200 and c["calib_slice"]["n"] == 3600
     pins = manifest(M / shaf)
     assert {d["dest"] for d in p["context"]["data"] if d.get("pin") == f"jobs/m2_first_cell/{shaf}"} == set(pins)
     assert {x.split("/")[0] for x in pins} == {td, f"{td}-calib"} and p["train_dir"] == td
@@ -146,7 +149,7 @@ def test_prereg_line_in_job_spec():
     spec = (M / "JOB_SPEC.md").read_text(encoding="utf-8")
     i = spec.index("### A-PREREG-JEV2-H2O")
     for s in ("PRIMARY", "H2O-Lightning-4B v1.1 + SSDM jev2 data", "193ad740", "point estimate", "floor", "r16",
-              "prob_indep", "204e9bfe", "never select", "Composite A", "$38"):
+              "prob_indep", "71b503eb", "c0c175f5", "5cebf60b", "142a593a", "never select", "Composite A", "$38"):
         assert s.lower() in spec[i:].lower(), s
 
 
