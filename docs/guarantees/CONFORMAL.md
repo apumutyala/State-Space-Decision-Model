@@ -6,8 +6,8 @@ CONTROL_RESEARCH mechanism #2. Code: `jevkit/guarantees.py` (not on the frozen l
 
 - **Coverage.** Split conformal gives `P(Y ∈ C(X)) ≥ 1 − α` with no model assumptions, as long as the calibration and test decisions are exchangeable. With continuous scores it is also at most `1 − α + 1/(n+1)`. jevkit's quantile is the theorem's quantile: the `⌈(n+1)(1−α)⌉`-th smallest score, and +∞ when that rank exceeds n. I checked that float rounding never shifts the rank for α ∈ {0.01, 0.02, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3} and every n ≤ 20,000.
 - **Acted-on error.** LTT with Bonferroni over a fixed λ grid certifies that, with probability at least 1 − δ over the LTT half, the selected rule's acted-on error *risk* (a population quantity) is at most ε. Plain coverage does not bound this; LTT does.
-- **Discrepancies found: four.** None changes the published FULLDEV numbers' direction, but two weaken their formal status.
-  - **D1, real.** jevkit splits FIT/LTT by *decision id*. The FULLDEV driver gives each decision the id `run_id#key`, so the decisions of one row land on both sides, and the LTT binomial test treats correlated decisions as independent. The docstring's "LTT-half decisions are i.i.d. and independent of q_hat" therefore does not hold for multi-decision rows. Fixed in part on this branch: `split_calibration(..., cluster_of=...)` (default unchanged, tested byte-identical). The within-LTT correlation needs a cluster-level test (proposed below).
+- **Discrepancies found: four.** D1 turned out to be material: under the cluster-level fix, D19 and D13 certify nothing, and the D19-over-Clef-flash verdict reverses. D2–D4 do not change any published number.
+  - **D1, real.** jevkit splits FIT/LTT by *decision id*. The FULLDEV driver gives each decision the id `run_id#key`, so the decisions of one row land on both sides, and the LTT binomial test treats correlated decisions as independent. The docstring's "LTT-half decisions are i.i.d. and independent of q_hat" therefore does not hold for multi-decision rows. Fixed on this branch: `split_calibration(..., cluster_of=...)` and the cluster-level test `ltt_select(..., cluster_of=...)` (one decision per cluster). Defaults are unchanged and tested. **Rerun (B-PREREG-GUAR-CLUSTER, `receipts/2026-10-10-ev-guar-cluster/GUARANTEES_CLUSTER.md`): D19 and D13 certify nothing at the cluster level. The published D19-over-Clef-flash actionability edge is withdrawn.**
   - **D2, theoretical, `fixed_sequence` only.** Skipping a λ that acts on nothing is not covered by the fixed-sequence proof. The default Bonferroni mode, which FULLDEV used, is unaffected.
   - **D3, wording.** "error rate on acted decisions ≤ ε" means the population acted-on risk, not the realised rate on any finite test batch.
   - **D4, scope.** Mondrian is per decision type only. The marginal guarantee holds, and area-conditional coverage fails (arts 0.69–0.79 at a 0.90 target). B-PREREG-GUAR-AREA, a parallel worker, is measuring the per-area Mondrian fix now. This doc does not duplicate it.
@@ -108,11 +108,12 @@ CONTROL_RESEARCH mechanism #2. Code: `jevkit/guarantees.py` (not on the frozen l
 - **Fix on this branch (part 1).** `split_calibration(cal, seed, fit_frac, cluster_of=None)` and `conformal_report(..., cluster_of=None)`.
   - Passing a row or case key keeps each cluster on one side and records cluster counts.
   - The default is unchanged. A test asserts that the per-id split is byte-identical to the old rule, so the FULLDEV receipt still reproduces.
-- **Fix, part 2 (proposed, not implemented).** A cluster-level LTT test. Either:
-  - sample one decision per cluster (seeded, answer-independent) before the binomial test, which certifies the risk for a random decision of a random cluster; or
-  - use a Hoeffding–Bentkus bound on per-cluster acted-error and acted-count sums.
-
-  Both lose some power. FULLDEV's LTT half would have roughly 2k source-case clusters; that still supports ε = 0.05 at a lower act fraction.
+- **Fix, part 2 (implemented; pre-registered as B-PREREG-GUAR-CLUSTER, state 68267953).** `ltt_select(..., cluster_of=key)` keeps one decision per cluster (`cluster_pick`: the smallest sha256(seed|ltt-cluster-pick|id), a function of ids only, fixed for all λ) and runs the unchanged exact binomial on those.
+  - If clusters are i.i.d., the kept decisions are independent, so the p-value is exactly valid.
+  - The certified risk is the **cluster-weighted** acted risk (a uniformly random decision of a uniformly random cluster). It equals the per-decision risk only when cluster size is independent of error. On full DEV it is not: single-decision rows are much harder, and the cluster-weighted TEST acted error at the published λ is 8–11% for D19 and both Clefs.
+  - `tests/guarantees/test_conformal_theorem.py` shows exactly that the per-decision binomial is anti-conservative on clustered data and the cluster test is valid.
+  - Hoeffding–Bentkus on per-cluster sums (H0: E[E_c − ε A_c] > 0) would certify the decision-weighted risk instead. It is not implemented, and would be a new pre-registration.
+- **Result.** The rows go from 8,344 LTT decisions to 2,998 LTT rows. D19 and D13 certify no λ, marginally or per area. Clef-flash certifies 51.6% (marginal) and Clef 27B 59.3%. Full tables: `receipts/2026-10-10-ev-guar-cluster/GUARANTEES_CLUSTER.md`.
 
 ### D2. Fixed-sequence with skipped λ
 
@@ -133,7 +134,7 @@ The marginal guarantee is met on FULLDEV, 0.899–0.903 at the 0.90 target. Arts
 ## 3. What to claim externally
 
 - "Split-conformal sets with marginal coverage ≥ 1 − α (exchangeable data; recalibrated per checkpoint)."
-- "An acted-on error risk ≤ ε with confidence 1 − δ (LTT, Bonferroni over a fixed λ grid; cluster-level split and test)." Make that claim only once D1 part 2 is in.
+- "A cluster-weighted acted-on error risk ≤ ε with confidence 1 − δ (LTT, Bonferroni over a fixed λ grid; cluster-level split and one-decision-per-cluster test; rows i.i.d.)." Only for models that certify under it. On full DEV that is Clef-flash and Clef 27B, not D19 or D13. The per-decision LTT numbers in GUARANTEES_FULLDEV/AREA are not a guarantee (D1).
 - Never claim per-area or per-benchmark coverage without the Mondrian-per-area run, and never claim either statement under distribution shift.
 
 ## Sources

@@ -276,8 +276,26 @@ def _acts(r: Scored, fit: dict, lam: float) -> tuple[bool, str | None]:
 DEFAULT_LAMBDAS = tuple(round(1.0 - i * 0.01, 2) for i in range(101))  # 1.00, 0.99, ..., 0.00 (descending)
 
 
+def _pick_u(seed: int, decision_id: str) -> str:
+    return hashlib.sha256(f"{seed}|ltt-cluster-pick|{decision_id}".encode()).hexdigest()
+
+
+def cluster_pick(cal: Sequence[Scored], cluster_of: Callable[[Scored], str], seed: int = 0) -> list[Scored]:
+    """One decision per cluster: the one with the smallest sha256(seed|ltt-cluster-pick|id). A function of the ids
+    only (never of probabilities or labels), fixed once for every lambda. If clusters are i.i.d., the kept decisions
+    are independent, so the LTT binomial on them is exactly valid for the cluster-weighted acted risk (a uniformly
+    random decision of a uniformly random cluster). docs/guarantees/CONFORMAL.md, D1 part 2."""
+    best: dict[str, tuple[str, Scored]] = {}
+    for r in cal:
+        c, u = str(cluster_of(r)), _pick_u(seed, r.id)
+        if c not in best or u < best[c][0]:
+            best[c] = (u, r)
+    return [best[c][1] for c in sorted(best)]
+
+
 def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
-               lambdas: Sequence[float] = DEFAULT_LAMBDAS, method: str = "bonferroni") -> dict:
+               lambdas: Sequence[float] = DEFAULT_LAMBDAS, method: str = "bonferroni",
+               cluster_of: Callable[[Scored], str] | None = None, pick_seed: int = 0) -> dict:
     """Learn-then-Test over a data-independent lambda grid: H0(lambda): P(error | act) > epsilon.
 
     p(lambda) = P(Bin(n_act, epsilon) <= errors) on the acted calibration decisions (a lambda that acts on nothing
@@ -285,6 +303,11 @@ def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
     p <= delta / |grid|. ``fixed_sequence``: test in descending grid order at level delta and stop at the first
     non-rejection (more power when the top of the grid has enough acted decisions; it stalls when it does not).
     Either way P(acted-on risk of the selected lambda > epsilon) <= delta. Returns the smallest certified lambda.
+
+    ``cluster_of`` (default None = unchanged per-decision test): decisions that share an input (one row's fields,
+    one source case) are correlated, so counting them as independent trials is anti-conservative. With a cluster
+    key, the test runs on ONE decision per cluster (``cluster_pick``, seeded by ``pick_seed``); the certified risk
+    is then the cluster-weighted acted risk, valid when clusters (not decisions) are i.i.d.
     """
     if method not in ("bonferroni", "fixed_sequence"):
         raise ValueError("method must be bonferroni or fixed_sequence")
@@ -292,6 +315,9 @@ def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
     if reused:
         raise ValueError(f"LTT data overlaps the conformal fit data ({len(reused)} ids): the bound needs disjoint "
                          "halves (split_calibration)")
+    cal_all = cal
+    if cluster_of is not None:
+        cal = cluster_pick(cal_all, cluster_of, pick_seed)
     level = delta / len(lambdas) if method == "bonferroni" else delta
     valid: list[dict] = []
     for lam in sorted(lambdas, reverse=True):
@@ -305,8 +331,12 @@ def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
         elif method == "fixed_sequence":
             break
     base = {"epsilon": epsilon, "delta": delta, "method": method, "test_level": level, "n_cal": len(cal),
-            "ltt_ids_sha256": ids_sha256(r.id for r in cal), "fit_ids_sha256": fit.get("ids_sha256"),
+            "ltt_ids_sha256": ids_sha256(r.id for r in cal_all), "fit_ids_sha256": fit.get("ids_sha256"),
             "grid": [min(lambdas), max(lambdas), len(lambdas)]}
+    if cluster_of is not None:
+        base.update({"cluster_test": "one decision per cluster: min sha256(pick_seed|ltt-cluster-pick|id)",
+                     "pick_seed": pick_seed, "n_decisions": len(cal_all), "n_clusters": len(cal),
+                     "picked_ids_sha256": ids_sha256(r.id for r in cal)})
     if not valid:
         return {**base, "lambda": None, "n_valid_lambdas": 0, "note": "no lambda certified: abstain on everything"}
     best = min(valid, key=lambda v: v["lambda"])
@@ -335,15 +365,22 @@ GUARANTEE = ("split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable
 
 def conformal_report(cal: Sequence[Scored], test: Sequence[Scored], alpha: float = 0.1, epsilon: float = 0.05,
                      delta: float = 0.05, mondrian: bool = True, method: str = "bonferroni", split_seed: int = 0,
-                     fit_frac: float = 0.5, cluster_of: Callable[[Scored], str] | None = None) -> dict:
+                     fit_frac: float = 0.5, cluster_of: Callable[[Scored], str] | None = None,
+                     cluster_ltt: bool = False) -> dict:
     """``cal`` is split into disjoint FIT / LTT halves (``split_calibration``, by cluster when ``cluster_of`` is
-    given); ``test`` is held out from both."""
+    given); ``test`` is held out from both. ``cluster_ltt`` (needs ``cluster_of``) also runs the LTT binomial on
+    one decision per cluster (``ltt_select(cluster_of=...)``)."""
+    if cluster_ltt and cluster_of is None:
+        raise ValueError("cluster_ltt needs cluster_of")
     fit_half, ltt_half, split = split_calibration(cal, split_seed, fit_frac, cluster_of)
     overlap = {r.id for r in test} & {r.id for r in cal}
     if overlap:
         raise ValueError(f"test decisions overlap the calibration decisions ({len(overlap)} ids)")
     fit = fit_conformal(fit_half, alpha, mondrian)
-    ltt = ltt_select(ltt_half, fit, epsilon, delta, method=method)
+    if cluster_ltt:
+        ltt = ltt_select(ltt_half, fit, epsilon, delta, method=method, cluster_of=cluster_of)
+    else:
+        ltt = ltt_select(ltt_half, fit, epsilon, delta, method=method)
     return {"guarantee": GUARANTEE, "calibration_split": split, "fit": public_fit(fit),
             "sets": evaluate_sets(test, fit), "ltt": ltt, "selective": selective_eval(test, fit, ltt["lambda"])}
 
