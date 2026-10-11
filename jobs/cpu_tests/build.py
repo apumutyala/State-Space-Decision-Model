@@ -48,7 +48,8 @@ def main():
             for m in t.getmembers():
                 if name == "ev" and m.name not in EV_ONLY:
                     continue
-                if m.isfile() and (not m.name.startswith(SKIP) or m.name in KEEP):
+                keep_rcpt = name in ("jev2", "jev2h") and m.name.startswith("receipts/") and m.name.endswith("_ids.txt")
+                if m.isfile() and (not m.name.startswith(SKIP) or m.name in KEEP or keep_rcpt):
                     ctx[f"trees/{name}/{m.name}"] = (t.extractfile(m).read(), 0o755 if m.mode & 0o111 else 0o644)
     toks = {}
     for d in TOKENIZERS:
