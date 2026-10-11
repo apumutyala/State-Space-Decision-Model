@@ -982,6 +982,11 @@ def _main(argv=None, ctx: dict | None = None):
         except (LineageError, OSError) as e:
             print(f"qwen35 lineage: {e}", flush=True)
             return EXIT["lineage"]
+    j1 = cfg.get("jev1") or {}
+    if j1.get("enabled") and (j1.get("exclusion") or {}).get("status") != "landed":  # JEV2-H2O jev1 switch (fail closed)
+        print("jev1 is ON but its verbatim-leaf exclusion list has not landed (jev1.exclusion.status != landed); "
+              "refusing to train", flush=True)
+        return EXIT["config"]
     enc = parent_encoder(parent, a.model_dir, cfg)
     from train.g16_card import make_hook as g16_hook
 

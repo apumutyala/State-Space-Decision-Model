@@ -1,0 +1,23 @@
+{
+ "build": "bschema-draw-jev2h-mix (scripts/jev12_balanced_draw.py over bschema-draw-jev1, bschema-draw-jev2a, bschema-draw-jev2c-v2, bschema-draw-jev2b)",
+ "location": "ssdm-data/m2/build/bschema-draw-jev2h-mix/ (outside git; deterministic)",
+ "records_uncompressed_sha256": "c8791191650db02f4974ec26084ed4702d28604ea23b2ffb4d9fb3b8e272bc40",
+ "manifest": "bschema-draw-jev2h-mix.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "f60fef676d495347840337db99f9e0293c34d352551edebac401528a3189e397",
+ "content_map": "bschema-draw-jev2h-mix.content.jsonl.gz",
+ "content_map_uncompressed_sha256": "565859986ac5fb3aaead7eccd32478815b606efb674e4299604d4d0a11619c19",
+ "n_records": 2736,
+ "role": "train",
+ "ids_sha256": "66df4e19ef3094781a2d8efe3b3154c9f64d01eec1b007fdff605fec52bf4793",
+ "schema": "ssdm-train-v0, one question per row (qid 'q'), JevBench request shape",
+ "excludes_cohort": "inherited from every source draw's own gates (each source pointer's excludes_cohort)",
+ "builder": {
+  "module": "scripts/jev12_balanced_draw.py",
+  "seed": 20261010
+ },
+ "templates_verified": [
+  "jrt-h2o-shim:qwen3.5-4b"
+ ],
+ "build_command": "python -X utf8 -I scripts/jev12_balanced_draw.py --src <data>/m2/build/bschema-draw-jev1 --src <data>/m2/build/bschema-draw-jev2a --src <data>/m2/build/bschema-draw-jev2c-v2 --src <data>/m2/build/bschema-draw-jev2b --exclude long_policy=bschema-draw-jev1 --family-cap adequacy=48 --family-cap enum=96 --family-cap intent=96 --family-cap policy=96 --family-cap routing=96 --family-cap severity=96 --family-cap state_tracking=96 --score-share 0.25 --pool-exclude bschema-draw-jev2a=receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt --pool-exclude-sha bschema-draw-jev2a=aeb8027aaaebdb6fad2b24f8b5bee9d37c4e176fcc4e18ad0d366acf1b579705 --pool-rows bschema-draw-jev2a=29895 --pool-exclude bschema-draw-jev2b=receipts/2026-10-10-jev2b-regate/jev2b_exclude_ids.txt --pool-exclude-sha bschema-draw-jev2b=01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b --pool-rows bschema-draw-jev2b=7500 --pool-rows bschema-draw-jev2c-v2=1500 --exclude-sub prob_indep --dedupe-source glaive_fc --train-per-family 192 --calib-per-family 100 --force-calib jobs/m2_first_cell/h2o_v11_heldout_jev2a_ids.txt --force-calib-sha 204e9bfe20d29ca95bd895ff368cf26f7b282635d615aeb85df47e69fcba2a9c --name bschema-draw-jev2h-mix --out <data>/m2/build",
+ "draw_report": "draw-report.json: n_train 2,736, n_calib 2,294 (the H2O v1.1 eval's fixed jev2a held-out slice 204e9bfe forced into calib: 994 of 1,000 ids present after the 105-id re-gate exclusion; other families 100 by rank), train type mix {'noul': 0.3081, 'choice': 0.4404, 'score': 0.2515}, calib ids sha a73f23832d4c35ebf57ed5d853c04486c43fa4eb30345bd4717760d9c85f0740"
+}
