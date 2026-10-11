@@ -1,0 +1,30 @@
+{
+ "n_musique_rows": 366,
+ "verified_twin_and_docs_subset": 262,
+ "base_id_not_in_verified_draw": 104,
+ "base_id_in_verified_but_docs_differ": 0,
+ "unverified_examples": [
+  "m2:musique:2hop__108098_170204~view:jev2v2-mh",
+  "m2:musique:2hop__108897_685393~view:jev2v2-mh",
+  "m2:musique:2hop__109254_821686~view:jev2v2-mh",
+  "m2:musique:2hop__121510_708662~view:jev2v2-mh",
+  "m2:musique:2hop__123238_21417~view:jev2v2-mh",
+  "m2:musique:2hop__124881_710419~view:jev2v2-mh",
+  "m2:musique:2hop__132619_47348~view:jev2v2-mh",
+  "m2:musique:2hop__134678_663471~view:jev2v2-mh",
+  "m2:musique:2hop__134855_690498~view:jev2v2-mh",
+  "m2:musique:2hop__13965_14002~view:jev2v2-mh",
+  "m2:musique:2hop__140270_140916~view:jev2v2-mh",
+  "m2:musique:2hop__141404_53794~view:jev2v2-mh",
+  "m2:musique:2hop__141460_749335~view:jev2v2-mh",
+  "m2:musique:2hop__141900_438686~view:jev2v2-mh",
+  "m2:musique:2hop__142818_570414~view:jev2v2-mh",
+  "m2:musique:2hop__143095_76347~view:jev2v2-mh",
+  "m2:musique:2hop__143462_177328~view:jev2v2-mh",
+  "m2:musique:2hop__144980_825427~view:jev2v2-mh",
+  "m2:musique:2hop__149910_86916~view:jev2v2-mh",
+  "m2:musique:2hop__154216_336223~view:jev2v2-mh"
+ ],
+ "unexpected_id_prefix_or_split": [],
+ "verified_draw": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\bschema-draw-jev2a\\records.jsonl.gz"
+}

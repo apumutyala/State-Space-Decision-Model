@@ -1,0 +1,52 @@
+{
+ "identity": {
+  "_identity": {
+   "id": "jrt-h2o-shim:qwen3.5-4b",
+   "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+  },
+  "_pinned": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+ },
+ "errors": 0,
+ "by_family": {
+  "fact": {
+   "n": 1500,
+   "p50": 122,
+   "p99": 341,
+   "max": 479,
+   "n_over_2048": 0,
+   "n_over_4096": 0
+  },
+  "tool_selection": {
+   "n": 1500,
+   "p50": 147,
+   "p99": 186,
+   "max": 210,
+   "n_over_2048": 0,
+   "n_over_4096": 0
+  },
+  "judge_hard": {
+   "n": 1500,
+   "p50": 148,
+   "p99": 366,
+   "max": 494,
+   "n_over_2048": 0,
+   "n_over_4096": 0
+  },
+  "temporal_numeric": {
+   "n": 1500,
+   "p50": 207,
+   "p99": 305,
+   "max": 324,
+   "n_over_2048": 0,
+   "n_over_4096": 0
+  },
+  "multi_hop": {
+   "n": 1500,
+   "p50": 1875,
+   "p99": 2368,
+   "max": 2581,
+   "n_over_2048": 350,
+   "n_over_4096": 0
+  }
+ }
+}

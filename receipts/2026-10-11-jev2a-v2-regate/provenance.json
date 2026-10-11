@@ -1,0 +1,72 @@
+{
+ "source_files": {
+  "musique": {
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\raw\\jev2\\musique\\musique_ans_v1.0_train.jsonl",
+   "sha256": "MISSING ON DISK"
+  },
+  "gsm8k": {
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\sources\\gsm8k\\train-00000-of-00001.parquet",
+   "sha256": "ea82612ea9582142387730c793eb67d3b12849002bc0b7fa6f8efafa7351419d"
+  },
+  "boolq": {
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\sources\\boolq\\train-00000-of-00001.parquet",
+   "sha256": "4f028e992c0bd4df30b9f056f4946b64f5c23028034ff0ed5ea467d8538cc623"
+  },
+  "glaive_fc": {
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\sources\\glaive_fc\\0000.parquet",
+   "sha256": "7e7e32f0466699513b38923bc4991858e192c9274df22e243b9e77eb2775b6e8"
+  }
+ },
+ "checks": {
+  "musique": {
+   "n_rows": 366,
+   "skipped": "source file not on disk"
+  },
+  "gsm8k": {
+   "n_rows": 622,
+   "n_source_ids": 622,
+   "parquet_rows": 7473,
+   "columns": [
+    "question",
+    "answer"
+   ],
+   "non_integer_source_ids": 0,
+   "rows_text_match_train_row": 622,
+   "rows_text_mismatch": 0,
+   "mismatch_examples": [],
+   "max_source_id": 1452,
+   "choice_gold_equals_source_final_answer": 253,
+   "choice_gold_differs": 0,
+   "choice_gold_differs_examples": []
+  },
+  "boolq": {
+   "n_rows": 386,
+   "n_source_ids": 386,
+   "parquet_rows": 9427,
+   "columns": [
+    "question",
+    "answer",
+    "passage"
+   ],
+   "non_integer_source_ids": 0,
+   "rows_text_match_train_row": 386,
+   "rows_text_mismatch": 0,
+   "mismatch_examples": [],
+   "max_source_id": 2056
+  },
+  "glaive_fc": {
+   "n_rows": 726,
+   "n_source_ids": 726,
+   "parquet_rows": 112960,
+   "columns": [
+    "system",
+    "chat"
+   ],
+   "non_integer_source_ids": 0,
+   "rows_text_match_train_row": 726,
+   "rows_text_mismatch": 0,
+   "mismatch_examples": [],
+   "max_source_id": 18029
+  }
+ }
+}

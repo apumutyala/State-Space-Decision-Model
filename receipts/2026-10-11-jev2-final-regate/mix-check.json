@@ -1,0 +1,288 @@
+{
+ "ref": "282a4867",
+ "combined_pointer_sha256": "bef9ec72b0c1460bca56194dcaa3aa005cf0e6114239645ebaf87749860e2278",
+ "mix_manifest_sha256": "71b503ebb91b991f4a02b70f1dabc5150315f14c5843eb6fc53b8f0a65a48198",
+ "disk": {
+  "bschema-draw-jev1": {
+   "records_uncompressed_sha256": "457351091067123f48de115f72124c2bae27696d37c42d7f0a00c7e347080dc5",
+   "n_records": 96000,
+   "families": {
+    "policy": 12000,
+    "intent": 12000,
+    "adequacy": 12000,
+    "state_tracking": 12000,
+    "long_policy": 12000,
+    "routing": 12000,
+    "enum": 12000,
+    "severity": 12000
+   }
+  },
+  "bschema-draw-jev2a-v2": {
+   "records_uncompressed_sha256": "00a1d722310f8923b8d7e998243bf7632909bb4fd03a0edfff1bc7a573dbdf27",
+   "n_records": 7500,
+   "families": {
+    "fact": 1500,
+    "tool_selection": 1500,
+    "judge_hard": 1500,
+    "temporal_numeric": 1500,
+    "multi_hop": 1500
+   }
+  },
+  "bschema-draw-jev2b": {
+   "records_uncompressed_sha256": "9406ae088c20f1c2916c35053042974d61dca1fe101601f078b46067f60d69c0",
+   "n_records": 7500,
+   "families": {
+    "adversarial": 1500,
+    "ambiguous": 1500,
+    "probability": 1500,
+    "tradeoff": 1500,
+    "trap": 1500
+   }
+  },
+  "bschema-draw-jev2c-v2": {
+   "records_uncompressed_sha256": "0bdb1ac6902f99cd0df9f0ab1a5c8d8bbe6a418f1da18997c82c4d41fecb28dc",
+   "n_records": 1500,
+   "families": {
+    "long_policy": 1500
+   }
+  },
+  "bschema-draw-jev2a": {
+   "records_uncompressed_sha256": "393d0f0fffd0beec658a4d3a50a463422ea4156aae59c7ed5c3df05508809a14",
+   "n_records": 30000,
+   "families": {
+    "fact": 6000,
+    "tool_selection": 6000,
+    "judge_hard": 6000,
+    "temporal_numeric": 6000,
+    "multi_hop": 6000
+   }
+  },
+  "bschema-draw-jev2c": {
+   "records_uncompressed_sha256": "0a297a5886b0b3318344165acbf44c7f1cbe187639dae6de1312aeb91e4ad50c",
+   "n_records": 1500,
+   "families": {
+    "long_policy": 1500
+   }
+  }
+ },
+ "combined_components": [
+  {
+   "build": "bschema-draw-jev2a-v2",
+   "pointer_sha256_claimed": "eba70d2c7fccbca43a127d8f3e47c4153c9fbd727c59e4fd789be8f935c87946",
+   "pointer_sha256_git": "eba70d2c7fccbca43a127d8f3e47c4153c9fbd727c59e4fd789be8f935c87946",
+   "pointer_ok": true,
+   "records_ok_pointer": true,
+   "records_ok_disk": true,
+   "n_ok": true,
+   "families_ok": true
+  },
+  {
+   "build": "bschema-draw-jev2b",
+   "pointer_sha256_claimed": "35620f5f47c6e48bb61de0a336ccfb54dad5bf11f606a15f30b32fe48fee4127",
+   "pointer_sha256_git": "35620f5f47c6e48bb61de0a336ccfb54dad5bf11f606a15f30b32fe48fee4127",
+   "pointer_ok": true,
+   "records_ok_pointer": true,
+   "records_ok_disk": true,
+   "n_ok": true,
+   "families_ok": true
+  },
+  {
+   "build": "bschema-draw-jev2c-v2",
+   "pointer_sha256_claimed": "86960d903d613bc88eca9ee131b486a749afa9a89c9cebca77744178721c5a99",
+   "pointer_sha256_git": "86960d903d613bc88eca9ee131b486a749afa9a89c9cebca77744178721c5a99",
+   "pointer_ok": true,
+   "records_ok_pointer": true,
+   "records_ok_disk": true,
+   "n_ok": true,
+   "families_ok": true
+  }
+ ],
+ "combined_builds": [
+  "bschema-draw-jev2a-v2",
+  "bschema-draw-jev2b",
+  "bschema-draw-jev2c-v2"
+ ],
+ "combined_n_ok": true,
+ "superseded_listed": {
+  "bschema-draw-jev2a": {
+   "records_sha256_matches_disk": true
+  },
+  "bschema-draw-jev2c": {
+   "records_sha256_matches_disk": true
+  }
+ },
+ "superseded_not_a_component": true,
+ "combined_dups": {
+  "id": {
+   "cross_build": {},
+   "cross_build_total": 0,
+   "within_build": 0,
+   "examples": []
+  },
+  "content_hash": {
+   "cross_build": {},
+   "cross_build_total": 0,
+   "within_build": 0,
+   "examples": []
+  },
+  "normalised_text": {
+   "cross_build": {},
+   "cross_build_total": 0,
+   "within_build": 0,
+   "examples": []
+  }
+ },
+ "combined_vs_superseded_overlap": {
+  "id": {
+   "cross_build": {
+    "bschema-draw-jev2c-v2|bschema-draw-jev2c": 1345
+   },
+   "cross_build_total": 1345,
+   "within_build": 0,
+   "examples": [
+    "m2:jev2synth:long_handbook:0~view:jev2-lpl",
+    "m2:jev2synth:long_handbook:1000~view:jev2-lpl",
+    "m2:jev2synth:long_handbook:1001~view:jev2-lpl",
+    "m2:jev2synth:long_handbook:1004~view:jev2-lpl",
+    "m2:jev2synth:long_handbook:1007~view:jev2-lpl",
+    "m2:jev2synth:long_handbook:1008~view:jev2-lpl",
+    "m2:jev2synth:long_handbook:1009~view:jev2-lpl",
+    "m2:jev2synth:long_handbook:100~view:jev2-lpl",
+    "m2:jev2synth:long_handbook:1010~view:jev2-lpl",
+    "m2:jev2synth:long_handbook:1011~view:jev2-lpl"
+   ]
+  },
+  "content_hash": {
+   "cross_build": {
+    "bschema-draw-jev2a-v2|bschema-draw-jev2a": 4441
+   },
+   "cross_build_total": 4441,
+   "within_build": 0,
+   "examples": [
+    "m2:boolq:1000~view:jev2-fact",
+    "m2:boolq:1004~view:jev2-fact",
+    "m2:boolq:1008~view:jev2-fact",
+    "m2:boolq:1013~view:jev2-fact",
+    "m2:boolq:1015~view:jev2-fact",
+    "m2:boolq:1022~view:jev2-fact",
+    "m2:boolq:1028~view:jev2-fact",
+    "m2:boolq:1031~view:jev2-fact",
+    "m2:boolq:1036~view:jev2-fact",
+    "m2:boolq:1042~view:jev2-fact"
+   ]
+  },
+  "normalised_text": {
+   "cross_build": {
+    "bschema-draw-jev2a-v2|bschema-draw-jev2a": 4441
+   },
+   "cross_build_total": 4441,
+   "within_build": 0,
+   "examples": [
+    "m2:boolq:1000~view:jev2-fact",
+    "m2:boolq:1004~view:jev2-fact",
+    "m2:boolq:1008~view:jev2-fact",
+    "m2:boolq:1013~view:jev2-fact",
+    "m2:boolq:1015~view:jev2-fact",
+    "m2:boolq:1022~view:jev2-fact",
+    "m2:boolq:1028~view:jev2-fact",
+    "m2:boolq:1031~view:jev2-fact",
+    "m2:boolq:1036~view:jev2-fact",
+    "m2:boolq:1042~view:jev2-fact"
+   ]
+  }
+ },
+ "mix_components": [
+  {
+   "build": "bschema-draw-jev1",
+   "pointer_sha256_claimed": "582ffe1cb34602473a847833758e06d69dbb6755594b4609e95f8fa39a2b464b",
+   "pointer_sha256_git": "582ffe1cb34602473a847833758e06d69dbb6755594b4609e95f8fa39a2b464b",
+   "pointer_ok": true,
+   "records_ok_pointer": true,
+   "records_ok_disk": true,
+   "n_ok": true,
+   "families_ok": true
+  },
+  {
+   "build": "bschema-draw-jev2a-v2",
+   "pointer_sha256_claimed": "eba70d2c7fccbca43a127d8f3e47c4153c9fbd727c59e4fd789be8f935c87946",
+   "pointer_sha256_git": "eba70d2c7fccbca43a127d8f3e47c4153c9fbd727c59e4fd789be8f935c87946",
+   "pointer_ok": true,
+   "records_ok_pointer": true,
+   "records_ok_disk": true,
+   "n_ok": true,
+   "families_ok": true
+  },
+  {
+   "build": "bschema-draw-jev2b",
+   "pointer_sha256_claimed": "35620f5f47c6e48bb61de0a336ccfb54dad5bf11f606a15f30b32fe48fee4127",
+   "pointer_sha256_git": "35620f5f47c6e48bb61de0a336ccfb54dad5bf11f606a15f30b32fe48fee4127",
+   "pointer_ok": true,
+   "records_ok_pointer": true,
+   "records_ok_disk": true,
+   "n_ok": true,
+   "families_ok": true
+  },
+  {
+   "build": "bschema-draw-jev2c-v2",
+   "pointer_sha256_claimed": "86960d903d613bc88eca9ee131b486a749afa9a89c9cebca77744178721c5a99",
+   "pointer_sha256_git": "86960d903d613bc88eca9ee131b486a749afa9a89c9cebca77744178721c5a99",
+   "pointer_ok": true,
+   "records_ok_pointer": true,
+   "records_ok_disk": true,
+   "n_ok": true,
+   "families_ok": true
+  }
+ ],
+ "mix_builds": [
+  "bschema-draw-jev1",
+  "bschema-draw-jev2a-v2",
+  "bschema-draw-jev2b",
+  "bschema-draw-jev2c-v2"
+ ],
+ "mix_jev1_is_gated": true,
+ "mix_superseded_absent": true,
+ "mix_rows_counted": 100500,
+ "mix_n_ok": true,
+ "mix_families": {
+  "adequacy": 12000,
+  "adversarial": 1500,
+  "ambiguous": 1500,
+  "enum": 12000,
+  "fact": 1500,
+  "intent": 12000,
+  "judge_hard": 1500,
+  "long_policy": 1500,
+  "multi_hop": 1500,
+  "policy": 12000,
+  "probability": 1500,
+  "routing": 12000,
+  "severity": 12000,
+  "state_tracking": 12000,
+  "temporal_numeric": 1500,
+  "tool_selection": 1500,
+  "tradeoff": 1500,
+  "trap": 1500
+ },
+ "mix_n_families": 18,
+ "mix_long_policy_owner": "bschema-draw-jev2c-v2",
+ "mix_dups": {
+  "id": {
+   "cross_build": {},
+   "cross_build_total": 0,
+   "within_build": 0,
+   "examples": []
+  },
+  "content_hash": {
+   "cross_build": {},
+   "cross_build_total": 0,
+   "within_build": 0,
+   "examples": []
+  },
+  "normalised_text": {
+   "cross_build": {},
+   "cross_build_total": 0,
+   "within_build": 0,
+   "examples": []
+  }
+ }
+}

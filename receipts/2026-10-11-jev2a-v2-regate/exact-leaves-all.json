@@ -1,0 +1,83 @@
+{
+ "records": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\bschema-draw-jev2a-v2\\records.jsonl.gz",
+ "records_sha256": "7bcb7489abe424335c868ba5b26ddcb659163da4fd87f71277fa2f151ce30561",
+ "rule": "normalised leaf >= 6 words, verbatim equal to a leaf of a JevBench public item or an Index suite row",
+ "n_rows": 23,
+ "rows_gold_is_matched_leaf": 12,
+ "by_family_source_evalside": {
+  "tool_selection/glaive_fc <- JEVBENCH:jevbench_tool_selection": 22,
+  "multi_hop/musique <- INDEX_HELDOUT:BBH fixed-option tasks": 1
+ },
+ "ids_sha256": "c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad",
+ "rows": {
+  "m2:glaive_fc:10034~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:10277~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:11532~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:11771~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:12483~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:1251~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:12973~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:1487~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:15157~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:16266~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:16293~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:17849~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:1815~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:2807~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:4010~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:4299~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:5434~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:5584~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:6082~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:6428~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:7515~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:glaive_fc:8308~view:jev2v2-tool": [
+   "JEVBENCH:jevbench_tool_selection"
+  ],
+  "m2:musique:2hop__45324_576533~view:jev2v2-mh": [
+   "INDEX_HELDOUT:BBH fixed-option tasks"
+  ]
+ }
+}

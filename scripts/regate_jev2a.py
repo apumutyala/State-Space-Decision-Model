@@ -602,7 +602,18 @@ def cmd_provenance(a):
              "boolq": root / "m2/sources/boolq/train-00000-of-00001.parquet",
              "glaive_fc": root / "m2/sources/glaive_fc/0000.parquet"}
     for src, p in files.items():
-        out["source_files"][src] = {"path": str(p), "sha256": sha_file(p)}
+        out["source_files"][src] = {"path": str(p), "sha256": sha_file(p) if p.exists() else "MISSING ON DISK"}
+    res = {}
+    if not files["musique"].exists():
+        res["musique"] = {"n_rows": sum(len(v) for v in want["musique"].values()), "skipped": "source file not on disk"}
+        return {**out, "checks": {**res, **_parquet_checks(want, texts, files)}}
+    out["checks"] = res
+    res.update(_musique_check(want, texts, files))
+    res.update(_parquet_checks(want, texts, files))
+    return out
+
+
+def _musique_check(want, texts, files):
     res = {}
     # MuSiQue: every id must be a TRAIN id; and the row's docs must come from that train record's paragraphs
     w = want["musique"]
@@ -625,6 +636,12 @@ def cmd_provenance(a):
                       "ids_found_in_train_file": len(found), "ids_missing": sorted(set(w) - found)[:20],
                       "rows_docs_subset_of_train_paragraphs": docs_ok, "rows_docs_mismatch_examples": docs_bad,
                       "unexpected_id_prefix": dev_like[:10]}
+    return res
+
+
+def _parquet_checks(want, texts, files):
+    import pyarrow.parquet as pq
+    res = {}
     # parquet sources: source_id = row index in the train parquet (checked by text equality)
     for src, cols, key in (("gsm8k", ["question", "answer"], "question"), ("boolq", ["question", "passage"], None),
                            ("glaive_fc", None, None)):
@@ -674,8 +691,7 @@ def cmd_provenance(a):
             res[src]["choice_gold_equals_source_final_answer"] = gold_chk[0]
             res[src]["choice_gold_differs"] = gold_chk[1]
             res[src]["choice_gold_differs_examples"] = gold_bad_ex
-    out["checks"] = res
-    return out
+    return res
 
 
 def main(argv=None):

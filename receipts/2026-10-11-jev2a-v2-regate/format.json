@@ -1,0 +1,869 @@
+{
+ "n_records": 7500,
+ "unique_ids": 7500,
+ "dup_ids": [],
+ "by_family": {
+  "fact": 1500,
+  "tool_selection": 1500,
+  "judge_hard": 1500,
+  "temporal_numeric": 1500,
+  "multi_hop": 1500
+ },
+ "type_by_family": {
+  "fact": {
+   "noul": 1500
+  },
+  "tool_selection": {
+   "choice": 1500
+  },
+  "judge_hard": {
+   "noul": 1500
+  },
+  "temporal_numeric": {
+   "choice": 1068,
+   "noul": 274,
+   "score": 158
+  },
+  "multi_hop": {
+   "choice": 1216,
+   "noul": 168,
+   "score": 116
+  }
+ },
+ "by_source": {
+  "boolq": 386,
+  "glaive_fc": 726,
+  "gsm8k": 622,
+  "jev2synth": 5400,
+  "musique": 366
+ },
+ "split_by_source": {
+  "boolq": {
+   "train": 386
+  },
+  "glaive_fc": {
+   "train": 726
+  },
+  "gsm8k": {
+   "train": 622
+  },
+  "jev2synth": {
+   "synthetic": 5400
+  },
+  "musique": {
+   "train": 366
+  }
+ },
+ "license_by_source": {
+  "boolq": {
+   "CC-BY-SA-3.0": 386
+  },
+  "glaive_fc": {
+   "Apache-2.0": 726
+  },
+  "gsm8k": {
+   "MIT": 622
+  },
+  "jev2synth": {
+   "own generator (repo)": 5400
+  },
+  "musique": {
+   "CC-BY-4.0 (MuSiQue v1.0, StonyBrookNLP; HF mirror bdsaglam/musique)": 366
+  }
+ },
+ "missing_license": 0,
+ "missing_license_ids": [],
+ "state_type_by_family": {
+  "fact": {
+   "str": 1500
+  },
+  "tool_selection": {
+   "str": 1500
+  },
+  "judge_hard": {
+   "dict": 1500
+  },
+  "temporal_numeric": {
+   "str": 1069,
+   "dict": 431
+  },
+  "multi_hop": {
+   "dict": 676,
+   "str": 824
+  }
+ },
+ "gold_failures": {},
+ "gold_position_presented": {
+  "tool_selection": {
+   "n_tested": 1500,
+   "chi2": 0.81,
+   "df": 4,
+   "p": 0.9347,
+   "per_k": {
+    "5": {
+     "n": 1500,
+     "positions": [
+      297,
+      313,
+      299,
+      299,
+      292
+     ]
+    }
+   }
+  },
+  "temporal_numeric": {
+   "n_tested": 1068,
+   "chi2": 12.31,
+   "df": 14,
+   "p": 0.5822,
+   "per_k": {
+    "3": {
+     "n": 160,
+     "positions": [
+      56,
+      52,
+      52
+     ]
+    },
+    "4": {
+     "n": 245,
+     "positions": [
+      52,
+      78,
+      53,
+      62
+     ]
+    },
+    "5": {
+     "n": 408,
+     "positions": [
+      89,
+      72,
+      82,
+      92,
+      73
+     ]
+    },
+    "6": {
+     "n": 255,
+     "positions": [
+      45,
+      40,
+      40,
+      42,
+      41,
+      47
+     ]
+    }
+   }
+  },
+  "multi_hop": {
+   "n_tested": 1216,
+   "chi2": 6.93,
+   "df": 12,
+   "p": 0.8629,
+   "per_k": {
+    "4": {
+     "n": 670,
+     "positions": [
+      176,
+      149,
+      180,
+      165
+     ]
+    },
+    "5": {
+     "n": 339,
+     "positions": [
+      73,
+      74,
+      62,
+      69,
+      61
+     ]
+    },
+    "6": {
+     "n": 207,
+     "positions": [
+      36,
+      34,
+      38,
+      37,
+      31,
+      31
+     ]
+    }
+   }
+  }
+ },
+ "choice_keys_already_sorted": {
+  "tool_selection": {
+   "n_choice": 1500,
+   "n_sorted": 13,
+   "expected_if_shuffled": 12.5
+  },
+  "temporal_numeric": {
+   "n_choice": 1068,
+   "n_sorted": 35,
+   "expected_if_shuffled": 40.6
+  },
+  "multi_hop": {
+   "n_choice": 1216,
+   "n_sorted": 34,
+   "expected_if_shuffled": 31.0
+  }
+ },
+ "empty_criteria_rows": {},
+ "empty_option_description_rows": {},
+ "noul_criteria_variants": {
+  "fact": {
+   "n_variants": 2,
+   "top": [
+    [
+     "{\"false\": \"no: the text says otherwise or does not say it\", \"true\": \"yes: the text states this explicitly\"}",
+     1114
+    ],
+    [
+     "{\"false\": \"no, according to the text\", \"true\": \"yes, according to the text\"}",
+     386
+    ]
+   ]
+  },
+  "judge_hard": {
+   "n_variants": 3,
+   "top": [
+    [
+     "{\"false\": \"the response has an error or misses a requirement\", \"true\": \"the response is correct and meets every requirement\"}",
+     1131
+    ],
+    [
+     "{\"false\": \"the final answer is wrong\", \"true\": \"the final answer is correct\"}",
+     275
+    ],
+    [
+     "{\"false\": \"at least one calculation is wrong\", \"true\": \"every calculation in the response is correct\"}",
+     94
+    ]
+   ]
+  },
+  "multi_hop": {
+   "n_variants": 4,
+   "top": [
+    [
+     "{\"false\": \"no, it does not follow from the record\", \"true\": \"yes, it follows from the record\"}",
+     49
+    ],
+    [
+     "{\"false\": \"false: the condition in the question does not hold\", \"true\": \"true: the condition in the question holds\"}",
+     41
+    ],
+    [
+     "{\"false\": \"no, the text requires otherwise\", \"true\": \"yes, that is what the text requires\"}",
+     39
+    ],
+    [
+     "{\"false\": \"no: the stated facts and rules give a different result\", \"true\": \"yes: the stated facts and rules give this result\"}",
+     39
+    ]
+   ]
+  },
+  "temporal_numeric": {
+   "n_variants": 4,
+   "top": [
+    [
+     "{\"false\": \"no, the text requires otherwise\", \"true\": \"yes, that is what the text requires\"}",
+     156
+    ],
+    [
+     "{\"false\": \"no, it does not follow from the record\", \"true\": \"yes, it follows from the record\"}",
+     97
+    ],
+    [
+     "{\"false\": \"no: the stated facts and rules give a different result\", \"true\": \"yes: the stated facts and rules give this result\"}",
+     14
+    ],
+    [
+     "{\"false\": \"false: the condition in the question does not hold\", \"true\": \"true: the condition in the question holds\"}",
+     7
+    ]
+   ]
+  }
+ },
+ "label_dist_by_family_sub": {
+  "fact/boolq": {
+   "true": 228,
+   "false": 158
+  },
+  "tool_selection/glaive": {
+   "n_distinct": 118,
+   "top5": [
+    [
+     "calculate_bmi",
+     54
+    ],
+    [
+     "convert_currency",
+     53
+    ],
+    [
+     "calculate_age",
+     52
+    ],
+    [
+     "calculate_tip",
+     47
+    ],
+    [
+     "calculate_distance",
+     45
+    ]
+   ]
+  },
+  "judge_hard/gsm_steps": {
+   "false": 43,
+   "true": 51
+  },
+  "judge_hard/gsm_final": {
+   "false": 100,
+   "true": 175
+  },
+  "temporal_numeric/gsm_choice": {
+   "n_distinct": 120,
+   "top5": [
+    [
+     "v_4",
+     9
+    ],
+    [
+     "v_6",
+     8
+    ],
+    [
+     "v_2",
+     8
+    ],
+    [
+     "v_3",
+     7
+    ],
+    [
+     "v_10",
+     7
+    ]
+   ]
+  },
+  "fact/fact_flight": {
+   "true": 71,
+   "false": 52
+  },
+  "fact/fact_account": {
+   "false": 76,
+   "true": 74
+  },
+  "fact/fact_staff": {
+   "true": 69,
+   "false": 46
+  },
+  "fact/fact_room": {
+   "false": 68,
+   "true": 73
+  },
+  "fact/fact_invoice": {
+   "true": 65,
+   "false": 73
+  },
+  "fact/fact_loan": {
+   "true": 72,
+   "false": 62
+  },
+  "fact/fact_product": {
+   "true": 65,
+   "false": 85
+  },
+  "fact/fact_order": {
+   "false": 96,
+   "true": 67
+  },
+  "judge_hard/judge_subject": {
+   "false": 78,
+   "true": 50
+  },
+  "judge_hard/judge_sort": {
+   "true": 65,
+   "false": 64
+  },
+  "judge_hard/judge_weekday": {
+   "true": 55,
+   "false": 67
+  },
+  "judge_hard/judge_price": {
+   "false": 60,
+   "true": 60
+  },
+  "judge_hard/judge_units": {
+   "true": 58,
+   "false": 78
+  },
+  "judge_hard/judge_letters": {
+   "true": 53,
+   "false": 57
+  },
+  "judge_hard/judge_sum": {
+   "true": 59,
+   "false": 63
+  },
+  "judge_hard/judge_date": {
+   "false": 64,
+   "true": 75
+  },
+  "judge_hard/judge_json": {
+   "false": 63,
+   "true": 62
+  },
+  "multi_hop/ref_chase_owner": {
+   "n_distinct": 372,
+   "top5": [
+    [
+     "kagast_support_cell",
+     2
+    ],
+    [
+     "ordor_services",
+     2
+    ],
+    [
+     "dorsel_field_unit",
+     1
+    ],
+    [
+     "uljaska_platform",
+     1
+    ],
+    [
+     "wenzantha_logistics",
+     1
+    ]
+   ]
+  },
+  "multi_hop/ref_chase_city_yn": {
+   "true": 22,
+   "false": 31
+  },
+  "multi_hop/ref_chase_contact_yn": {
+   "true": 25,
+   "false": 22
+  },
+  "multi_hop/ref_chase_count": {
+   "1": 37,
+   "0": 56,
+   "2": 21,
+   "3": 2
+  },
+  "multi_hop/ref_chase_city": {
+   "n_distinct": 40,
+   "top5": [
+    [
+     "austin",
+     13
+    ],
+    [
+     "bremen",
+     12
+    ],
+    [
+     "spokane",
+     11
+    ],
+    [
+     "nantes",
+     10
+    ],
+    [
+     "oulu",
+     10
+    ]
+   ]
+  },
+  "multi_hop/ref_chase_owner_yn": {
+   "true": 33,
+   "false": 35
+  },
+  "multi_hop/ref_chase_contact": {
+   "n_distinct": 163,
+   "top5": [
+    [
+     "marek_abara",
+     4
+    ],
+    [
+     "oona_varga",
+     3
+    ],
+    [
+     "sami_gallo",
+     3
+    ],
+    [
+     "wim_lindqvist",
+     3
+    ],
+    [
+     "nuno_varga",
+     3
+    ]
+   ]
+  },
+  "temporal_numeric/temporal_tenure_yn": {
+   "false": 76,
+   "true": 72
+  },
+  "temporal_numeric/temporal_late_fee": {
+   "n_distinct": 34,
+   "top5": [
+    [
+     "fee_0_00",
+     88
+    ],
+    [
+     "fee_36_00",
+     8
+    ],
+    [
+     "fee_16_00",
+     5
+    ],
+    [
+     "fee_33_75",
+     5
+    ],
+    [
+     "fee_48_00",
+     4
+    ]
+   ]
+  },
+  "temporal_numeric/temporal_sla": {
+   "n_distinct": 112,
+   "top5": [
+    [
+     "d_19_november_2025",
+     2
+    ],
+    [
+     "d_6_august_2025",
+     2
+    ],
+    [
+     "d_october_1_2026",
+     1
+    ],
+    [
+     "d_21_january_2025",
+     1
+    ],
+    [
+     "d_2026_06_08",
+     1
+    ]
+   ]
+  },
+  "temporal_numeric/temporal_tz": {
+   "n_distinct": 78,
+   "top5": [
+    [
+     "t_17_30_on_10_march",
+     10
+    ],
+    [
+     "t_22_30_on_9_march",
+     8
+    ],
+    [
+     "t_14_00_on_10_march",
+     6
+    ],
+    [
+     "t_15_30_on_10_march",
+     5
+    ],
+    [
+     "t_00_00_on_11_march",
+     5
+    ]
+   ]
+  },
+  "temporal_numeric/temporal_warranty": {
+   "n_distinct": 145,
+   "top5": [
+    [
+     "d_december_31_2026",
+     2
+    ],
+    [
+     "d_30_november_2025",
+     2
+    ],
+    [
+     "d_april_30_2026",
+     2
+    ],
+    [
+     "d_28_february_2026",
+     2
+    ],
+    [
+     "d_november_18_2025",
+     2
+    ]
+   ]
+  },
+  "temporal_numeric/temporal_days_late": {
+   "0": 78,
+   "2": 22,
+   "1": 32,
+   "3": 26
+  },
+  "temporal_numeric/temporal_prorate": {
+   "n_distinct": 122,
+   "top5": [
+    [
+     "amt_1_00",
+     5
+    ],
+    [
+     "amt_2_40",
+     4
+    ],
+    [
+     "amt_10_67",
+     3
+    ],
+    [
+     "amt_3_27",
+     3
+    ],
+    [
+     "amt_12_00",
+     3
+    ]
+   ]
+  },
+  "temporal_numeric/temporal_sla_yn": {
+   "false": 26,
+   "true": 8
+  },
+  "temporal_numeric/temporal_return_yn": {
+   "true": 49,
+   "false": 43
+  },
+  "temporal_numeric/temporal_return": {
+   "n_distinct": 56,
+   "top5": [
+    [
+     "d_5_november_2025",
+     2
+    ],
+    [
+     "d_2026_06_05",
+     2
+    ],
+    [
+     "d_9_june_2026",
+     1
+    ],
+    [
+     "d_december_28_2026",
+     1
+    ],
+    [
+     "d_2026_05_05",
+     1
+    ]
+   ]
+  },
+  "tool_selection/tool_travel": {
+   "search_flights": 18,
+   "check_flight_status": 17,
+   "book_hotel": 20,
+   "convert_currency": 24
+  },
+  "tool_selection/tool_shopping": {
+   "add_to_cart": 31,
+   "track_package": 29,
+   "start_return": 28
+  },
+  "tool_selection/tool_home": {
+   "toggle_lights": 28,
+   "set_thermostat": 22,
+   "lock_door": 22
+  },
+  "tool_selection/tool_weather": {
+   "get_forecast": 37,
+   "get_air_quality": 36
+  },
+  "tool_selection/tool_media": {
+   "play_music": 22,
+   "get_news": 23,
+   "find_movie_times": 26
+  },
+  "tool_selection/tool_email": {
+   "search_inbox": 30,
+   "archive_email": 28,
+   "send_email": 23
+  },
+  "tool_selection/tool_work": {
+   "translate_text": 27,
+   "start_timer": 26,
+   "create_ticket": 22,
+   "set_reminder": 22
+  },
+  "tool_selection/tool_finance": {
+   "get_balance": 19,
+   "get_stock_price": 15,
+   "split_bill": 16,
+   "transfer_funds": 21
+  },
+  "tool_selection/tool_calendar": {
+   "find_free_slot": 24,
+   "list_events": 10,
+   "create_event": 20,
+   "cancel_event": 21
+  },
+  "tool_selection/tool_food": {
+   "nutrition_facts": 27,
+   "order_takeout": 16,
+   "find_recipe": 24
+  },
+  "multi_hop/musique": {
+   "n_distinct": 214,
+   "top5": [
+    [
+     "1973",
+     7
+    ],
+    [
+     "nicole_duport",
+     6
+    ],
+    [
+     "the_three_gorges_dam_project",
+     6
+    ],
+    [
+     "irish_sea",
+     6
+    ],
+    [
+     "portuguese_based_legal_system",
+     6
+    ]
+   ]
+  }
+ },
+ "dup_state_by_sub": {
+  "tool_selection/glaive": {
+   "rows_in_dup_groups": 461
+  },
+  "temporal_numeric/temporal_prorate": {
+   "rows_in_dup_groups": 14
+  },
+  "tool_selection/tool_email": {
+   "rows_in_dup_groups": 6
+  },
+  "tool_selection/tool_finance": {
+   "rows_in_dup_groups": 11
+  },
+  "tool_selection/tool_work": {
+   "rows_in_dup_groups": 9
+  },
+  "tool_selection/tool_shopping": {
+   "rows_in_dup_groups": 13
+  },
+  "tool_selection/tool_food": {
+   "rows_in_dup_groups": 7
+  },
+  "tool_selection/tool_home": {
+   "rows_in_dup_groups": 11
+  },
+  "tool_selection/tool_media": {
+   "rows_in_dup_groups": 6
+  },
+  "tool_selection/tool_travel": {
+   "rows_in_dup_groups": 4
+  }
+ },
+ "judge_corruption_vs_label": {
+  "gsm_steps/step": {
+   "false": 43
+  },
+  "gsm_final/final": {
+   "false": 100
+  },
+  "gsm_final/clean": {
+   "true": 142
+  },
+  "gsm_steps/clean": {
+   "true": 51
+  },
+  "gsm_final/step": {
+   "true": 33
+  }
+ },
+ "words_by_family": {
+  "fact": {
+   "p50": 41,
+   "p99": 219,
+   "max": 269
+  },
+  "tool_selection": {
+   "p50": 59,
+   "p99": 87,
+   "max": 103
+  },
+  "judge_hard": {
+   "p50": 60,
+   "p99": 205,
+   "max": 313
+  },
+  "temporal_numeric": {
+   "p50": 69,
+   "p99": 100,
+   "max": 170
+  },
+  "multi_hop": {
+   "p50": 764,
+   "p99": 1025,
+   "max": 1116
+  }
+ },
+ "dup_exact_text": {
+  "groups_gt1": 0,
+  "extra_rows": 0
+ },
+ "dup_examples": {},
+ "dup_state_within_family": {
+  "tool_selection": {
+   "groups": 126,
+   "extra_rows": 402
+  },
+  "temporal_numeric": {
+   "groups": 7,
+   "extra_rows": 7
+  }
+ },
+ "near_dup_digits_masked_within_family": {
+  "fact": {
+   "groups": 22,
+   "extra_rows": 23
+  },
+  "judge_hard": {
+   "groups": 76,
+   "extra_rows": 192
+  },
+  "temporal_numeric": {
+   "groups": 112,
+   "extra_rows": 459
+  }
+ }
+}

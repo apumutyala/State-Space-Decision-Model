@@ -1,0 +1,129 @@
+{
+ "rows_with_any_segment_hit": 264,
+ "rows_with_state_segment_hit_by_family": {
+  "judge_hard": 2,
+  "multi_hop": 27
+ },
+ "rows_only_question_segment_hit_by_family": {
+  "fact": 2,
+  "tool_selection": 138,
+  "temporal_numeric": 51,
+  "multi_hop": 44
+ },
+ "segment_hits_by_role_and_wordlen": {
+  "question/6-12w": 107,
+  "question/13+w": 6,
+  "question/3-5w": 115,
+  "state/13+w": 3,
+  "state/1-2w": 22,
+  "question/1-2w": 32,
+  "state/3-5w": 6,
+  "state/6-12w": 1
+ },
+ "segment_hits_by_role_matcher": {
+  "question/edit": 85,
+  "question/contain": 4,
+  "question/minhash": 194,
+  "question/ngram13": 5,
+  "state/contain": 4,
+  "question/exact": 40,
+  "state/exact": 26,
+  "state/minhash": 29,
+  "state/edit": 2
+ },
+ "catalog_hits_top": [
+  [
+   "1",
+   96
+  ],
+  [
+   "36",
+   82
+  ],
+  [
+   "24",
+   56
+  ],
+  [
+   "57",
+   55
+  ],
+  [
+   "33",
+   38
+  ],
+  [
+   "61",
+   25
+  ],
+  [
+   "45",
+   16
+  ],
+  [
+   "6",
+   9
+  ],
+  [
+   "58",
+   9
+  ],
+  [
+   "41",
+   6
+  ],
+  [
+   "2",
+   5
+  ],
+  [
+   "62",
+   4
+  ],
+  [
+   "5",
+   1
+  ],
+  [
+   "11",
+   1
+  ],
+  [
+   "56",
+   1
+  ]
+ ],
+ "state_segment_hits_ge6_words_examples": [
+  [
+   "m2:gsm8k:1452~view:jev2v2-judge-steps",
+   20,
+   [
+    "contain"
+   ]
+  ],
+  [
+   "m2:gsm8k:657~view:jev2v2-judge-steps",
+   63,
+   [
+    "contain"
+   ]
+  ],
+  [
+   "m2:gsm8k:657~view:jev2v2-judge-steps",
+   17,
+   [
+    "contain"
+   ]
+  ],
+  [
+   "m2:musique:2hop__45324_576533~view:jev2v2-mh",
+   7,
+   [
+    "contain",
+    "edit",
+    "exact",
+    "minhash"
+   ]
+  ]
+ ]
+}
