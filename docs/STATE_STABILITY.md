@@ -10,30 +10,38 @@ own. Decay bounds how long an injection stays in the state. They do not bound wh
 ## Takeaway
 
 1. **GDN (Qwen3.5) is contractive for every input.** The exact norm is `‖A_t‖₂ = α_t · max(1, |1 − β_t‖k_t‖²|)`. Our
-   code has β = sigmoid ∈ (0,1) and an in-kernel l2norm, so ‖k‖ < 1 and `‖A_t‖₂ = α_t < 1`. The delta rule adds no
-   contraction in the worst direction, so the whole forgetting rate is α. The existing universal constant `ρ_h`
-   (`controlsafe/adapters.py:293-294`) is sound. In practice it may sit so close to 1 that float64 rounds it to
-   exactly 1.0. The probe therefore reports `−log ρ_h` instead.
+   code has β = sigmoid ∈ (0,1) and an in-kernel l2norm (‖k‖² ≤ 1 + O(2⁻⁸) once stored in bf16), so β‖k‖² < 2
+   and `‖A_t‖₂ = α_t ≤ 1`. The inequality is strict unless α rounds to 1.0. The delta rule adds no contraction in the
+   worst direction, so the whole forgetting rate is α. The universal constant `ρ_h`
+   (`controlsafe/adapters.py:293-294`) is sound **in exact arithmetic only**. In the executed model, the bf16 RMSNorm
+   output and the bf16 `in_proj_a` GEMM can push α above ρ_h. In practice ρ_h may also sit so close to 1 that
+   float64 rounds it to exactly 1.0, so the probe reports `−log ρ_h` instead.
 2. **RWKV-7 is not contractive in general, and this is now proved at the parameter-box level.** Each step has a
-   real spectrum inside (−0.455, 1), so ρ(A_t) < 1 always. But ‖A_t‖₂ reaches ≥ 1.13 (supremum 2/√3). More
-   importantly, two admissible steps can alternate with ρ(A₂A₁)^{1/2} = 1.105, which grows 4.4e8× in 200 steps. So
-   the joint spectral radius is above 1, and no input-independent norm of any kind makes every admissible RWKV-7 step
-   non-expansive. This closes the "weighted norm or JSR remains open" item in `controlsafe/CONTROLSAFE.md:94`, in
-   the negative.
+   real spectrum inside (−0.455, 1), so ρ(A_t) < 1 in exact arithmetic. (In bf16 the recurrent path can round w to
+   1.0; see F3.) But sup ‖A_t‖₂ = 2/√3 ≈ 1.155. More importantly, two admissible steps can alternate with
+   ρ(A₂A₁)^{1/2} = 1.105, which grows 4.4e8× in 200 steps. So the joint spectral radius of the parameter box is
+   above 1, and no input-independent norm of any kind makes every admissible RWKV-7 step non-expansive. This closes
+   the "weighted norm or JSR remains open" item in `controlsafe/CONTROLSAFE.md:94` in the negative, **for the
+   parameter box**. The construction needs a common decay of about 0.9 or more on both channels, so whether trained
+   weights realise it is open; the probe measures it.
 3. **New for RWKV-7: a cheap per-step certificate and a reparameterisation that fixes it.** The certificate is
-   `‖A_t‖₂ ≤ max(w_max, ā − w_min) + σ_a(κ)`, where σ_a is the κ²-weighted spread of the in-context rate `a` across
-   a head's channels. If `a` is shared per head (σ_a = 0), RWKV-7 is contractive for every input, with
-   `ρ = max(decay ceiling, 0.455)`. This is the reparameterisation `CONTROL_RESEARCH.md` §4 asks for.
+   `‖A_t‖₂ ≤ w_max + σ_a(κ)`, where σ_a is the κ²-weighted spread of the in-context rate `a` across a head's
+   channels. If `a` is shared per head (σ_a = 0), RWKV-7 is contractive for every input, with `ρ = w̄` (the
+   per-layer decay ceiling; exact arithmetic). This is the reparameterisation `CONTROL_RESEARCH.md` §4 asks for.
 4. **ISS and forgetting.** A contractive layer gives `‖S_t‖ ≤ ρ^t‖S_0‖ + b/(1−ρ)`. An injected span's influence on
-   a layer whose later inputs are clean is bounded exactly (no linearisation) by `∏‖A_s‖ · ‖ΔS‖` after the span.
-   Across a stack of L recurrent layers it decays like `poly(τ)^{L−1} · ρ^τ`, with per-input constants.
+   a layer whose later inputs are clean (only the first recurrent layer) is bounded exactly, with no linearisation,
+   by `∏‖A_s‖ · ‖ΔS‖` after the span. Across a stack of L recurrent layers it decays like `poly(τ)^{L−1} · ρ^τ`
+   (T5). **T5 needs a uniform ρ < 1 through a fully recurrent stack, so it applies to no model we run today.**
+   RWKV-7 has per-channel a and no such ρ. Qwen3.5 is a hybrid, so T5 reaches only GDN layers 1–2, below the first
+   attention layer. A hypothetical scalar-a RWKV-7 would qualify. T5 is a structural result, not a certificate.
 5. **Where it fails.**
    - The attention layers of the hybrid. Qwen3.5-4B has 8 of 32, starting at layer 3. They give no decay with
      distance, so after layer 3 there is no forgetting bound at all. For the hybrid, injection robustness has to
      come from G15 trust gating.
    - GDN with β → 2 (the `allow_neg_eigval` mode) combined with bf16-inflated ‖k‖².
    - An unnormalised k.
-   - bf16 state storage or α rounding to 1.
+   - bf16 state storage, GDN α rounding to 1, or RWKV-7 w rounding to 1 (`exp(w_log)` is computed in the
+     activation dtype on the recurrent path, modeling_rwkv7.py:144).
    - The output norms (GroupNorm, gated RMSNorm), whose local Lipschitz constant ∝ 1/rms.
    - "Bounded state ⇒ bounded logits" is true but empty, because the final RMSNorm bounds the logits for ANY
      state. The useful statement is the influence (Lipschitz) bound.
@@ -82,12 +90,16 @@ Hence `‖A_t‖₂ ≤ α_t` **iff** `0 ≤ β_t‖k_t‖² ≤ 2`, and `‖A_t
 
 *Proof.* The matrix `I − βkkᵀ` is symmetric. Its eigenvalue is 1 on k^⊥ (dimension N−1 ≥ 1) and `1 − β‖k‖²` on k. ∎
 
-*In our code.* β ∈ (0,1) and ‖k‖² = s/(s + 1e-6) < 1, so `β‖k‖² ∈ [0,1)` and `‖A_t‖₂ = α_t < 1` for every input.
-Two consequences:
+*In our code.* β ∈ (0,1). In exact arithmetic ‖k‖² = s/(s + 1e-6) < 1. Once the normalised k is stored in bf16,
+‖k‖² ≤ 1 + O(2⁻⁸): the review measured up to 1.0039. Either way `β‖k‖² < 2`, so `‖A_t‖₂ = α_t ≤ 1` for every
+input. It is strict unless α rounds to 1.0 (F3). Every executed path (fla chunked, fla fused recurrent decode, torch
+fallbacks) has sigmoid β and l2-normalised k. The exception is the hub kernel route
+(`@use_kernel_forward_from_hub`, modeling_qwen3_5.py:373), which is taken only on GB10 with `use_kernels=True`
+and is unaudited. Two consequences:
 
 - The forgetting rate of a GDN layer is **α alone**. The delta-rule erase shrinks only the k direction, so it never
   helps a worst-case bound.
-- **Universal constant (CERTIFIED for all inputs).** The layer input is the RMSNorm output `x = (1+γ) ⊙ x̂` with
+- **Universal constant (CERTIFIED for all inputs, in exact arithmetic only).** The layer input is the RMSNorm output `x = (1+γ) ⊙ x̂` with
   `‖x̂‖₂ < √d` (modeling_qwen3_5.py:746-753). So `W_a[h]·x ≥ −√d ‖W_a[h] ⊙ (1+γ)‖₂`, and
 
       α_t,h ≤ ρ_h = exp(−e^{A_log_h} softplus(dt_bias_h − √d‖W_a[h]⊙(1+γ)‖₂)) < 1   (adapters.py:286-296).
@@ -95,39 +107,53 @@ Two consequences:
   Since `‖A_T⋯A_1‖₂ ≤ ρ_h^T` for every input sequence, this is a common induced norm. The LoRA'd `in_proj_a` is
   covered through `_eff_weight` (adapters.py:258-264).
 
+  **This is not a float certificate.** The executed model rounds the RMSNorm output to bf16
+  (modeling_qwen3_5.py:754), so ‖x̂‖ can exceed √d by about 2⁻⁹ relative. It also computes `in_proj_a` as a bf16
+  GEMM. The pre-activation can therefore fall below `dt_bias − √d‖W_a⊙(1+γ)‖` by O(2⁻⁸·|a|), and since softplus is
+  monotone, **α can exceed ρ_h**. When `1 − ρ_h` is tiny, as F3(iii) expects, that margin dominates. A
+  float-sound version inflates the √d term by a rounding factor, for example `(1 + 2⁻⁷)`, before using ρ_h as a
+  certificate.
+
 **Theorem T2 (RWKV-7).** Let `A = D − Λκκᵀ` with `D = diag(w)`, `w_i ∈ [w_lo, 1)`, `w_lo = e^{−e^{−1/2}} = 0.5452`,
 `Λ = diag(a)`, `a_i ∈ (0,1)` and `‖κ‖ = 1`.
 
 - **(a) The spectrum is real and strictly inside the unit disc.** `A` is similar, via `Λ^{−1/2}`, to the symmetric
   matrix `D − zzᵀ` with `z = Λ^{1/2}κ` and `‖z‖² = Σa_iκ_i² ∈ (0,1)`. So the eigenvalues are real and lie in
-  `[w_min − ‖z‖², w_max] ⊂ (w_lo − 1, 1) = (−0.455, 1)`. Therefore ρ(A_t) < 1 for every input. (numpy R3: 0 of 5000
-  random draws violate it.)
+  `[w_min − ‖z‖², w_max] ⊂ (w_lo − 1, 1) = (−0.455, 1)`. Therefore ρ(A_t) < 1 for every input **in exact
+  arithmetic**. (numpy R3: 0 of 5000 random draws violate it.) Float caveat: `rwkv7_recurrent` computes
+  `exp(w_log)` in the activation dtype (modeling_rwkv7.py:144). In a bf16 model, a channel with `w_log > −2⁻⁹`
+  gets w = 1.0 exactly, and then ρ(A_t) can equal 1 (F3). The chunked path casts first (:213) and is unaffected.
 
 - **(b) Per-step certificate (CERTIFIED per input; cheap).** For any c ≥ 0:
 
       ‖A‖₂ ≤ max(w_max, c − w_min) + ‖(Λ − cI)κ‖₂,
 
-  and the best general choice is `c = ā = Σa_iκ_i²`:
+  and with `c = ā = Σa_iκ_i²` it **simplifies** to
 
-      U_t = max(w_max, ā − w_min) + σ_a,   σ_a = (Σ κ_i² (a_i − ā)²)^{1/2}.
+      U_t = w_max + σ_a,   σ_a = (Σ κ_i² (a_i − ā)²)^{1/2}.
 
   *Proof.* Split `A = (D − cκκᵀ) + (cI − Λ)κκᵀ`. By Weyl, the symmetric first term has eigenvalues in
-  `[w_min − c, w_max]`. The second term has rank one and norm `‖(cI − Λ)κ‖ ‖κ‖`. ∎
+  `[w_min − c, w_max]`. The second term has rank one and norm `‖(cI − Λ)κ‖ ‖κ‖`. For the simplification: on the
+  RWKV-7 box, `ā < 1` and `w_min, w_max ≥ w_lo = 0.5452`, so `ā − w_min < 1 − 0.5452 = 0.4548 < 0.5452 ≤ w_max`.
+  Hence `max(w_max, ā − w_min) = w_max`. (Checked: the review's V2 found max(ā − w_min − w_max) = −0.24 over 20k
+  draws, and no grid choice of c beats ā.) ∎
 
-  For a non-unit κ (bf16 rounding), replace `ā − w_min` with `ā‖κ‖² − w_min` and σ_a with `‖κ‖·‖(Λ − āI)κ‖`, where
-  `ā = Σa_iκ_i²/‖κ‖²`. This general form is the one the probe computes. (numpy R2: U ≥ ‖A‖₂ on 20,000 random draws;
-  the minimum slack is +7e-5.)
+  For a non-unit κ (bf16 rounding, ‖κ‖² = q ≈ 1), the general form is
+  `max(w_max, āq − w_min) + √q·‖(Λ − āI)κ‖` with `ā = Σa_iκ_i²/q`. It still equals `w_max + …` while
+  `q < 1 + 0.09`. The probe computes the general form. (numpy R2: U ≥ ‖A‖₂ on 20,000 random draws, minimum slack
+  +7e-5. The review's V1 ran adversarial hill-climbs and found a minimum slack of −4e-16, which is rounding.)
 
 - **(c) Scalar-a heads are contractive for every input.** If `a_t` is constant across a head's channels, then σ_a = 0,
-  A is symmetric, and `‖A_t‖₂ ≤ max(w_max, ā − w_min) ≤ max(w̄, 1 − w_lo) < 1`. Here w̄ is the universal per-layer
-  decay ceiling `exp(−e^{−1/2} σ(w0_c − ‖W2[:,c]‖₁))` (adapters.py:298-302) and `1 − w_lo = 0.4548`. **Recommended
-  reparameterisation** to give RWKV-7 the GDN guarantee: share `a` per head, or penalise or clamp σ_a so that
-  `max(w̄, 0.455) + σ_a,max < 1`.
+  A is symmetric, and `‖A_t‖₂ ≤ w_max ≤ w̄ < 1`. Here w̄ is the universal per-layer decay ceiling
+  `exp(−e^{−1/2} σ(w0_c − ‖W2[:,c]‖₁))` (adapters.py:298-302). This holds in exact arithmetic; w̄ must stay below 1
+  after bf16 rounding of `exp(w_log)`. **Recommended reparameterisation** to give RWKV-7 the GDN guarantee: share
+  `a` per head, or penalise or clamp σ_a so that `w̄ + σ_a,max < 1`.
 
 - **(d) There is no common 2-norm bound ≤ 1** (this was already known; `tests/controlsafe` has a counterexample). An
   explicit one: `w = (.99,.99)`, `a = (.99,.01)`, `κ = (1,1)/√2` gives `‖A‖₂ = 1.1295` while ρ(A) = 0.99 (R1). The
-  supremum over the box is at least 2/√3 ≈ 1.1547 (the closure `w = 1`, `a = (1,0)`). It embeds into any head size
-  by putting κ on two channels.
+  supremum over the box is exactly 2/√3 ≈ 1.1547, attained on the closure `w = 1`. The review's analytic proof: with
+  `p = Σaκ²`, `σ_max² = (2 − p + √(p(4−3p)))/2`, which is maximised at p = 1/3 with value 4/3. Hill-climbing over
+  n ≤ 4 finds nothing larger. The example embeds into any head size by putting κ on two channels.
 
 - **(e) The joint spectral radius of the admissible box is > 1 (new).** Take `w = 0.99` on both channels.
   `A₁` has `a = (.99,.01)` and `κ₁ = (0.4067, 0.9135)`. `A₂` has `a = (.01,.99)` and `κ₂ = (0.9135, 0.4067)`. Then
@@ -140,6 +166,9 @@ Two consequences:
   2. In exact arithmetic, an input that drives `a` and `κ` through such a cycle makes the state of a **zero-input**
      RWKV-7 layer grow geometrically. Whether trained weights can realise such a cycle is an empirical question, and
      the probe measures it (section 6: `exact_window_logprod > 0`).
+  3. **Scope.** The construction needs a common decay of about 0.9 or more on both channels. The review's V4 found
+     rate 1.016 at w = 0.90 and 0.967 at w = 0.85; with a restricted to [.05, .95] the rate is 1.002 at w = 0.90.
+     CONTROLSAFE.md:94 is therefore closed negatively **for the parameter box**, not for the trained model.
 
 ## 2. Input-to-state stability (ISS / BIBO)
 
@@ -175,8 +204,8 @@ is involved, because the recurrence is linear in X given its inputs. Hence
     ‖ΔX_{t₁+L}‖ ≤ ∏_{s=t₁+w+1}^{t₁+L} ‖A_s‖₂ · ‖ΔX_{t₁+w}‖ ≤ ρ^{L−w} · 2S_max      (per head; ‖Δy‖ ≤ ‖r‖ ‖ΔX‖).
 
 This is exactly `persistence.layer_local_curve` (persistence.py:5-15, 116-131), which checks it with the observed
-`∏‖A_s‖`. The hypothesis "input identical after t₁" holds for the **first recurrent layer** (its input is token
-embeddings). It also holds for any layer whose input is provably independent of the span: the G15 protected stream
+`∏‖A_s‖`. The hypothesis "input identical after t₁" holds **only for the first recurrent layer**, whose input is
+token embeddings. Layer 1's input already carries the span through layer 0's state. It also holds for any layer whose input is provably independent of the span: the G15 protected stream
 is the structural case.
 
 **Theorem T5 (cascade across a stack of recurrent layers, per-input constants).** Deeper layers see a perturbed input
@@ -189,6 +218,16 @@ Then `‖ΔX^l_{t₁+τ}‖ ≤ K_l (τ+1)^{l−1} ρ^{τ}`, with `K_l` explicit
 
 *Proof.* Induction on l, using `Σ_{s≤τ} ρ^{τ−s}(s+1)^k ρ^s ≤ (τ+1)^{k+1} ρ^τ`. ∎
 
+**Scope of T5 (read before using it).**
+1. The Lipschitz constants must bound the difference **along the whole segment between the two trajectories** (a
+   mean-value argument), not just at the two endpoints. The probe cannot observe them from endpoint quantities. For
+   example, the k-l2norm Lipschitz constant is ≈ 1/‖k_raw‖, capped only by eps 1e-6 at about 1e3. So T5 is a
+   structural result, not a certificate.
+2. T5 needs one uniform rate ρ < 1 through a fully recurrent stack, so **it applies to no model we run today**.
+   RWKV-7 has per-channel a and no universal ρ < 1 (T2(e)). Qwen3.5 is a hybrid, so T5 covers only GDN layers 1–2,
+   below the first attention layer (F4). A scalar-a RWKV-7 (T2(c)) would qualify. A per-input variant with the
+   observed `n_s` in place of ρ is the usable form, and it still inherits point 1.
+
 **What bounded state buys** is precisely the finiteness of `c_l`: the term `ΔA_t · X_{t−1}` is controlled by
 `S_max`. This is the formal version of the "polynomial × exponential" cascade that `end_to_end_curve` measures
 empirically (persistence.py:17-19).
@@ -198,9 +237,10 @@ state. "Bounded state ⇒ bounded logits" is therefore true but carries no infor
 
     ‖Δlogit‖_∞ ≤ max_i ‖W_U[i]⊙(1+γ_f)‖ · Lip_RMS(h) · ‖Δh^L‖ ≤ K' (τ+1)^{L−1} ρ^τ,
 
-where τ is the distance from the span. This is the injection-robustness statement we can state. It holds in this
-form for a fully recurrent stack with ρ < 1: GDN, or scalar-a RWKV-7. `M_l` and `d_l` include RMSNorm or GroupNorm
-local constants `≈ max|γ|/rms(·)`, so the constants are per input, not universal.
+where τ is the distance from the span. This is the injection-robustness statement we could state. It inherits
+T5's scope: it needs a fully recurrent stack with ρ < 1, which today means only a hypothetical scalar-a RWKV-7 or
+an all-GDN model. `M_l` and `d_l` include RMSNorm or GroupNorm local constants `≈ max|γ|/rms(·)`, so the constants
+are per input, not universal.
 
 ## 4. Where it fails
 
@@ -208,8 +248,8 @@ local constants `≈ max|γ|/rms(·)`, so the constants are per input, not unive
 |---|---|---|---|
 | F1 | GDN β → 2 (`allow_neg_eigval`, fla-core 0.5.2 `chunk_gated_delta_rule(..., allow_neg_eigval=False)` scales β by 2) | With exact unit k the k-eigenvalue is `1 − β ∈ (−1, 1)`: still ≤ α, but undamped beyond α as β → 2. bf16 k has ‖k‖² up to 1.0019 (numpy P1), so `β‖k‖² > 2` becomes reachable, and then `‖I − βkkᵀ‖ = β‖k‖² − 1 > 1` (β = 2: 1.0032, G1) | No: HF passes `β = σ(b)` without `allow_neg_eigval` (modeling_qwen3_5.py:520, 539-550). Re-check before any switch to the negative-eigenvalue variant or a custom kernel. |
 | F2 | Unnormalised k | `‖I − βkkᵀ‖ = max(1, β‖k‖² − 1)`: unbounded | No: `use_qk_l2norm_in_kernel=True`. RWKV-7's κ is normalised. Its write key k̃ is not, but that only enters b (T3). |
-| F3 | Precision | (i) bf16 state storage (RWKV `wkv_state_dtype="bfloat16"`) rounds each step at relative 2^{−9}, so contraction is guaranteed only if `ρ(1 + c·u) < 1`. (ii) α rounds to 1.0 in bf16 once `1 − α < 2^{−9}` (α = 0.9985 → 1.0, P1), and in fp32 once `|g| < 6e-8`. HF computes g in fp32 (modeling_qwen3_5.py:522). (iii) The weights-only `ρ_h` can round to exactly 1.0 in float64, so `adapters.universal_decay_bound` would print `certified=False` for a true bound. Use `−log ρ_h` (the probe does). (iv) Chunked kernels (fla WY/UT, `rwkv7_chunked` 1/c rescaling, modeling_rwkv7.py:188-208) match the recurrence only to ~1e-7 fp32. T3 absorbs that when ρ < 1. | RWKV state defaults to fp32 (configuration_rwkv7.py:122). (iii) is plausible for real weights: the √d worst case makes `softplus(lo)` tiny. |
-| F4 | **Attention layers in the hybrid** | Softmax attention reads the span's K/V at every later position with weight up to 1, so there is no decay with distance. T4 holds for GDN layers 0–2 up to the input of layer 3. From layer 3 on, every later GDN layer's input carries the span, so T4's hypothesis fails and T5 does not apply. | **Yes:** Qwen3.5-4B layers 3, 7, …, 31. For the hybrid, forgetting gives nothing past layer 3. Injection robustness must come from G15 (structural isolation), not decay. |
+| F3 | Precision | (i) bf16 state storage (RWKV `wkv_state_dtype="bfloat16"`) rounds each step at relative 2^{−9}, so contraction is guaranteed only if `ρ(1 + c·u) < 1`. (ii) α rounds to 1.0 in bf16 once `1 − α < 2^{−9}` (α = 0.9985 → 1.0, P1), and in fp32 once `|g| < 6e-8`. HF computes g in fp32 (modeling_qwen3_5.py:522). (iii) The weights-only `ρ_h` can round to exactly 1.0 in float64, so `adapters.universal_decay_bound` would print `certified=False` for a true bound. Use `−log ρ_h` (the probe does). (iv) Chunked kernels (fla WY/UT, `rwkv7_chunked` 1/c rescaling, modeling_rwkv7.py:188-208) match the recurrence only to ~1e-7 fp32. T3 absorbs that when ρ < 1. (v) **RWKV-7 decay rounding:** `rwkv7_recurrent` computes `decay = exp(w_log)` in the activation dtype (modeling_rwkv7.py:144). In bf16, any channel with `w_log > −2⁻⁹` (σ(·) < 0.0032) gets w = 1.0 exactly, so w_max = 1 and ρ(A_t) can equal 1: no contraction on that step. The outer products at :146-147 are also formed in the activation dtype. The chunked path casts first (:213). (vi) The universal GDN ρ_h is exact-arithmetic only: bf16 RMSNorm and `in_proj_a` can push α above it (T1). (vii) The GDN chunked kernel's fp32 cumsum of g can absorb a tiny g, giving α_eff = 1 (lost contraction, never growth). | RWKV state defaults to fp32 (configuration_rwkv7.py:122). (iii) is plausible for real weights: the √d worst case makes `softplus(lo)` tiny. |
+| F4 | **Attention layers in the hybrid** | Softmax attention reads the span's K/V at every later position with weight up to 1, so there is no decay with distance. T4 holds for GDN layer 0 only. Layers 1–2 see a perturbed input (through layer 0's state) and are covered only by T5, with T5's caveats. From layer 3 on, attention carries the span to every later position, so neither T4 nor T5 applies and nothing decays. | **Yes:** Qwen3.5-4B layers 3, 7, …, 31. For the hybrid, forgetting gives nothing past layer 3. Injection robustness must come from G15 (structural isolation), not decay. |
 | F5 | RWKV-7 per-channel `a` | T2(d, e): no universal contraction, possible geometric growth under switching. The certificate U_t can exceed 1. | Yes, by architecture. The probe measures how often (`step_bound_gt1`, `exact_norm_gt1`) and whether real windows grow. |
 | F6 | Output normalisation | GroupNorm `ln_x` (modeling_rwkv7.py:437, 540) and GDN gated RMSNorm (modeling_qwen3_5.py:189-204) normalise the readout. A tiny ΔX at small ‖y‖ can be amplified by `max|γ|/rms(y)`. The state bound transfers to the block output only through this local constant (T5's d_l). | Yes |
 | F7 | Local windows and padding | Bounds start w steps after the span (token shift 1, conv 3). GDN zeroes padded hidden states when B > 1 (modeling_qwen3_5.py:207-216). A pad then has `α = exp(−e^{A_log}softplus(dt_bias)) < 1`, so it contracts rather than acting as the identity, and a padded batch is not state-identical to B = 1. RWKV pads use `w_log = 0`, the exact identity (modeling_rwkv7.py:467-483). | The probe runs B = 1 |
@@ -217,17 +257,28 @@ local constants `≈ max|γ|/rms(·)`, so the constants are per input, not unive
 
 ## 5. Implications for our guarantees
 
-- **Can claim (CERTIFIED, every input).** Each GDN layer contracts with `ρ_h < 1`. Each RWKV-7 head has a real
-  spectrum in (−0.455, 1). Each RWKV-7 step satisfies `‖A_t‖ ≤ U_t` (a checkable certificate).
-- **Can claim (CERTIFIED per input).** The T3 ISS bound, the T4 single-layer forgetting bound, and the T5 cascade
-  bound with constants measured along the trajectory.
+- **Can claim (CERTIFIED, every input, exact arithmetic).** Each GDN layer contracts with `ρ_h < 1`; for a float
+  certificate, add the rounding margin from T1. Each RWKV-7 head has a real spectrum in (−0.455, 1); in bf16 the
+  top can reach 1. Each RWKV-7 step satisfies `‖A_t‖ ≤ U_t = w_max + σ_a` (a checkable certificate).
+- **Can claim (CERTIFIED per input).** The T3 ISS bound and the T4 forgetting bound for the first recurrent layer.
+  T5 is structural only (its constants are not observable), and as stated it covers no deployed model.
 - **Cannot claim.**
   - Universal contraction or ISS for RWKV-7 as parameterised. The JSR is above 1.
   - Any distance-decay bound past the first attention layer of the hybrid.
   - "Bounded logits" as a guarantee, since it is vacuous.
 - **Would buy the claim for RWKV-7.** Scalar-a heads (T2(c)), or a σ_a penalty during training. This is a constraint
   that suits `CONTROL_RESEARCH.md` §4's PI-Lagrangian controller. It turns RWKV-7 into a CERTIFIED-contractive
-  backbone with `ρ = max(w̄, 0.455)`. Its capability cost is unmeasured.
+  backbone with `ρ = w̄` (exact arithmetic). Its capability cost is unmeasured.
+
+*Revision 2026-10-10.* This revision applies the evidence agent's adversarial review
+(`claude/ev-review-stability` @e89b29cc, `docs/REVIEW_STATE_STABILITY.md`):
+- F4 scope: T4 holds for layer 0 only.
+- ρ_h is exact-arithmetic only.
+- RWKV-7 w rounds to 1.0 in bf16 on the recurrent path.
+- U_t simplifies to w_max + σ_a, and the scalar-a rate is ρ = w̄.
+- sup ‖A‖ is exactly 2/√3.
+- T2(e) holds for the parameter box only.
+- T5 needs path Lipschitz constants and covers no model we run today.
 
 ## 6. Empirical check (script written; NOT submitted)
 

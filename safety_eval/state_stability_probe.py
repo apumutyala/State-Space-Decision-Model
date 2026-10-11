@@ -282,7 +282,7 @@ def universal(model, family: str) -> dict:
             lo = att.w0.detach().double().reshape(-1) - att.w2.detach().double().abs().sum(0)
             wbar = torch.exp(-0.6065306597126334 * torch.sigmoid(lo))
             out[i] = {"family": "rwkv7", "decay_ceiling": float(wbar.max()),
-                      "scalar_a_universal_rho": max(float(wbar.max()), 1 - math.exp(-math.exp(-0.5))),
+                      "scalar_a_universal_rho": float(wbar.max()),  # = w_bar (docs T2(c); exact arithmetic)
                       "note": "full transition: no universal bound (docs T2(d,e)); scalar_a_universal_rho holds only "
                               "if a were shared across a head's channels (docs T2(c))"}
     return out
