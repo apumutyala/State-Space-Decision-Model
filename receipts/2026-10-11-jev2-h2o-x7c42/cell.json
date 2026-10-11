@@ -1,0 +1,1329 @@
+{
+ "config": {
+  "_comment": "JEV2-H2O (jev2_h2o_shim, A-PREREG-JEV2-H2O, NOT submitted): H2O-Lightning-4B v1.1 @193ad740 + SSDM jev2 data (2,664 rows = 148 per family x 18 from the cleared bschema-mix-jev1-jev2 components (jev1 gated build minus long_policy, jev2a-v2 minus 127 excluded ids, jev2b minus prob_indep, jev2c-v2)), layout g1v2, head lm_label (the shim readout), LoRA r16 LR 4e-5, 333 steps; selection + step-0 floor on the held-out slice (3,600 rows, 142a593a); worst-case hold <= $38",
+  "seed": 0,
+  "head": "lm_label",
+  "head_kwargs": {},
+  "layout": "g1v2",
+  "template": "jrt-h2o-shim:qwen3.5-4b",
+  "loss_arm": "clef",
+  "lora_rank": 16,
+  "lr_head": 0.0003,
+  "lr_lora": 4e-05,
+  "warmup_steps": 50,
+  "batch_size": 1,
+  "grad_accum": 8,
+  "max_k": 16,
+  "t_ladder": [
+   512,
+   1024,
+   2048,
+   4096
+  ],
+  "n_train_records": 2664,
+  "n_eval_records": 0,
+  "min_train_items": 2664,
+  "max_steps": 333,
+  "max_minutes": 130,
+  "min_steps": 200,
+  "ckpt_every": 100,
+  "eval_every": 100000,
+  "tokenize_workers": 8,
+  "smoke": {
+   "rows": 2,
+   "max_k": 4,
+   "max_t": 512,
+   "lora_rank": 8,
+   "max_rel_feature_diff": 0.03,
+   "min_grad_cos": 0.99
+  },
+  "pass_rule": {
+   "window": 100,
+   "loss_drop_frac_min": 0.05,
+   "max_peak_gb": 76
+  },
+  "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+  "require_guard_readiness": true,
+  "calibration_role": "calibration",
+  "parent": "qwen35",
+  "eval_max_t": 4096,
+  "train_set": {
+   "pointer": "data/manifests/bschema-draw-jev2h-final.pointer.json",
+   "heldout_excluded": {
+    "ids": [],
+    "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+    "reason": "the merged draw inherits each pool's gates (0 held-out D1-B hits each); the in-job heldout phase rescans the whole set"
+   },
+   "pools": {
+    "jev1": {
+     "dir": "m2/build/bschema-draw-jev1",
+     "pointer": "data/manifests/bschema-draw-jev1.pointer.json",
+     "pointer_sha256": "582ffe1cb34602473a847833758e06d69dbb6755594b4609e95f8fa39a2b464b",
+     "status": "gated",
+     "families": [
+      "adequacy",
+      "enum",
+      "intent",
+      "policy",
+      "routing",
+      "severity",
+      "state_tracking"
+     ],
+     "note": "long_policy excluded (replaced by jev2c-v2)"
+    },
+    "jev2a-v2": {
+     "dir": "m2/build/bschema-draw-jev2a-v2",
+     "pointer": "data/manifests/bschema-draw-jev2a-v2.pointer.json",
+     "pointer_sha256": "eba70d2c7fccbca43a127d8f3e47c4153c9fbd727c59e4fd789be8f935c87946",
+     "status": "gated",
+     "families": [
+      "fact",
+      "judge_hard",
+      "multi_hop",
+      "temporal_numeric",
+      "tool_selection"
+     ],
+     "exclude": [
+      {
+       "file": "receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt",
+       "sha256": "c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad",
+       "n_ids": 23
+      },
+      {
+       "file": "receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt",
+       "sha256": "5cebf60bfa489d462a7e7d9b82e152a4968f30e1dc7ea50a2155e491a1ef37ab",
+       "n_ids": 104
+      }
+     ],
+     "rows_after": 7373
+    },
+    "jev2b": {
+     "dir": "m2/build/bschema-draw-jev2b",
+     "pointer": "data/manifests/bschema-draw-jev2b.pointer.json",
+     "pointer_sha256": "35620f5f47c6e48bb61de0a336ccfb54dad5bf11f606a15f30b32fe48fee4127",
+     "status": "gated",
+     "families": [
+      "adversarial",
+      "ambiguous",
+      "probability",
+      "tradeoff",
+      "trap"
+     ],
+     "excluded_subs": [
+      "prob_indep"
+     ]
+    },
+    "jev2c-v2": {
+     "dir": "m2/build/bschema-draw-jev2c-v2",
+     "pointer": "data/manifests/bschema-draw-jev2c-v2.pointer.json",
+     "pointer_sha256": "86960d903d613bc88eca9ee131b486a749afa9a89c9cebca77744178721c5a99",
+     "status": "gated",
+     "families": [
+      "long_policy"
+     ]
+    }
+   },
+   "note": "build: python -X utf8 -I scripts/jev12_balanced_draw.py --src <data>/m2/build/bschema-draw-jev1 --src <data>/m2/build/bschema-draw-jev2a-v2 --src <data>/m2/build/bschema-draw-jev2c-v2 --src <data>/m2/build/bschema-draw-jev2b --exclude long_policy=bschema-draw-jev1 --global-exclude receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt=c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad --global-exclude receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt=5cebf60bfa489d462a7e7d9b82e152a4968f30e1dc7ea50a2155e491a1ef37ab --pool-rows bschema-draw-jev1=96000 --pool-rows bschema-draw-jev2a-v2=7373 --pool-rows bschema-draw-jev2b=7500 --pool-rows bschema-draw-jev2c-v2=1500 --exclude-sub prob_indep --dedupe-source glaive_fc --score-share 0.25 --train-per-family 148 --calib-per-family 200 --name bschema-draw-jev2h-final --out <data>/m2/build. 2,664 rows = 148 per family x 18 from the cleared bschema-mix-jev1-jev2 components (jev1 gated build minus long_policy, jev2a-v2 minus 127 excluded ids, jev2b minus prob_indep, jev2c-v2). Selection slice = the draw's calib (200 per family).",
+   "score_share": 0.25,
+   "mix_manifest": {
+    "file": "data/manifests/bschema-mix-jev1-jev2.json",
+    "sha256": "71b503ebb91b991f4a02b70f1dabc5150315f14c5843eb6fc53b8f0a65a48198"
+   },
+   "type_mix": {
+    "noul": 0.2995,
+    "choice": 0.4467,
+    "score": 0.2538
+   }
+  },
+  "act_ckpt": true,
+  "row_batch": 1,
+  "row_tokens": 0,
+  "row_plan": "min_cost",
+  "cont_plan": "single",
+  "compile_blocks": false,
+  "lora_rank_note": "r=64 on every arm (A-PREREG-SIZECLIFF: same LoRA rank); targets = every GDN in_proj_qkv / in_proj_z / out_proj, every attention q / k / v / o and every MLP projection (stock hybrid, heads.backbone.qwen35_spec from config.json)",
+  "variant": "jev2_h2o_shim",
+  "train_max_k": 255,
+  "row_options": 160,
+  "train_max_k_note": "D8 code (#221 on agent-main): K cap of the training items only (train.run_cell.train_max_k; cell_items default, also used by the m2_gates lineage rebuild); max_k 16 remains the eval cap (train.m2_gates.unit_spec, run_cell eval_items). B1 100k-v2 carries rows with > 16 options (BANKING77 77-option catalogs, Glaive catalog views K 17-27), which max_k 16 alone would drop.",
+  "row_options_note": "execution guard (train.trainer.row_groups / single_cont_fits): <= 160 forked continuations per backbone call; a row with K > 160 runs alone, and a step whose summed K exceeds 160 runs per group under cont_plan single. Worst call = 8,192 prefix tokens + 160 copies ~= 53.8 GB (tvuat ladder 1,024 rung) + 80 x <= 87 MB ~= 61 GB < 76 GB stop (D8 sizing). Not in the TrainConfig hash; never binds on K <= 16 steps (8 x 16 = 128).",
+  "lr_schedule": "cosine",
+  "lr_min_frac": 0.1,
+  "dev_card_every": 100,
+  "dev_card_rows": 360,
+  "best_ckpt": true,
+  "collapse_guard": true,
+  "anti_collapse_note": "train/trainer.py TrainConfig anti-collapse fields; each absent key = the old behaviour. lr_schedule and collapse_* are in the config hash; dev_card_* and best_ckpt are operational. Each dev card scores 200 rows (budget it inside max_minutes).",
+  "execution_note": "row_batch 1: one row per backbone call (8 rows / optimiser step via grad_accum 8); act_ckpt true (heads/act_ckpt.py covers Qwen3.5 decoders); the cache fork reads each row's prompt once and forks its K continuations. row_plan / cont_plan / row_options only act with row_batch > 1 (train/trainer.py). The clock binds (max_steps 20,000).",
+  "v3w_note": "generic v3w (decide/v3w_generic.py, PINNED_SPEC_SHA256 'jrt-v3w-generic:qwen3.5' 2e4907ee...; 255 single-token codes after the Qwen answer prefix, word ids by unique first token, Qwen3.5 chat template with enable_thinking=False -> empty think block, budget 16,383). Bound to the snapshot's own tokenizer files on the box (run_cell / score_parent / m2_gates / screen): any other tokenizer or template fails closed.",
+  "qwen35": {
+   "repo": "h2oai/h2o-lightning-4b",
+   "revision": "193ad740925b176a3b70a5a13a7cff2f2fadd01e",
+   "host": true,
+   "label": "H2O-Lightning-4B v1.1 + SSDM",
+   "config_sha256": "6240a991871a574ff04525c90d8f75a2a11bad2f7012ab0774cbc69aca745859",
+   "weights_sha256": {
+    "model.safetensors": "c65443b1d28891ffc4b6f7d90028c542d6ccb24c2f9cd6a46a8294a44ab0ffae"
+   },
+   "snapshot_sha256_file": "jobs/m2_first_cell/h2o_lightning_4b_v11_snapshot.sha256",
+   "license_git_blobs": {
+    "LICENSE": "f938136e3adacfd92be087f6e113b5d6d97f678f",
+    "README.md": "3e2b14d58e6dce66bb8ae3fb5f84e04aad204b72"
+   },
+   "note": "EV-PREREG-H2O-HOST (state 94d38f43 + amendment 857592e9): the v1.1 tag the host scan / kit parity / the card ran (205/231). heads.backbone.qwen35_pin_check (QWEN35_HOSTS) checks repo@revision, config.json, the snapshot directory commit and the sha256 of model.safetensors before any weight is read, and the loader refuses any missing text weight; the runner checks the whole snapshot manifest, the HF-resolved commit and the LICENSE / README git blobs, and copies them into out/license. The tokenizer / chat template files are byte-identical to Qwen/Qwen3.5-4B@851bf6e (same sha256), so the pinned shim template identity binds unchanged."
+  },
+  "shim_note": "template jrt-h2o-shim:qwen3.5-4b (decide/shim_format.py, pinned identity): the vendored, unmodified H2O-Lightning-4B v1.1 shim prompt (third_party/h2o_lightning_shim, the host scan's replica that matched H2O's card 205/231): Qwen chat turn, thinking off, the shim system text, 'record: / question: / options: A) name: desc', 'Answer:' prefill; option k = shim label k (A, B, ...), its continuation the ONE token of ' <label>' (the shim's own probe); bound to the snapshot's tokenizer files, any other tokenizer fails closed. Train rows == the shim prompt ids (and == transformers' whole-string tokenization = vLLM /tokenize): scripts/check_sizecliff_cpu.py.",
+  "cont_chunk": 0,
+  "budget_note": "A-PREREG-JEV2-H2O: worst-case hold <= $38. clock 130 = ceil(333 x 16.9 s/step x 1.3 / 60) + 8 dev-card minutes, rounded up to 5. s/step = JEV2's 16.6 estimate / 0.985 (g1v2).",
+  "sym_reprice_note": "Clock re-price (CPU 2026-10-10, real Qwen3.5-4B tokenizer, systematic 1-in-24 sample of bschema-draw-jev1 = 4,000 items, all kept by train.run_cell.keep_item under both layouts; K mean 4.78, max 16): tokens the backbone RUNS per row (prefix + continuation calls right-padded per cont_chunk 64 chunk, MIN_CONT_WIDTH 2) g1v2 368.1 vs sym-fork 362.7, factor 0.985 (fed tokens without padding 363.3 vs 352.1, 0.969): the options move from the prefix into the continuations, about token-neutral. Projected 10.92 x 0.985 = 10.76 s/step -> ceil(1,121 x 10.76 x 1.3 / 60) = 262 min; max_minutes stays 270 (the measured g1v2 budget; the factor is a token model, not a measurement: the step-10 rate check (exit 26) re-measures it in-job). Script: scripts/sym_reprice_jev1.py 24 (receipt in docs/PROOF_INVARIANCE.md).",
+  "require_t_max": 4096,
+  "ladder_probe_longest": true,
+  "max_len_note": "public long_policy items are 2,350-3,952 tokens (r2 preds usage.input_tokens) vs jev1 long_policy train rows p50 935 / max 1,263 (build-report): the trained head never saw > 2k contexts. 4,096 for training (t_ladder top rung; require_t_max fails closed instead of silently dropping rows > T_max) and eval. Memory at 4k on H100 80 GB (4B, act_ckpt): the attention-layer KV copy per forked option grows ~0.7 GB at T 1,020 (cf3929b) -> ~2.8 GB at 4,096; long_policy rows carry K 4-6 -> <= ~17 GB of copies + ~8 GB weights + checkpointed activations; the cont_chunk probe (4b0fb1d) re-picks the chunk over the worst K x T rows <= 4,096 (candidates 8..64, peak <= 0.85 x 76 GB) and ladder_probe_longest steps the LONGEST rows of each rung (the max-K rung rows are short), so 4k is measured before training.",
+  "label_smoothing": 0.05,
+  "label_smoothing_noul": 0.0,
+  "label_smoothing_note": "yes/no (noul) rows: eps 0 (sharp targets). jevkit scores a noul answer with p in (0.2, 0.8) as WRONG; r2 put 10/74 noul items in that band (stock 0), the whole argmax-vs-jevkit gap (claude/ev-j1-rescore @a8ca3e7e), and smoothing pulls yes/no answers toward 0.5. choice / score rows: eps 0.05 (was the clef default 0.1 on every row; r2's head was under-confident, shim T 0.8 raised its Capability 57.93 -> 59.62). Per-row eps by question type (train.losses.arm_loss already receives qtypes).",
+  "noul_band_gate": "reported gate: the native arm's yes/no 0.2-0.8 band rate on the 231 items <= stock_shim's (screen.jevkit_report noul_band_gate); the calib-slice band rate at T = 1 and at the fitted T are reported, and T is moved toward 1 if it would raise the slice band rate (constrain_t_by_band)",
+  "lr_horizon_frac": 0.6717,
+  "lr_horizon_note": "lr_horizon_frac 0.6717 (= r2's 753 / 1,121): at the step-10 rate check the planned final step = min(max_steps 1281, step + the clock-affordable steps at the MEASURED s/step) and the cosine horizon = frac x that, fixed once. If the projection is short of max_steps the run CONTINUES (cell.json train_budget_shortened records it) down to min_steps 600; below that, exit 26. Planned (estimate holds): horizon 860.",
+  "calib_slice": {
+   "records": "m2-jev2hf-calib/records.jsonl.gz",
+   "per_family": 200,
+   "n": 3600,
+   "ids_sha256": "142a593a1257d6729b5480fe67647b1af0c5678d2a929654f6325e128fce00be",
+   "rule": "per family, the next 200 by sha256('<seed>:<id>') after the train rows; id AND content disjoint from training (checked at build); never JevBench items",
+   "use": "the fixed held-out SELECTION slice: dev-card selection (360 hash-sampled rows), the step-0 floor (all rows: trained vs untrained H2O), native_tfit; never public-231"
+  },
+  "assert_no_truncation": true,
+  "assert_no_truncation_note": "fail closed (run_cell exit 25 'data') if ANY drawn training question is dropped by the K / T filter at tokenization or by the measured T_max; jev2c has 1,448 / 1,500 rows > 2,048 tokens (max 3,347), all inside 4,096. The screen fails (9) if any JevBench item is refused for input length (jevkit.assert_no_truncation).",
+  "dev_card_records": {
+   "records": "m2-jev2hf-calib/records.jsonl.gz",
+   "ids_sha256": "142a593a1257d6729b5480fe67647b1af0c5678d2a929654f6325e128fce00be"
+  },
+  "host_init_note": "Anti-forgetting guards (continued fine-tuning of an already-tuned model): LoRA r16 (vs r64 in r2 / JEV2; alpha = rank, scale 1), lr_lora 4e-5 = 0.4x r2's 1e-4 (<= r2's LR), a fixed small budget of 333 steps (2,664 rows), selection only on the fixed held-out slice with the untrained host (step 0) as a FLOOR. The readout is H2O's own LM-head label readout (head lm_label, only a scalar scale is new), so training starts AT the host; lr_head 3e-4 applies to that scalar. The step-10 measured-rate logic is unchanged (plan = min(max_steps, affordable), horizon 0.6717 x plan, continue down to min_steps 200, exit 26 below).",
+  "dev_card_note": "dev_card_records: best-checkpoint selection (dev-card NLL) and the collapse guard read 360 hash-sampled rows of the held-out calib slice (m2-jev2mix-calib, id- and content-disjoint from training, ids sha pinned = calib_slice.ids_sha256; train.run_cell.dev_card_source fails closed on any other ids), never public-231 and never the cohort. The same slice also fits native_tfit (calibration); both are pre-registered held-out uses.",
+  "min_steps_note": "floor 200 steps (1,600 rows); the step-10 rate check exits 26 below it",
+  "g1_note": "shim mode: options are listed in the prompt with shim labels, so reorder / relabel invariance is NOT by construction; G1 (perturb_ops) is reported as a secondary, not a gate",
+  "jev1": {
+   "enabled": true,
+   "exclusion": {
+    "status": "landed",
+    "files": [
+     {
+      "file": "receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt",
+      "sha256": "c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad",
+      "n_ids": 23
+     },
+     {
+      "file": "receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt",
+      "sha256": "5cebf60bfa489d462a7e7d9b82e152a4968f30e1dc7ea50a2155e491a1ef37ab",
+      "n_ids": 104
+     }
+    ]
+   },
+   "why": "lead 2026-10-11: the FINAL cleared data; jev1 IN (minus long_policy)"
+  },
+  "head_note": "heads.heads.LMLabelHead: logit_k = s * <W_emb[label_k], q_end> = the shim label-token log-likelihood at the Answer: slot (tied LM head, final-norm hidden state), softmax over the option labels for EVERY type (no CumulativeLink). Step 0 == the untrained H2O readout (s = 1, LoRA B = 0). The loss (clef arm: LS-CE 0.05 on choice / score, 0 on noul, + Brier) is on exactly this distribution, which the primary arm scores after the shim T 0.8 + floor. No fork pass (needs_fork False), so cont_chunk 0. The fork head is kept only for the sym-fork secondary.",
+  "min_train_items_note": "= n_train_records (2,664): job-ivm8w stopped at exit 25 (too few items 2664 < the inherited 5,000); assert_no_truncation already requires every drawn row to survive"
+ },
+ "dev_card_source": {
+  "records": "m2-jev2hf-calib/records.jsonl.gz",
+  "ids_sha256": "142a593a1257d6729b5480fe67647b1af0c5678d2a929654f6325e128fce00be",
+  "n_records": 3600,
+  "n_items": 3600
+ },
+ "data_checks": {
+  "no_truncation_tokenize": {
+   "rows": 2664,
+   "max_row_tokens": 3930,
+   "t_cap": 4096
+  }
+ },
+ "data": {
+  "records_sha256": "824671c97070c0e61a40df8f0103ebeb6fddc557e0974a61226653887d57ceb7",
+  "n_train_records": 2664,
+  "tokenize_s": 29.0,
+  "n_train_items": 2664,
+  "n_eval_items": 1130,
+  "guard_manifests": {
+   "/opt/ssdm/m1/harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+   "/opt/ssdm/m1/harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+  },
+  "guard": {
+   "manifests": {
+    "/opt/ssdm/m1/harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+    "/opt/ssdm/m1/harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+   },
+   "n_ids": 47249,
+   "n_hashes": 48415,
+   "note": "",
+   "content_index": {
+    "path": "/tmp/m2-first-cell/out/guard/index-content-hashes.txt.gz",
+    "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+    "n": 24150
+   }
+  },
+  "max_k": 16,
+  "train_max_k": 255,
+  "cohort": {
+   "cohort": "m2-dev-cohort-v2",
+   "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 1670,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "train_set": {
+   "train_set": "bschema-draw-jev2h-final (scripts/jev12_balanced_draw.py over bschema-draw-jev1, bschema-draw-jev2a-v2, bschema-draw-jev2c-v2, bschema-draw-jev2b)",
+   "pointer": "data/manifests/bschema-draw-jev2h-final.pointer.json",
+   "pointer_sha256": "484b385925e84d790c5b64157c4755056dc3b2568309c069771d2c57f9c92a12",
+   "files_uncompressed_sha256": {
+    "records": "46b9280055f5f7fc7bd05669147765a90d2e0d4661f7100a5a384150b2eca7d8",
+    "manifest": "ac6ef45fcc9392b33abf29547c74ad029b7525dce0d3eeeeea5bfef4047a7038",
+    "content_map": "e8b09954f0ac85259ce60b1a4dc19811674ea7fcbf07dff054a5df8a3f861450"
+   },
+   "n_pool": 2664,
+   "heldout_excluded": [],
+   "drawn_heldout_scan": {
+    "n_texts": 2664,
+    "hits": 0,
+    "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5"
+   },
+   "held_out_in_set": {
+    "by_id": 0,
+    "by_content": 0
+   },
+   "n_drawn": 2664,
+   "draw_seed": 0,
+   "drawn_ids_sha256": "329fca010144f205808b596309808fe014516eb783e6874c846a803e503d4ebf",
+   "lines_manifest_verified": 2664,
+   "cohort": {
+    "cohort": "m2-dev-cohort-v2",
+    "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+    "n": {
+     "dev": 835,
+     "calibration": 1000,
+     "retention": 1670,
+     "steer_dev": 1800,
+     "steer_gate": 1000
+    }
+   },
+   "cohort_v3_excluded": {
+    "n": 0,
+    "rule": "id OR normalized content OR source item OR key-free text held out by the cohort (train.cohort_v3)",
+    "cohort": {
+     "cohort": "m2-dev-cohort-v3",
+     "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+     "n": {
+      "dev": 835,
+      "calibration": 1000,
+      "retention": 39872,
+      "steer_dev": 1800,
+      "steer_gate": 1000
+     }
+    },
+    "drawn_overlap": 0
+   },
+   "attack_guard": {
+    "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+    "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+    "n_records": 2664,
+    "n_excluded": 0,
+    "excluded_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "per_set": {},
+    "per_template": {},
+    "n_heldout_excluded_overlap": 0,
+    "per_counts_include_heldout_excluded": true,
+    "check": "no hit",
+    "drawn_hits": 0
+   },
+   "doc_overlap_guard": {
+    "n_records": 2664,
+    "n_fail": 0,
+    "per_source_fail": {},
+    "per_reason": {},
+    "eval_rows_attributed_by_split": {},
+    "eval_rows_union_covered_by_split": {},
+    "secs": 2.2,
+    "jevbench": {
+     "n_fail": 0,
+     "n_fail_doc": 0,
+     "n_fail_exact": 0,
+     "index_sha256": "0fe994c40dfc70fa3a0cd711fa88abb7f439cb8f2546ecffd53e5ca232d3934b"
+    },
+    "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+    "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+    "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
+    "excluded_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "n_excluded": 0,
+    "allowlist_saved": {},
+    "n_heldout_excluded_overlap": 0,
+    "check": "no fail",
+    "drawn_fails": 0,
+    "n_pool_removed": 0
+   }
+  }
+ },
+ "weights_gb": 8.411531264,
+ "smoke": {
+  "rows": 2,
+  "rel_feature_diff": 0.016736401244997978,
+  "grad_cos": 0.9991172552108765,
+  "pass": true,
+  "peak_gb": 9.467848192,
+  "lora_modules": {
+   "gdn": 72,
+   "attn": 32,
+   "mlp": 96
+  },
+  "pass_rule": {
+   "rows": 2,
+   "max_k": 4,
+   "max_t": 512,
+   "lora_rank": 8,
+   "max_rel_feature_diff": 0.03,
+   "min_grad_cos": 0.99
+  },
+  "act_ckpt": true
+ },
+ "ladder": {
+  "points": {
+   "512": {
+    "ok": true,
+    "peak_gb": 9.091839488,
+    "step_s": 2.9739975929260254,
+    "row_len": 306,
+    "k": 16
+   },
+   "512_longest": {
+    "ok": true,
+    "peak_gb": 9.094594048,
+    "step_s": 2.8829329013824463,
+    "row_len": 512,
+    "k": 11
+   },
+   "1024": {
+    "ok": true,
+    "peak_gb": 9.091839488,
+    "step_s": 2.5416831970214844,
+    "row_len": 306,
+    "k": 16
+   },
+   "1024_longest": {
+    "ok": true,
+    "peak_gb": 9.179943424,
+    "step_s": 2.8554205894470215,
+    "row_len": 1024,
+    "k": 5
+   },
+   "2048": {
+    "ok": true,
+    "peak_gb": 9.091839488,
+    "step_s": 2.555502414703369,
+    "row_len": 306,
+    "k": 16
+   },
+   "2048_longest": {
+    "ok": true,
+    "peak_gb": 9.63364096,
+    "step_s": 2.7181928157806396,
+    "row_len": 2047,
+    "k": 4
+   },
+   "4096": {
+    "ok": true,
+    "peak_gb": 9.091839488,
+    "step_s": 2.5443544387817383,
+    "row_len": 306,
+    "k": 16
+   },
+   "4096_longest": {
+    "ok": true,
+    "peak_gb": 10.468775936,
+    "step_s": 21.554865837097168,
+    "row_len": 3930,
+    "k": 5
+   }
+  },
+  "T_max": 4096,
+  "rate_check": {
+   "step_s": 2.5416831970214844,
+   "minutes_left": 130,
+   "affordable_steps": 3068.832500108812,
+   "need_steps": 200,
+   "too_slow": false
+  }
+ },
+ "dev_card_sample": {
+  "rows": 360,
+  "seed": 0,
+  "n": 360,
+  "n_pool": 3600,
+  "design": "hash-stratified by source: sha256(seed:id) within source, round-robin across sources",
+  "per_source": {
+   "aegis2": 26,
+   "banking77": 26,
+   "boolq": 26,
+   "clinc150": 26,
+   "glaive_fc": 26,
+   "gsm8k": 26,
+   "helpsteer2": 26,
+   "hs2pref": 26,
+   "jev1synth": 26,
+   "jev2synth": 26,
+   "massive": 25,
+   "multiwoz22": 25,
+   "musique": 25,
+   "sst5": 25
+  },
+  "ids": [
+   "m2:aegis2:dbc216d902954318857e69815d28120e~view:jev1-pol-prompt/q",
+   "m2:banking77:8724~view:jev1-intent/q",
+   "m2:boolq:1915~view:jev2v2-fact/q",
+   "m2:clinc150:7284~view:jev1-intent-yn/q",
+   "m2:glaive_fc:2682~view:jev2v2-tool/q",
+   "m2:gsm8k:864~view:jev2v2-judge-final/q",
+   "m2:helpsteer2:5179~view:jev1-bar-correctness/q",
+   "m2:hs2pref:1208~view:jev1-pref/q",
+   "m2:jev1synth:access_policy:2109~view:jev1-access-yn/q",
+   "m2:jev2synth:fact:675~view:jev2v2-fact/q",
+   "m2:massive:6784~view:jev1-route/q",
+   "m2:multiwoz22:PMUL4097:4~view:jev1-dst/q",
+   "m2:musique:2hop__85583_53204~view:jev2v2-mh/q",
+   "m2:sst5:4946~view:jev1-sev/q",
+   "m2:aegis2:39477e99cd0c4349809a0a914803b110~view:jev1-pol-prompt/q",
+   "m2:banking77:3554~view:jev1-intent/q",
+   "m2:boolq:1004~view:jev2v2-fact/q",
+   "m2:clinc150:11375~view:jev1-intent/q",
+   "m2:glaive_fc:17284~view:jev2v2-tool/q",
+   "m2:gsm8k:585~view:jev2v2-judge-final/q",
+   "m2:helpsteer2:1675~view:jev1-bar-helpfulness/q",
+   "m2:hs2pref:3612~view:jev1-pref/q",
+   "m2:jev1synth:ticket_routing:1538~view:jev1-route/q",
+   "m2:jev2synth:judge_check:1234~view:jev2v2-judge/q",
+   "m2:massive:15913~view:jev1-intent/q",
+   "m2:multiwoz22:PMUL0531:4~view:jev1-dst/q",
+   "m2:musique:2hop__143182_127375~view:jev2v2-mh/q",
+   "m2:sst5:7174~view:jev1-sev/q",
+   "m2:aegis2:f18e4ea63ac9472bab028871ad0aae66~view:jev1-pol-prompt/q",
+   "m2:banking77:352~view:jev1-intent/q",
+   "m2:boolq:1395~view:jev2v2-fact/q",
+   "m2:clinc150:13481~view:jev1-intent/q",
+   "m2:glaive_fc:6451~view:jev2v2-tool/q",
+   "m2:gsm8k:601~view:jev2v2-judge-steps/q",
+   "m2:helpsteer2:17078~view:jev1-score-correctness/q",
+   "m2:hs2pref:647~view:jev1-pref/q",
+   "m2:jev1synth:severity:5836~view:jev1-sev/q",
+   "m2:jev2synth:judge_check:1088~view:jev2v2-judge/q",
+   "m2:massive:5748~view:jev1-intent/q",
+   "m2:multiwoz22:WOZ20204:2~view:jev1-dst/q",
+   "m2:musique:2hop__143655_177328~view:jev2v2-mh/q",
+   "m2:sst5:3519~view:jev1-sev/q",
+   "m2:aegis2:8d47e77b5f0b49879a5de2364823bcae~view:jev1-pol-response/q",
+   "m2:banking77:8539~view:jev1-intent/q",
+   "m2:boolq:1340~view:jev2v2-fact/q",
+   "m2:clinc150:3120~view:jev1-intent/q",
+   "m2:glaive_fc:101~view:jev2v2-tool/q",
+   "m2:gsm8k:1217~view:jev2v2-judge-steps/q",
+   "m2:helpsteer2:19631~view:jev1-score-coherence/q",
+   "m2:hs2pref:586~view:jev1-pref/q",
+   "m2:jev1synth:event_state:6747~view:jev1-dst/q",
+   "m2:jev2synth:prob:87040~view:jev2-band/q",
+   "m2:massive:11912~view:jev1-route/q",
+   "m2:multiwoz22:WOZ20602:2~view:jev1-dst/q",
+   "m2:musique:2hop__650240_59201~view:jev2v2-mh/q",
+   "m2:sst5:2789~view:jev1-sev/q",
+   "m2:aegis2:3582707a6b6846d38e398aef0d4d0869~view:jev1-pol-prompt/q",
+   "m2:banking77:7067~view:jev1-intent/q",
+   "m2:boolq:168~view:jev2v2-fact/q",
+   "m2:clinc150:12616~view:jev1-intent-yn/q",
+   "m2:glaive_fc:2815~view:jev2v2-tool/q",
+   "m2:gsm8k:157~view:jev2v2-num/q",
+   "m2:helpsteer2:13791~view:jev1-score-coherence/q",
+   "m2:hs2pref:8598~view:jev1-pref/q",
+   "m2:jev1synth:agent_audit:4352~view:jev1-audit-count/q",
+   "m2:jev2synth:long_handbook:161~view:jev2-lpl/q",
+   "m2:massive:15589~view:jev1-intent-yn/q",
+   "m2:multiwoz22:SNG0465:6~view:jev1-dst/q",
+   "m2:musique:2hop__73552_439537~view:jev2v2-mh/q",
+   "m2:sst5:1632~view:jev1-sev/q",
+   "m2:aegis2:b692e8aa83554e0c81903c7657d1344d~view:jev1-pol-prompt/q",
+   "m2:banking77:7296~view:jev1-intent/q",
+   "m2:boolq:1728~view:jev2v2-fact/q",
+   "m2:clinc150:12830~view:jev1-intent/q",
+   "m2:glaive_fc:2157~view:jev2v2-tool/q",
+   "m2:gsm8k:1317~view:jev2v2-judge-final/q",
+   "m2:helpsteer2:15936~view:jev1-score-coherence/q",
+   "m2:hs2pref:2406~view:jev1-pref/q",
+   "m2:jev1synth:severity:5626~view:jev1-sev/q",
+   "m2:jev2synth:prob:119744~view:jev2-atleast/q",
+   "m2:massive:11882~view:jev1-enum/q",
+   "m2:multiwoz22:SNG0376:2~view:jev1-dst/q",
+   "m2:musique:2hop__70082_2578~view:jev2v2-mh/q",
+   "m2:sst5:4880~view:jev1-sev/q",
+   "m2:aegis2:b550def7f68346778f1e5cae2e06e87e~view:jev1-pol-prompt/q",
+   "m2:banking77:3421~view:jev1-intent/q",
+   "m2:boolq:1816~view:jev2v2-fact/q",
+   "m2:clinc150:7159~view:jev1-intent/q",
+   "m2:glaive_fc:9011~view:jev2v2-tool/q",
+   "m2:gsm8k:18~view:jev2v2-num/q",
+   "m2:helpsteer2:4550~view:jev1-score-coherence/q",
+   "m2:hs2pref:261~view:jev1-pref/q",
+   "m2:jev1synth:access_policy:3447~view:jev1-access-yn/q",
+   "m2:jev2synth:trap:78784~view:jev2-yn/q",
+   "m2:massive:958~view:jev1-route/q",
+   "m2:multiwoz22:SNG0920:4~view:jev1-dst/q",
+   "m2:musique:2hop__142570_312978~view:jev2v2-mh/q",
+   "m2:sst5:2069~view:jev1-sev/q",
+   "m2:aegis2:9cb1d04683c64ad790ea8953958bc741~view:jev1-pol-prompt/q",
+   "m2:banking77:9084~view:jev1-intent/q",
+   "m2:boolq:1563~view:jev2v2-fact/q",
+   "m2:clinc150:1471~view:jev1-intent/q",
+   "m2:glaive_fc:9422~view:jev2v2-tool/q",
+   "m2:gsm8k:431~view:jev2v2-num/q",
+   "m2:helpsteer2:11770~view:jev1-score-helpfulness/q",
+   "m2:hs2pref:3362~view:jev1-pref/q",
+   "m2:jev1synth:ticket_routing:4244~view:jev1-route/q",
+   "m2:jev2synth:judge_check:1186~view:jev2v2-judge/q",
+   "m2:massive:6743~view:jev1-enum/q",
+   "m2:multiwoz22:PMUL4232:2~view:jev1-dst/q",
+   "m2:musique:2hop__753675_53752~view:jev2v2-mh/q",
+   "m2:sst5:3474~view:jev1-sev/q",
+   "m2:aegis2:b01b0bb1db3747d3b24d4a0e5394a3d3~view:jev1-pol-response/q",
+   "m2:banking77:8401~view:jev1-intent/q",
+   "m2:boolq:1112~view:jev2v2-fact/q",
+   "m2:clinc150:6238~view:jev1-intent/q",
+   "m2:glaive_fc:11991~view:jev2v2-tool/q",
+   "m2:gsm8k:765~view:jev2v2-judge-final/q",
+   "m2:helpsteer2:7467~view:jev1-bar-helpfulness/q",
+   "m2:hs2pref:2160~view:jev1-pref/q",
+   "m2:jev1synth:ticket_routing:959~view:jev1-route/q",
+   "m2:jev2synth:judge_check:845~view:jev2v2-judge/q",
+   "m2:massive:6803~view:jev1-route/q",
+   "m2:multiwoz22:MUL0969:2~view:jev1-dst/q",
+   "m2:musique:2hop__487291_93434~view:jev2v2-mh/q",
+   "m2:sst5:7733~view:jev1-sev/q",
+   "m2:aegis2:3747172186324f9782e117c6c4e53acd~view:jev1-pol-prompt/q",
+   "m2:banking77:6342~view:jev1-intent/q",
+   "m2:boolq:1753~view:jev2v2-fact/q",
+   "m2:clinc150:5901~view:jev1-intent/q",
+   "m2:glaive_fc:6711~view:jev2v2-tool/q",
+   "m2:gsm8k:234~view:jev2v2-num/q",
+   "m2:helpsteer2:6530~view:jev1-score-coherence/q",
+   "m2:hs2pref:8227~view:jev1-pref/q",
+   "m2:jev1synth:ticket_routing:3349~view:jev1-route/q",
+   "m2:jev2synth:adv:138816~view:jev2-prio/q",
+   "m2:massive:4576~view:jev1-intent-yn/q",
+   "m2:multiwoz22:SNG0810:2~view:jev1-dst/q",
+   "m2:musique:2hop__123210_700310~view:jev2v2-mh/q",
+   "m2:sst5:70~view:jev1-sev/q",
+   "m2:aegis2:dcd05218da934c00a20971d8fa1e6ca5~view:jev1-pol-prompt/q",
+   "m2:banking77:2017~view:jev1-intent/q",
+   "m2:boolq:1186~view:jev2v2-fact/q",
+   "m2:clinc150:2903~view:jev1-intent-yn/q",
+   "m2:glaive_fc:10325~view:jev2v2-tool/q",
+   "m2:gsm8k:1166~view:jev2v2-judge-final/q",
+   "m2:helpsteer2:3161~view:jev1-bar-helpfulness/q",
+   "m2:hs2pref:5255~view:jev1-pref/q",
+   "m2:jev1synth:model_routing:4104~view:jev1-route/q",
+   "m2:jev2synth:prob:115776~view:jev2-band/q",
+   "m2:massive:9248~view:jev1-intent/q",
+   "m2:multiwoz22:SNG0326:2~view:jev1-dst/q",
+   "m2:musique:2hop__558308_134798~view:jev2v2-mh/q",
+   "m2:sst5:5061~view:jev1-sev/q",
+   "m2:aegis2:b536cbaeba3441d19fbac36a1ebc0c47~view:jev1-pol-prompt/q",
+   "m2:banking77:3639~view:jev1-intent/q",
+   "m2:boolq:1955~view:jev2v2-fact/q",
+   "m2:clinc150:13894~view:jev1-intent/q",
+   "m2:glaive_fc:9375~view:jev2v2-tool/q",
+   "m2:gsm8k:424~view:jev2v2-num/q",
+   "m2:helpsteer2:9314~view:jev1-score-helpfulness/q",
+   "m2:hs2pref:643~view:jev1-pref/q",
+   "m2:jev1synth:agent_audit:1659~view:jev1-audit-count/q",
+   "m2:jev2synth:long_handbook:751~view:jev2-lpl/q",
+   "m2:massive:5643~view:jev1-route/q",
+   "m2:multiwoz22:SNG0577:8~view:jev1-dst/q",
+   "m2:musique:2hop__750059_71859~view:jev2v2-mh/q",
+   "m2:sst5:3433~view:jev1-sev/q",
+   "m2:aegis2:cb0e51b2acd045599f50a7eba7fb4589~view:jev1-pol-prompt/q",
+   "m2:banking77:7249~view:jev1-intent-yn/q",
+   "m2:boolq:879~view:jev2v2-fact/q",
+   "m2:clinc150:9415~view:jev1-intent/q",
+   "m2:glaive_fc:4004~view:jev2v2-tool/q",
+   "m2:gsm8k:851~view:jev2v2-num/q",
+   "m2:helpsteer2:2564~view:jev1-score-coherence/q",
+   "m2:hs2pref:2882~view:jev1-pref/q",
+   "m2:jev1synth:event_state:4614~view:jev1-dst/q",
+   "m2:jev2synth:tradeoff:33024~view:jev2-pick/q",
+   "m2:massive:13518~view:jev1-intent/q",
+   "m2:multiwoz22:SNG0486:2~view:jev1-dst/q",
+   "m2:musique:2hop__425022_71986~view:jev2v2-mh/q",
+   "m2:sst5:2955~view:jev1-sev/q",
+   "m2:aegis2:6055b9f4be1e450fa36b9f2b130535e4~view:jev1-pol-prompt/q",
+   "m2:banking77:3845~view:jev1-intent/q",
+   "m2:boolq:1466~view:jev2v2-fact/q",
+   "m2:clinc150:3486~view:jev1-intent/q",
+   "m2:glaive_fc:2551~view:jev2v2-tool/q",
+   "m2:gsm8k:758~view:jev2v2-num/q",
+   "m2:helpsteer2:12780~view:jev1-bar-correctness/q",
+   "m2:hs2pref:4792~view:jev1-pref/q",
+   "m2:jev1synth:notice_enum:6855~view:jev1-enum/q",
+   "m2:jev2synth:tool_pick:147~view:jev2v2-tool/q",
+   "m2:massive:14969~view:jev1-route-yn/q",
+   "m2:multiwoz22:PMUL2040:6~view:jev1-dst/q",
+   "m2:musique:2hop__15995_449977~view:jev2v2-mh/q",
+   "m2:sst5:2225~view:jev1-sev/q",
+   "m2:aegis2:c6e4fe3d853442769e0b576f21ef5af8~view:jev1-pol-prompt/q",
+   "m2:banking77:4172~view:jev1-intent/q",
+   "m2:boolq:521~view:jev2v2-fact/q",
+   "m2:clinc150:14609~view:jev1-intent/q",
+   "m2:glaive_fc:2798~view:jev2v2-tool/q",
+   "m2:gsm8k:399~view:jev2v2-judge-final/q",
+   "m2:helpsteer2:6368~view:jev1-bar-helpfulness/q",
+   "m2:hs2pref:304~view:jev1-pref/q",
+   "m2:jev1synth:notice_enum:10338~view:jev1-enum/q",
+   "m2:jev2synth:tradeoff:31808~view:jev2-count/q",
+   "m2:massive:6666~view:jev1-route/q",
+   "m2:multiwoz22:MUL1320:6~view:jev1-dst/q",
+   "m2:musique:2hop__781033_85098~view:jev2v2-mh/q",
+   "m2:sst5:4636~view:jev1-sev/q",
+   "m2:aegis2:1859bbf1e5e74953be7d55c6f226d8bf~view:jev1-pol-response/q",
+   "m2:banking77:4976~view:jev1-intent/q",
+   "m2:boolq:721~view:jev2v2-fact/q",
+   "m2:clinc150:6087~view:jev1-intent/q",
+   "m2:glaive_fc:16900~view:jev2v2-tool/q",
+   "m2:gsm8k:770~view:jev2v2-num/q",
+   "m2:helpsteer2:15358~view:jev1-score-coherence/q",
+   "m2:hs2pref:7480~view:jev1-pref/q",
+   "m2:jev1synth:event_state:5876~view:jev1-dst/q",
+   "m2:jev2synth:long_handbook:40~view:jev2-lpl/q",
+   "m2:massive:8145~view:jev1-intent/q",
+   "m2:multiwoz22:PMUL4089:6~view:jev1-dst/q",
+   "m2:musique:2hop__856003_56335~view:jev2v2-mh/q",
+   "m2:sst5:489~view:jev1-sev/q",
+   "m2:aegis2:862f989f99594cd9a9ee05bebccbe555~view:jev1-pol-prompt/q",
+   "m2:banking77:3134~view:jev1-intent/q",
+   "m2:boolq:419~view:jev2v2-fact/q",
+   "m2:clinc150:1852~view:jev1-intent/q",
+   "m2:glaive_fc:108~view:jev2v2-tool/q",
+   "m2:gsm8k:1122~view:jev2v2-judge-final/q",
+   "m2:helpsteer2:6790~view:jev1-bar-correctness/q",
+   "m2:hs2pref:1747~view:jev1-pref/q",
+   "m2:jev1synth:model_routing:1188~view:jev1-route-yn/q",
+   "m2:jev2synth:temporal:936~view:jev2v2-tenure_yn/q",
+   "m2:massive:228~view:jev1-intent-yn/q",
+   "m2:multiwoz22:PMUL4994:6~view:jev1-dst/q",
+   "m2:musique:2hop__123401_516437~view:jev2v2-mh/q",
+   "m2:sst5:4175~view:jev1-sev/q",
+   "m2:aegis2:23da6b16cf284541af959f955a4db4d8~view:jev1-pol-prompt/q",
+   "m2:banking77:3186~view:jev1-intent/q",
+   "m2:boolq:1842~view:jev2v2-fact/q",
+   "m2:clinc150:12945~view:jev1-intent-yn/q",
+   "m2:glaive_fc:8309~view:jev2v2-tool/q",
+   "m2:gsm8k:939~view:jev2v2-num/q",
+   "m2:helpsteer2:11432~view:jev1-score-helpfulness/q",
+   "m2:hs2pref:6435~view:jev1-pref/q",
+   "m2:jev1synth:model_routing:3988~view:jev1-route-yn/q",
+   "m2:jev2synth:tool_pick:196~view:jev2v2-tool/q",
+   "m2:massive:12756~view:jev1-route/q",
+   "m2:multiwoz22:PMUL4035:6~view:jev1-dst/q",
+   "m2:musique:2hop__2222_442521~view:jev2v2-mh/q",
+   "m2:sst5:6284~view:jev1-sev/q",
+   "m2:aegis2:40d6fcf54ca6402ebb09026f67eb635c~view:jev1-pol-prompt/q",
+   "m2:banking77:7526~view:jev1-intent/q",
+   "m2:boolq:784~view:jev2v2-fact/q",
+   "m2:clinc150:4596~view:jev1-intent/q",
+   "m2:glaive_fc:9669~view:jev2v2-tool/q",
+   "m2:gsm8k:1340~view:jev2v2-judge-final/q",
+   "m2:helpsteer2:15575~view:jev1-score-helpfulness/q",
+   "m2:hs2pref:789~view:jev1-pref/q",
+   "m2:jev1synth:event_state:1527~view:jev1-dst/q",
+   "m2:jev2synth:long_handbook:1228~view:jev2-lpl/q",
+   "m2:massive:6393~view:jev1-route/q",
+   "m2:multiwoz22:PMUL0064:4~view:jev1-dst/q",
+   "m2:musique:2hop__32698_159363~view:jev2v2-mh/q",
+   "m2:sst5:4831~view:jev1-sev/q",
+   "m2:aegis2:dc7ac237b9c34ae18772d0fab9acc6fc~view:jev1-pol-prompt/q",
+   "m2:banking77:8739~view:jev1-intent/q",
+   "m2:boolq:1850~view:jev2v2-fact/q",
+   "m2:clinc150:4863~view:jev1-intent/q",
+   "m2:glaive_fc:14882~view:jev2v2-tool/q",
+   "m2:gsm8k:570~view:jev2v2-num/q",
+   "m2:helpsteer2:2183~view:jev1-bar-correctness/q",
+   "m2:hs2pref:5663~view:jev1-pref/q",
+   "m2:jev1synth:notice_enum:9937~view:jev1-enum/q",
+   "m2:jev2synth:tradeoff:87872~view:jev2-pick/q",
+   "m2:massive:6738~view:jev1-route-yn/q",
+   "m2:multiwoz22:WOZ20640:4~view:jev1-dst/q",
+   "m2:musique:2hop__143888_351771~view:jev2v2-mh/q",
+   "m2:sst5:6748~view:jev1-sev/q",
+   "m2:aegis2:9e73b318d9a14095b928c40dd1868bb1~view:jev1-pol-prompt/q",
+   "m2:banking77:7289~view:jev1-intent/q",
+   "m2:boolq:924~view:jev2v2-fact/q",
+   "m2:clinc150:10976~view:jev1-intent-yn/q",
+   "m2:glaive_fc:15676~view:jev2v2-tool/q",
+   "m2:gsm8k:804~view:jev2v2-num/q",
+   "m2:helpsteer2:16473~view:jev1-score-coherence/q",
+   "m2:hs2pref:149~view:jev1-pref/q",
+   "m2:jev1synth:access_policy:455~view:jev1-access-yn/q",
+   "m2:jev2synth:tool_pick:236~view:jev2v2-tool/q",
+   "m2:massive:10318~view:jev1-enum/q",
+   "m2:multiwoz22:MUL2695:8~view:jev1-dst/q",
+   "m2:musique:2hop__5234_37038~view:jev2v2-mh/q",
+   "m2:sst5:1567~view:jev1-sev/q",
+   "m2:aegis2:c217f34464e14979b332159149295f2e~view:jev1-pol-response/q",
+   "m2:banking77:2133~view:jev1-intent/q",
+   "m2:boolq:114~view:jev2v2-fact/q",
+   "m2:clinc150:3415~view:jev1-intent/q",
+   "m2:glaive_fc:9054~view:jev2v2-tool/q",
+   "m2:gsm8k:858~view:jev2v2-judge-final/q",
+   "m2:helpsteer2:18607~view:jev1-score-helpfulness/q",
+   "m2:hs2pref:8219~view:jev1-pref/q",
+   "m2:jev1synth:model_routing:3895~view:jev1-route/q",
+   "m2:jev2synth:ambig:105728~view:jev2-next/q",
+   "m2:massive:9526~view:jev1-intent/q",
+   "m2:multiwoz22:SSNG0162:2~view:jev1-dst/q",
+   "m2:musique:2hop__154226_727337~view:jev2v2-mh/q",
+   "m2:sst5:6048~view:jev1-sev/q",
+   "m2:aegis2:ab137d3a7e7e4bae871ef8a118b5b410~view:jev1-pol-prompt/q",
+   "m2:banking77:2146~view:jev1-intent/q",
+   "m2:boolq:256~view:jev2v2-fact/q",
+   "m2:clinc150:13234~view:jev1-intent/q",
+   "m2:glaive_fc:11897~view:jev2v2-tool/q",
+   "m2:gsm8k:750~view:jev2v2-num/q",
+   "m2:helpsteer2:10509~view:jev1-score-correctness/q",
+   "m2:hs2pref:270~view:jev1-pref/q",
+   "m2:jev1synth:event_state:8260~view:jev1-dst/q",
+   "m2:jev2synth:prob:3521~view:jev2-band/q",
+   "m2:massive:1231~view:jev1-intent/q",
+   "m2:multiwoz22:PMUL0460:10~view:jev1-dst/q",
+   "m2:musique:2hop__461926_79705~view:jev2v2-mh/q",
+   "m2:sst5:1558~view:jev1-sev/q",
+   "m2:aegis2:8493cf59e12e4df295c80555aa321cdc~view:jev1-pol-prompt/q",
+   "m2:banking77:3894~view:jev1-intent/q",
+   "m2:boolq:31~view:jev2v2-fact/q",
+   "m2:clinc150:14635~view:jev1-intent/q",
+   "m2:glaive_fc:1833~view:jev2v2-tool/q",
+   "m2:gsm8k:702~view:jev2v2-num/q",
+   "m2:helpsteer2:19944~view:jev1-score-coherence/q",
+   "m2:hs2pref:3443~view:jev1-pref/q",
+   "m2:jev1synth:notice_enum:4926~view:jev1-enum/q",
+   "m2:jev2synth:ambig:123776~view:jev2-count/q",
+   "m2:massive:14943~view:jev1-route/q",
+   "m2:multiwoz22:WOZ20108:2~view:jev1-dst/q",
+   "m2:musique:2hop__440017_58538~view:jev2v2-mh/q",
+   "m2:sst5:4720~view:jev1-sev/q",
+   "m2:aegis2:0f73c63e63014e97b9842a32ac9bde63~view:jev1-pol-response/q",
+   "m2:banking77:8868~view:jev1-intent-yn/q",
+   "m2:boolq:1502~view:jev2v2-fact/q",
+   "m2:clinc150:12509~view:jev1-intent/q",
+   "m2:glaive_fc:5860~view:jev2v2-tool/q",
+   "m2:gsm8k:695~view:jev2v2-num/q",
+   "m2:helpsteer2:16262~view:jev1-score-coherence/q",
+   "m2:hs2pref:548~view:jev1-pref/q",
+   "m2:jev1synth:notice_enum:5748~view:jev1-enum/q",
+   "m2:jev2synth:adv:83392~view:jev2-score/q",
+   "m2:massive:9683~view:jev1-intent/q",
+   "m2:multiwoz22:SNG1264:2~view:jev1-dst/q",
+   "m2:musique:2hop__771804_20315~view:jev2v2-mh/q",
+   "m2:sst5:431~view:jev1-sev/q",
+   "m2:aegis2:54706594cdf1438685982d488bbdb57d~view:jev1-pol-prompt/q",
+   "m2:banking77:2225~view:jev1-intent/q",
+   "m2:boolq:573~view:jev2v2-fact/q",
+   "m2:clinc150:5896~view:jev1-intent/q",
+   "m2:glaive_fc:9891~view:jev2v2-tool/q",
+   "m2:gsm8k:744~view:jev2v2-judge-final/q",
+   "m2:helpsteer2:8840~view:jev1-score-helpfulness/q",
+   "m2:hs2pref:6939~view:jev1-pref/q",
+   "m2:jev1synth:event_state:3152~view:jev1-dst/q",
+   "m2:jev2synth:fact:1020~view:jev2v2-fact/q"
+  ],
+  "ids_sha256": "b7dd08449a1f4d32862a31fee52e3556bd08b3edf72167cb7ec0fe95bdf449c4"
+ },
+ "train_clock": {
+  "step": 333,
+  "used_s": 1096.3716044425964
+ },
+ "dev_cards": [
+  {
+   "step": 0,
+   "n_items": 360,
+   "nll": 0.49083655287691763,
+   "accuracy": 0.8194444444444444,
+   "best": true
+  },
+  {
+   "step": 100,
+   "n_items": 360,
+   "nll": 0.485235118158109,
+   "accuracy": 0.8111111111111111,
+   "best": true
+  },
+  {
+   "step": 200,
+   "n_items": 360,
+   "nll": 0.4565996776152714,
+   "accuracy": 0.8194444444444444,
+   "best": true
+  },
+  {
+   "step": 300,
+   "n_items": 360,
+   "nll": 0.46398780476111445,
+   "accuracy": 0.8222222222222222,
+   "best": false
+  }
+ ],
+ "collapse_events": [],
+ "best": {
+  "step": 200,
+  "nll": 0.4565996776152714,
+  "accuracy": 0.8194444444444444,
+  "path": "ckpt-step0000200.pt"
+ },
+ "train_clock_resume": {
+  "resumed": false,
+  "step": 0,
+  "used_s_before": 0.0,
+  "left_s": 7800.0
+ },
+ "train_rate_check": {
+  "step_s": 2.9932560205459593,
+  "minutes_left": 129.50112392902375,
+  "affordable_steps": 2595.857949472759,
+  "need_steps": 190,
+  "too_slow": false
+ },
+ "lr_horizon": {
+  "step": 224,
+  "fixed_at_step": 10,
+  "planned_final_step": 333,
+  "frac": 0.6717
+ },
+ "train": {
+  "steps": 333,
+  "resumed": false,
+  "T_max": 4096,
+  "cards": [
+   {
+    "step": 0,
+    "n_items": 1130,
+    "cohort": null,
+    "raw": {
+     "n": 1130,
+     "accuracy": 0.9132743362831859,
+     "nll": 0.3247888056013223,
+     "brier": 0.14976848660283232,
+     "ece_binned15": 0.11768873072830975,
+     "ece_debiased": {
+      "debiased_l2": 0.11989534917489207,
+      "debiased_sq": 0.014374894753769294,
+      "bins": 15
+     },
+     "mean_conf": 0.7955856055548761,
+     "by_length_bin": {
+      "[0,512)": {
+       "n": 964,
+       "accuracy": 0.9139004149377593,
+       "ece_debiased": {
+        "debiased_l2": 0.13082988742773238,
+        "debiased_sq": 0.017116459444353124,
+        "bins": 15
+       }
+      },
+      "[2048,8192)": {
+       "n": 29,
+       "accuracy": 0.896551724137931,
+       "ece_debiased": {
+        "debiased_l2": 0.0,
+        "debiased_sq": -0.0003070831518270088,
+        "bins": 14
+       }
+      },
+      "[512,2048)": {
+       "n": 137,
+       "accuracy": 0.9124087591240876,
+       "ece_debiased": {
+        "debiased_l2": 0.07991373192272683,
+        "debiased_sq": 0.006386204549817448,
+        "bins": 15
+       }
+      }
+     }
+    },
+    "index_score": {
+     "status": "stub",
+     "reason": "no Index dev-slice rows/predictor passed"
+    },
+    "steer": {
+     "status": "stub",
+     "reason": "no steer variants/decider passed"
+    },
+    "seconds": 129.409
+   },
+   {
+    "step": 333,
+    "n_items": 1130,
+    "cohort": null,
+    "raw": {
+     "n": 1130,
+     "accuracy": 0.911504424778761,
+     "nll": 0.2581837829781358,
+     "brier": 0.12906155313115003,
+     "ece_binned15": 0.034595896119037545,
+     "ece_debiased": {
+      "debiased_l2": 0.016807498703697125,
+      "debiased_sq": 0.00028249201267478057,
+      "bins": 15
+     },
+     "mean_conf": 0.8955126830302509,
+     "by_length_bin": {
+      "[0,512)": {
+       "n": 964,
+       "accuracy": 0.9118257261410788,
+       "ece_debiased": {
+        "debiased_l2": 0.022149386862817727,
+        "debiased_sq": 0.0004905953383987625,
+        "bins": 15
+       }
+      },
+      "[2048,8192)": {
+       "n": 29,
+       "accuracy": 0.896551724137931,
+       "ece_debiased": {
+        "debiased_l2": 0.0,
+        "debiased_sq": -0.0010370229794188206,
+        "bins": 14
+       }
+      },
+      "[512,2048)": {
+       "n": 137,
+       "accuracy": 0.9124087591240876,
+       "ece_debiased": {
+        "debiased_l2": 0.0,
+        "debiased_sq": -8.538133129169656e-05,
+        "bins": 15
+       }
+      }
+     }
+    },
+    "index_score": {
+     "status": "stub",
+     "reason": "no Index dev-slice rows/predictor passed"
+    },
+    "steer": {
+     "status": "stub",
+     "reason": "no steer variants/decider passed"
+    },
+    "seconds": 66.744
+   }
+  ],
+  "lineage": {
+   "backbone": {
+    "spec": "qwen3.5-4b-host",
+    "class": "Qwen3_5TextModel",
+    "config_sha256": "bbf08b2d05bb5db8d7347a706bcc6b405a77d3b105f6f97c14f340c7b5d7649a",
+    "name_or_path": "/hfcache/models--h2oai--h2o-lightning-4b/snapshots/193ad740925b176a3b70a5a13a7cff2f2fadd01e",
+    "commit_hash": "193ad740925b176a3b70a5a13a7cff2f2fadd01e",
+    "capture": "hidden_states",
+    "layer": -1,
+    "provenance": {
+     "kind": "qwen35-host",
+     "repo": "h2oai/h2o-lightning-4b",
+     "revision": "193ad740925b176a3b70a5a13a7cff2f2fadd01e",
+     "config_sha256": "6240a991871a574ff04525c90d8f75a2a11bad2f7012ab0774cbc69aca745859",
+     "attention_free": false,
+     "weights_sha256": {
+      "model.safetensors": "c65443b1d28891ffc4b6f7d90028c542d6ccb24c2f9cd6a46a8294a44ab0ffae"
+     },
+     "label": "H2O-Lightning-4B v1.1 + SSDM",
+     "missing_text_keys": 0
+    },
+    "weights_digest": "14cba019c080e35f171160e1a6944b339d895c5bee63a589f6d1b791f7f4aacc",
+    "weights_digest_mode": "sampled"
+   },
+   "tokenizer": [
+    "{\"kind\": \"hf\", \"name_or_path\": \"/hfcache/models--h2oai--h2o-lightning-4b/snapshots/193ad740925b176a3b70a5a13a7cff2f2fadd01e\", \"untrusted\": {\"id\": \"untrusted-split-special+cut-leaking-added-v1\", \"n_control_ids\": 33}, \"vocab_sha256\": \"7ef6def600d70a2dbf3c4f35b73db100a74bf2936b7f4b805e91ad184b7aabce\"}"
+   ],
+   "layout": {
+    "layouts": [
+     [
+      "g1v2",
+      "jrt-h2o-shim:qwen3.5-4b"
+     ]
+    ],
+    "body_version": "jrt-body-v2-segmented",
+    "layout_version": "m2-layout-v2"
+   },
+   "data": {
+    "n": 2664,
+    "sha256": "88bcf463cd41f25cd0d02e06412dd0551df3444654f041a2665d7b643d0f4e59",
+    "order_fn": "randperm(seed*100003+epoch); batches = consecutive bs-slices; partial tail dropped"
+   }
+  },
+  "verdict": {
+   "pass": true,
+   "checks": {
+    "finite": true,
+    "enough_steps": true,
+    "loss_drop": true,
+    "eval_nll_improves": true,
+    "memory": true
+   },
+   "loss_first": 0.740401153289713,
+   "loss_last": 0.6112571180565283,
+   "loss_drop_frac": 0.17442441122542623,
+   "eval_nll_first": 0.3247888056013223,
+   "eval_nll_last": 0.2581837829781358,
+   "peak_gb": 17.515200512
+  },
+  "anti_collapse": {
+   "horizon": 224,
+   "horizon_fixed": true,
+   "lr_scale": 1.0,
+   "dev_cards": [
+    {
+     "step": 0,
+     "n_items": 360,
+     "nll": 0.49083655287691763,
+     "accuracy": 0.8194444444444444,
+     "best": true
+    },
+    {
+     "step": 100,
+     "n_items": 360,
+     "nll": 0.485235118158109,
+     "accuracy": 0.8111111111111111,
+     "best": true
+    },
+    {
+     "step": 200,
+     "n_items": 360,
+     "nll": 0.4565996776152714,
+     "accuracy": 0.8194444444444444,
+     "best": true
+    },
+    {
+     "step": 300,
+     "n_items": 360,
+     "nll": 0.46398780476111445,
+     "accuracy": 0.8222222222222222,
+     "best": false
+    }
+   ],
+   "best": {
+    "step": 200,
+    "nll": 0.4565996776152714,
+    "accuracy": 0.8194444444444444,
+    "path": "ckpt-step0000200.pt"
+   },
+   "collapse_events": [],
+   "stopped": null,
+   "guard_armed": true,
+   "guard_window": [
+    [
+     0.9740111604332924,
+     1.8856694400310516
+    ],
+    [
+     0.21346455067396164,
+     1.801524668931961
+    ],
+    [
+     1.3817631397396326,
+     2.292797416448593
+    ],
+    [
+     0.7346380264498293,
+     1.4630769491195679
+    ],
+    [
+     1.474885830655694,
+     2.6148821115493774
+    ],
+    [
+     0.17929491447284818,
+     1.981040507555008
+    ],
+    [
+     0.22494849655777216,
+     2.037184953689575
+    ],
+    [
+     0.6132484469562769,
+     2.0113753378391266
+    ],
+    [
+     0.2052290157880634,
+     2.0827862918376923
+    ],
+    [
+     0.4565484691411257,
+     2.2694947123527527
+    ],
+    [
+     0.9891409017145634,
+     1.9661664962768555
+    ],
+    [
+     1.2436537337489426,
+     2.1013398468494415
+    ],
+    [
+     0.28356636175885797,
+     2.0317171216011047
+    ],
+    [
+     0.8222338180057704,
+     1.9905419945716858
+    ],
+    [
+     0.7773652216419578,
+     2.079661250114441
+    ],
+    [
+     0.23007255233824253,
+     2.247786670923233
+    ],
+    [
+     0.3243129146285355,
+     2.196930021047592
+    ],
+    [
+     0.9175349674187601,
+     1.8190725147724152
+    ],
+    [
+     1.3790470198728144,
+     2.306305021047592
+    ],
+    [
+     0.1821425878442824,
+     2.0796612799167633
+    ],
+    [
+     0.41159656178206205,
+     1.8636321425437927
+    ],
+    [
+     0.9154515452682972,
+     2.039626866579056
+    ],
+    [
+     0.3886545803397894,
+     1.8920231759548187
+    ],
+    [
+     1.2154594098683447,
+     1.8554383516311646
+    ],
+    [
+     0.2413628795184195,
+     2.092393308877945
+    ],
+    [
+     0.22890120884403586,
+     1.9484582543373108
+    ],
+    [
+     1.2522825468331575,
+     2.1468164920806885
+    ],
+    [
+     0.8459171438589692,
+     2.3115474581718445
+    ],
+    [
+     0.17123025050386786,
+     1.8480071425437927
+    ],
+    [
+     1.1302952049300075,
+     1.9124979376792908
+    ],
+    [
+     0.20822215755470097,
+     1.7637651860713959
+    ],
+    [
+     0.7378938887268305,
+     2.3145458698272705
+    ],
+    [
+     0.16861787345260382,
+     1.8548703789710999
+    ],
+    [
+     0.21349040186032653,
+     2.2438635528087616
+    ],
+    [
+     0.5340615580789745,
+     2.17930269241333
+    ],
+    [
+     0.4038476049900055,
+     2.0248601138591766
+    ],
+    [
+     0.26464775344356894,
+     2.4481115639209747
+    ],
+    [
+     0.9406478549353778,
+     1.9281359612941742
+    ],
+    [
+     1.3661013972014189,
+     2.42667618393898
+    ],
+    [
+     0.6611721990630031,
+     2.090415507555008
+    ],
+    [
+     0.8795377598144114,
+     1.946374922990799
+    ],
+    [
+     1.2559361536987126,
+     1.8186669051647186
+    ],
+    [
+     0.36282354267314076,
+     1.670321673154831
+    ],
+    [
+     0.7612075540237129,
+     1.7707726657390594
+    ],
+    [
+     0.7185770198702812,
+     2.007474720478058
+    ],
+    [
+     0.3600960187613964,
+     2.059905230998993
+    ],
+    [
+     0.33894312009215355,
+     2.1747500598430634
+    ],
+    [
+     0.29611909249797463,
+     2.331927090883255
+    ],
+    [
+     1.2799559170380235,
+     1.6309703588485718
+    ],
+    [
+     1.5564330331981182,
+     2.162509560585022
+    ]
+   ]
+  }
+ }
+}
