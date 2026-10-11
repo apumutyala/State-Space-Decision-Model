@@ -1,0 +1,110 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw-jev2b/records.jsonl.gz",
+ "generator": "data.jev2",
+ "n": 7500,
+ "fails": {},
+ "fail_ids": {},
+ "cohort_identity": {
+  "v2": {
+   "cohort": "m2-dev-cohort-v2",
+   "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 1670,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "v3": {
+   "cohort": "m2-dev-cohort-v3",
+   "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 39872,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "heldout_150k_dropped": [
+   "m2:mmlu_aux:21118",
+   "m2:mmlu_aux:39640",
+   "m2:mmlu_aux:39643"
+  ]
+ },
+ "index_fingerprint": {
+  "version": "ssdm-dedup-v3",
+  "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+  "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+  "rows": 155390
+ },
+ "harness_heldout": {
+  "draw": "heldout-draw-v1",
+  "frozen": [
+   9,
+   20,
+   22,
+   31,
+   32,
+   33,
+   44,
+   58,
+   64
+  ],
+  "records": 7500,
+  "refused": 0,
+  "examples": []
+ },
+ "generators": {
+  "jev2_ref_chase": "ok",
+  "jev2_judge_check": "ok",
+  "jev2_temporal": "ok",
+  "jev2_fact_record": "ok",
+  "jev2_tool_pick": "ok",
+  "jev2_prob": "ok",
+  "jev2_trap": "ok",
+  "jev2_ambig": "ok",
+  "jev2_tradeoff": "ok",
+  "jev2_adv": "ok",
+  "jev2_long_handbook": "ok"
+ },
+ "d1b_heldout": {
+  "n_texts": 7500,
+  "hits": [],
+  "k_words": 6,
+  "min_words": 4,
+  "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+  "n_templates": 8,
+  "n_gram_hashes": 70,
+  "skipped_fragments": {
+   "cutoff_window": [
+    " before then."
+   ],
+   "dedup_notice": [
+    "Automated record check: ",
+    "."
+   ],
+   "ledger_settled": [
+    "."
+   ],
+   "planner_decision": [
+    "; do not use ",
+    "."
+   ],
+   "policy_update": [
+    "."
+   ],
+   "sender_followup": [
+    "."
+   ],
+   "soft_framing": [
+    "."
+   ]
+  },
+  "records": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\bschema-draw-jev2b\\records.jsonl.gz",
+  "records_sha256": "8f3a9268a8e814551848db77ec62d31710580c479a96c154e2db2522f54ea7e6",
+  "n_hits": 0
+ },
+ "pass": true
+}
