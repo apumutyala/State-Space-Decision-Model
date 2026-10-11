@@ -17,7 +17,7 @@ SOURCES = {"a": [("musique", DATA / "raw/jev2/musique/musique_ans_v1.0_train.jso
                  ("gsm8k", DATA / "m2/sources/gsm8k/train-00000-of-00001.parquet"),
                  ("boolq", DATA / "m2/sources/boolq/train-00000-of-00001.parquet"),
                  ("glaive_fc", DATA / "m2/sources/glaive_fc/0000.parquet")],
-           "b": [], "c": [("contractnli", DATA / "raw/jev2/contractnli/contract_nli_long.zip")],
+           "b": [], "c2": [], "c": [("contractnli", DATA / "raw/jev2/contractnli/contract_nli_long.zip")],
            "a2": [("musique", DATA / "raw/jev2/musique/musique_ans_v1.0_train.jsonl"),
                   ("gsm8k", DATA / "m2/sources/gsm8k/train-00000-of-00001.parquet"),
                   ("boolq", DATA / "m2/sources/boolq/train-00000-of-00001.parquet"),
@@ -34,9 +34,9 @@ def sha(p: Path) -> str:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["a", "b", "c", "a2"])
+    ap.add_argument("--stage", required=True, choices=["a", "b", "c", "a2", "c2"])
     a = ap.parse_args(argv)
-    build = {"a": "bschema-draw-jev2a", "b": "bschema-draw-jev2b", "c": "bschema-draw-jev2c", "a2": "bschema-draw-jev2a-v2"}[a.stage]
+    build = {"a": "bschema-draw-jev2a", "b": "bschema-draw-jev2b", "c": "bschema-draw-jev2c", "a2": "bschema-draw-jev2a-v2", "c2": "bschema-draw-jev2c-v2"}[a.stage]
     rd = REPO / "receipts" / "2026-10-10-jev2-draw" / build
     work = DATA / "m2" / "build" / f"{build}-work"
     J = lambda n: json.loads((rd / n).read_text(encoding="utf-8"))  # noqa: E731

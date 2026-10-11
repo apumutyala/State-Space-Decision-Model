@@ -68,9 +68,25 @@ FILL = ["The figures below come from last quarter's records and can be taken as 
         "Ignore costs and timing; only the probabilities matter here."]
 
 
+PBUCKETS = {4: ([Fr(10, 100), Fr(35, 100), Fr(65, 100)],
+                 ["below 10%", "10% up to 35%", "35% up to 65%", "65% or more"]),
+            5: ([Fr(5, 100), Fr(25, 100), Fr(50, 100), Fr(80, 100)],
+                ["below 5%", "5% up to 25%", "25% up to 50%", "50% up to 80%", "80% or more"])}
+
+
+def _pscore(i, sub, st, what, value, r):
+    """Score row: which probability band holds the exact value (rubric levels low -> high; the gold is exact)."""
+    k = r.choice([4, 5])
+    cuts, labels = PBUCKETS[k]
+    lv = sum(value >= c for c in cuts)
+    q = score_q(pick(r, [f"Rate {what} on this scale.", f"Which band contains {what}?",
+                         f"Place {what} in the right band."]), labels)
+    return _rec("probability", sub + "_band", i, "band", st, q, lv, "jev2_prob")
+
+
 def _prob(i: int) -> dict:
     r = rng("prob", i)
-    kind = r.choice(["bayes", "urn", "dice", "ev", "indep", "conj", "atleast"])
+    kind = r.choices(["bayes", "urn", "dice", "ev", "indep", "conj", "atleast"], [1.5, 1.2, 1.2, 0.8, 0.6, 0.6, 1.2])[0]
     ctx = pick(r, CTX) + " " + " ".join(r.sample(FILL, r.randint(1, 3)))
     K = 3
     if kind == "bayes":
@@ -85,7 +101,10 @@ def _prob(i: int) -> dict:
               f"just been flagged.")
         instr = "What is the probability that the flagged case is a true case?"
         wrong = [pct(sens), pct(1 - fpr), pct(prev), pct(sens * prev), pct(fpr)]
-        if r.random() < 0.25:
+        u = r.random()
+        if u < 0.45:
+            return _pscore(i, "prob_bayes", st, "the probability that the flagged case is a true case", post, r)
+        if u < 0.6:
             return _rec("probability", "prob_bayes_yn", i, "yn", st, yn("Is the probability that the flagged case is "
                         "a true case above 50%?"), post > Fr(1, 2), "jev2_prob")
         q = _choice_vals(instr, pct(post), wrong, r, K)
@@ -97,6 +116,8 @@ def _prob(i: int) -> dict:
         both = Fr(a, n) * Fr(a - 1, n - 1)
         st = (f"{ctx} A box holds {a} {ca} tokens and {b} {cb} tokens. Two tokens are drawn at random without "
               f"replacement.")
+        if r.random() < 0.5:
+            return _pscore(i, "prob_urn", st, f"the probability that both tokens are {ca}", both, r)
         q = _choice_vals(f"What is the probability that both tokens are {ca}?", pct(both),
                          [pct(Fr(a, n) ** 2), pct(Fr(a, n)), pct(Fr(a, n) * Fr(a, n - 1)), pct(Fr(a - 1, n - 1))], r, K)
         return _rec("probability", "prob_urn", i, "urn", st, *q, "jev2_prob")
@@ -105,6 +126,8 @@ def _prob(i: int) -> dict:
         p = Fr(sum(1 for x in range(1, 7) for y in range(1, 7) if x + y >= k), 36)
         exact = Fr(sum(1 for x in range(1, 7) for y in range(1, 7) if x + y == k), 36)
         st = f"{ctx} Two fair six-sided dice are rolled once and their faces are added."
+        if r.random() < 0.5:
+            return _pscore(i, "prob_dice", st, f"the probability that the total is at least {k}", p, r)
         q = _choice_vals(f"What is the probability that the total is at least {k}?", pct(p),
                          [pct(exact), pct(1 - p), pct(p - exact), pct(Fr(13 - k, 11))], r, K)
         return _rec("probability", "prob_dice", i, "dice", st, *q, "jev2_prob")
@@ -150,7 +173,10 @@ def _prob(i: int) -> dict:
     n = r.randint(2, 6)
     al = 1 - (1 - p) ** n
     st = (f"{ctx} Each of {n} independent attempts succeeds with probability {pct(p, 0)}.")
-    if r.random() < 0.3:
+    u = r.random()
+    if u < 0.45:
+        return _pscore(i, "prob_atleast", st, "the probability of at least one success", al, r)
+    if u < 0.6:
         thr = r.choice([Fr(1, 4), Fr(1, 2), Fr(3, 4)])
         return _rec("probability", "prob_atleast_yn", i, "yn", st, yn(f"Is the chance of at least one success above "
                     f"{pct(thr, 0)}?"), al > thr, "jev2_prob")
@@ -162,7 +188,8 @@ def _prob(i: int) -> dict:
 # ================================================================================================ trap
 def _trap(i: int) -> dict:
     r = rng("trap", i)
-    kind = r.choice(["exception", "cancelled", "scale", "except_list", "holiday", "count"])
+    kind = r.choices(["exception", "cancelled", "scale", "except_list", "holiday", "count"],
+                     [1, 1, 1, 1, 1, 2.6])[0]  # count (score) ~35% of trap rows
     nm = f"{r.choice(FIRST)} {r.choice(LAST)}"
     if kind == "exception":
         win, doa = r.choice([14, 30]), r.choice([60, 90])
@@ -226,21 +253,30 @@ def _trap(i: int) -> dict:
              "renewal": fmt_date(dt.date(2026, r.randint(1, 12), r.randint(1, 28)), 1), "region": r.choice(CITIES)}
     st = (f"Account record: plan {facts['plan']}; {facts['seats']} seats; renews {facts['renewal']}; data region "
           f"{facts['region']}.")
+    facts["owner"] = f"{r.choice(FIRST)} {r.choice(LAST)}"
+    st = st[:-1] + f"; account owner {facts['owner']}."
     claims = []
     sup = 0
-    for k in r.sample(sorted(facts), 3):
-        ok = r.random() < 0.5
+    m = r.choice([3, 4])  # 4- or 5-level rubric
+    target = r.randint(0, m)  # gold drawn first: spread over every level, not only the extremes
+    keys = r.sample(sorted(facts), m)
+    good = set(r.sample(keys, target))
+    for k in keys:
+        ok = k in good
         v = facts[k]
         if not ok:
             v = {"plan": r.choice([x for x in ["Basic", "Team", "Pro"] if x != facts["plan"]]),
                  "seats": facts["seats"] + r.choice([-2, -1, 1, 5]),
                  "renewal": fmt_date(dt.date(2027, r.randint(1, 12), r.randint(1, 28)), 1),
-                 "region": r.choice([c for c in CITIES if c != facts["region"]])}[k]
+                 "region": r.choice([c for c in CITIES if c != facts["region"]]),
+                 "owner": f"{r.choice([x for x in FIRST if x not in facts['owner']])} {r.choice(LAST)}"}[k]
         sup += ok
         claims.append(f"the {k} is {v}")
     st += " A summary sent to the customer says: " + "; ".join(claims) + "."
-    q = score_q("How many of the summary's three statements does the account record support?",
-                ["none of them", "one", "two", "all three"])
+    levels = ["none of them", "one", "two", "all three"] if m == 3 else ["none of them", "one", "two", "three",
+                                                                         "all four"]
+    q = score_q(pick(r, [f"How many of the summary's {m} statements does the account record support?",
+                         f"Count the summary statements that match the record ({m} in total)."]), levels)
     return _rec("trap", "trap_count", i, "count", st, q, sup, "jev2_trap")
 
 
@@ -366,6 +402,11 @@ def _ambig(i: int) -> dict:
                  " ".join(f"{t['role'].capitalize()}: \"{t['text']}\"" for t in convo))
     else:
         state = {"agent_policy": policy, f"{coll}_found": cands, "conversation": convo}
+    if not disamb and r.random() < 0.4:  # score: how many found items fit the user's reference (exact count)
+        levels = ["none of them", "exactly one", "exactly two", "three or more"]
+        q = score_q(pick(r, ["How many of the found items fit what the user asked for?",
+                             "Count the items in the search results that match the user's request."]), levels)
+        return _rec("ambiguous", f"ambig_{kind}_count", i, "count", state, q, min(3, n_match), "jev2_ambig")
     q, g = choice_q(pick(r, ["What should the assistant do next?", "Choose the assistant's next step.",
                              "How should the assistant respond to the request?"]), opts, gold_id, r)
     return _rec("ambiguous", f"ambig_{kind}", i, "next", state, q, g, "jev2_ambig", matches=n_match)
@@ -418,7 +459,15 @@ def _tradeoff(i: int) -> dict:
         ok = [x for x in rows if x["uptime"] >= 99.9]
         gold = min(ok, key=lambda x: (rk[x["risk"]], x["weeks"], x["monthly"], x["name"]))["name"] if ok else "none"
     st = intro + " Candidates:\n" + "\n".join(lines) + "\n" + rule
-    if r.random() < 0.25:
+    u = r.random()
+    if u < 0.33:  # score: how many candidates pass the rule's exclusions (exact count)
+        k5 = r.random() < 0.5
+        levels = (["none", "one", "two", "three", "four or more"] if k5 else ["none", "one", "two", "three or more"])
+        lv = min(len(ok), len(levels) - 1)
+        q = score_q(pick(r, ["How many candidates are still eligible after the rule's exclusions?",
+                             "Count the options that survive the decision rule's hard limits."]), levels)
+        return _rec("tradeoff", f"tradeoff_{kind}_count", i, "count", st, q, lv, "jev2_tradeoff")
+    if u < 0.55:
         cand = gold if r.random() < 0.5 else r.choice([x for x in names + ["none"] if x != gold])
         return _rec("tradeoff", f"tradeoff_{kind}_yn", i, "yn", st, yn(f"Under the decision rule, is {cand} the "
                     "choice?" if cand != "none" else "Under the decision rule, should no option be chosen?"),

@@ -153,6 +153,8 @@ def _pname(r: random.Random, used: set) -> str:
 def _world(r: random.Random) -> dict:
     used: set = set()
     nt, ns, na = r.randint(5, 8), r.randint(4, 6), r.randint(7, 11)
+    if V2:  # jev2a-v2: public multi_hop states run ~2,100-3,000 tokens; larger registers reach that length
+        nt, ns, na = r.randint(8, 11), r.randint(6, 9), r.randint(16, 24)
     codes = r.sample(range(10, 99), nt)
     people = r.sample([f"{f} {l}" for f in FIRST for l in LAST], nt * 2)
     teams = {f"T-{c}": {"name": f"{_pname(r, used)} {r.choice(TEAM_WORDS)}", "contact": people[j]}
@@ -199,7 +201,7 @@ def _ref_chase(i: int) -> dict:
     for a in r.sample(list(repl.values()), r.randint(1, len(repl))):
         if r.random() < 0.6:
             events.append((day(r.randint(130, 400)), "relocate", {"asset": a, "to": r.choice(sk)}))
-    for _ in range(r.randint(3, 6)):
+    for _ in range(r.randint(14, 26) if V2 else r.randint(3, 6)):
         events.append((day(r.randint(1, 420)), "noise", {"t": r.choice(tk), "a": r.choice(ac), "s": r.choice(sk)}))
     events.sort(key=lambda e: (e[0], e[1], json.dumps(e[2], sort_keys=True)))
     # apply
@@ -1134,8 +1136,77 @@ def generate(families=STAGE_A) -> Iterator[dict]:
         yield from generate_b(fb)
 
 
+#: jev2a-v2 switch (JEV1_AUDIT.md format fixes on stage a); set only by generate_stage("a2")
+V2 = False
+PLAN_A2 = {"multi_hop": {"ref_chase": 1500, "musique": 500}, "judge_hard": {"gsm8k": 700, "synth": 1300},
+           "temporal_numeric": {"synth": 1500, "gsm8k": 500}, "fact": {"synth": 1300, "boolq": 700},
+           "tool_selection": {"glaive": 1000, "synth": 1000}}
+PROSE_SHARE = {"multi_hop": 0.55, "temporal_numeric": 0.65}  # public string-state shares 0.56 / 0.73
+YN_DESC = [("yes: the stated facts and rules give this result", "no: the stated facts and rules give a different "
+            "result"), ("yes, that is what the text requires", "no, the text requires otherwise"),
+           ("true: the condition in the question holds", "false: the condition in the question does not hold"),
+           ("yes, it follows from the record", "no, it does not follow from the record")]
+
+
+def _h(s: str, n: int) -> int:
+    return int(hashlib.sha256(s.encode()).hexdigest()[:8], 16) % n
+
+
+def prose(state: dict) -> str:
+    """A dict state flattened into plain text (labelled paragraphs; list items one per line)."""
+    out = []
+    for k, v in state.items():
+        lab = k.replace("_", " ").capitalize()
+        if isinstance(v, str):
+            out.append(f"{lab}: {v}")
+        elif isinstance(v, list):
+            lines = []
+            for x in v:
+                if isinstance(x, dict):
+                    lines.append("- " + "; ".join(f"{kk.replace('_', ' ')}: {vv}" for kk, vv in x.items()))
+                else:
+                    lines.append(f"- {x}")
+            out.append(f"{lab}:\n" + "\n".join(lines))
+        elif isinstance(v, dict):
+            lines = []
+            for kk, vv in v.items():
+                if isinstance(vv, dict):
+                    vv = "; ".join(f"{a.replace('_', ' ')}: {b}" for a, b in vv.items())
+                lines.append(f"- {kk}: {vv}")
+            out.append(f"{lab}:\n" + "\n".join(lines))
+        else:
+            out.append(f"{lab}: {v}")
+    return "\n\n".join(out)
+
+
+def v2_render(r: dict) -> dict:
+    fam = r["aug"]["jev1"]["family8"]
+    r["id"] = r["id"].replace("~view:jev2-", "~view:jev2v2-")
+    if isinstance(r["state"], dict) and _h("prose|" + r["id"], 1000) < 1000 * PROSE_SHARE.get(fam, 0):
+        r["state"] = prose(r["state"])
+        r["aug"]["jev1"]["item_keys"] = None
+        r["aug"]["jev1"]["rendered"] = "prose"
+    q = r["questions"]["q"]
+    if q["type"] == "noul" and (not q.get("criteria") or q["criteria"] == {"true": "yes", "false": "no"}):
+        t, f = YN_DESC[_h("yn|" + q["instructions"], len(YN_DESC))]
+        q["criteria"] = {"true": t, "false": f}
+    return r
+
+
 def generate_stage(stage: str) -> Iterator[dict]:
-    if stage == "c":
+    global V2, PLAN
+    if stage == "a2":
+        old = dict(PLAN)
+        V2 = True
+        PLAN.update(PLAN_A2)
+        try:
+            for r in generate(STAGE_A):
+                yield v2_render(r)
+        finally:
+            V2 = False
+            PLAN.update(old)
+        return
+    if stage in ("c", "c2"):
         from data.jev2c import generate_c
         yield from generate_c(STAGE_C)
     else:

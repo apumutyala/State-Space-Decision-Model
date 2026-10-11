@@ -29,18 +29,20 @@ import jev1_build as JB  # noqa: E402  (shared helpers + the identical check sta
 T_MAX = JB.T_MAX
 #: per-family row target: the brief (evidence, 2026-10-10) asks ~6,000 rows per missing family (60k over 10)
 TARGET = 6000
-STAGES = {"a": "bschema-draw-jev2a", "b": "bschema-draw-jev2b", "c": "bschema-draw-jev2c"}
-#: token window per stage: stage c (long_policy at eval length, JEV1_AUDIT.md) keeps 2,000 <= t <= 4,096
-T_WIN = {"a": (0, 2048), "b": (0, 2048), "c": (2000, 4096)}
+STAGES = {"a": "bschema-draw-jev2a", "b": "bschema-draw-jev2b", "c": "bschema-draw-jev2c",
+          "a2": "bschema-draw-jev2a-v2", "c2": "bschema-draw-jev2c-v2"}
+#: token window per stage: stage c (long_policy at eval length, JEV1_AUDIT.md) keeps 2,000 <= t <= 4,096; a2 (the
+#: stage-a families re-emitted with the audit's format fixes) allows up to 4,096 (public multi_hop runs to ~3,000)
+T_WIN = {"a": (0, 2048), "b": (0, 2048), "c": (2000, 4096), "a2": (0, 4096), "c2": (2000, 4096)}
 #: per-family targets: stage a 6,000 (brief); b and c 1,500 (coordinator 2026-10-10: the trainer samples ~600 per
 #: family, so >= 1,000 audit-compliant rows per family; quality over count)
-TARGETS = {"a": 6000, "b": 1500, "c": 1500}
+TARGETS = {"a": 6000, "b": 1500, "c": 1500, "a2": 1500, "c2": 1500}
 RECEIPT_ROOT = "receipts/2026-10-10-jev2-draw"
 
 
 def fams_of(stage: str):
     from data import jev2
-    return {"a": jev2.STAGE_A, "b": jev2.STAGE_B, "c": jev2.STAGE_C}[stage]
+    return {"a": jev2.STAGE_A, "b": jev2.STAGE_B, "c": jev2.STAGE_C, "a2": jev2.STAGE_A, "c2": jev2.STAGE_C}[stage]
 
 
 def cmd_gen(a) -> int:
@@ -61,7 +63,7 @@ def cmd_gen(a) -> int:
             h.update((line + "\n").encode())
             c[r["aug"]["jev1"]["family8"]] += 1
     rep = {"n": len(ids), "by_family": dict(c), "pool_uncompressed_sha256": h.hexdigest(),
-           "plan": {f: jev2.PLAN[f] for f in fams_of(a.stage)}, "seed": jev2.SEED, "stage": a.stage}
+           "plan": {f: (jev2.PLAN_A2 if a.stage == "a2" else jev2.PLAN)[f] for f in fams_of(a.stage)}, "seed": jev2.SEED, "stage": a.stage}
     (w / "gen-report.json").write_text(json.dumps(rep, indent=1) + "\n", encoding="utf-8")
     print(json.dumps(rep))
     return 0
@@ -248,7 +250,7 @@ def target_provenance(fam_rep: dict, stage: str) -> dict:
                 "family follows the family's public FORMAT (type counts of the public items are format, not labels). "
                 "Option presentation order is a seeded per-row shuffle. A family short of T after the gates is "
                 "reported short, never topped up from another family.",
-        "target_rows_per_family": TARGETS[stage], "stage": stage, "plan": {f: jev2.PLAN.get(f) for f in fam_rep},
+        "target_rows_per_family": TARGETS[stage], "stage": stage, "plan": {f: (jev2.PLAN_A2 if stage == "a2" else jev2.PLAN).get(f) for f in fam_rep},
         "seed": jev2.SEED,
         "families": {f: {"rows": v["rows"], "sources": v["sources"], "licenses": v["licenses"],
                          "label_rates": v["label_rates"], "types": v["types"]} for f, v in fam_rep.items()},

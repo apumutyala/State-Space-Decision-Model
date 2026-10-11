@@ -487,10 +487,24 @@ ORDINAL = {"expense": {"reject_all": "none of the claimed amount is paid", "appr
            "equipment": {"none": "none of the cost is paid", "partial": "part of the cost is paid",
                          "full": "the whole cost is paid"},
            "latefee": {"charge": "none of the fee is waived", "half": "half of the fee is waived",
-                       "waive": "all of the fee is waived"}}
+                       "waive": "all of the fee is waived"},
+           "returns": {"not_returnable": "nothing back", "store_credit": "store credit only",
+                       "refund_minus_fee": "a cash refund less a fee", "full_refund": "a full cash refund"},
+           "subscription": {"no_refund": "nothing back", "service_credit": "a service credit only",
+                            "prorated_refund": "a partial cash refund", "full_refund": "a full cash refund"},
+           "travel": {"economy": "economy only", "premium_economy": "up to premium economy",
+                      "business": "up to business class"},
+           "access": {"deny": "no access", "masked": "a masked extract", "grant": "full access"},
+           "building": {"deny": "no entry", "escorted": "escorted entry only", "grant": "unescorted entry"}}
 SCORE_CORE = {"expense": ["how much of the claim is reimbursed?", "rate how much of the claimed amount is paid."],
               "equipment": ["how much of the purchase does the allowance cover?", "rate the share of the cost paid."],
-              "latefee": ["how much of the late fee is waived?", "rate how much of the fee the customer is spared."]}
+              "latefee": ["how much of the late fee is waived?", "rate how much of the fee the customer is spared."],
+              "returns": ["rate what the customer gets back on this scale.", "how much value does the customer recover?"],
+              "subscription": ["rate what the customer gets back on cancellation.", "how much is returned to the "
+                               "customer?"],
+              "travel": ["rate the highest cabin class allowed.", "how high a class may be booked?"],
+              "access": ["rate the level of access granted.", "how much access does the requester get?"],
+              "building": ["rate the level of entry allowed.", "how freely may the person enter?"]}
 #: options no case can earn (every generated case falls squarely under its chapter); used only to vary K
 EXTRA = {"refer_owner": "refer the case to the policy owner as not covered by any rule",
          "not_applicable": "the chapter does not apply to this case",
@@ -531,7 +545,7 @@ def _handbook(i: int) -> dict | None:
     probe = DOMAINS[dom](rng("lpl-probe", i))
     can_choice = len(probe["outcomes"]) >= 3 and probe["cores_choice"]
     u = r.random()
-    qtype = ("score" if dom in ORDINAL and u < 0.2 else "choice" if can_choice and u < 0.6 else "noul")
+    qtype = ("score" if dom in ORDINAL and u < 0.3 else "choice" if can_choice and u < 0.62 else "noul")
     want = r.choice(sorted(probe["outcomes"])) if qtype in ("choice", "score") else (r.random() < 0.5)
     d = None
     for t in range(400):  # draw the gold first, then resample the case until it matches (label balance)
@@ -549,7 +563,7 @@ def _handbook(i: int) -> dict | None:
     r.shuffle(chs)
     org = f"{_pname(r, set())} {r.choice(['Group', 'Ltd', 'Cooperative', 'Holdings', 'Foundation', 'Partners'])}"
     blocks = [_chapter(c, j + 1) for j, c in enumerate(chs)]
-    target_chars = r.randint(8500, 15500)
+    target_chars = r.randint(9500, 18500)  # v2: p90 above the public p90 (3,606 tokens), under the 4,096 cap
     used: set = set()
     slots: list[list[str]] = [[] for _ in range(len(blocks) + 1)]
     total = sum(len(b) for b in blocks) + len(d["case"])
@@ -625,7 +639,8 @@ def contractnli_rows(n: int) -> Iterator[dict]:
                              q, g, {}, hypothesis_index=j)
 
 
-PLAN_C = {"long_policy": {"handbook": 1800, "contractnli": 300}}
+#: v2: ContractNLI dropped (all 303 v1 candidates hit the production Index fingerprint)
+PLAN_C = {"long_policy": {"handbook": 1900, "contractnli": 0}}
 
 
 def generate_c(families) -> Iterator[dict]:
