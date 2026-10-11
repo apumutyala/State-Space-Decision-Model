@@ -1,0 +1,17 @@
+{
+ "records.jsonl.gz": {
+  "gz_sha256": "42976c8f11c99aa32556d709cf12d49f88eb2f12ffc77473fdab60bd8d9c9dea",
+  "uncompressed_sha256": "0bdb1ac6902f99cd0df9f0ab1a5c8d8bbe6a418f1da18997c82c4d41fecb28dc",
+  "n_lines": 1500
+ },
+ "bschema-draw-jev2c-v2.manifest.jsonl.gz": {
+  "gz_sha256": "0eea63bbaf96eed1b5c1d3ae511e798c894e857b6fcc9df3d32a5d7ddc5899e3",
+  "uncompressed_sha256": "75b7665ee2a5773ec473c13d3458fa4bcba8840d47c02d82df241d68ddffa228",
+  "n_lines": 1500
+ },
+ "bschema-draw-jev2c-v2.content.jsonl.gz": {
+  "gz_sha256": "6a538085ee01f48044e94b98d928b2209f17504ef0707df49b56432a56ba1a68",
+  "uncompressed_sha256": "c2d40e76d4fc65dd797596ca77d9f50af45d7867538e6789fb41ee0a7158f0c0",
+  "n_lines": 1500
+ }
+}

@@ -1,0 +1,134 @@
+{
+ "rule": "own matcher: NFKC+casefold \\w+ words, word 13-grams per leaf, blake2b-64 word hash, polynomial gram hash; exact = normalised leaf >= 6 words, or whole normalised state",
+ "n_train_rows": 1500,
+ "n_train_grams": 2996938,
+ "sides": {
+  "jevbench_public_231": {
+   "eval_rows": 231,
+   "eval_rows_hit_13gram": 0,
+   "eval_rows_exact": 0,
+   "identity": {
+    "repo": "github.com/fstandhartinger/jevbench",
+    "commit": "b6b8fff7e345b98c060ad26c13308860ddc67004"
+   },
+   "eval_rows_hit_by_eval_family": {},
+   "train_rows_with_13gram_hit": 0,
+   "train_rows_13gram_coverage_ge": {
+    "0.1": 0,
+    "0.5": 0,
+    "0.9": 0
+   },
+   "train_rows_hit_by_family_source": {},
+   "train_hit_ids_examples": [],
+   "train_hit_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "exact_leaf_train_rows": 0,
+   "exact_leaf_ids": [],
+   "exact_state_train_rows": 0,
+   "exact_state_ids": []
+  },
+  "gsm8k_official_test": {
+   "eval_rows": 1319,
+   "eval_rows_hit_13gram": 0,
+   "eval_rows_exact": 0,
+   "identity": {
+    "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\gsm8k-v3-src\\test-00000-of-00001.parquet",
+    "sha256": "ee7b8da9e381df27b9e3f7758a159ab2bdaa4dbaa910546cbbc47e0cb44e4f59"
+   },
+   "eval_rows_hit_by_eval_family": {},
+   "train_rows_with_13gram_hit": 0,
+   "train_rows_13gram_coverage_ge": {
+    "0.1": 0,
+    "0.5": 0,
+    "0.9": 0
+   },
+   "train_rows_hit_by_family_source": {},
+   "train_hit_ids_examples": [],
+   "train_hit_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "exact_leaf_train_rows": 0,
+   "exact_leaf_ids": [],
+   "exact_state_train_rows": 0,
+   "exact_state_ids": []
+  },
+  "index_DEV": {
+   "eval_rows": 12366,
+   "eval_rows_hit_13gram": 0,
+   "eval_rows_exact": 0,
+   "eval_rows_hit_by_eval_family": {},
+   "train_rows_with_13gram_hit": 0,
+   "train_rows_13gram_coverage_ge": {
+    "0.1": 0,
+    "0.5": 0,
+    "0.9": 0
+   },
+   "train_rows_hit_by_family_source": {},
+   "train_hit_ids_examples": [],
+   "train_hit_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "exact_leaf_train_rows": 0,
+   "exact_leaf_ids": [],
+   "exact_state_train_rows": 0,
+   "exact_state_ids": []
+  },
+  "index_TEST": {
+   "eval_rows": 12423,
+   "eval_rows_hit_13gram": 0,
+   "eval_rows_exact": 0,
+   "eval_rows_hit_by_eval_family": {},
+   "train_rows_with_13gram_hit": 0,
+   "train_rows_13gram_coverage_ge": {
+    "0.1": 0,
+    "0.5": 0,
+    "0.9": 0
+   },
+   "train_rows_hit_by_family_source": {},
+   "train_hit_ids_examples": [],
+   "train_hit_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "exact_leaf_train_rows": 0,
+   "exact_leaf_ids": [],
+   "exact_state_train_rows": 0,
+   "exact_state_ids": []
+  },
+  "index_HELDOUT": {
+   "eval_rows": 128608,
+   "eval_rows_hit_13gram": 0,
+   "eval_rows_exact": 0,
+   "eval_rows_hit_by_eval_family": {},
+   "train_rows_with_13gram_hit": 0,
+   "train_rows_13gram_coverage_ge": {
+    "0.1": 0,
+    "0.5": 0,
+    "0.9": 0
+   },
+   "train_rows_hit_by_family_source": {},
+   "train_hit_ids_examples": [],
+   "train_hit_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "exact_leaf_train_rows": 0,
+   "exact_leaf_ids": [],
+   "exact_state_train_rows": 0,
+   "exact_state_ids": []
+  },
+  "index_proxy600": {
+   "eval_rows": 644,
+   "eval_rows_hit_13gram": 0,
+   "eval_rows_exact": 0,
+   "identity": {
+    "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\ev-jev2a-regate\\jobs\\common\\dev_proxy600.json",
+    "n_ids": 644
+   },
+   "eval_rows_hit_by_eval_family": {},
+   "train_rows_with_13gram_hit": 0,
+   "train_rows_13gram_coverage_ge": {
+    "0.1": 0,
+    "0.5": 0,
+    "0.9": 0
+   },
+   "train_rows_hit_by_family_source": {},
+   "train_hit_ids_examples": [],
+   "train_hit_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "exact_leaf_train_rows": 0,
+   "exact_leaf_ids": [],
+   "exact_state_train_rows": 0,
+   "exact_state_ids": []
+  }
+ },
+ "seconds": 136
+}

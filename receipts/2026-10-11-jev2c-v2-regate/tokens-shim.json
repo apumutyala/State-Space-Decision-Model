@@ -1,0 +1,20 @@
+{
+ "identity": {
+  "_identity": {
+   "id": "jrt-h2o-shim:qwen3.5-4b",
+   "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+  },
+  "_pinned": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+ },
+ "errors": 0,
+ "n": 1500,
+ "min": 2007,
+ "p10": 2292,
+ "p50": 2957,
+ "p90": 3652,
+ "p99": 3892,
+ "max": 3981,
+ "n_over_2048": 1497,
+ "n_over_4096": 0,
+ "n_under_2000": 0
+}
