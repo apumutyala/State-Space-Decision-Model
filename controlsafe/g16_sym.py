@@ -168,7 +168,7 @@ class G16SymHead(nn.Module):
     attention_free = True
 
     def __init__(self, gated: TrustGatedBackbone, r: int = 8, c: float = 1.0, option_trust: str = "declared",
-                 seed: int = 0, stream_mode: str = "recompute") -> None:
+                 seed: int = 0, stream_mode: str = "recompute", p_stream_per_row: bool = True) -> None:
         super().__init__()
         if gated.readout != "decision":
             raise ValueError("G16-sym needs the gated backbone's D stream (readout='decision')")
@@ -177,6 +177,8 @@ class G16SymHead(nn.Module):
         if stream_mode not in ("recompute", "cache"):
             raise ValueError(stream_mode)
         self.gated, self.option_trust, self.stream_mode = gated, option_trust, stream_mode
+        #: run the P stream one distinct trusted list at a time (see ``_p_cache_per_row``); False = one batched call
+        self.p_stream_per_row = bool(p_stream_per_row)
         d = gated.model.config.hidden_size
         g = torch.Generator().manual_seed(seed * 104729 + 5)
         with torch.random.fork_rng(devices=[]):
@@ -184,7 +186,8 @@ class G16SymHead(nn.Module):
             self.evidence = EvidenceChannel(d, r, c)
             self.A = nn.Linear(d, r, bias=False)
             self.w = nn.Linear(d, 1, bias=False)
-        self.config = {"r": r, "c": float(c), "option_trust": option_trust, "stream_mode": stream_mode}
+        self.config = {"r": r, "c": float(c), "option_trust": option_trust, "stream_mode": stream_mode,
+                       "p_stream_per_row": self.p_stream_per_row}
 
     @property
     def c(self) -> float:
@@ -218,17 +221,54 @@ class G16SymHead(nn.Module):
         pos = {k: i for i, k in enumerate(uniq)}
         idx = [pos[k] for k in full]
         conts_u, ctr_u = [list(k[0]) for k in uniq], [list(k[1]) for k in uniq]
-        if self.stream_mode == "cache":
-            _, hP, hD = self.gated.fork_streams(row.ids, conts_u, tr, ctr_u)
-            return hP.float(), hD.float(), idx
         seqs = [list(row.ids) + c for c in conts_u]
         ids, mask = pad_batch(seqs, self.gated.pad_id, device=self.gated.device)
         tmask, _ = pad_batch([[int(x) for x in tr + t] for t in ctr_u], 0, device=self.gated.device)
-        hD = self.gated.features(ids, mask, tmask.bool())
+        p_cache = self._p_cache_per_row(ids, mask, tmask) if self.p_stream_per_row else None
+        if self.stream_mode == "cache":
+            _, hP, hD = self.gated.fork_streams(row.ids, conts_u, tr, ctr_u, p_cache=p_cache)
+            return hP.float(), hD.float(), idx
+        hD = self.gated.features(ids, mask, tmask.bool(), p_cache=p_cache)
         hP = self.gated.last_protected_final
         last = mask.sum(-1) - 1
         ar = torch.arange(ids.shape[0], device=ids.device)
         return hP[ar, last].float(), hD[ar, last].float(), idx
+
+    def _p_cache_per_row(self, ids: torch.Tensor, mask: torch.Tensor, tmask: torch.Tensor) -> dict:
+        """P stream run ONE distinct trusted token list at a time (batch of 1), assembled into the gated backbone's
+        ``p_cache`` format so the batched call reuses it exactly. With merging, untrusted text decides how many
+        distinct rows the batch has and where each sits; per row, h_P of an option is a function of its own trusted
+        list alone, whatever the batch (no batch-invariance assumption on the P kernels, e.g. on GPU)."""
+        from .trust_gate import compaction
+
+        g = self.gated
+        pos, _ = compaction(mask.bool(), tmask.bool())
+        trusted = [[int(ids[b, j]) for j in p] for b, p in enumerate(pos)]
+        done: dict[tuple, tuple[list[torch.Tensor], torch.Tensor]] = {}
+        for s in trusted:
+            key = tuple(s)
+            if key in done or not s:
+                continue
+            one = torch.tensor([s], dtype=torch.long, device=ids.device)
+            ones = torch.ones_like(one, dtype=torch.bool)
+            g.protected_stream(one, ones, ones)
+            c = g.last_protected_compact
+            done[key] = (list(c["layers"]), c["final"])
+        if not done:
+            return None
+        proto_layers, proto_final = next(iter(done.values()))
+        tc = max(len(s) for s in trusted)
+
+        def pad(x: torch.Tensor | None, like: torch.Tensor) -> torch.Tensor:
+            out = like.new_zeros((1, tc) + tuple(like.shape[2:]))
+            if x is not None:
+                out[:, : x.shape[1]] = x
+            return out
+
+        layers = [torch.cat([pad(done[tuple(s)][0][i] if s else None, proto_layers[i]) for s in trusted], 0)
+                  for i in range(len(proto_layers))]
+        final = torch.cat([pad(done[tuple(s)][1] if s else None, proto_final) for s in trusted], 0)
+        return {"trusted_ids": trusted, "layers": layers, "final": final}
 
     def streams(self, row) -> tuple[torch.Tensor, torch.Tensor]:
         """(h_P [K, d], h_D [K, d]) at the end of each option continuation (row axis order)."""

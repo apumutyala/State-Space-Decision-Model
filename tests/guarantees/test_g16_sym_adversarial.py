@@ -453,3 +453,62 @@ def test_relabel_among_duplicates_never_changes_score_or_decision_hidden128(stre
         got = {inv[o]: float(s) for o, s in zip(out.option_ids, out.score)}
         assert got == ref, perm
         assert (inv[out.decision] if out.decision else None) == base.decision, perm
+
+
+# ------------------------------------------------------------------------------------------- (4) P stream per row
+def _wide_head(seed: int, hidden: int, stream_mode: str, per_row: bool):
+    from controlsafe import monitor as M
+    from controlsafe import trust_gate as TG
+    from heads.backbone import tiny_hf_backbone
+
+    fm = "cache" if stream_mode == "cache" else "recompute"
+    bb = tiny_hf_backbone("q9af", seed=seed, hidden=hidden, fork_mode=fm)
+    M.long_memory_(bb.model, seed=seed)
+    g = TG.TrustGatedBackbone(bb, bridge_rank=4, stream_fork=fm)
+    h = GS.G16SymHead(g, r=8, c=1.0, seed=seed, stream_mode=stream_mode, p_stream_per_row=per_row)
+    gen = torch.Generator().manual_seed(seed + 1)
+    with torch.no_grad():
+        for p in h.own_parameters():
+            p.copy_(torch.randn(p.shape, generator=gen) * 0.5)
+        for br in g.bridges:
+            br.lora_B.copy_(torch.randn(br.lora_B.shape, generator=gen) * 0.1)
+    return h.float().eval()
+
+
+@pytest.mark.parametrize("stream_mode", ["recompute", "cache"])
+def test_p_stream_per_row_lo_hi_bitwise_when_untrusted_text_changes_the_distinct_row_count(stream_mode):
+    """Merging makes the number of distinct rows (and every row position) a function of untrusted text: two
+    undeclared options merge when their descriptions coincide. With ``p_stream_per_row`` (default) h_P is computed
+    per distinct trusted list, so every [lo, hi] is bitwise fixed under such edits (hidden 128)."""
+    h = _wide_head(4, 128, stream_mode, True)
+    assert h.p_stream_per_row and h.config["p_stream_per_row"]
+    decl = [(f"o{j}", f"trusted option {j}") for j in range(4)]
+    variants = [("same", "same"), ("same", "other"), ("a", "zzzz " * 40), ("dup", "dup"), ("x", "y"), ("q", "q")]
+    ref, n_rows = None, set()
+    for v1, v2 in variants:
+        opts = decl + [("u1", v1), ("u2", v2)]
+        row = PLUG.row_for(PLUG.request_for("state", opts))
+        out = run(h, "state", opts, undeclared=("u1", "u2"))
+        n_rows.add(len(set(map(tuple, row.continuations))))
+        iv = {o: (float(l), float(hh)) for o, l, hh in zip(out.option_ids, out.lo, out.hi)}
+        if ref is None:
+            ref = iv
+        assert iv == ref, (v1, v2)
+    assert len(n_rows) > 1, n_rows  # the distinct-row count really changed
+
+
+@pytest.mark.parametrize("hidden", [32, 128])
+@pytest.mark.parametrize("stream_mode", ["recompute", "cache"])
+def test_p_stream_per_row_bitwise_equal_to_the_batched_path_on_cpu(hidden, stream_mode):
+    """The per-row P stream gives the same outputs as the one batched P call (CPU, tiny models): the flag only
+    removes an assumption, it does not change served numbers here."""
+    on, off = _wide_head(6, hidden, stream_mode, True), _wide_head(6, hidden, stream_mode, False)
+    rng = random.Random(hidden)
+    for t in range(5):
+        k = rng.randrange(3, 8)
+        opts = [(f"o{j}", f"option {rng.randrange(10 ** 4)} " + "w" * rng.randrange(0, 12)) for j in range(k)]
+        und = tuple(o for o, _ in opts if rng.random() < 0.3)
+        a, b = run(on, f"state {t}", opts, undeclared=und), run(off, f"state {t}", opts, undeclared=und)
+        for name in ("lo", "hi", "score", "b"):
+            assert torch.equal(getattr(a, name), getattr(b, name)), (name, t)
+        assert torch.equal(a.a, b.a) and a.decision_set == b.decision_set
