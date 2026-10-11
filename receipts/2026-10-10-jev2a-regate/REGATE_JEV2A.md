@@ -115,3 +115,12 @@ The ids and texts above trace every row to the train file, and no MuSiQue id out
    text (about 2.2k rows).
 3. Family task shapes were calibrated on the public items' FORMAT only (option count, type, state shape; data/jev2.py
    docstring), never their text. I note this so the lead is aware; no text overlap exists (section 4).
+
+## 8. Conservative exclusion list (coordinator, 2026-10-10)
+`jev2a_exclude_ids.txt` holds 105 ids, sha256 aeb8027aaaebdb6fad2b24f8b5bee9d37c4e176fcc4e18ad0d366acf1b579705 (sorted,
+LF, trailing newline). It lists EVERY row that has a normalised leaf of at least 6 words verbatim equal to a leaf of a
+JevBench public item or an Index suite row (`scripts/regate_exact_leaves.py`, report `exact-leaves-all.json`):
+97 tool_selection/glaive rows (WARN-1; the 3 descriptions are each in 6 JevBench easy tool_selection items) and
+8 multi_hop/musique rows. 6 of the musique rows share one place title that equals an HLE-text-MC (DEV) option, and 2
+have film titles that equal BBH movie_recommendation (HELDOUT) options. Section 4 counted 3 musique rows because that
+pass kept only the first row per leaf; this pass counts every row. The draw keeps 29,895 rows after exclusion.
