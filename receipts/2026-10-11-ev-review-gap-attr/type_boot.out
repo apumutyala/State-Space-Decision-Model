@@ -1,0 +1,13 @@
+C:\Users\apumu\AppData\Local\Temp\claude\C--Users-apumu-research-CHLabs\8ba1e3cb-efb0-46e2-9fd6-7683f7008f8a\scratchpad\type_boot.py:13: RuntimeWarning: divide by zero encountered in scalar divide
+  unit = {"choice": 100 / (1 - b.chance[m].mean()), "noul": 200.0, "score": 100 / b.nmae_chance[m].mean()}[ty]
+weight choice easy 36 I pts per unit miss 0.168
+weight choice standard 36 I pts per unit miss 0.333
+weight choice hard 67 I pts per unit miss 0.38
+weight noul easy 12 I pts per unit miss 0.794
+weight noul standard 24 I pts per unit miss 0.794
+weight noul hard 38 I pts per unit miss 1.003
+weight score standard 12 I pts per unit miss 2.222
+weight score hard 6 I pts per unit miss 10.417
+stock4b_shim_zbtbj {'per_type_pts': {'choice': np.float64(6.698), 'noul': np.float64(12.197), 'score': np.float64(2.4)}, 'ci95': {'choice': [3.04, 10.13], 'noul': [5.97, 19.38], 'score': [-7.44, 10.77]}, 'p_noul_largest': 0.895}
+D19 {'per_type_pts': {'choice': np.float64(5.319), 'noul': np.float64(13.409), 'score': np.float64(6.195)}, 'ci95': {'choice': [2.28, 8.5], 'noul': [6.39, 20.22], 'score': [-1.69, 12.33]}, 'p_noul_largest': 0.925}
+jev1_native {'per_type_pts': {'choice': np.float64(7.626), 'noul': np.float64(16.207), 'score': np.float64(2.547)}, 'ci95': {'choice': [4.41, 11.26], 'noul': [9.61, 22.81], 'score': [-8.36, 10.37]}, 'p_noul_largest': 0.986}

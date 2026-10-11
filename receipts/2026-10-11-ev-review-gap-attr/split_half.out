@@ -1,0 +1,3 @@
+stock4b_shim_zbtbj {'top6_share_on_selection_half(median,lo,hi)': [0.896, 0.726, 1.349], 'same_top6_share_on_other_half': [0.296, -0.112, 0.609], 'top6_overlap_A_vs_B_mean': 2.144}
+D19 {'top6_share_on_selection_half(median,lo,hi)': [0.913, 0.757, 1.249], 'same_top6_share_on_other_half': [0.452, 0.22, 0.699], 'top6_overlap_A_vs_B_mean': 2.834}
+jev1_native {'top6_share_on_selection_half(median,lo,hi)': [0.886, 0.759, 1.219], 'same_top6_share_on_other_half': [0.544, 0.184, 0.825], 'top6_overlap_A_vs_B_mean': 3.89}

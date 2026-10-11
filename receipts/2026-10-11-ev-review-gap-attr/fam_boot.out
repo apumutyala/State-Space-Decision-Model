@@ -1,0 +1,60 @@
+stock4b_shim_zbtbj gap 21.295 agg 21.295 diffGA 1.1102230246251565e-14 chk 1.865174681370263e-14 0
+  six share 0.656 [0.275, 0.86] own top6 [np.str_('temporal_numeric'), np.str_('probability'), np.str_('adversarial'), np.str_('judge_hard'), np.str_('long_policy'), np.str_('adequacy')] 0.726 [0.725, 1.386]
+   temporal_numeric  n=15 pts   4.05 [0.381, 9.809] share  0.19 [0.017, 0.472] pTop6 0.88
+   probability       n=10 pts   3.52 [0.762, 6.905] share  0.17 [0.043, 0.401] pTop6 0.93
+   adversarial       n= 6 pts   2.36 [-0.0, 6.733] share  0.11 [-0.0, 0.34] pTop6 0.68
+   judge_hard        n=17 pts   2.00 [-2.005, 6.015] share  0.09 [-0.093, 0.309] pTop6 0.65
+   long_policy       n=19 pts   1.92 [-5.931, 10.957] share  0.09 [-0.52, 0.375] pTop6 0.56
+   adequacy          n=12 pts   1.59 [-0.0, 3.968] share  0.07 [-0.0, 0.231] pTop6 0.55
+   multi_hop         n=18 pts   1.29 [-0.585, 3.394] share  0.06 [-0.033, 0.186] pTop6 0.43
+   ambiguous         n= 7 pts   1.14 [-0.378, 3.049] share  0.05 [-0.018, 0.171] pTop6 0.33
+   trap              n= 8 pts   0.89 [-0.215, 3.008] share  0.04 [-0.014, 0.175] pTop6 0.29
+   fact              n=12 pts   0.79 [-0.0, 2.381] share  0.04 [-0.0, 0.128] pTop6 0.20
+   policy            n=12 pts   0.79 [-0.0, 2.381] share  0.04 [-0.0, 0.137] pTop6 0.17
+   intent            n=24 pts   0.67 [-0.0, 1.669] share  0.03 [-0.0, 0.095] pTop6 0.10
+   tradeoff          n= 6 pts   0.62 [-1.126, 3.008] share  0.03 [-0.059, 0.144] pTop6 0.22
+   routing           n=12 pts   0.33 [-0.0, 1.001] share  0.02 [-0.0, 0.061] pTop6 0.01
+   extraction        n=24 pts  -0.00 [-0.0, 0.0] share -0.00 [-0.0, 0.0] pTop6 0.00
+   routing_hard      n= 5 pts  -0.00 [-0.0, 0.0] share -0.00 [-0.0, 0.0] pTop6 0.00
+   tool_selection    n=12 pts  -0.00 [-0.0, 0.0] share -0.00 [-0.0, 0.0] pTop6 0.00
+   ordinal           n=12 pts  -0.68 [-0.89, -0.445] share -0.03 [-0.075, -0.016] pTop6 0.00
+D19 gap 24.922 agg 24.922 diffGA 1.3988810110276972e-14 chk 2.842170943040401e-14 0
+  six share 0.658 [0.394, 0.836] own top6 [np.str_('probability'), np.str_('ordinal'), np.str_('trap'), np.str_('temporal_numeric'), np.str_('long_policy'), np.str_('adequacy')] 0.781 [0.739, 1.215]
+   probability       n=10 pts   4.91 [1.523, 8.668] share  0.20 [0.072, 0.41] pTop6 0.96
+   ordinal           n=12 pts   4.06 [3.247, 4.705] share  0.16 [0.11, 0.301] pTop6 1.00
+   trap              n= 8 pts   2.81 [-0.0, 7.188] share  0.11 [-0.0, 0.263] pTop6 0.63
+   temporal_numeric  n=15 pts   2.67 [-0.382, 6.477] share  0.11 [-0.016, 0.272] pTop6 0.67
+   long_policy       n=19 pts   2.64 [-2.846, 9.412] share  0.11 [-0.178, 0.321] pTop6 0.60
+   adequacy          n=12 pts   2.38 [-0.0, 5.556] share  0.10 [-0.0, 0.229] pTop6 0.67
+   ambiguous         n= 7 pts   1.52 [0.376, 3.077] share  0.06 [0.013, 0.146] pTop6 0.37
+   tradeoff          n= 6 pts   1.38 [-0.0, 3.767] share  0.06 [-0.0, 0.168] pTop6 0.32
+   judge_hard        n=17 pts   1.00 [-2.005, 5.013] share  0.04 [-0.112, 0.186] pTop6 0.36
+   adversarial       n= 6 pts   0.84 [-0.0, 2.674] share  0.03 [-0.0, 0.12] pTop6 0.16
+   multi_hop         n=18 pts   0.72 [-3.024, 4.16] share  0.03 [-0.164, 0.165] pTop6 0.27
+   extraction        n=24 pts  -0.00 [-0.0, 0.0] share -0.00 [-0.0, 0.0] pTop6 0.00
+   fact              n=12 pts  -0.00 [-0.0, 0.0] share -0.00 [-0.0, 0.0] pTop6 0.00
+   intent            n=24 pts  -0.00 [-0.0, 0.0] share -0.00 [-0.0, 0.0] pTop6 0.00
+   policy            n=12 pts  -0.00 [-0.0, 0.0] share -0.00 [-0.0, 0.0] pTop6 0.00
+   routing           n=12 pts  -0.00 [-0.0, 0.0] share -0.00 [-0.0, 0.0] pTop6 0.00
+   routing_hard      n= 5 pts  -0.00 [-0.0, 0.0] share -0.00 [-0.0, 0.0] pTop6 0.00
+   tool_selection    n=12 pts  -0.00 [-0.0, 0.0] share -0.00 [-0.0, 0.0] pTop6 0.00
+jev1_native gap 26.38 agg 26.38 diffGA 9.769962616701378e-15 chk 2.842170943040401e-14 0
+  six share 0.812 [0.603, 0.944] own top6 [np.str_('temporal_numeric'), np.str_('long_policy'), np.str_('trap'), np.str_('probability'), np.str_('judge_hard'), np.str_('adequacy')] 0.812 [0.758, 1.163]
+   temporal_numeric  n=15 pts   4.72 [1.003, 9.5] share  0.18 [0.033, 0.388] pTop6 0.94
+   long_policy       n=19 pts   4.57 [-4.921, 13.86] share  0.17 [-0.309, 0.422] pTop6 0.76
+   trap              n= 8 pts   3.59 [-0.0, 8.637] share  0.14 [-0.0, 0.31] pTop6 0.76
+   probability       n=10 pts   3.15 [0.752, 6.455] share  0.12 [0.028, 0.285] pTop6 0.87
+   judge_hard        n=17 pts   3.01 [-0.0, 7.018] share  0.11 [-0.0, 0.29] pTop6 0.84
+   adequacy          n=12 pts   2.38 [-0.0, 5.556] share  0.09 [-0.0, 0.22] pTop6 0.75
+   tradeoff          n= 6 pts   1.76 [-0.0, 4.15] share  0.07 [-0.0, 0.184] pTop6 0.54
+   fact              n=12 pts   0.79 [-0.0, 2.381] share  0.03 [-0.0, 0.109] pTop6 0.22
+   ambiguous         n= 7 pts   0.76 [-0.0, 1.917] share  0.03 [-0.0, 0.086] pTop6 0.13
+   intent            n=24 pts   0.67 [-0.0, 1.663] share  0.03 [-0.0, 0.069] pTop6 0.08
+   routing           n=12 pts   0.33 [-0.0, 1.005] share  0.01 [-0.0, 0.048] pTop6 0.01
+   adversarial       n= 6 pts   0.26 [-0.0, 0.834] share  0.01 [-0.0, 0.037] pTop6 0.01
+   extraction        n=24 pts   0.17 [-0.0, 0.507] share  0.01 [-0.0, 0.025] pTop6 0.00
+   ordinal           n=12 pts   0.16 [0.01, 0.308] share  0.01 [0.0, 0.015] pTop6 0.00
+   multi_hop         n=18 pts   0.06 [-2.186, 2.282] share  0.00 [-0.105, 0.086] pTop6 0.09
+   policy            n=12 pts  -0.00 [-0.0, 0.0] share -0.00 [-0.0, 0.0] pTop6 0.00
+   routing_hard      n= 5 pts  -0.00 [-0.0, 0.0] share -0.00 [-0.0, 0.0] pTop6 0.00
+   tool_selection    n=12 pts  -0.00 [-0.0, 0.0] share -0.00 [-0.0, 0.0] pTop6 0.00

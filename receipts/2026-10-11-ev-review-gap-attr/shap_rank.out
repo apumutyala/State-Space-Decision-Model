@@ -1,0 +1,3 @@
+stock4b_shim_zbtbj {'P_I_largest_axis': 0.979, 'I_share_ci95': [0.5166010486831822, 0.8719572978827703], 'P_IC_at_H2O_closes_gap': np.float64(1.0)}
+D19 {'P_I_largest_axis': 0.984, 'I_share_ci95': [0.3298441921958902, 0.7519281384422719], 'P_IC_at_H2O_closes_gap': np.float64(0.0)}
+jev1_native {'P_I_largest_axis': 0.983, 'I_share_ci95': [0.46973180672036924, 0.8520452859801663], 'P_IC_at_H2O_closes_gap': np.float64(0.0)}

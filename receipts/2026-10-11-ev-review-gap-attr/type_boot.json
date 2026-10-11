@@ -1,0 +1,68 @@
+{
+ "stock4b_shim_zbtbj": {
+  "per_type_pts": {
+   "choice": 6.698,
+   "noul": 12.197,
+   "score": 2.4
+  },
+  "ci95": {
+   "choice": [
+    3.04,
+    10.13
+   ],
+   "noul": [
+    5.97,
+    19.38
+   ],
+   "score": [
+    -7.44,
+    10.77
+   ]
+  },
+  "p_noul_largest": 0.895
+ },
+ "D19": {
+  "per_type_pts": {
+   "choice": 5.319,
+   "noul": 13.409,
+   "score": 6.195
+  },
+  "ci95": {
+   "choice": [
+    2.28,
+    8.5
+   ],
+   "noul": [
+    6.39,
+    20.22
+   ],
+   "score": [
+    -1.69,
+    12.33
+   ]
+  },
+  "p_noul_largest": 0.925
+ },
+ "jev1_native": {
+  "per_type_pts": {
+   "choice": 7.626,
+   "noul": 16.207,
+   "score": 2.547
+  },
+  "ci95": {
+   "choice": [
+    4.41,
+    11.26
+   ],
+   "noul": [
+    9.61,
+    22.81
+   ],
+   "score": [
+    -8.36,
+    10.37
+   ]
+  },
+  "p_noul_largest": 0.986
+ }
+}
