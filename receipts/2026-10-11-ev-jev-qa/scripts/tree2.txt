@@ -1,0 +1,12 @@
+datasets/public/easy.jsonl 37220
+datasets/public/hard.jsonl 651848
+datasets/public/original.jsonl 57237
+results/v1.2/runs/open-alternative-jev/author-order-yes-first--easy.jsonl 46001
+results/v1.2/runs/open-alternative-jev/author-order-yes-first--hard.jsonl 109342
+results/v1.2/runs/open-alternative-jev/author-order-yes-first--standard-judge.jsonl 66221
+results/v1.2/runs/open-alternative-jev/reversed-order-no-first--easy.jsonl 46011
+results/v1.2/runs/open-alternative-jev/reversed-order-no-first--hard.jsonl 109411
+results/v1.2/runs/open-alternative-jev/reversed-order-no-first--standard-judge.jsonl 66247
+results/v1.4.2.1/source/plumb-4b-latest-v1.4.3-public-row.json 5197
+scripts/build_public.py 9182
+scripts/import_router.py 4205
