@@ -476,7 +476,11 @@ def jevkit_block(params: dict, template: str) -> dict | None:
             raise ScreenError(f"jevkit.perturb_ops {pops!r}: names from jevkit.perturb.OPERATORS", 5)
     extra_keys = (({"tfit": tfit} if tfit is not None else {}) | ({"perturb_ops": list(pops)} if pops else {})
                   | ({"covered_families": sorted(jk["covered_families"])} if jk.get("covered_families") else {})
-                  | ({"assert_no_truncation": True} if jk.get("assert_no_truncation") else {}))
+                  | ({"assert_no_truncation": True} if jk.get("assert_no_truncation") else {})
+                  | ({"slice_floor": True} if jk.get("slice_floor") else {})
+                  | ({"by_family": True} if jk.get("by_family") else {}))
+    if jk.get("slice_floor") and not (stock and tfit):
+        raise ScreenError("jevkit.slice_floor needs stock_shim (step 0 = the untrained host) and tfit (the slice)", 5)
     return {**extra_keys, "price": jk["price"], "price_parsed": price, "lean_template": lean, "extra_templates": extra,
             "shim_calibration": bool(jk.get("shim_calibration")), "stock_shim": bool(stock),
             "paired_primary": jk.get("paired_primary"),
@@ -591,6 +595,9 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: st
                          row_fn=lambda req: decider.backend._rows(req)[0])
         ident["g1"] = {"g1_pass": g1["g1_pass"], "rows_all_identical": g1.get("rows_all_identical"),
                        "n_perturbed": g1["n_perturbed"], "seconds": round(time.perf_counter() - t0, 2)}
+    if jk.get("tfit") and not data_dir:  # job-9fy9p: screen score had no --data (AttributeError after the proxy)
+        print("identity: jevkit.tfit needs screen score --data (the data root)", file=sys.stderr)
+        return 10
     if jk.get("tfit"):  # JEV2-4B: scalar T on the CALIB draw's native head log-probs (fit once, frozen before scoring)
         try:
             ident["tfit"] = fit_native_temperature(decider.backend, Path(data_dir) / jk["tfit"]["records"],
@@ -612,6 +619,14 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: st
                 f.write(json.dumps(r, separators=(",", ":"), default=str) + "\n")
         ident["stock_shim"] = {**eng.identity(), "seconds": round(time.perf_counter() - t0, 2), "n": len(recs),
                                "status": _count(r["status"] for r in recs)}
+        if jk.get("slice_floor") and jk.get("tfit"):  # A-PREREG-JEV2-H2O: step 0 (the untrained host) on the slice
+            t0 = time.perf_counter()
+            try:
+                ident["slice_floor"] = slice_floor(eng, Path(data_dir) / jk["tfit"]["records"], out_dir / "calib_probs.jsonl",
+                                                   out_dir / "slice_floor.json", jk["tfit"].get("ids_sha256"))
+            except (OSError, ValueError, KeyError) as e:  # recorded; the report then calls the floor UNEVALUATED
+                ident["slice_floor"] = {"error": f"{type(e).__name__}: {e}"}
+            ident["slice_floor"]["seconds"] = round(time.perf_counter() - t0, 2)
     (out_dir / "identity.json").write_text(json.dumps(ident, indent=1, default=str), encoding="utf-8")
     return 0
 
@@ -686,6 +701,88 @@ class StockShimEngine:
                                                   self.c.noul_floor, thr)
             ntok += len(ids)
         return {"model": "stock-shim", "answers": answers, "usage": {"input_tokens": ntok, "output_tokens": 0}}
+
+    def label_logps(self, request: dict, qid: str) -> tuple[list[str], list[float]]:
+        """(shim option names, raw label log-probs) of one question: the same forward as ``__call__``, before the
+        shim's T / floor (neither changes the arg-max: the floor only commits a yes/no answer to its own side)."""
+        import torch
+
+        state_txt = self.mod.render_state(request["state"], self.c.state_compact)
+        text, names, _, labels = self.c.question_prompt(state_txt, request["questions"][qid], qid)
+        ids = self.spec.ids(text)
+        with torch.inference_mode():
+            out = self.bb.model(input_ids=torch.tensor([ids], dtype=torch.long, device=self.W.device), use_cache=False)
+            h = out.last_hidden_state[0, -1].float()
+            lab = torch.tensor([self.spec.label_ids[x] for x in labels], device=self.W.device)
+            lp = (self.W.index_select(0, lab).float() @ h.to(self.W.device)).tolist()
+        return [str(n) for n in names], lp
+
+
+def slice_floor(eng: "StockShimEngine", records_path: Path, calib_probs: Path, out: Path,
+                expect_ids_sha256: str | None = None) -> dict:
+    """A-PREREG-JEV2-H2O step-0 FLOOR on the fixed held-out jev2 slice (the calib slice; ids sha recorded): top-1 accuracy
+    of the selected trained checkpoint (``calib_probs.jsonl``, written by ``fit_native_temperature``) vs the untrained
+    host = step 0 (``eng`` with every LoRA off, the host's own shim prompt + tied LM head) on the SAME decisions. The
+    primary readout (shim T 0.8 + the yes/no floor 0.801) never changes a decision's arg-max, so top-1 is the readout's
+    own accuracy. ``pass`` iff the trained arm is strictly better; otherwise the result is "step 0 = no change"
+    (negative). Per-family deltas are written beside it. Decisions whose gold label is not a shim option name are
+    excluded from both arms and counted."""
+    import gzip
+
+    from train.run_cell import to_train_record
+
+    with gzip.open(records_path, "rt", encoding="utf-8") as f:
+        raws = [json.loads(x) for x in f if x.strip()]
+    sha = slice_ids_sha256(r["id"] for r in raws)
+    if expect_ids_sha256 and len(expect_ids_sha256) == 64 and sha != expect_ids_sha256:
+        raise ValueError(f"slice floor: slice ids sha256 {sha} != the pinned {expect_ids_sha256}")
+    native = {}
+    for line in calib_probs.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            r = json.loads(line)
+            ps = r["probs"]
+            native[r["id"]] = (r.get("family"), r.get("type"), max(range(len(ps)), key=ps.__getitem__) == r["gold"])
+    rows, unmatched = [], 0
+    with eng.lora_off():
+        for raw in raws:
+            rec = to_train_record(raw)
+            req, labels = rec["request"], rec.get("labels") or {}
+            for qid in sorted(req["questions"]):
+                key = f"{raw['id']}/{qid}"
+                if key not in native or qid not in labels:
+                    unmatched += 1
+                    continue
+                names, lp = eng.label_logps(req, qid)
+                gold = str(labels[qid])
+                if gold not in names:
+                    unmatched += 1
+                    continue
+                fam, typ, n_ok = native[key]
+                rows.append({"id": key, "family": fam, "type": typ, "native": bool(n_ok),
+                             "step0": names[max(range(len(lp)), key=lp.__getitem__)] == gold})
+    if not rows:
+        raise ValueError("slice floor: no decision matched between the trained arm and the host")
+    with open(out.parent / "slice_floor_rows.jsonl", "w", encoding="utf-8", newline="\n") as g:
+        for r in rows:
+            g.write(json.dumps(r, separators=(",", ":")) + "\n")
+
+    def acc(rs, k):
+        return sum(r[k] for r in rs) / len(rs)
+
+    fams: dict = {}
+    for r in rows:
+        fams.setdefault(r["family"], []).append(r)
+    rep = {"ids_sha256": sha, "n_decisions": len(rows), "unmatched_excluded": unmatched,
+           "native_top1": acc(rows, "native"), "step0_top1": acc(rows, "step0"),
+           "per_family": {str(f): {"n": len(rs), "native": acc(rs, "native"), "step0": acc(rs, "step0"),
+                                   "delta": acc(rs, "native") - acc(rs, "step0")} for f, rs in sorted(fams.items(),
+                                                                                                      key=lambda x: str(x[0]))},
+           "rule": "A-PREREG-JEV2-H2O floor: the selected checkpoint must beat step 0 (the untrained host) on the held-out "
+                   "slice top-1; otherwise step 0 = no change and the run is NEGATIVE"}
+    rep["delta"] = rep["native_top1"] - rep["step0_top1"]
+    rep["pass"] = bool(rep["delta"] > 0)
+    out.write_text(json.dumps(rep, indent=1), encoding="utf-8")
+    return {k: rep[k] for k in ("n_decisions", "native_top1", "step0_top1", "delta", "pass", "ids_sha256")}
 
 
 # ------------------------------------------------------------------------------------------------ CPU: report
@@ -1060,10 +1157,10 @@ def jevkit_report(jk: dict, d: Path) -> dict:
     if "stock_shim" in tables:  # A-PREREG-JEV1-4B: every trained arm minus the stock + shim baseline, paired
         out["vs_stock_shim"] = {nm: paired_vs(tables, axes, nm, "stock_shim") for nm in tables if nm != "stock_shim"}
         prim = jk.get("paired_primary") or "native"
-        d = out["vs_stock_shim"].get(prim)
-        if d is not None:
-            lo = d["composite_A"]["ci95"][0] if d["composite_A"]["ci95"] else None
-            out["primary"] = {"arm": prim, "baseline": "stock_shim", "delta_composite_A": d["composite_A"],
+        dp = out["vs_stock_shim"].get(prim)  # (was ``d``: shadowed the report dir used by the g1 / floor reads below)
+        if dp is not None:
+            lo = dp["composite_A"]["ci95"][0] if dp["composite_A"]["ci95"] else None
+            out["primary"] = {"arm": prim, "baseline": "stock_shim", "delta_composite_A": dp["composite_A"],
                               "rule": "A-PREREG-JEV1-4B: SUCCESS iff delta Composite A > 0 with its 95% CI excluding 0",
                               "success": bool(lo is not None and lo > 0)}
     if "lean" in tables:
@@ -1116,6 +1213,27 @@ def jevkit_report(jk: dict, d: Path) -> dict:
             out["by_coverage"][grp] = {"n_items": len(sub), "families": sorted({it.family for it in sub}),
                                        "vs_stock_shim": {nm: paired_vs(st_, axes, nm, "stock_shim")
                                                          for nm in st_ if nm != "stock_shim"}}
+    if jk.get("by_family") and "stock_shim" in tables:  # A-PREREG-JEV2-H2O: per-family deltas on public-231 (report)
+        prim = jk.get("paired_primary") or "native"
+        out["by_family"] = {}
+        for fam in sorted({it.family for it in items}):
+            sub = [it for it in items if it.family == fam]
+            st_ = {nm: JS.build_table(sub, answers_by[nm]) for nm in (prim, "stock_shim") if nm in answers_by}
+            if len(st_) == 2:
+                d_ = paired_vs(st_, axes, prim, "stock_shim", B=200)
+                out["by_family"][fam] = {"n_items": len(sub), "arm": prim, "delta_I": d_["I"],
+                                         "delta_composite_A": d_["composite_A"]}
+    if jk.get("slice_floor"):  # A-PREREG-JEV2-H2O: the selected checkpoint must beat step 0 on the held-out slice
+        fp = d / "slice_floor.json"
+        fl = json.loads(fp.read_text(encoding="utf-8")) if fp.is_file() else None
+        out["slice_floor"] = fl if fl is not None else {"pass": None, "status": "UNEVALUATED (see identity.json)"}
+        if "primary" in out:
+            out["primary"]["slice_floor_pass"] = None if fl is None else fl["pass"]
+            if fl is None or not fl["pass"]:
+                out["primary"]["success"] = False
+                out["primary"]["floor_verdict"] = ("NEGATIVE: no trained checkpoint beats step 0 (H2O untrained) on the "
+                                                   "held-out slice; reported as step 0 = no change"
+                                                   if fl is not None else "NEGATIVE: the step-0 floor was not evaluated")
     return out
 
 
@@ -1196,6 +1314,7 @@ def main(argv=None) -> int:
     s.add_argument("--pool-dir", action="append", default=None)
     s.add_argument("--progress", default=None)
     s.add_argument("--device", default="cuda")
+    s.add_argument("--data", default=None, help="the data root (jevkit.tfit / slice_floor records: the calib slice)")
     s = sub.add_parser("report")
     for k in ("--params", "--index-rows", "--out-dir", "--parent-arm", "--parent-arm-sha256", "--reference", "--out"):
         s.add_argument(k, required=True)

@@ -1,0 +1,29 @@
+{
+ "build": "bschema-draw-jev2h-final (scripts/jev12_balanced_draw.py over bschema-draw-jev1, bschema-draw-jev2a-v2, bschema-draw-jev2c-v2, bschema-draw-jev2b)",
+ "location": "ssdm-data/m2/build/bschema-draw-jev2h-final/ (outside git; deterministic)",
+ "records_uncompressed_sha256": "46b9280055f5f7fc7bd05669147765a90d2e0d4661f7100a5a384150b2eca7d8",
+ "manifest": "bschema-draw-jev2h-final.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "ac6ef45fcc9392b33abf29547c74ad029b7525dce0d3eeeeea5bfef4047a7038",
+ "content_map": "bschema-draw-jev2h-final.content.jsonl.gz",
+ "content_map_uncompressed_sha256": "e8b09954f0ac85259ce60b1a4dc19811674ea7fcbf07dff054a5df8a3f861450",
+ "n_records": 2664,
+ "role": "train",
+ "ids_sha256": "4ae135e17bc2560ae8fcad7c87db92da728f759f7e3fbf63dcd8c68ea7b91786",
+ "schema": "ssdm-train-v0, one question per row (qid 'q'), JevBench request shape",
+ "excludes_cohort": "inherited from every source draw's own gates (each source pointer's excludes_cohort)",
+ "builder": {
+  "module": "scripts/jev12_balanced_draw.py",
+  "seed": 20261010
+ },
+ "templates_verified": [
+  "jrt-h2o-shim:qwen3.5-4b"
+ ],
+ "build_command": "python -X utf8 -I scripts/jev12_balanced_draw.py --src <data>/m2/build/bschema-draw-jev1 --src <data>/m2/build/bschema-draw-jev2a-v2 --src <data>/m2/build/bschema-draw-jev2c-v2 --src <data>/m2/build/bschema-draw-jev2b --exclude long_policy=bschema-draw-jev1 --global-exclude receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt=c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad --global-exclude receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt=5cebf60bfa489d462a7e7d9b82e152a4968f30e1dc7ea50a2155e491a1ef37ab --pool-rows bschema-draw-jev1=96000 --pool-rows bschema-draw-jev2a-v2=7373 --pool-rows bschema-draw-jev2b=7500 --pool-rows bschema-draw-jev2c-v2=1500 --exclude-sub prob_indep --dedupe-source glaive_fc --score-share 0.25 --train-per-family 148 --calib-per-family 200 --name bschema-draw-jev2h-final --out <data>/m2/build",
+ "mix_manifest": {
+  "file": "data/manifests/bschema-mix-jev1-jev2.json",
+  "sha256": "71b503ebb91b991f4a02b70f1dabc5150315f14c5843eb6fc53b8f0a65a48198",
+  "source": "claude/ev-jev2-draw @282a4867",
+  "components_records_sha256_verified": true
+ },
+ "draw_report": "draw-report.json: n_train 2,664 (148 per family x 18, equal_family), n_calib 3,600 (the held-out SELECTION slice: 200 per family by sha256(seed:id), id- and content-disjoint), exclusions {'files': [{'file': 'receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt', 'sha256': 'c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad', 'n_ids': 23}, {'file': 'receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt', 'sha256': '5cebf60bfa489d462a7e7d9b82e152a4968f30e1dc7ea50a2155e491a1ef37ab', 'n_ids': 104}], 'n_ids': 127, 'found': 127}, train type mix {'noul': 0.2995, 'choice': 0.4467, 'score': 0.2538}, calib ids sha 142a593a1257d6729b5480fe67647b1af0c5678d2a929654f6325e128fce00be"
+}

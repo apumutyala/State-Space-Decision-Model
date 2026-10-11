@@ -205,6 +205,9 @@ say "setup"
 # snapshot (sha-pinned), the converted GDN export from $DATA/gdn (gdn_q9af_v2.sha256 + the config's q9af pin, filled at
 # launch by scripts/fill_conversion_pins.py), --parent q9af --gdn-ckpt for every scoring / training step. rwkv7: unchanged.
 PARENT=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("parent", "rwkv7"))' "$CELL") || fail 5 "cell config parent"
+# JEV2-H2O jev1 switch: a cell with jev1 ON refuses (exit 5) until its verbatim-leaf exclusion list has landed
+python -I -c 'import json,sys; j=json.load(open(sys.argv[1])).get("jev1") or {}; sys.exit(1 if j.get("enabled") and (j.get("exclusion") or {}).get("status") != "landed" else 0)' "$CELL" \
+  || fail 5 "jev1 is ON but jev1.exclusion.status != landed (the jev1 verbatim-leaf exclusion list is PENDING)"
 GDN_ARGS=()
 case "$PARENT" in rwkv7) ;; q9af) GDN_ARGS=(--gdn-ckpt "$DATA/gdn/gdn_converted.pt") ;; qwen35) ;;
   *) fail 5 "cell parent $PARENT: rwkv7, q9af or qwen35" ;; esac
@@ -292,7 +295,34 @@ elif [ "$PARENT" = qwen35 ]; then
   ( cd "$SNAP" && sha256sum -c "$CODE/$Q35_SHA" ) > "$WORK/out/snapshot-verify.txt" 2>&1 || fail 10 "qwen35 snapshot sha256 ($Q35_REPO@$Q35_REV)"
   python -X utf8 -c 'import json,sys; from heads.backbone import qwen35_pin_check; c=json.load(open(sys.argv[1])); print(json.dumps(qwen35_pin_check(c["qwen35"], sys.argv[2])))' \
     "$CELL" "$SNAP" > "$WORK/out/label.json" 2> "$WORK/logs/pin.log" || fail 10 "qwen35 pin: $(tail -1 "$WORK/logs/pin.log")"
-  say "parent: stock $Q35_REPO@$Q35_REV"
+  # a pinned HOST (qwen35.host, EV-PREREG-H2O-HOST): the HF-resolved commit == the pin, and the license files are
+  # copied into the artifact (LICENSE required; each pinned git blob id must match). Stock parents skip this block.
+  if python -I -c 'import json,sys; sys.exit(0 if json.load(open(sys.argv[1]))["qwen35"].get("host") else 1)' "$CELL"; then
+    mkdir -p "$WORK/out/license"
+    python -I - "$CELL" "$SNAP" "$WORK/out/license" > "$WORK/out/host-verify.json" 2> "$WORK/logs/host-verify.log" <<'EOF' || fail 10 "qwen35 host revision / license: $(tail -1 "$WORK/logs/host-verify.log")"
+import hashlib, json, shutil, sys
+from pathlib import Path
+q = json.load(open(sys.argv[1]))["qwen35"]
+snap, dst = Path(sys.argv[2]), Path(sys.argv[3])
+from huggingface_hub import HfApi
+info = HfApi().model_info(q["repo"], revision=q["revision"])
+assert info.sha == q["revision"], f"HF resolved {info.sha} != pinned {q['revision']}"
+out = {"repo": q["repo"], "revision": q["revision"], "resolved_sha": info.sha, "license": {}}
+for name, blob in sorted(q["license_git_blobs"].items()):
+    p = snap / name
+    assert p.is_file(), f"{name} missing from the snapshot"
+    data = p.read_bytes()
+    got = hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()
+    assert got == blob, f"{name} git blob {got} != pinned {blob}"
+    shutil.copyfile(p.resolve(), dst / name)
+    out["license"][name] = {"git_blob": got, "sha256": hashlib.sha256(data).hexdigest()}
+assert "LICENSE" in out["license"], "no LICENSE pinned"
+print(json.dumps(out))
+EOF
+    say "parent: HOST $Q35_REPO@$Q35_REV (license copied to out/license)"
+  else
+    say "parent: stock $Q35_REPO@$Q35_REV"
+  fi
   # the cell's template (H2O shim format or generic v3w) + every jevkit score-only template, bound to THIS snapshot's
   # tokenizer files and checked against their pinned identities before any weight is loaded
   python -X utf8 -c 'import json,sys; from decide import shim_format as S, v3w_generic as V; c=json.load(open(sys.argv[1])); p=json.load(open(sys.argv[3])).get("jevkit") or {}; ts=[c["template"]]+([p["lean_template"]] if p.get("lean_template") else [])+sorted((p.get("extra_templates") or {}).values()); print(json.dumps({t: (S.bind_template if S.is_shim_template(t) else V.bind_template)(t, sys.argv[2]).identity() for t in ts}))' \
@@ -532,6 +562,21 @@ timeout --kill-after=30s ${CELL_MIN}m python -m train.run_cell --config "$CELL" 
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
 case $r in 0) ;; 3) fail 33 "cell: eval attack template in the training rows (train.attack_guard)" ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|34|35|36) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
+# job-9fy9p: the screen crashed after training and the weights (exported only at the very end) were lost. Stage screen
+# exports the inference checkpoint (latest + best, small) right after the cell, so a later failure keeps them; the
+# end-of-job export below re-runs the same export (idempotent).
+if [ "$STAGE" = screen ] && [ "$INTERMEDIATE" != 1 ]; then
+  EL=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$CK/cell/latest.json" 2>/dev/null)
+  EB=$(python -c "import json,sys; print((json.load(open(sys.argv[1])).get('best') or {}).get('path') or '')" "$CK/cell/latest.json" 2>/dev/null)
+  EARGS=()
+  [ -n "$EB" ] && [ "$EB" != "$EL" ] && EARGS=(--best "$CK/cell/$EB")
+  if [ -n "$EL" ]; then
+    mkdir -p "$OUT/ckpt"
+    python -X utf8 -m train.ckpt_export inference --ckpt "$CK/cell/$EL" ${EARGS[@]+"${EARGS[@]}"} --out-dir "$OUT/ckpt" \
+      > "$WORK/logs/ckpt-export-early.log" 2>&1 && say "checkpoint exported after the cell ($EL${EB:+, best $EB})" \
+      || say "early checkpoint export failed: $(tail -1 "$WORK/logs/ckpt-export-early.log")"
+  fi
+fi
 
 # ------------------------------------------------------------------ intermediate chain link: export the resumable state, end
 if [ "$INTERMEDIATE" = 1 ]; then
@@ -557,7 +602,7 @@ if [ "$STAGE" = screen ]; then
     --ckpt-dir "$CK/cell" --model-dir "$SNAP" "${GDN_ARGS[@]}" --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" \
     --guard-readiness "$WORK/out/guard/readiness.json" --index-rows "$WORK/index-rows.jsonl.gz" --resume-dir "$CK/screen" \
     --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --reference "$WORK/out/screen-reference.json" \
-    --out-dir "$WORK/out/screen" --progress "$WORK/logs/progress-screen.jsonl" > "$WORK/logs/screen.log" 2>&1; r=$?
+    --out-dir "$WORK/out/screen" --data "$DATA" --progress "$WORK/logs/progress-screen.jsonl" > "$WORK/logs/screen.log" 2>&1; r=$?
   gate "screen" $r; export_phase screen
   case $r in 0) ;; 124|137) fail 7 "screen timeout" ;; 15) fail 15 "screen: live rate past the cap" ;;
     10) fail 10 "screen identity (proxy / parent arm / checkpoint lineage / plan check)" ;; *) fail 9 "screen rc=$r" ;; esac

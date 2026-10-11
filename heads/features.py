@@ -39,6 +39,9 @@ class HeadInput:
     option_mask: torch.Tensor
     fork: torch.Tensor | None = None
     ks: list[int] = field(default_factory=list)
+    #: first token of each option's continuation ``[B, K]`` (-1 on padded options / empty continuations); the
+    #: ``lm_label`` head reads the LM-head row of this token (the shim's label token in g1v2 shim rows)
+    cont_ids: torch.Tensor | None = None
 
     @property
     def device(self) -> torch.device:
@@ -59,6 +62,7 @@ class HeadInput:
             h=self.h, token_mask=self.token_mask, evidence_mask=self.evidence_mask, q_pre=self.q_pre,
             q_end=self.q_end, e=self.e[:, perm], option_mask=self.option_mask[:, perm],
             fork=None if self.fork is None else self.fork[:, perm], ks=list(self.ks),
+            cont_ids=None if self.cont_ids is None else self.cont_ids[:, perm],
         )
 
 
@@ -197,5 +201,7 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
         fork = _scatter_rows(h.new_zeros((bsz, kmax, d)), where, torch.cat(outs))
     if fork is not None and bool(e_from_fork.any()):
         e = torch.where(e_from_fork.view(-1, 1, 1), fork.to(e.dtype), e)  # fork is zero on padded options
+    cid = [[int(c[0]) if c else -1 for c in r.continuations] + [-1] * (kmax - len(r.continuations)) for r in rows]
+    cont_ids = torch.tensor(cid, dtype=torch.long, device=dev)  # one host -> device copy
     return HeadInput(h=h, token_mask=mask, evidence_mask=ev, q_pre=q_pre, q_end=q_end, e=e,
-                     option_mask=opt_mask, fork=fork, ks=ks)
+                     option_mask=opt_mask, fork=fork, ks=ks, cont_ids=cont_ids)

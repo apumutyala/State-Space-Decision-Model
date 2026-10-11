@@ -609,6 +609,23 @@ def validate_head(cfg: dict) -> None:
         raise ValueError(f"head_kwargs.c (evidence bound) must be > 0, got {c!r}")
 
 
+def dev_card_source(cfg: dict, train_dir) -> tuple[dict, list] | None:
+    """``dev_card_records`` (JEV2-H2O): the dev cards (best-checkpoint selection + collapse guard) read a held-out
+    JevBench-format slice instead of the cohort eval items: ``{"records": <path relative to the train dir's parent>,
+    "ids_sha256": <sha256 of the sorted ids joined by newlines>}``. The slice must be id-disjoint from the training draw
+    and its ids sha must equal the pin (fail closed). Never JevBench public items. Returns (records by id, sorted ids)
+    or None when the key is absent (every older cell: unchanged)."""
+    spec = cfg.get("dev_card_records")
+    if not spec:
+        return None
+    recs = _cell_records(str(Path(train_dir).parent / spec["records"]), development=False)  # validated, train format
+    ids = sorted(recs)
+    got = hashlib.sha256("\n".join(ids).encode()).hexdigest()
+    if got != spec.get("ids_sha256"):
+        raise ValueError(f"dev_card_records ids sha256 {got} != pinned {spec.get('ids_sha256')}")
+    return recs, ids
+
+
 def keep_item(row, max_k: int, max_t: int) -> bool:
     from heads.symmetric import SYM_LAYOUTS, SYM_MAX_CONT
 
@@ -965,6 +982,22 @@ def _main(argv=None, ctx: dict | None = None):
         except (LineageError, OSError) as e:
             print(f"qwen35 lineage: {e}", flush=True)
             return EXIT["lineage"]
+    if cfg.get("head") == "lm_label":  # JEV2-H2O primary: the host's own label readout needs a tied LM head + g1v2
+        try:
+            mc = json.loads((Path(a.model_dir) / "config.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            print(f"lm_label: config.json: {e}", flush=True)
+            return EXIT["config"]
+        tied = mc.get("tie_word_embeddings", (mc.get("text_config") or {}).get("tie_word_embeddings"))
+        if tied is not True or cfg.get("layout") != "g1v2":
+            print(f"lm_label head needs a tied LM head (config tie_word_embeddings={tied!r}) and layout g1v2 "
+                  f"(got {cfg.get('layout')!r})", flush=True)
+            return EXIT["config"]
+    j1 = cfg.get("jev1") or {}
+    if j1.get("enabled") and (j1.get("exclusion") or {}).get("status") != "landed":  # JEV2-H2O jev1 switch (fail closed)
+        print("jev1 is ON but its verbatim-leaf exclusion list has not landed (jev1.exclusion.status != landed); "
+              "refusing to train", flush=True)
+        return EXIT["config"]
     enc = parent_encoder(parent, a.model_dir, cfg)
     from train.g16_card import make_hook as g16_hook
 
@@ -1003,6 +1036,18 @@ def _main(argv=None, ctx: dict | None = None):
     t_tok = time.time()
     train_items = cell_items(train_recs, tr_ids, cfg, enc, guard, t_cap)
     eval_items = cell_items(eval_recs, ev_ids, cfg, enc, guard, t_cap, max_k=cfg["max_k"])  # eval cap unchanged
+    try:  # JEV2-H2O: the dev cards select on a held-out jev2 slice (never public-231); absent = the cohort eval items
+        dsrc = dev_card_source(cfg, a.train_dir)
+        if dsrc is not None and set(dsrc[1]) & set(tr_ids):
+            raise ValueError("dev_card_records ids overlap the training draw")
+    except (OSError, ValueError, KeyError) as e:
+        print(f"dev_card_records: {e}", flush=True)
+        return EXIT["data"]
+    card_items = eval_items if dsrc is None else cell_items(dsrc[0], dsrc[1], cfg, enc, guard, t_cap)
+    if dsrc is not None:
+        cell["dev_card_source"] = {"records": cfg["dev_card_records"]["records"], "ids_sha256":
+                                   cfg["dev_card_records"]["ids_sha256"], "n_records": len(dsrc[1]),
+                                   "n_items": len(card_items)}
     if cfg.get("assert_no_truncation"):  # JEV2-4B: every drawn question must survive the K / T filter (fail closed)
         want = sum(len((train_recs[i].get("labels") or {})) for i in tr_ids)
         if len(train_items) != want:
@@ -1234,7 +1279,7 @@ def _main(argv=None, ctx: dict | None = None):
         if tr.cfg.dev_card_every:  # the selected dev-card rows (best-ckpt selection + guard), for G12's dev_remainder
             from train.trainer import dev_card_record
 
-            cell["dev_card_sample"] = dev_card_record(eval_items, tr.cfg.dev_card_rows, tr.cfg.dev_card_seed)
+            cell["dev_card_sample"] = dev_card_record(card_items, tr.cfg.dev_card_rows, tr.cfg.dev_card_seed)
             save()
         used_before = train_seconds_used(cell, resumed)
         clock = {"t_start": None}  # set when the timed loop starts (the step-0 cards are outside max_minutes)
@@ -1242,7 +1287,7 @@ def _main(argv=None, ctx: dict | None = None):
         def dev_card(step_out):
             """A dev card; when it saved a best checkpoint (latest.json moved), the same bookkeeping as an ordinary
             checkpoint: train_clock, then cell.json, then the snapshot declare (PR #232 review S3)."""
-            tr.run_dev_card(eval_items, step_out)
+            tr.run_dev_card(card_items, step_out)
             if tr.cfg.best_ckpt and tr.cfg.ckpt_dir and tr.dev_cards and tr.dev_cards[-1].get("best"):
                 ran = time.time() - clock["t_start"] if clock["t_start"] is not None else 0.0
                 cell["train_clock"] = {"step": tr.step, "used_s": used_before + ran}

@@ -796,10 +796,15 @@ def expected_parent_identity(parent: str, provenance: dict | None = None, wkv: s
         return ident
     if parent == "qwen35":  # a stock Qwen3.5 (heads.backbone.QWEN35_STOCK): repo@revision + config.json sha256
         prov = provenance or {}
-        if prov.get("kind") != "qwen35-stock" or not prov.get("config_sha256"):
-            raise IdentityMismatch("qwen35 child has no stock Qwen3.5 provenance")
-        return {"parent": "qwen35", "repo": prov["repo"], "revision": prov["revision"],
-                "config_sha256": prov["config_sha256"]}
+        if prov.get("kind") not in ("qwen35-stock", "qwen35-host") or not prov.get("config_sha256"):
+            raise IdentityMismatch("qwen35 child has no stock Qwen3.5 / pinned host provenance")
+        ident = {"parent": "qwen35", "repo": prov["repo"], "revision": prov["revision"],
+                 "config_sha256": prov["config_sha256"]}
+        if prov["kind"] == "qwen35-host":  # EV-PREREG-H2O-HOST: the tuned host's weight pins are part of the identity
+            if not prov.get("weights_sha256"):
+                raise IdentityMismatch("qwen35 host child has no weights_sha256 provenance")
+            ident.update(host=True, weights_sha256=dict(prov["weights_sha256"]))
+        return ident
     raise ValueError(parent)
 
 

@@ -1,0 +1,1465 @@
+{
+ "schema": "m2-screen/v2",
+ "edition": "0.2.1",
+ "stage": "screen",
+ "readout": {
+  "name": "native",
+  "template": "jrt-h2o-shim:qwen3.5-4b",
+  "layout": "g1v2",
+  "native": true,
+  "reference_match": "cross",
+  "family": "h2o_shim"
+ },
+ "proxy": {
+  "ids_sha256": "7d42c398336e0934e4fba8d7d78bda07d0073967fc92a8af7b3a14253a9185e6",
+  "n_target": 600,
+  "design": "weight",
+  "seed": "proxy-v1",
+  "base_subset_ids_sha256": "6e4cb8dfac94a40a6e014e05744ff775aebcdf99d7a572190034e6bc026095c3",
+  "rows": 644
+ },
+ "scorer": "harness.score.decompose + harness.bootstrap.compare (case clusters, B=2000, seed 0) on the proxy rows",
+ "child": {
+  "point": 49.505546033136284,
+  "lo": 45.51011912864114,
+  "hi": 53.536419322529504,
+  "se": 2.0966645595408586
+ },
+ "parent_stock_readout": null,
+ "reference": {
+  "point": 37.7140200693248,
+  "lo": 34.179779370393994,
+  "hi": 42.9445036339034,
+  "se": 2.2466721101220437
+ },
+ "reference_identity": {
+  "how": "shipped",
+  "artifact": "art-zskmx",
+  "job": "job-39gnn",
+  "readout_template": "jrt-rwkv-g1-v3w",
+  "artifact_sha256": "dd017eb0e4f1ba31cf1f464cc01b533cf9e7dcdfa341af6725184b2302a12632",
+  "member": "./phases/final.tgz",
+  "member_sha256": "1ad5f899f8dca73a240b261c353178a9109b72c082c56e2bef095b471a517fb3",
+  "inner_member": "out/readout_ab/child.v3w.results.jsonl",
+  "units_sha256": "941af29e4e6d427b300703d3a7d29bd959e8c16af82292eb04e87b73b4474f02",
+  "shipped": "screen_reference/art-zskmx/child.v3w.results.jsonl",
+  "preset": "d1_v3w"
+ },
+ "parent_identity": {
+  "source": "none",
+  "readout_template": "jrt-h2o-shim:qwen3.5-4b"
+ },
+ "child_minus_parent": null,
+ "child_minus_reference": {
+  "point": 11.79152596381148,
+  "lo": 6.2427104789283625,
+  "hi": 15.65888786199458,
+  "se": 2.46327899320876,
+  "p_le_zero": 0.0,
+  "excludes_zero": true
+ },
+ "areas": {
+  "child_minus_parent": null,
+  "child_minus_reference": {
+   "knowledge": {
+    "point": 0.6450309621906953,
+    "lo": -8.561753574402115,
+    "hi": 8.430099989069278,
+    "se": 4.399856293297648
+   },
+   "language": {
+    "point": 16.45809232669332,
+    "lo": 5.036966422260148,
+    "hi": 26.956492442528948,
+    "se": 5.566402057481624
+   },
+   "retrieval": {
+    "point": 10.614714345759829,
+    "lo": -0.5105430761182775,
+    "hi": 18.914650398797086,
+    "se": 4.957167920957524
+   },
+   "tools": {
+    "point": 16.02439650128163,
+    "lo": 5.780254346028835,
+    "hi": 26.48479845562615,
+    "se": 5.273967937171157
+   },
+   "arts": {
+    "point": 23.1611111111111,
+    "lo": 3.8445277777777855,
+    "hi": 35.53095833333332,
+    "se": 8.141177038982843
+   }
+  }
+ },
+ "status": {
+  "child": {
+   "ok": 644
+  },
+  "parent": null,
+  "reference": {
+   "ok": 638,
+   "exhausted": 6
+  }
+ },
+ "rule": "DROP if child - reference < -2.5 Index points on the proxy (point), else PROMOTE to the full subset + full DEV; every arm under the same readout; a screen, never a promotion",
+ "verdict": "PROMOTE",
+ "warnings": {
+  "label_collapse": [
+   {
+    "family": "PhishNChips",
+    "benchmark": 56,
+    "question_type": "choice",
+    "label": "legitimate",
+    "gold_share": 0.3684,
+    "pred_share": 1.0,
+    "n": 38,
+    "direction": "always_predicted"
+   },
+   {
+    "family": "PhishNChips",
+    "benchmark": 56,
+    "question_type": "choice",
+    "label": "phishing",
+    "gold_share": 0.6316,
+    "pred_share": 0.0,
+    "n": 38,
+    "direction": "never_predicted"
+   }
+  ],
+  "label_collapse_count": 2,
+  "label_collapse_benchmarks": [
+   56
+  ],
+  "label_near_collapse": [],
+  "label_near_collapse_count": 0,
+  "label_near_collapse_benchmarks": [],
+  "groups_checked": 16,
+  "label_collapse_rule": "per (benchmark, question type, fixed label set): COLLAPSE if a label with gold share in [10%, 90%] has predicted share exactly 0% or 100%; NEAR-COLLAPSE if < 2% or > 98%; >= 20 counted questions; counted = gold not None and result status ok; NON-GATING (never changes a score or a gate)",
+  "gating": false,
+  "parent": null,
+  "reference": {
+   "label_collapse": [],
+   "label_collapse_count": 0,
+   "label_collapse_benchmarks": [],
+   "label_near_collapse": [],
+   "label_near_collapse_count": 0,
+   "label_near_collapse_benchmarks": [],
+   "groups_checked": 15,
+   "label_collapse_rule": "per (benchmark, question type, fixed label set): COLLAPSE if a label with gold share in [10%, 90%] has predicted share exactly 0% or 100%; NEAR-COLLAPSE if < 2% or > 98%; >= 20 counted questions; counted = gold not None and result status ok; NON-GATING (never changes a score or a gate)",
+   "gating": false
+  }
+ },
+ "cost": {
+  "elapsed_min": 41.0,
+  "runtime_usd": 2.58,
+  "usd_per_min": 0.063,
+  "build_minutes_not_included": true
+ },
+ "measured": true,
+ "comparators": {
+  "clef_flash": {
+   "comparator": {
+    "point": 59.03174582453604,
+    "lo": 54.92643722741521,
+    "hi": 62.34763386109744,
+    "se": 1.9246216466267558
+   },
+   "child": {
+    "point": 49.505546033136284,
+    "lo": 45.51011912864114,
+    "hi": 53.536419322529504,
+    "se": 2.0966645595408586
+   },
+   "child_minus_comparator": {
+    "point": -9.526199791399755,
+    "lo": -13.83204993911953,
+    "hi": -4.433217378175255,
+    "se": 2.4184359137260674,
+    "p_le_zero": 1.0,
+    "excludes_zero": true
+   },
+   "source": "Clef-flash job-t5yg2 art-7pyk2 index/decide_32k_substituted/results.jsonl (sha256 2cb2e961...) restricted to the 644 proxy600 rows (59.03 on the proxy)",
+   "readout_template": "clef-native (decide_32k_substituted)",
+   "cross_readout": true,
+   "units_sha256": "ac320b08c722f23b5662c85f19b32aaa9cb1554cf5424f1d9e7fc29df005dc94"
+  },
+  "clef_27b": {
+   "comparator": {
+    "point": 64.56391228142911,
+    "lo": 61.20750651580023,
+    "hi": 68.26035577584315,
+    "se": 1.7983590750651715
+   },
+   "child": {
+    "point": 49.505546033136284,
+    "lo": 45.51011912864114,
+    "hi": 53.536419322529504,
+    "se": 2.0966645595408586
+   },
+   "child_minus_comparator": {
+    "point": -15.058366248292828,
+    "lo": -19.76755049259044,
+    "hi": -10.478439046463253,
+    "se": 2.3623497553301918,
+    "p_le_zero": 1.0,
+    "excludes_zero": true
+   },
+   "source": "Clef 27B job-zfexa art-p93d4 index/decide_32k_substituted/results.jsonl (sha256 f5ad788b...) restricted to the 644 proxy600 rows (64.56 on the proxy)",
+   "readout_template": "clef-native (decide_32k_substituted)",
+   "cross_readout": true,
+   "units_sha256": "1040e563da0ba5d7394cbb8c7de54f2e389bd068ade8ddea9546443e725388f8"
+  }
+ },
+ "jevkit": {
+  "price": {
+   "kind": "base_model_reference",
+   "usd_per_m_input": 0.03,
+   "usd_per_m_output": 0.15,
+   "source": "JevBench v1.6.1 board api_v161.json deepinfra:Qwen/Qwen3.5-4B 0.03/0.15 per 1M (the price basis of the h2o-lightning-4b row; EV-PREREG-H2O-HOST)",
+   "as_of": "2026-10-09",
+   "listed_since": null,
+   "model": "Qwen/Qwen3.5-4B"
+  },
+  "lean_template": null,
+  "extra_templates": {},
+  "arms": {
+   "native": {
+    "report": "native.jevkit.json",
+    "report_sha256": "94fdda3157a8c7760a07140b09b028379115e319e8723f4c3d6dacc79b1bd01d",
+    "summary": {
+     "I": 66.18534613887702,
+     "C": 83.02903429984369,
+     "S": 90.77340267235056,
+     "K": 61.227052829294564,
+     "capability": 74.60719021936035,
+     "composite": {
+      "A": 73.39159103690926,
+      "B": 71.82747923284286,
+      "C": 73.39159103690926
+     },
+     "intelligence_basis": "open only (no sealed items; no gap penalty)",
+     "I_ci95": [
+      57.08015985072704,
+      74.69677766899486
+     ],
+     "C_ci95": [
+      72.36386711658635,
+      83.76669524719428
+     ],
+     "usd_per_1000": 0.019607922077922082,
+     "input_tokens_per_decision": {
+      "mean": 653.5974025974026,
+      "p50": 157.0,
+      "n": 231
+     },
+     "speed": {
+      "p50_s_raw": 0.06879113450122532,
+      "p95_s_raw": 0.0705015538056614,
+      "p50_s_adjusted": 0.28758226900245065,
+      "p95_s_adjusted": 0.29100310761132275,
+      "adjustment": "x2 + 0.15 s",
+      "score": 90.77340267235056,
+      "n": 72,
+      "source": "pred latency_s on open standard+judge items"
+     },
+     "status": {
+      "ok": 231
+     }
+    }
+   },
+   "stock_shim": {
+    "report": "stock_shim.jevkit.json",
+    "report_sha256": "4dfd1fc9fececb583bc2a02d07817bf0c6140bace0115bd143a0d98f6e213a84",
+    "summary": {
+     "I": 77.5879639499069,
+     "C": 82.84751264503728,
+     "S": 91.33849588313237,
+     "K": 61.227052829294564,
+     "capability": 80.2177382974721,
+     "composite": {
+      "A": 76.56982308788255,
+      "B": 76.7713079617927,
+      "C": 76.56982308788255
+     },
+     "intelligence_basis": "open only (no sealed items; no gap penalty)",
+     "I_ci95": [
+      69.10096359753808,
+      85.22186580889554
+     ],
+     "C_ci95": [
+      74.94111053814754,
+      84.99352165538637
+     ],
+     "usd_per_1000": 0.019607922077922082,
+     "input_tokens_per_decision": {
+      "mean": 653.5974025974026,
+      "p50": 157.0,
+      "n": 231
+     },
+     "speed": {
+      "p50_s_raw": 0.05848234400036745,
+      "p95_s_raw": 0.06261526029848027,
+      "p50_s_adjusted": 0.2669646880007349,
+      "p95_s_adjusted": 0.2752305205969605,
+      "adjustment": "x2 + 0.15 s",
+      "score": 91.33849588313237,
+      "n": 72,
+      "source": "pred latency_s on open standard+judge items"
+     },
+     "status": {
+      "ok": 231
+     }
+    }
+   },
+   "native_shimcal": {
+    "report": "native_shimcal.jevkit.json",
+    "report_sha256": "13bf9eeae31dbe7579de088e3cd3c3cd4cbc96059313e1136fe9032a6fbb2f5f",
+    "summary": {
+     "I": 78.23160874546959,
+     "C": 80.71747497825824,
+     "S": 90.77340267235056,
+     "K": 61.227052829294564,
+     "capability": 79.47454186186391,
+     "composite": {
+      "A": 76.16067857208317,
+      "B": 76.56604652642082,
+      "C": 76.16067857208317
+     },
+     "intelligence_basis": "open only (no sealed items; no gap penalty)",
+     "I_ci95": [
+      69.17524853670214,
+      86.43736181057058
+     ],
+     "C_ci95": [
+      72.20992246069163,
+      85.98547944806
+     ],
+     "usd_per_1000": 0.019607922077922082,
+     "input_tokens_per_decision": {
+      "mean": 653.5974025974026,
+      "p50": 157.0,
+      "n": 231
+     },
+     "speed": {
+      "p50_s_raw": 0.06879113450122532,
+      "p95_s_raw": 0.0705015538056614,
+      "p50_s_adjusted": 0.28758226900245065,
+      "p95_s_adjusted": 0.29100310761132275,
+      "adjustment": "x2 + 0.15 s",
+      "score": 90.77340267235056,
+      "n": 72,
+      "source": "pred latency_s on open standard+judge items"
+     },
+     "status": {
+      "ok": 231
+     }
+    }
+   },
+   "native_tfit": {
+    "report": "native_tfit.jevkit.json",
+    "report_sha256": "af96e1013e6f3b182c5405683880a4bef7164a74332e16966f3d3f303b94b9f9",
+    "summary": {
+     "I": 68.15903349194419,
+     "C": 82.65345455502951,
+     "S": 90.77340267235056,
+     "K": 61.227052829294564,
+     "capability": 75.40624402348685,
+     "composite": {
+      "A": 73.91069062996806,
+      "B": 72.68399074076383,
+      "C": 73.91069062996806
+     },
+     "intelligence_basis": "open only (no sealed items; no gap penalty)",
+     "I_ci95": [
+      58.70385725482663,
+      76.6976626965175
+     ],
+     "C_ci95": [
+      72.73646651921428,
+      84.19408854701001
+     ],
+     "usd_per_1000": 0.019607922077922082,
+     "input_tokens_per_decision": {
+      "mean": 653.5974025974026,
+      "p50": 157.0,
+      "n": 231
+     },
+     "speed": {
+      "p50_s_raw": 0.06879113450122532,
+      "p95_s_raw": 0.0705015538056614,
+      "p50_s_adjusted": 0.28758226900245065,
+      "p95_s_adjusted": 0.29100310761132275,
+      "adjustment": "x2 + 0.15 s",
+      "score": 90.77340267235056,
+      "n": 72,
+      "source": "pred latency_s on open standard+judge items"
+     },
+     "status": {
+      "ok": 231
+     }
+    }
+   }
+  },
+  "note": "open split only (the 231 pinned v1.2 public items, not the v1.6.1 P300 draw): Intelligence basis open-only, no gap penalty; latency in-process on this H100 (self-hosted x2 + 0.15 s lane)",
+  "vs_stock_shim": {
+   "native": {
+    "I": {
+     "point": -11.40261781102987,
+     "ci95": [
+      -17.88305927665209,
+      -5.469068161313773
+     ],
+     "a": 66.18534613887702,
+     "b": 77.5879639499069
+    },
+    "C": {
+     "point": 0.18152165480640292,
+     "ci95": [
+      -7.461662278013699,
+      3.566407576754318
+     ],
+     "a": 83.02903429984369,
+     "b": 82.84751264503728
+    },
+    "capability": {
+     "point": -5.610548078111748,
+     "ci95": [
+      -11.289240517535474,
+      -2.0786419013772224
+     ],
+     "a": 74.60719021936035,
+     "b": 80.2177382974721
+    },
+    "composite_A": {
+     "point": -3.1782320509732926,
+     "ci95": [
+      -6.126862223914862,
+      -1.3736542052736724
+     ],
+     "a": 73.39159103690926,
+     "b": 76.56982308788255
+    },
+    "B": 1000,
+    "seed": 16,
+    "a": "native",
+    "b": "stock_shim"
+   },
+   "native_shimcal": {
+    "I": {
+     "point": 0.6436447955626932,
+     "ci95": [
+      -2.5249900811833217,
+      3.206299718230128
+     ],
+     "a": 78.23160874546959,
+     "b": 77.5879639499069
+    },
+    "C": {
+     "point": -2.130037666779046,
+     "ci95": [
+      -6.922618694878189,
+      5.0920358131136
+     ],
+     "a": 80.71747497825824,
+     "b": 82.84751264503728
+    },
+    "capability": {
+     "point": -0.7431964356081835,
+     "ci95": [
+      -3.597901158370078,
+      3.330986416339777
+     ],
+     "a": 79.47454186186391,
+     "b": 80.2177382974721
+    },
+    "composite_A": {
+     "point": -0.40914451579938316,
+     "ci95": [
+      -1.7537641088641345,
+      1.3947140963854112
+     ],
+     "a": 76.16067857208317,
+     "b": 76.56982308788255
+    },
+    "B": 1000,
+    "seed": 16,
+    "a": "native_shimcal",
+    "b": "stock_shim"
+   },
+   "native_tfit": {
+    "I": {
+     "point": -9.428930457962707,
+     "ci95": [
+      -15.855729956928243,
+      -3.67133445167585
+     ],
+     "a": 68.15903349194419,
+     "b": 77.5879639499069
+    },
+    "C": {
+     "point": -0.19405809000777197,
+     "ci95": [
+      -7.260906676773359,
+      2.856702437674637
+     ],
+     "a": 82.65345455502951,
+     "b": 82.84751264503728
+    },
+    "capability": {
+     "point": -4.811494273985247,
+     "ci95": [
+      -10.219603620102408,
+      -1.6603385630680358
+     ],
+     "a": 75.40624402348685,
+     "b": 80.2177382974721
+    },
+    "composite_A": {
+     "point": -2.6591324579144953,
+     "ci95": [
+      -5.361930362200007,
+      -0.9892170527352634
+     ],
+     "a": 73.91069062996806,
+     "b": 76.56982308788255
+    },
+    "B": 1000,
+    "seed": 16,
+    "a": "native_tfit",
+    "b": "stock_shim"
+   }
+  },
+  "primary": {
+   "arm": "native_shimcal",
+   "baseline": "stock_shim",
+   "delta_composite_A": {
+    "point": -0.40914451579938316,
+    "ci95": [
+     -1.7537641088641345,
+     1.3947140963854112
+    ],
+    "a": 76.16067857208317,
+    "b": 76.56982308788255
+   },
+   "rule": "A-PREREG-JEV1-4B: SUCCESS iff delta Composite A > 0 with its 95% CI excluding 0",
+   "success": false,
+   "slice_floor_pass": true
+  },
+  "tfit": {
+   "T": 0.9318662726947265,
+   "T_nll": 0.9318662726947265,
+   "constrained": false,
+   "band_T1": 0.1962025316455696,
+   "band_T": 0.17450271247739602,
+   "band_T_nll": 0.17450271247739602,
+   "n": 3600,
+   "n_noul": 1106,
+   "nll_T_nll": 0.39812962375614663,
+   "nll_1": 0.39969558355103846,
+   "at_bound": false,
+   "ids_sha256": "142a593a1257d6729b5480fe67647b1af0c5678d2a929654f6325e128fce00be",
+   "records_gz_sha256": "b40cac9cd0cc2cc9d9b963f0b18601e348ef95fe4e08bfd49607b43b4dd81a0d"
+  },
+  "noul_band": {
+   "native": {
+    "rate": 0.21621621621621623,
+    "in_band": 16,
+    "n": 74,
+    "band": [
+     0.2,
+     0.8
+    ]
+   },
+   "stock_shim": {
+    "rate": 0.0,
+    "in_band": 0,
+    "n": 74,
+    "band": [
+     0.2,
+     0.8
+    ]
+   },
+   "native_shimcal": {
+    "rate": 0.0,
+    "in_band": 0,
+    "n": 74,
+    "band": [
+     0.2,
+     0.8
+    ]
+   },
+   "native_tfit": {
+    "rate": 0.1891891891891892,
+    "in_band": 14,
+    "n": 74,
+    "band": [
+     0.2,
+     0.8
+    ]
+   }
+  },
+  "noul_band_gate": {
+   "rule": "native yes/no band rate <= stock_shim's (reported gate, A-PREREG-JEV2-4B Am. 2)",
+   "native": 0.21621621621621623,
+   "stock_shim": 0.0,
+   "pass": false
+  },
+  "g1": {
+   "ops": [
+    "option_reverse",
+    "option_shuffle",
+    "key_relabel"
+   ],
+   "n_base": 231,
+   "n_perturbed": 565,
+   "g1_pass": false,
+   "rows_all_identical": false,
+   "duplicate_tie_items": [],
+   "max_dp_bound": 0.001,
+   "status": {
+    "base": {
+     "ok": 231
+    },
+    "perturbed": {
+     "ok": 565
+    }
+   },
+   "per_operator": {
+    "key_relabel": {
+     "n": 139,
+     "invalid": 0,
+     "flips": 9,
+     "flip_rate": 0.06474820143884892,
+     "mean_tv_shift": 0.03369172661870504,
+     "max_tv_shift": 0.47285,
+     "max_abs_dp": 0.4729
+    },
+    "option_reverse": {
+     "n": 213,
+     "invalid": 0,
+     "flips": 9,
+     "flip_rate": 0.04225352112676056,
+     "mean_tv_shift": 0.033172065727699526,
+     "max_tv_shift": 0.44134999999999996,
+     "max_abs_dp": 0.44139999999999996
+    },
+    "option_shuffle": {
+     "n": 213,
+     "invalid": 0,
+     "flips": 9,
+     "flip_rate": 0.04225352112676056,
+     "mean_tv_shift": 0.033172065727699526,
+     "max_tv_shift": 0.44134999999999996,
+     "max_abs_dp": 0.44139999999999996
+    }
+   },
+   "rule": "A-PREREG-JEV2-4B G1: 0 flips, 0 invalid, max |dp| <= 1e-3 on every op (jobs.sym_eval.perturb_eval)"
+  },
+  "by_coverage": {
+   "covered": {
+    "n_items": 79,
+    "families": [
+     "adequacy",
+     "intent",
+     "long_policy",
+     "policy",
+     "routing"
+    ],
+    "vs_stock_shim": {
+     "native": {
+      "I": {
+       "point": -16.913297961847398,
+       "ci95": [
+        -29.98530356711717,
+        1.7904057418563042
+       ],
+       "a": 50.44179775440997,
+       "b": 67.35509571625737
+      },
+      "C": {
+       "point": -3.3417405529975213,
+       "ci95": [
+        -6.774940697695946,
+        6.569153861597027
+       ],
+       "a": 69.83017720210728,
+       "b": 73.1719177551048
+      },
+      "capability": {
+       "point": -10.127519257422463,
+       "ci95": [
+        -16.2257306132318,
+        1.3386315292815776
+       ],
+       "a": 60.13598747825863,
+       "b": 70.26350673568109
+      },
+      "composite_A": {
+       "point": -6.645612488310107,
+       "ci95": [
+        -42.02743142737313,
+        1.0188118541997815
+       ],
+       "a": 65.04659724214643,
+       "b": 71.69220973045654
+      },
+      "B": 1000,
+      "seed": 16,
+      "a": "native",
+      "b": "stock_shim"
+     },
+     "native_shimcal": {
+      "I": {
+       "point": 2.195144737430823,
+       "ci95": [
+        1.8672619230785727,
+        2.5230275517830734
+       ],
+       "a": 69.55024045368819,
+       "b": 67.35509571625737
+      },
+      "C": {
+       "point": -2.3068610064768365,
+       "ci95": [
+        -6.436790323700974,
+        11.671106921822808
+       ],
+       "a": 70.86505674862796,
+       "b": 73.1719177551048
+      },
+      "capability": {
+       "point": -0.05585813452302091,
+       "ci95": [
+        -2.1134718617552033,
+        6.8875227772715935
+       ],
+       "a": 70.20764860115807,
+       "b": 70.26350673568109
+      },
+      "composite_A": {
+       "point": -0.057066970879560586,
+       "ci95": [
+        -0.6911839611106805,
+        5.952375948058653
+       ],
+       "a": 71.63514275957698,
+       "b": 71.69220973045654
+      },
+      "B": 1000,
+      "seed": 16,
+      "a": "native_shimcal",
+      "b": "stock_shim"
+     },
+     "native_tfit": {
+      "I": {
+       "point": -16.140113842020305,
+       "ci95": [
+        -29.845983544705287,
+        2.5614238627021138
+       ],
+       "a": 51.21498187423706,
+       "b": 67.35509571625737
+      },
+      "C": {
+       "point": -2.0856074226656887,
+       "ci95": [
+        -6.041238821508013,
+        8.25961134651771
+       ],
+       "a": 71.08631033243911,
+       "b": 73.1719177551048
+      },
+      "capability": {
+       "point": -9.112860632343,
+       "ci95": [
+        -15.537058865084946,
+        2.0300560522085744
+       ],
+       "a": 61.15064610333809,
+       "b": 70.26350673568109
+      },
+      "composite_A": {
+       "point": -6.056068896780317,
+       "ci95": [
+        -42.56247895463769,
+        1.657322322893698
+       ],
+       "a": 65.63614083367622,
+       "b": 71.69220973045654
+      },
+      "B": 1000,
+      "seed": 16,
+      "a": "native_tfit",
+      "b": "stock_shim"
+     }
+    }
+   },
+   "uncovered": {
+    "n_items": 152,
+    "families": [
+     "adversarial",
+     "ambiguous",
+     "extraction",
+     "fact",
+     "judge_hard",
+     "multi_hop",
+     "ordinal",
+     "probability",
+     "routing_hard",
+     "temporal_numeric",
+     "tool_selection",
+     "tradeoff",
+     "trap"
+    ],
+    "vs_stock_shim": {
+     "native": {
+      "I": {
+       "point": -13.597790117199956,
+       "ci95": [
+        -22.607699839107116,
+        -5.605357142708043
+       ],
+       "a": 63.5486355544134,
+       "b": 77.14642567161336
+      },
+      "C": {
+       "point": -1.3079251614296652,
+       "ci95": [
+        -9.832029376496855,
+        2.515108775702735
+       ],
+       "a": 80.05549534172454,
+       "b": 81.3634205031542
+      },
+      "capability": {
+       "point": -7.452857639314814,
+       "ci95": [
+        -14.220170539382712,
+        -3.0887036019585747
+       ],
+       "a": 71.80206544806897,
+       "b": 79.25492308738379
+      },
+      "composite_A": {
+       "point": -4.1684179521990075,
+       "ci95": [
+        -8.105865107617571,
+        -1.597740517908837
+       ],
+       "a": 71.97298748310298,
+       "b": 76.14140543530199
+      },
+      "B": 1000,
+      "seed": 16,
+      "a": "native",
+      "b": "stock_shim"
+     },
+     "native_shimcal": {
+      "I": {
+       "point": -0.029063463282625435,
+       "ci95": [
+        -5.218480134757114,
+        3.6632720982636715
+       ],
+       "a": 77.11736220833073,
+       "b": 77.14642567161336
+      },
+      "C": {
+       "point": -0.769443824600657,
+       "ci95": [
+        -6.555180714903798,
+        5.271052448259733
+       ],
+       "a": 80.59397667855355,
+       "b": 81.3634205031542
+      },
+      "capability": {
+       "point": -0.3992536439416483,
+       "ci95": [
+        -4.650505046473548,
+        3.4765227762595132
+       ],
+       "a": 78.85566944344214,
+       "b": 79.25492308738379
+      },
+      "composite_A": {
+       "point": -0.2749384111877049,
+       "ci95": [
+        -2.388204188896211,
+        1.4787617869596084
+       ],
+       "a": 75.86646702411429,
+       "b": 76.14140543530199
+      },
+      "B": 1000,
+      "seed": 16,
+      "a": "native_shimcal",
+      "b": "stock_shim"
+     },
+     "native_tfit": {
+      "I": {
+       "point": -11.734858263365496,
+       "ci95": [
+        -20.2214885053157,
+        -3.842155164682705
+       ],
+       "a": 65.41156740824786,
+       "b": 77.14642567161336
+      },
+      "C": {
+       "point": -3.168018245662111,
+       "ci95": [
+        -9.680940935887316,
+        1.6173708359352599
+       ],
+       "a": 78.19540225749209,
+       "b": 81.3634205031542
+      },
+      "capability": {
+       "point": -7.451438254513818,
+       "ci95": [
+        -13.340033733984871,
+        -2.5865748333636174
+       ],
+       "a": 71.80348483286997,
+       "b": 79.25492308738379
+      },
+      "composite_A": {
+       "point": -3.9723068806486026,
+       "ci95": [
+        -7.3976916420076035,
+        -1.435872883174715
+       ],
+       "a": 72.16909855465339,
+       "b": 76.14140543530199
+      },
+      "B": 1000,
+      "seed": 16,
+      "a": "native_tfit",
+      "b": "stock_shim"
+     }
+    }
+   }
+  },
+  "by_family": {
+   "adequacy": {
+    "n_items": 12,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "a": 83.33333333333333,
+     "b": 83.33333333333333
+    },
+    "delta_composite_A": {
+     "point": -2.1612471057470373,
+     "ci95": [
+      -4.727398697468775,
+      3.9311719289207883
+     ],
+     "a": 76.07662253321318,
+     "b": 78.23786963896022
+    }
+   },
+   "adversarial": {
+    "n_items": 6,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 0.577097321138524,
+     "ci95": [
+      0.577097321138524,
+      0.577097321138524
+     ],
+     "a": 99.62944694577953,
+     "b": 99.05234962464101
+    },
+    "delta_composite_A": {
+     "point": 0.8804493053128368,
+     "ci95": [
+      0.8218268010481609,
+      0.945836041606654
+     ],
+     "a": 83.87476279086172,
+     "b": 82.99431348554889
+    }
+   },
+   "ambiguous": {
+    "n_items": 7,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "a": 78.9473684210526,
+     "b": 78.9473684210526
+    },
+    "delta_composite_A": {
+     "point": 1.0315086415400572,
+     "ci95": [
+      -0.4635568383163063,
+      1.7688158690396147
+     ],
+     "a": 73.49286694790256,
+     "b": 72.4613583063625
+    }
+   },
+   "extraction": {
+    "n_items": 24,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "a": 99.99999999999999,
+     "b": 99.99999999999999
+    },
+    "delta_composite_A": {
+     "point": 1.2127654127429253,
+     "ci95": [
+      0.98426420122086,
+      1.499043772406812
+     ],
+     "a": 83.89078800659777,
+     "b": 82.67802259385485
+    }
+   },
+   "fact": {
+    "n_items": 12,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "a": 100.0,
+     "b": 100.0
+    },
+    "delta_composite_A": {
+     "point": 1.209580040526106,
+     "ci95": [
+      1.0928273060151252,
+      1.348300194441472
+     ],
+     "a": 83.87542043461562,
+     "b": 82.66584039408951
+    }
+   },
+   "intent": {
+    "n_items": 24,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "a": 100.0,
+     "b": 100.0
+    },
+    "delta_composite_A": {
+     "point": 0.9523281626345437,
+     "ci95": [
+      0.780345916836717,
+      1.1817677117468972
+     ],
+     "a": 83.71584200569309,
+     "b": 82.76351384305855
+    }
+   },
+   "judge_hard": {
+    "n_items": 17,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": -11.764705882352946,
+     "ci95": [
+      -35.29411764705883,
+      0.0
+     ],
+     "a": 29.41176470588236,
+     "b": 41.176470588235304
+    },
+    "delta_composite_A": {
+     "point": -23.122215465037,
+     "ci95": [
+      -53.23786841188901,
+      0.0
+     ],
+     "a": 15.602301567170336,
+     "b": 38.72451703220734
+    }
+   },
+   "long_policy": {
+    "n_items": 19,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 2.19514473743083,
+     "ci95": [
+      1.8672619230785727,
+      2.5230275517830734
+     ],
+     "a": 61.415153584310474,
+     "b": 59.220008846879644
+    },
+    "delta_composite_A": {
+     "point": -0.696335963161772,
+     "ci95": [
+      -1.5802394980500938,
+      5.37123231791446
+     ],
+     "a": 67.88474766882285,
+     "b": 68.58108363198463
+    }
+   },
+   "multi_hop": {
+    "n_items": 18,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": -1.8914232473619847,
+     "ci95": [
+      -4.631149274759238,
+      3.5321160313632163
+     ],
+     "a": 75.16793750234113,
+     "b": 77.05936074970312
+    },
+    "delta_composite_A": {
+     "point": 2.507575571420645,
+     "ci95": [
+      1.5170031842194676,
+      3.7837118024558545
+     ],
+     "a": 71.9361705258246,
+     "b": 69.42859495440395
+    }
+   },
+   "ordinal": {
+    "n_items": 12,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 4.523604668075038,
+     "ci95": [
+      2.829806377815137,
+      6.224463206643141
+     ],
+     "a": 97.91327334551336,
+     "b": 93.38966867743832
+    },
+    "delta_composite_A": {
+     "point": 1.8376384521282034,
+     "ci95": [
+      1.3654356884156686,
+      2.3927610466057394
+     ],
+     "a": 83.64556305229985,
+     "b": 81.80792460017165
+    }
+   },
+   "policy": {
+    "n_items": 12,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "a": 100.0,
+     "b": 100.0
+    },
+    "delta_composite_A": {
+     "point": 2.117958201841617,
+     "ci95": [
+      1.4299904804861565,
+      3.1475056275216824
+     ],
+     "a": 83.14731049160466,
+     "b": 81.02935228976304
+    }
+   },
+   "probability": {
+    "n_items": 10,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": -10.714285714285722,
+     "ci95": [
+      -32.14285714285714,
+      0.0
+     ],
+     "a": 89.28571428571428,
+     "b": 100.0
+    },
+    "delta_composite_A": {
+     "point": -0.0006083815841009255,
+     "ci95": [
+      -8.630115660771866,
+      4.28188439274773
+     ],
+     "a": 70.89782702230075,
+     "b": 70.89843540388485
+    }
+   },
+   "routing": {
+    "n_items": 12,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "a": 100.0,
+     "b": 100.0
+    },
+    "delta_composite_A": {
+     "point": 1.3167663249211046,
+     "ci95": [
+      0.9352871059493875,
+      1.903139191487173
+     ],
+     "a": 82.87637632278964,
+     "b": 81.55960999786853
+    }
+   },
+   "routing_hard": {
+    "n_items": 5,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "a": 100.0,
+     "b": 100.0
+    },
+    "delta_composite_A": {
+     "point": 0.6241624730134561,
+     "ci95": [
+      0.43556942224930423,
+      0.8505296356778302
+     ],
+     "a": 83.82918284203441,
+     "b": 83.20502036902096
+    }
+   },
+   "temporal_numeric": {
+    "n_items": 15,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 4.9718935499983345,
+     "ci95": [
+      -3.67218313578733,
+      4.971893549998342
+     ],
+     "a": 38.26789976545215,
+     "b": 33.296006215453815
+    },
+    "delta_composite_A": {
+     "point": 6.484050593794645,
+     "ci95": [
+      -5.190025243092186,
+      7.671406740783527
+     ],
+     "a": 30.01149108702716,
+     "b": 23.527440493232515
+    }
+   },
+   "tool_selection": {
+    "n_items": 12,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "a": 100.0,
+     "b": 100.0
+    },
+    "delta_composite_A": {
+     "point": 0.5637016594796478,
+     "ci95": [
+      0.4715416521446407,
+      0.6544966202553824
+     ],
+     "a": 84.00114077111344,
+     "b": 83.4374391116338
+    }
+   },
+   "tradeoff": {
+    "n_items": 6,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "a": 84.12698412698413,
+     "b": 84.12698412698413
+    },
+    "delta_composite_A": {
+     "point": 3.595927026388722,
+     "ci95": [
+      -6.967508124706576,
+      15.958267700239615
+     ],
+     "a": 74.85379862139659,
+     "b": 71.25787159500787
+    }
+   },
+   "trap": {
+    "n_items": 8,
+    "arm": "native_shimcal",
+    "delta_I": {
+     "point": 5.902694859882033,
+     "ci95": [
+      5.902694859882033,
+      5.902694859882033
+     ],
+     "a": 98.10951586446923,
+     "b": 92.2068210045872
+    },
+    "delta_composite_A": {
+     "point": 2.7107731400703585,
+     "ci95": [
+      2.6180503327341142,
+      2.8043513138989793
+     ],
+     "a": 83.490167974657,
+     "b": 80.77939483458664
+    }
+   }
+  },
+  "slice_floor": {
+   "ids_sha256": "142a593a1257d6729b5480fe67647b1af0c5678d2a929654f6325e128fce00be",
+   "n_decisions": 3600,
+   "unmatched_excluded": 0,
+   "native_top1": 0.8461111111111111,
+   "step0_top1": 0.8016666666666666,
+   "per_family": {
+    "adequacy": {
+     "n": 200,
+     "native": 0.785,
+     "step0": 0.7,
+     "delta": 0.08500000000000008
+    },
+    "adversarial": {
+     "n": 200,
+     "native": 0.82,
+     "step0": 0.675,
+     "delta": 0.1449999999999999
+    },
+    "ambiguous": {
+     "n": 200,
+     "native": 0.995,
+     "step0": 0.915,
+     "delta": 0.07999999999999996
+    },
+    "enum": {
+     "n": 200,
+     "native": 0.995,
+     "step0": 0.995,
+     "delta": 0.0
+    },
+    "fact": {
+     "n": 200,
+     "native": 0.98,
+     "step0": 0.985,
+     "delta": -0.0050000000000000044
+    },
+    "intent": {
+     "n": 200,
+     "native": 0.98,
+     "step0": 0.975,
+     "delta": 0.0050000000000000044
+    },
+    "judge_hard": {
+     "n": 200,
+     "native": 0.695,
+     "step0": 0.695,
+     "delta": 0.0
+    },
+    "long_policy": {
+     "n": 200,
+     "native": 0.875,
+     "step0": 0.86,
+     "delta": 0.015000000000000013
+    },
+    "multi_hop": {
+     "n": 200,
+     "native": 0.845,
+     "step0": 0.81,
+     "delta": 0.03499999999999992
+    },
+    "policy": {
+     "n": 200,
+     "native": 0.81,
+     "step0": 0.74,
+     "delta": 0.07000000000000006
+    },
+    "probability": {
+     "n": 200,
+     "native": 0.73,
+     "step0": 0.695,
+     "delta": 0.03500000000000003
+    },
+    "routing": {
+     "n": 200,
+     "native": 0.86,
+     "step0": 0.84,
+     "delta": 0.020000000000000018
+    },
+    "severity": {
+     "n": 200,
+     "native": 0.78,
+     "step0": 0.745,
+     "delta": 0.03500000000000003
+    },
+    "state_tracking": {
+     "n": 200,
+     "native": 0.83,
+     "step0": 0.835,
+     "delta": -0.0050000000000000044
+    },
+    "temporal_numeric": {
+     "n": 200,
+     "native": 0.615,
+     "step0": 0.585,
+     "delta": 0.030000000000000027
+    },
+    "tool_selection": {
+     "n": 200,
+     "native": 0.995,
+     "step0": 0.995,
+     "delta": 0.0
+    },
+    "tradeoff": {
+     "n": 200,
+     "native": 0.7,
+     "step0": 0.545,
+     "delta": 0.15499999999999992
+    },
+    "trap": {
+     "n": 200,
+     "native": 0.94,
+     "step0": 0.84,
+     "delta": 0.09999999999999998
+    }
+   },
+   "rule": "A-PREREG-JEV2-H2O floor: the selected checkpoint must beat step 0 (the untrained host) on the held-out slice top-1; otherwise step 0 = no change and the run is NEGATIVE",
+   "delta": 0.04444444444444451,
+   "pass": true
+  }
+ }
+}

@@ -962,24 +962,55 @@ QWEN35_STOCK = {
 }
 
 
+#: Already-tuned Qwen3.5-architecture HOSTS a cell may initialise from (EV-PREREG-H2O-HOST, state 94d38f43 + amendment
+#: 857592e9): repo -> the ONE allowed revision. A host block (``qwen35.host`` true) must also pin the sha256 of every
+#: weight file (``weights_sha256``), checked at load before any weight is read; provenance kind ``qwen35-host``.
+QWEN35_HOSTS = {
+    "h2oai/h2o-lightning-4b": "193ad740925b176a3b70a5a13a7cff2f2fadd01e",  # H2O-Lightning-4B v1.1 tag, Apache-2.0
+}
+
+
 def qwen35_pin_check(pin: dict, model_dir=None) -> dict:
-    """Lineage pins of a stock Qwen3.5 parent (no conversion, attention layers kept). ``pin`` = the cell config's
-    ``qwen35`` block: ``repo`` / ``revision`` (one of ``QWEN35_STOCK``), ``config_sha256`` (sha256 of the snapshot's
-    config.json; REQUIRED, checked whenever ``model_dir`` is given). Returns the provenance stamped into the backbone
-    identity (lineage, decide revision)."""
+    """Lineage pins of a Qwen3.5 parent (no conversion, attention layers kept). ``pin`` = the cell config's ``qwen35``
+    block: ``repo`` / ``revision`` (one of ``QWEN35_STOCK``, or with ``host`` true one of ``QWEN35_HOSTS``),
+    ``config_sha256`` (sha256 of the snapshot's config.json; REQUIRED, checked whenever ``model_dir`` is given). A host
+    additionally needs ``weights_sha256`` {file: sha256} (every safetensors file, hashed here at load) and, given
+    ``model_dir``, a snapshot directory named by the pinned commit (huggingface_hub's snapshots/<sha>). Fail-closed.
+    Returns the provenance stamped into the backbone identity (lineage, decide revision)."""
     from pathlib import Path
 
     repo, rev = pin.get("repo"), pin.get("revision")
-    if QWEN35_STOCK.get(repo) != rev:
-        raise LineageError(f"qwen35 {repo}@{rev} is not a pinned stock Qwen3.5 ({sorted(QWEN35_STOCK)})")
+    host = bool(pin.get("host"))
+    table = QWEN35_HOSTS if host else QWEN35_STOCK
+    if table.get(repo) != rev:
+        what = "pinned Qwen3.5 host" if host else "pinned stock Qwen3.5"
+        raise LineageError(f"qwen35 {repo}@{rev} is not a {what} ({sorted(table)})")
     cfg_pin = pin.get("config_sha256")
     if not cfg_pin or len(str(cfg_pin)) != 64:
         raise LineageError(f"qwen35.config_sha256 is not pinned ({cfg_pin!r})")
-    prov = {"kind": "qwen35-stock", "repo": repo, "revision": rev, "config_sha256": cfg_pin, "attention_free": False}
+    prov = {"kind": "qwen35-host" if host else "qwen35-stock", "repo": repo, "revision": rev, "config_sha256": cfg_pin,
+            "attention_free": False}
+    weights = dict(pin.get("weights_sha256") or {})
+    if host:
+        if not weights or any(len(str(v)) != 64 for v in weights.values()):
+            raise LineageError("qwen35 host: weights_sha256 {file: sha256} must pin every weight file")
+        prov["weights_sha256"] = weights
+        prov["label"] = pin.get("label") or repo
     if model_dir is not None:
         got = _sha256_file(Path(model_dir) / "config.json")
         if got != cfg_pin:
             raise LineageError(f"qwen35 config.json sha256 {got} != pinned {cfg_pin}")
+        if host:
+            d = Path(model_dir)
+            if d.resolve().name != rev and d.name != rev:
+                raise LineageError(f"qwen35 host snapshot directory {d.name} is not the pinned commit {rev}")
+            have = sorted(p.name for p in d.iterdir() if p.name.endswith(".safetensors"))
+            if have != sorted(weights):
+                raise LineageError(f"qwen35 host weight files {have} != pinned {sorted(weights)}")
+            for name, want in sorted(weights.items()):
+                g = _sha256_file((d / name).resolve())
+                if g != want:
+                    raise LineageError(f"qwen35 host {name} sha256 {g} != pinned {want}")
     return prov
 
 
@@ -1005,19 +1036,33 @@ def load_qwen35_backbone(model_dir: str, pin: dict, device: str = "cuda", dtype:
     from transformers import AutoConfig, Qwen3_5ForCausalLM, Qwen3_5ForConditionalGeneration
 
     prov = qwen35_pin_check(pin, model_dir)
+    host = prov["kind"] == "qwen35-host"
     place = {} if str(device) == "cpu" else {"device_map": {"": device}}
+    # a host (already-tuned weights) must load EVERY text weight from its pinned files: from_pretrained only warns on
+    # missing keys and initialises them randomly, which would silently replace the host; stock loads are unchanged
+    info_kw = {"output_loading_info": True} if host else {}
     if hasattr(AutoConfig.from_pretrained(model_dir), "text_config"):  # the real snapshot (vision + text)
-        full = Qwen3_5ForConditionalGeneration.from_pretrained(model_dir, dtype=getattr(torch, dtype), **place)
+        full = Qwen3_5ForConditionalGeneration.from_pretrained(model_dir, dtype=getattr(torch, dtype), **place, **info_kw)
+        full, info = full if host else (full, None)
         text = full.model.language_model
-    else:  # a text-only Qwen3.5 checkpoint (tiny CPU stand-ins)
-        full = Qwen3_5ForCausalLM.from_pretrained(model_dir, dtype=getattr(torch, dtype), **place)
+    else:  # a text-only Qwen3.5 checkpoint (H2O-Lightning-4B v1.1; tiny CPU stand-ins)
+        full = Qwen3_5ForCausalLM.from_pretrained(model_dir, dtype=getattr(torch, dtype), **place, **info_kw)
+        full, info = full if host else (full, None)
         text = full.model
+    if host:
+        import re
+
+        miss = [k for k in (info or {}).get("missing_keys", []) if not re.search(r"(^|\.)(visual|vision\w*|lm_head)\.", k)]
+        if miss:
+            raise LineageError(f"qwen35 host: {len(miss)} text weights missing from the pinned files: {miss[:5]}")
+        prov["missing_text_keys"] = 0
     del full
     for p in text.parameters():
         p.requires_grad_(False)
     size = prov["repo"].split("-")[-1].lower()
     non_emb = float(sum(p.numel() for n, p in text.named_parameters() if "embed_tokens" not in n))
-    spec = qwen35_spec(text.config, f"qwen3.5-{size}-stock", f"{prov['repo']}@{prov['revision']} (stock hybrid)", non_emb)
+    kind = "host" if host else "stock"
+    spec = qwen35_spec(text.config, f"qwen3.5-{size}-{kind}", f"{prov['repo']}@{prov['revision']} ({kind} hybrid)", non_emb)
     bb = HiddenStateBackbone(text, spec=spec, pad_id=0, fork_mode=fork_mode)
     bb.provenance = prov
     return bb
