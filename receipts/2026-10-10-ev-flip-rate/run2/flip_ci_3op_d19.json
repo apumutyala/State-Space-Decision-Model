@@ -1,0 +1,755 @@
+{
+ "rule": "B-PREREG-FLIP",
+ "B": 1000,
+ "seed": 16,
+ "n_base": 231,
+ "n_perturbed": 565,
+ "operators": [
+  "state_paraphrase",
+  "instruction_paraphrase",
+  "option_paraphrase",
+  "option_reverse",
+  "option_shuffle",
+  "key_relabel",
+  "whitespace_noise",
+  "markup_noise"
+ ],
+ "models": {
+  "rwkv7_13b_stock": {
+   "flip_report": {
+    "per_operator": {
+     "key_relabel": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 31,
+      "flip_rate": 0.22302158273381295,
+      "mean_tv_shift": 0.14216258992805755,
+      "max_tv_shift": 0.7381,
+      "max_abs_dp": 0.7381
+     },
+     "option_reverse": {
+      "n": 213,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     },
+     "option_shuffle": {
+      "n": 213,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     }
+    },
+    "per_operator_type": {
+     "key_relabel|choice": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 31,
+      "flip_rate": 0.22302158273381295,
+      "mean_tv_shift": 0.14216258992805755,
+      "max_tv_shift": 0.7381,
+      "max_abs_dp": 0.7381
+     },
+     "option_reverse|choice": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     },
+     "option_reverse|noul": {
+      "n": 74,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     },
+     "option_shuffle|choice": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     },
+     "option_shuffle|noul": {
+      "n": 74,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     }
+    },
+    "average_flip_rate": 0.07434052757793765,
+    "pooled": {
+     "n": 565,
+     "invalid": 0,
+     "flips": 31,
+     "flip_rate": 0.05486725663716814,
+     "mean_tv_shift": 0.03497451327433628,
+     "max_tv_shift": 0.7381,
+     "max_abs_dp": 0.7381
+    },
+    "reorder_flips": 31,
+    "note": "operators are jevkit's own; MD1's exact 8 operators are unpublished"
+   },
+   "point": {
+    "state_paraphrase": null,
+    "instruction_paraphrase": null,
+    "option_paraphrase": null,
+    "option_reverse": 0.0,
+    "option_shuffle": 0.0,
+    "key_relabel": 0.22302158273381295,
+    "whitespace_noise": null,
+    "markup_noise": null,
+    "_average": 0.07434052757793765
+   },
+   "n_valid": {
+    "state_paraphrase": 0,
+    "instruction_paraphrase": 0,
+    "option_paraphrase": 0,
+    "option_reverse": 213,
+    "option_shuffle": 213,
+    "key_relabel": 139,
+    "whitespace_noise": 0,
+    "markup_noise": 0
+   },
+   "n_invalid": {
+    "state_paraphrase": 0,
+    "instruction_paraphrase": 0,
+    "option_paraphrase": 0,
+    "option_reverse": 0,
+    "option_shuffle": 0,
+    "key_relabel": 0,
+    "whitespace_noise": 0,
+    "markup_noise": 0
+   },
+   "ci95": {
+    "state_paraphrase": null,
+    "instruction_paraphrase": null,
+    "option_paraphrase": null,
+    "option_reverse": [
+     0.0,
+     0.0
+    ],
+    "option_shuffle": [
+     0.0,
+     0.0
+    ],
+    "key_relabel": [
+     0.15384615384615385,
+     0.2913628104179285
+    ],
+    "whitespace_noise": null,
+    "markup_noise": null,
+    "_average": [
+     0.05128205128205129,
+     0.09712093680597617
+    ]
+   }
+  },
+  "d19": {
+   "flip_report": {
+    "per_operator": {
+     "key_relabel": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 12,
+      "flip_rate": 0.08633093525179857,
+      "mean_tv_shift": 0.07437194244604317,
+      "max_tv_shift": 0.639,
+      "max_abs_dp": 0.639
+     },
+     "option_reverse": {
+      "n": 213,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     },
+     "option_shuffle": {
+      "n": 213,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     }
+    },
+    "per_operator_type": {
+     "key_relabel|choice": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 12,
+      "flip_rate": 0.08633093525179857,
+      "mean_tv_shift": 0.07437194244604317,
+      "max_tv_shift": 0.639,
+      "max_abs_dp": 0.639
+     },
+     "option_reverse|choice": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     },
+     "option_reverse|noul": {
+      "n": 74,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     },
+     "option_shuffle|choice": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     },
+     "option_shuffle|noul": {
+      "n": 74,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     }
+    },
+    "average_flip_rate": 0.02877697841726619,
+    "pooled": {
+     "n": 565,
+     "invalid": 0,
+     "flips": 12,
+     "flip_rate": 0.021238938053097345,
+     "mean_tv_shift": 0.018296814159292036,
+     "max_tv_shift": 0.639,
+     "max_abs_dp": 0.639
+    },
+    "reorder_flips": 12,
+    "note": "operators are jevkit's own; MD1's exact 8 operators are unpublished"
+   },
+   "point": {
+    "state_paraphrase": null,
+    "instruction_paraphrase": null,
+    "option_paraphrase": null,
+    "option_reverse": 0.0,
+    "option_shuffle": 0.0,
+    "key_relabel": 0.08633093525179857,
+    "whitespace_noise": null,
+    "markup_noise": null,
+    "_average": 0.02877697841726619
+   },
+   "n_valid": {
+    "state_paraphrase": 0,
+    "instruction_paraphrase": 0,
+    "option_paraphrase": 0,
+    "option_reverse": 213,
+    "option_shuffle": 213,
+    "key_relabel": 139,
+    "whitespace_noise": 0,
+    "markup_noise": 0
+   },
+   "n_invalid": {
+    "state_paraphrase": 0,
+    "instruction_paraphrase": 0,
+    "option_paraphrase": 0,
+    "option_reverse": 0,
+    "option_shuffle": 0,
+    "key_relabel": 0,
+    "whitespace_noise": 0,
+    "markup_noise": 0
+   },
+   "ci95": {
+    "state_paraphrase": null,
+    "instruction_paraphrase": null,
+    "option_paraphrase": null,
+    "option_reverse": [
+     0.0,
+     0.0
+    ],
+    "option_shuffle": [
+     0.0,
+     0.0
+    ],
+    "key_relabel": [
+     0.040802629776742906,
+     0.1333450704225352
+    ],
+    "whitespace_noise": null,
+    "markup_noise": null,
+    "_average": [
+     0.013600876592247638,
+     0.04444835680751173
+    ]
+   }
+  },
+  "qwen35_4b_shim": {
+   "flip_report": {
+    "per_operator": {
+     "key_relabel": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 12,
+      "flip_rate": 0.08633093525179857,
+      "mean_tv_shift": 0.09127048774946683,
+      "max_tv_shift": 0.6634021263598172,
+      "max_abs_dp": 0.6630447924361642
+     },
+     "option_reverse": {
+      "n": 213,
+      "invalid": 0,
+      "flips": 26,
+      "flip_rate": 0.12206572769953052,
+      "mean_tv_shift": 0.09407216073782504,
+      "max_tv_shift": 0.8247832480862117,
+      "max_abs_dp": 0.8247832480862117
+     },
+     "option_shuffle": {
+      "n": 213,
+      "invalid": 0,
+      "flips": 20,
+      "flip_rate": 0.09389671361502347,
+      "mean_tv_shift": 0.07514666374381804,
+      "max_tv_shift": 0.8504182706775018,
+      "max_abs_dp": 0.8494511751373217
+     }
+    },
+    "per_operator_type": {
+     "key_relabel|choice": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 12,
+      "flip_rate": 0.08633093525179857,
+      "mean_tv_shift": 0.09127048774946683,
+      "max_tv_shift": 0.6634021263598172,
+      "max_abs_dp": 0.6630447924361642
+     },
+     "option_reverse|choice": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 26,
+      "flip_rate": 0.18705035971223022,
+      "mean_tv_shift": 0.1441537427133578,
+      "max_tv_shift": 0.8247832480862117,
+      "max_abs_dp": 0.8247832480862117
+     },
+     "option_reverse|noul": {
+      "n": 74,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     },
+     "option_shuffle|choice": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 20,
+      "flip_rate": 0.14388489208633093,
+      "mean_tv_shift": 0.11515280127649814,
+      "max_tv_shift": 0.8504182706775018,
+      "max_abs_dp": 0.8494511751373217
+     },
+     "option_shuffle|noul": {
+      "n": 74,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     }
+    },
+    "average_flip_rate": 0.10076445885545086,
+    "pooled": {
+     "n": 565,
+     "invalid": 0,
+     "flips": 58,
+     "flip_rate": 0.10265486725663717,
+     "mean_tv_shift": 0.08624815471109001,
+     "max_tv_shift": 0.8504182706775018,
+     "max_abs_dp": 0.8494511751373217
+    },
+    "reorder_flips": 58,
+    "note": "operators are jevkit's own; MD1's exact 8 operators are unpublished"
+   },
+   "point": {
+    "state_paraphrase": null,
+    "instruction_paraphrase": null,
+    "option_paraphrase": null,
+    "option_reverse": 0.12206572769953052,
+    "option_shuffle": 0.09389671361502347,
+    "key_relabel": 0.08633093525179857,
+    "whitespace_noise": null,
+    "markup_noise": null,
+    "_average": 0.10076445885545086
+   },
+   "n_valid": {
+    "state_paraphrase": 0,
+    "instruction_paraphrase": 0,
+    "option_paraphrase": 0,
+    "option_reverse": 213,
+    "option_shuffle": 213,
+    "key_relabel": 139,
+    "whitespace_noise": 0,
+    "markup_noise": 0
+   },
+   "n_invalid": {
+    "state_paraphrase": 0,
+    "instruction_paraphrase": 0,
+    "option_paraphrase": 0,
+    "option_reverse": 0,
+    "option_shuffle": 0,
+    "key_relabel": 0,
+    "whitespace_noise": 0,
+    "markup_noise": 0
+   },
+   "ci95": {
+    "state_paraphrase": null,
+    "instruction_paraphrase": null,
+    "option_paraphrase": null,
+    "option_reverse": [
+     0.07832423605207821,
+     0.1682254223580158
+    ],
+    "option_shuffle": [
+     0.05555555555555555,
+     0.13551401869158877
+    ],
+    "key_relabel": [
+     0.043157759506680375,
+     0.13141101331043364
+    ],
+    "whitespace_noise": null,
+    "markup_noise": null,
+    "_average": [
+     0.07125112413653888,
+     0.12978252657056735
+    ]
+   }
+  },
+  "h2o_lightning_4b": {
+   "flip_report": {
+    "per_operator": {
+     "key_relabel": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 6,
+      "flip_rate": 0.04316546762589928,
+      "mean_tv_shift": 0.028483947774901687,
+      "max_tv_shift": 0.4326477688917763,
+      "max_abs_dp": 0.43264776889177636
+     },
+     "option_reverse": {
+      "n": 213,
+      "invalid": 0,
+      "flips": 6,
+      "flip_rate": 0.028169014084507043,
+      "mean_tv_shift": 0.019890345933614956,
+      "max_tv_shift": 0.3285143237531231,
+      "max_abs_dp": 0.32851432375312306
+     },
+     "option_shuffle": {
+      "n": 213,
+      "invalid": 0,
+      "flips": 5,
+      "flip_rate": 0.023474178403755867,
+      "mean_tv_shift": 0.017352491790303726,
+      "max_tv_shift": 0.29692840668265014,
+      "max_abs_dp": 0.2955436512398958
+     }
+    },
+    "per_operator_type": {
+     "key_relabel|choice": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 6,
+      "flip_rate": 0.04316546762589928,
+      "mean_tv_shift": 0.028483947774901687,
+      "max_tv_shift": 0.4326477688917763,
+      "max_abs_dp": 0.43264776889177636
+     },
+     "option_reverse|choice": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 6,
+      "flip_rate": 0.04316546762589928,
+      "mean_tv_shift": 0.030479450963021477,
+      "max_tv_shift": 0.3285143237531231,
+      "max_abs_dp": 0.32851432375312306
+     },
+     "option_reverse|noul": {
+      "n": 74,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     },
+     "option_shuffle|choice": {
+      "n": 139,
+      "invalid": 0,
+      "flips": 5,
+      "flip_rate": 0.03597122302158273,
+      "mean_tv_shift": 0.02659050900240787,
+      "max_tv_shift": 0.29692840668265014,
+      "max_abs_dp": 0.2955436512398958
+     },
+     "option_shuffle|noul": {
+      "n": 74,
+      "invalid": 0,
+      "flips": 0,
+      "flip_rate": 0.0,
+      "mean_tv_shift": 0.0,
+      "max_tv_shift": 0.0,
+      "max_abs_dp": 0.0
+     }
+    },
+    "average_flip_rate": 0.03160288670472073,
+    "pooled": {
+     "n": 565,
+     "invalid": 0,
+     "flips": 17,
+     "flip_rate": 0.03008849557522124,
+     "mean_tv_shift": 0.02104777553257702,
+     "max_tv_shift": 0.4326477688917763,
+     "max_abs_dp": 0.43264776889177636
+    },
+    "reorder_flips": 17,
+    "note": "operators are jevkit's own; MD1's exact 8 operators are unpublished"
+   },
+   "point": {
+    "state_paraphrase": null,
+    "instruction_paraphrase": null,
+    "option_paraphrase": null,
+    "option_reverse": 0.028169014084507043,
+    "option_shuffle": 0.023474178403755867,
+    "key_relabel": 0.04316546762589928,
+    "whitespace_noise": null,
+    "markup_noise": null,
+    "_average": 0.03160288670472073
+   },
+   "n_valid": {
+    "state_paraphrase": 0,
+    "instruction_paraphrase": 0,
+    "option_paraphrase": 0,
+    "option_reverse": 213,
+    "option_shuffle": 213,
+    "key_relabel": 139,
+    "whitespace_noise": 0,
+    "markup_noise": 0
+   },
+   "n_invalid": {
+    "state_paraphrase": 0,
+    "instruction_paraphrase": 0,
+    "option_paraphrase": 0,
+    "option_reverse": 0,
+    "option_shuffle": 0,
+    "key_relabel": 0,
+    "whitespace_noise": 0,
+    "markup_noise": 0
+   },
+   "ci95": {
+    "state_paraphrase": null,
+    "instruction_paraphrase": null,
+    "option_paraphrase": null,
+    "option_reverse": [
+     0.009302325581395349,
+     0.052138907695779724
+    ],
+    "option_shuffle": [
+     0.004694835680751174,
+     0.04716981132075472
+    ],
+    "key_relabel": [
+     0.013422818791946308,
+     0.08108108108108109
+    ],
+    "whitespace_noise": null,
+    "markup_noise": null,
+    "_average": [
+     0.011717654100149844,
+     0.05678933272364042
+    ]
+   }
+  }
+ },
+ "paired_minus_rwkv7_13b_stock": {
+  "d19": {
+   "state_paraphrase": {
+    "point": null,
+    "ci95": null
+   },
+   "instruction_paraphrase": {
+    "point": null,
+    "ci95": null
+   },
+   "option_paraphrase": {
+    "point": null,
+    "ci95": null
+   },
+   "option_reverse": {
+    "point": 0.0,
+    "ci95": [
+     0.0,
+     0.0
+    ]
+   },
+   "option_shuffle": {
+    "point": 0.0,
+    "ci95": [
+     0.0,
+     0.0
+    ]
+   },
+   "key_relabel": {
+    "point": -0.13669064748201437,
+    "ci95": [
+     -0.2059077079107505,
+     -0.07480482125736201
+    ]
+   },
+   "whitespace_noise": {
+    "point": null,
+    "ci95": null
+   },
+   "markup_noise": {
+    "point": null,
+    "ci95": null
+   },
+   "_average": {
+    "point": -0.04556354916067146,
+    "ci95": [
+     -0.06863590263691684,
+     -0.02493494041912067
+    ]
+   }
+  },
+  "qwen35_4b_shim": {
+   "state_paraphrase": {
+    "point": null,
+    "ci95": null
+   },
+   "instruction_paraphrase": {
+    "point": null,
+    "ci95": null
+   },
+   "option_paraphrase": {
+    "point": null,
+    "ci95": null
+   },
+   "option_reverse": {
+    "point": 0.12206572769953052,
+    "ci95": [
+     0.07832423605207821,
+     0.1682254223580158
+    ]
+   },
+   "option_shuffle": {
+    "point": 0.09389671361502347,
+    "ci95": [
+     0.05555555555555555,
+     0.13551401869158877
+    ]
+   },
+   "key_relabel": {
+    "point": -0.13669064748201437,
+    "ci95": [
+     -0.2071801130524152,
+     -0.06710290827740492
+    ]
+   },
+   "whitespace_noise": {
+    "point": null,
+    "ci95": null
+   },
+   "markup_noise": {
+    "point": null,
+    "ci95": null
+   },
+   "_average": {
+    "point": 0.02642393127751322,
+    "ci95": [
+     -0.0021247336610203784,
+     0.05977906877103373
+    ]
+   }
+  },
+  "h2o_lightning_4b": {
+   "state_paraphrase": {
+    "point": null,
+    "ci95": null
+   },
+   "instruction_paraphrase": {
+    "point": null,
+    "ci95": null
+   },
+   "option_paraphrase": {
+    "point": null,
+    "ci95": null
+   },
+   "option_reverse": {
+    "point": 0.028169014084507043,
+    "ci95": [
+     0.009302325581395349,
+     0.052138907695779724
+    ]
+   },
+   "option_shuffle": {
+    "point": 0.023474178403755867,
+    "ci95": [
+     0.004694835680751174,
+     0.04716981132075472
+    ]
+   },
+   "key_relabel": {
+    "point": -0.17985611510791366,
+    "ci95": [
+     -0.24812167279512648,
+     -0.11343550066954325
+    ]
+   },
+   "whitespace_noise": {
+    "point": null,
+    "ci95": null
+   },
+   "markup_noise": {
+    "point": null,
+    "ci95": null
+   },
+   "_average": {
+    "point": -0.042737640873216916,
+    "ci95": [
+     -0.07054389457386,
+     -0.015960444154700295
+    ]
+   }
+  }
+ }
+}

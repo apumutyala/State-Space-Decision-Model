@@ -1,0 +1,5 @@
+model                  state_para instructio option_par option_rev option_shu key_relabe whitespace markup_noi    average [95% CI]
+rwkv7_13b_stock              n/a       n/a       n/a       0.0%       0.0%      22.3%       n/a       n/a   7.43% [5.13, 9.71]
+d19                          n/a       n/a       n/a       0.0%       0.0%       8.6%       n/a       n/a   2.88% [1.36, 4.44]
+qwen35_4b_shim               n/a       n/a       n/a      12.2%       9.4%       8.6%       n/a       n/a   10.08% [7.13, 12.98]
+h2o_lightning_4b             n/a       n/a       n/a       2.8%       2.3%       4.3%       n/a       n/a   3.16% [1.17, 5.68]

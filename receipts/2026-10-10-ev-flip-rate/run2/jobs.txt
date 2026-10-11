@@ -1,0 +1,2 @@
+job-z8jcd succeeded art-cnp6a 957621540bc5221fad13c39054f3ffd1daa97d05862b443b1903d32478600e46 usd 0.5488
+job-andnb succeeded art-bx392 84ac5e1725d5fd26ee2cc9f0ce6e4b43c15f503c559c88ffef0644c6dba0af05 usd 2.2708

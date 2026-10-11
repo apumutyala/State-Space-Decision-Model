@@ -1,0 +1,482 @@
+{
+ "schema": "ssdm.m2.jev_eval.v1",
+ "verdict": null,
+ "measurement_only": true,
+ "mode": "d19_flip",
+ "items": 231,
+ "checkpoint": "art-p3gpi",
+ "job": "job-fi5xf",
+ "basis": "open-only, the 231 public JevBench v1.2 items (b6b8fff7); not the v1.6.1 open set P300 and no sealed side (jevkit/README.md)",
+ "price": {
+  "kind": "size_class_estimate",
+  "usd_per_m_input": 0.05,
+  "usd_per_m_output": 0.15,
+  "source": "size class 7-13B params with no listing (RWKV7-G1k-13.3B, trained or stock): the JevBench v1.6.1 board's 12B reference, OpenRouter google/gemma-3-12b-it 0.05 / 0.15 per 1M (api_v161.json sha256 5cd8c133...c83c1), as the stock RWKV7-13.3B row of jobs/jev_host_scan; ESTIMATE",
+  "as_of": "2026-10-10",
+  "model": "RWKV/RWKV7-G1k-13.3B-20260930 (+ D19 LoRA / joint head)"
+ },
+ "arms": {
+  "child": {
+   "n_preds": 231,
+   "complete": true,
+   "ok": 231,
+   "axes": {
+    "intelligence": 52.63795436878247,
+    "calibration": 74.00792254880501,
+    "speed": 79.80578404074681,
+    "cost": 52.57728494089414
+   },
+   "composite": {
+    "A": 62.44165011773219,
+    "B": 60.19925602231895,
+    "C": 48.058463006783875
+   },
+   "capability": 63.32293845879374,
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     44.355193722702005,
+     60.960713214662746
+    ],
+    "C": [
+     58.82627604948835,
+     76.9632451757635
+    ],
+    "capability": [
+     52.42204024611654,
+     67.86624885041954
+    ],
+    "composite": {
+     "A": [
+      44.204081250545066,
+      65.05947556403481
+     ],
+     "B": [
+      41.92121955192484,
+      64.09881402401477
+     ],
+     "C": [
+      30.697278646211853,
+      64.8462376138031
+     ]
+    }
+   },
+   "speed": {
+    "p50_s_raw": 0.4269684575010615,
+    "p95_s_raw": 0.44581702999857953,
+    "p50_s_adjusted": 1.003936915002123,
+    "p95_s_adjusted": 1.041634059997159,
+    "adjustment": "x2 + 0.15 s",
+    "score": 79.80578404074681,
+    "n": 72,
+    "source": "pred latency_s on open standard+judge items"
+   },
+   "cost": {
+    "usd_per_1000": 0.03808528138528139,
+    "mean_input_tokens": 758.7056277056278,
+    "mean_output_tokens": 1.0,
+    "kind": "estimate",
+    "price": {
+     "kind": "size_class_estimate",
+     "usd_per_m_input": 0.05,
+     "usd_per_m_output": 0.15,
+     "source": "size class 7-13B params with no listing (RWKV7-G1k-13.3B, trained or stock): the JevBench v1.6.1 board's 12B reference, OpenRouter google/gemma-3-12b-it 0.05 / 0.15 per 1M (api_v161.json sha256 5cd8c133...c83c1), as the stock RWKV7-13.3B row of jobs/jev_host_scan; ESTIMATE",
+     "as_of": "2026-10-10",
+     "listed_since": null,
+     "model": "RWKV/RWKV7-G1k-13.3B-20260930 (+ D19 LoRA / joint head)"
+    }
+   },
+   "intelligence": {
+    "I_open": 52.63795436878247,
+    "basis": "open only (no sealed items; no gap penalty)",
+    "per_type_split": {
+     "open|choice": {
+      "cc": 66.94528875379937,
+      "cc_unclipped": 66.94528875379937,
+      "n": {
+       "easy": 36,
+       "standard": 36,
+       "hard": 67
+      },
+      "tiers": {
+       "easy": 100.0,
+       "standard": 100.0,
+       "hard": 42.15425531914893
+      }
+     },
+     "open|noul": {
+      "cc": 36.34085213032581,
+      "cc_unclipped": 36.34085213032581,
+      "n": {
+       "easy": 12,
+       "standard": 24,
+       "hard": 38
+      },
+      "tiers": {
+       "easy": 100.0,
+       "standard": 66.66666666666667,
+       "hard": 5.263157894736836
+      }
+     },
+     "open|score": {
+      "cc": 54.62772222222222,
+      "cc_unclipped": 54.62772222222222,
+      "n": {
+       "standard": 12,
+       "hard": 6
+      },
+      "tiers": {
+       "standard": 56.820666666666654,
+       "hard": 53.53125
+      }
+     }
+    }
+   },
+   "calibration": {
+    "parts": {
+     "choice": {
+      "ece_hard": 0.18220895522388056,
+      "n": 139,
+      "n_ece_hard": 67,
+      "ece_basis": "hard tier",
+      "score": 63.55820895522388
+     },
+     "noul": {
+      "ece": 0.1348310810810811,
+      "n": 74,
+      "brier": 0.1561295131081081,
+      "abstention_rate": 0.16216216216216217,
+      "score": 73.03378378378378
+     },
+     "score": {
+      "top_ece": 0.09460555555555555,
+      "nrps": 0.10215339074074074,
+      "n": 18,
+      "score": 85.4317749074074
+     }
+    },
+    "score": 74.00792254880501
+   },
+   "validity": {
+    "choice": {
+     "n": 139,
+     "invalid_rate": 0.0,
+     "renormalized": 0,
+     "label_only": 0
+    },
+    "noul": {
+     "n": 74,
+     "invalid_rate": 0.0,
+     "renormalized": 0,
+     "label_only": 0
+    },
+    "score": {
+     "n": 18,
+     "invalid_rate": 0.0,
+     "renormalized": 0,
+     "label_only": 0
+    },
+    "noul_decisive": {
+     "valid": 74,
+     "decisive_rate": 0.8378378378378378,
+     "acc_among_decisive": 0.8387096774193549
+    }
+   },
+   "identity": {
+    "arm": "child",
+    "revision": "decision_head:JointRecordHead@c65fb8936047",
+    "checkpoint": {
+     "path": "trainable-step0002800.safetensors",
+     "step": 2800,
+     "sha256": "31062f4850713672a5ae7a8bb472455fda699e35b7176a6fc0d331e17b96d215"
+    },
+    "readout": {
+     "template": "jrt-rwkv-g1-v3w",
+     "layout": "g1v2",
+     "native": true
+    },
+    "index_arm": "untempered arm decider (identity calibration), as train.m2_gates scores the Index stage; no temperature fit",
+    "load_s": 980.2,
+    "parent": null,
+    "calibration": null
+   },
+   "run": {
+    "items": 796,
+    "resumed_from": 0,
+    "status": {
+     "ok": 796
+    },
+    "wall_s": 408.9,
+    "max_memory_allocated_gib": 29.8
+   }
+  },
+  "parent": {
+   "n_preds": 231,
+   "complete": true,
+   "ok": 231,
+   "axes": {
+    "intelligence": 43.39988726007542,
+    "calibration": 82.78857864388362,
+    "speed": 84.88685438581427,
+    "cost": 52.560191343244924
+   },
+   "composite": {
+    "A": 45.712600146499874,
+    "B": 42.34208920976898,
+    "C": 31.744861212847134
+   },
+   "capability": 63.09423295197952,
+   "ci95": {
+    "B": 1000,
+    "seed": 16,
+    "I": [
+     38.77526383832335,
+     49.23845282288768
+    ],
+    "C": [
+     67.68819673083676,
+     82.09389350021624
+    ],
+    "capability": [
+     54.87945812293127,
+     63.525263210937105
+    ],
+    "composite": {
+     "A": [
+      34.41130003006805,
+      60.142226817241266
+     ],
+     "B": [
+      31.40774077564471,
+      57.14566854290117
+     ],
+     "C": [
+      23.8967361319917,
+      41.765435289750876
+     ]
+    }
+   },
+   "speed": {
+    "p50_s_raw": 0.203665250002814,
+    "p95_s_raw": 0.21618684789937104,
+    "p50_s_adjusted": 0.557330500005628,
+    "p95_s_adjusted": 0.5823736957987421,
+    "adjustment": "x2 + 0.15 s",
+    "score": 84.88685438581427,
+    "n": 72,
+    "source": "pred latency_s on open standard+judge items"
+   },
+   "cost": {
+    "usd_per_1000": 0.03813528138528139,
+    "mean_input_tokens": 759.7056277056278,
+    "mean_output_tokens": 1.0,
+    "kind": "estimate",
+    "price": {
+     "kind": "size_class_estimate",
+     "usd_per_m_input": 0.05,
+     "usd_per_m_output": 0.15,
+     "source": "size class 7-13B params with no listing (RWKV7-G1k-13.3B, trained or stock): the JevBench v1.6.1 board's 12B reference, OpenRouter google/gemma-3-12b-it 0.05 / 0.15 per 1M (api_v161.json sha256 5cd8c133...c83c1), as the stock RWKV7-13.3B row of jobs/jev_host_scan; ESTIMATE",
+     "as_of": "2026-10-10",
+     "listed_since": null,
+     "model": "RWKV/RWKV7-G1k-13.3B-20260930 (+ D19 LoRA / joint head)"
+    }
+   },
+   "intelligence": {
+    "I_open": 43.39988726007542,
+    "basis": "open only (no sealed items; no gap penalty)",
+    "per_type_split": {
+     "open|choice": {
+      "cc": 70.36474164133737,
+      "cc_unclipped": 70.36474164133737,
+      "n": {
+       "easy": 36,
+       "standard": 36,
+       "hard": 67
+      },
+      "tiers": {
+       "easy": 100.0,
+       "standard": 100.0,
+       "hard": 48.138297872340424
+      }
+     },
+     "open|noul": {
+      "cc": 0.0,
+      "cc_unclipped": -8.64661654135339,
+      "n": {
+       "easy": 12,
+       "standard": 24,
+       "hard": 38
+      },
+      "tiers": {
+       "easy": 100.0,
+       "standard": 25.0,
+       "hard": -52.63157894736843
+      }
+     },
+     "open|score": {
+      "cc": 59.834920138888876,
+      "cc_unclipped": 59.834920138888876,
+      "n": {
+       "standard": 12,
+       "hard": 6
+      },
+      "tiers": {
+       "standard": 94.45866666666667,
+       "hard": 42.523046874999984
+      }
+     }
+    }
+   },
+   "calibration": {
+    "parts": {
+     "choice": {
+      "ece_hard": 0.137855223880597,
+      "n": 139,
+      "n_ece_hard": 67,
+      "ece_basis": "hard tier",
+      "score": 72.42895522388059
+     },
+     "noul": {
+      "ece": 0.05729864864864862,
+      "n": 74,
+      "brier": 0.1211852114864865,
+      "abstention_rate": 0.4864864864864865,
+      "score": 88.54027027027027
+     },
+     "score": {
+      "top_ece": 0.10493888888888887,
+      "nrps": 0.04219201347222222,
+      "n": 18,
+      "score": 87.39651043750001
+     }
+    },
+    "score": 82.78857864388362
+   },
+   "validity": {
+    "choice": {
+     "n": 139,
+     "invalid_rate": 0.0,
+     "renormalized": 0,
+     "label_only": 0
+    },
+    "noul": {
+     "n": 74,
+     "invalid_rate": 0.0,
+     "renormalized": 0,
+     "label_only": 0
+    },
+    "score": {
+     "n": 18,
+     "invalid_rate": 0.0,
+     "renormalized": 0,
+     "label_only": 0
+    },
+    "noul_decisive": {
+     "valid": 74,
+     "decisive_rate": 0.5135135135135135,
+     "acc_among_decisive": 0.9473684210526315
+    }
+   },
+   "identity": {
+    "arm": "parent",
+    "revision": "rwkv7:RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854ce;w=0359db5847e4;tok=1c0bc8e5f355;prompt=jrt-rwkv-g1-v3w.934c6e8a;cfg=5f92e583;adapter=0.2.0",
+    "checkpoint": null,
+    "readout": null,
+    "index_arm": null,
+    "load_s": 39.5,
+    "parent": {
+     "parent": "rwkv7",
+     "repo": "RWKV/RWKV7-G1k-13.3B-20260930",
+     "revision": "ce3630b854cedbd673569f4600c6cf744bca9dba",
+     "wkv": "chunked_lean"
+    },
+    "calibration": "uncalibrated_identity"
+   },
+   "run": {
+    "items": 1824,
+    "resumed_from": 0,
+    "status": {
+     "ok": 1824
+    },
+    "wall_s": 552.9,
+    "max_memory_allocated_gib": 29.0
+   }
+  }
+ },
+ "child_minus_parent": {
+  "intelligence": {
+   "point": 9.23806710870705,
+   "ci95": [
+    1.0413945171460948,
+    17.429992790592575
+   ],
+   "p_child_better": 0.988
+  },
+  "calibration": {
+   "point": -8.780656095078612,
+   "ci95": [
+    -18.875099632743623,
+    4.6450003178965105
+   ],
+   "p_child_better": 0.108
+  },
+  "capability": {
+   "point": 0.2287055068142223,
+   "ci95": [
+    -7.220390565552462,
+    9.26259701690085
+   ],
+   "p_child_better": 0.612
+  },
+  "composite_A": {
+   "point": 16.729049971232314,
+   "ci95": [
+    -0.32245351609826295,
+    26.4285482557014
+   ],
+   "p_child_better": 0.972
+  },
+  "composite_B": {
+   "point": 17.85716681254997,
+   "ci95": [
+    0.683906845477002,
+    27.85530833898815
+   ],
+   "p_child_better": 0.98
+  },
+  "composite_C": {
+   "point": 16.31360179393674,
+   "ci95": [
+    0.2766488995076132,
+    32.730557580353825
+   ],
+   "p_child_better": 0.979
+  },
+  "speed": {
+   "point": -5.0810703450674595,
+   "ci95": null,
+   "note": "a measured per-system value, held fixed per resample (jevkit.scoring.bootstrap)"
+  },
+  "cost": {
+   "point": 0.017093597649214587,
+   "ci95": null,
+   "note": "a measured per-system value, held fixed per resample (jevkit.scoring.bootstrap)"
+  },
+  "_resamples": {
+   "B": 1000,
+   "seed": 16,
+   "strata": "jevkit.scoring.strata (side x type x tier)"
+  }
+ },
+ "board_leader": {
+  "key": "h2o-lightning-4b",
+  "composite_A": 72.5232271521435,
+  "I": 60.03839906196252,
+  "C": 89.95399367673842,
+  "S": 92.61084474720658,
+  "K": 60.29882443070202,
+  "board": "JevBench v1.6.1"
+ },
+ "elapsed_min": 36
+}
