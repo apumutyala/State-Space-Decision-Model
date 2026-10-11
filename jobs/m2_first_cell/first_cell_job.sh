@@ -292,7 +292,34 @@ elif [ "$PARENT" = qwen35 ]; then
   ( cd "$SNAP" && sha256sum -c "$CODE/$Q35_SHA" ) > "$WORK/out/snapshot-verify.txt" 2>&1 || fail 10 "qwen35 snapshot sha256 ($Q35_REPO@$Q35_REV)"
   python -X utf8 -c 'import json,sys; from heads.backbone import qwen35_pin_check; c=json.load(open(sys.argv[1])); print(json.dumps(qwen35_pin_check(c["qwen35"], sys.argv[2])))' \
     "$CELL" "$SNAP" > "$WORK/out/label.json" 2> "$WORK/logs/pin.log" || fail 10 "qwen35 pin: $(tail -1 "$WORK/logs/pin.log")"
-  say "parent: stock $Q35_REPO@$Q35_REV"
+  # a pinned HOST (qwen35.host, EV-PREREG-H2O-HOST): the HF-resolved commit == the pin, and the license files are
+  # copied into the artifact (LICENSE required; each pinned git blob id must match). Stock parents skip this block.
+  if python -I -c 'import json,sys; sys.exit(0 if json.load(open(sys.argv[1]))["qwen35"].get("host") else 1)' "$CELL"; then
+    mkdir -p "$WORK/out/license"
+    python -I - "$CELL" "$SNAP" "$WORK/out/license" > "$WORK/out/host-verify.json" 2> "$WORK/logs/host-verify.log" <<'EOF' || fail 10 "qwen35 host revision / license: $(tail -1 "$WORK/logs/host-verify.log")"
+import hashlib, json, shutil, sys
+from pathlib import Path
+q = json.load(open(sys.argv[1]))["qwen35"]
+snap, dst = Path(sys.argv[2]), Path(sys.argv[3])
+from huggingface_hub import HfApi
+info = HfApi().model_info(q["repo"], revision=q["revision"])
+assert info.sha == q["revision"], f"HF resolved {info.sha} != pinned {q['revision']}"
+out = {"repo": q["repo"], "revision": q["revision"], "resolved_sha": info.sha, "license": {}}
+for name, blob in sorted(q["license_git_blobs"].items()):
+    p = snap / name
+    assert p.is_file(), f"{name} missing from the snapshot"
+    data = p.read_bytes()
+    got = hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()
+    assert got == blob, f"{name} git blob {got} != pinned {blob}"
+    shutil.copyfile(p.resolve(), dst / name)
+    out["license"][name] = {"git_blob": got, "sha256": hashlib.sha256(data).hexdigest()}
+assert "LICENSE" in out["license"], "no LICENSE pinned"
+print(json.dumps(out))
+EOF
+    say "parent: HOST $Q35_REPO@$Q35_REV (license copied to out/license)"
+  else
+    say "parent: stock $Q35_REPO@$Q35_REV"
+  fi
   # the cell's template (H2O shim format or generic v3w) + every jevkit score-only template, bound to THIS snapshot's
   # tokenizer files and checked against their pinned identities before any weight is loaded
   python -X utf8 -c 'import json,sys; from decide import shim_format as S, v3w_generic as V; c=json.load(open(sys.argv[1])); p=json.load(open(sys.argv[3])).get("jevkit") or {}; ts=[c["template"]]+([p["lean_template"]] if p.get("lean_template") else [])+sorted((p.get("extra_templates") or {}).values()); print(json.dumps({t: (S.bind_template if S.is_shim_template(t) else V.bind_template)(t, sys.argv[2]).identity() for t in ts}))' \
