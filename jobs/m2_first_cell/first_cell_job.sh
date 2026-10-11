@@ -117,6 +117,9 @@ finish() {
   export CODE OUT WORK CK T0 META RESULT GATES EXPORT_FAIL MARKER VALIDATOR DECISION SIZE_CAP
   export FINISH_RC=$rc
   timeout --kill-after=30s 60s bash -c '
+    # landing.json: phase timestamps (MANIFEST.jsonl) + gates + every out/ file mtime / sha256 (evidence rescore kit)
+    timeout 20s python "$CODE/jobs/m2_first_cell/landing.py" "$WORK/out" "$OUT/MANIFEST.jsonl" "$GATES" "$WORK/out/landing.json" \
+      || say "landing.json failed (non-fatal)"
     export_phase final
     # results always upload: rename-only here (no time to copy GBs); the mid-run call below already made room
     python "$CODE/jobs/common/size_guard.py" --out "$OUT" --evict-dir "$CK/evicted" --rename-only --cap-bytes "$SIZE_CAP" || say "SIZE GUARD FAILED: /output still over the upload cap (see $OUT/SIZE_GUARD.json)"

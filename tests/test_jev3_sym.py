@@ -42,6 +42,28 @@ def test_jev3_sym_cells(seed):
     assert f"job_params_jev3_sym_s{seed}.json" in (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
 
 
+def test_artifacts_landing_and_g1_per_arm(tmp_path):
+    p = params("jev3_sym_s0")
+    assert p["jevkit"]["g1_per_arm"] is True
+    job = (M / "first_cell_job.sh").read_text(encoding="utf-8")
+    assert job.index("landing.py") < job.index("export_phase final")  # landing.json lands in the final export
+    import subprocess
+    out = tmp_path / "out"
+    (out / "screen" / "jevkit").mkdir(parents=True)
+    (out / "screen" / "jevkit" / "slice_first.json").write_text("{}", encoding="utf-8")
+    import os
+    import time as _t
+    (out / "screen" / "jevkit" / "native.preds.jsonl").write_text("", encoding="utf-8")
+    os.utime(out / "screen" / "jevkit" / "slice_first.json", (_t.time() - 60, _t.time() - 60))
+    man = tmp_path / "MANIFEST.jsonl"
+    man.write_text('{"phase": "cell", "t": "2026-10-11T00:00:00Z"}\n', encoding="utf-8")
+    subprocess.run([sys.executable, str(M / "landing.py"), str(out), str(man), '{"cell": 0}', str(out / "landing.json")],
+                   check=True)
+    rec = json.loads((out / "landing.json").read_text(encoding="utf-8"))
+    assert rec["phases"][0]["phase"] == "cell" and rec["gates"] == {"cell": 0}
+    assert rec["slice_first_before_public_preds"] is True and all("sha256" in f for f in rec["files"])
+
+
 def test_slice_first_runs_before_any_screen_row():
     src = (M / "screen.py").read_text(encoding="utf-8")
     i = src.index("def score(a)")

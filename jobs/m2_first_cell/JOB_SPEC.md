@@ -815,10 +815,10 @@ Our stack only (operator directive):
 - **Data:** the jev3 draw, PLACEHOLDER pins (`data_pins.status`), so the runner refuses before any download. The stub =
   bschema-draw-jev2-mix-s, so the package and `sf_submit --dry` validate.
 
-**Budget (each seed):** 260 steps (2,080 rows), floor 130. s/step 6.39 = 3.93 MEASURED (4B shim, job-q668q; range
-2.55-3.93) x 1.3 (sym-fork per-option forwards) x 1.25 (consistency views). Clock 40 = ceil(260 x 6.39 x 1.15 / 60) + 8.
-Schedule: setup 15 + guard 5 + heldout 5 + cell 55 + screen 50 + report 5 + reserve 7 = 142 min. Quoted hold $8.95;
-**worst case** (60 + 2 x 142) x $0.063 = **$21.67** (hard cap $22). Expected ~$5.6.
+**Budget (each seed):** 220 steps (1,760 rows), floor 110. s/step 6.39 = 3.93 MEASURED (4B shim, job-q668q; range
+2.55-3.93) x 1.3 (sym-fork per-option forwards) x 1.25 (consistency views). Clock 35 = ceil(220 x 6.39 x 1.15 / 60) + 8.
+Schedule: setup 15 + guard 5 + heldout 5 + cell 50 + screen 55 + report 5 + reserve 7 = 142 min. Quoted hold $8.95;
+**worst case** (60 + 2 x 142) x $0.063 = **$21.67** (hard cap $22). Expected ~$5.6. The screen (55 min) holds: the proxy600 rows (~15 min), the three jevkit arms on public-231 (~3), bitwise G1 on native (~3) and on the stock control (~1, report only, preds under g1/<arm>/), the 8-op flip battery on the trained arm (~1,850 requests at ~0.2-0.4 s: an estimated 7-12 min) and the slice work done first (T-fit + step-0 floor on 3,600 slice rows: ~16 min). The 8 ops are inside the $22 worst case because training was cut from 260 to 220 steps.
 
 PRE-REGISTRATION TEXT (paste on origin/state before seed 0 is submitted):
 
@@ -848,3 +848,8 @@ PRE-REGISTRATION TEXT (paste on origin/state before seed 0 is submitted):
     - The yes/no band rate (native <= stock); per-family deltas.
     - The in-job consistency traces (cons_kl, cons_lambda).
   - **Caveat:** open-split Intelligence only, never claimed as a board score.
+  - **Artifacts (for the evidence rescore kit claude/ev-cell-kit @ef25e482):**
+    - identity-child.json with the scored checkpoint sha256.
+    - The G1 perturbed preds per arm under out/screen/jevkit/g1/<arm>/ (native = the gate; stock_shim = report), for reverse / shuffle / relabel, with perturbed.jsonl written WITHOUT sort_keys and its order asserted.
+    - The 8-op battery on the trained arm (out/screen/jevkit/flip8/).
+    - landing.json with phase timestamps (MANIFEST.jsonl), gates and every out/ file mtime / sha256, including slice_first_before_public_preds.

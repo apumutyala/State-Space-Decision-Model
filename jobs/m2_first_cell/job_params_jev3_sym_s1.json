@@ -1,5 +1,5 @@
 {
- "_comment": "Mode jev3_sym_s1 (A-PREREG-JEV3-SYM DRAFT, seed 1, NOT submitted; data pins PLACEHOLDER). Schedule: setup 15 + guard 5 + heldout 5 + cell 55 + screen 50 + report 5 + reserve 7 = 142. Quoted hold $8.95; worst case (60 + 2 x 142) x 0.063 = $21.67 <= $22. Expected ~89 min = $5.61. Seeds run SEQUENTIALLY (seed 1 only if the post-seed-0 balance covers its worst case).",
+ "_comment": "Mode jev3_sym_s1 (A-PREREG-JEV3-SYM DRAFT, seed 1, NOT submitted; data pins PLACEHOLDER). Schedule: setup 15 + guard 5 + heldout 5 + cell 50 + screen 55 + report 5 + reserve 7 = 142. Quoted hold $8.95; worst case (60 + 2 x 142) x 0.063 = $21.67 <= $22. Expected ~89 min = $5.61. Seeds run SEQUENTIALLY (seed 1 only if the post-seed-0 balance covers its worst case).",
  "test_env": {
   "transformers": "5.17.0",
   "with": [
@@ -23,7 +23,7 @@
   "image": "jobs/probe9b/Dockerfile"
  },
  "job": "m2-first-cell-jev3-sym-s1",
- "status": "A-PREREG-JEV3-SYM seed 1: stock Qwen3.5-4B + sym-fork + consistency views, 260 steps",
+ "status": "A-PREREG-JEV3-SYM seed 1: stock Qwen3.5-4B + sym-fork + consistency views, 220 steps",
  "chip": "h100",
  "chip_count": 1,
  "max_duration_minutes": 142,
@@ -39,8 +39,8 @@
   "setup": 15,
   "guard": 5,
   "heldout": 5,
-  "cell": 55,
-  "screen": 50,
+  "cell": 50,
+  "screen": 55,
   "report": 5
  },
  "reserve_minutes": 7,
@@ -48,8 +48,8 @@
   "setup": 4,
   "guard": 1,
   "heldout": 1,
-  "cell": 46,
-  "screen": 35,
+  "cell": 41,
+  "screen": 40,
   "report": 2
  },
  "evals_fixed_minutes": {
@@ -89,7 +89,7 @@
   },
   "key": "m2-first-cell-jev3-sym-s1-r1",
   "clock_lock": true,
-  "label": "A-PREREG-JEV3-SYM seed 1 jev3_sym_s1: stock Qwen3.5-4B + sym-fork + consistency views, 260 steps, clock 40 [paired vs stock + shim; bitwise G1 KEEP gate; slice first]",
+  "label": "A-PREREG-JEV3-SYM seed 1 jev3_sym_s1: stock Qwen3.5-4B + sym-fork + consistency views, 220 steps, clock 35 [paired vs stock + shim; bitwise G1 KEEP gate; slice first]",
   "checks": {
    "success": {
     "check": {
@@ -338,6 +338,7 @@
   "g1_max_dp": 0.0,
   "g1_keep_gate": true,
   "flip_ops_all": true,
+  "g1_per_arm": true,
   "flip_reference": "stock Qwen3.5-4B + shim: 7.55% average flip rate over the jevkit operators (evidence receipt)",
   "target_ref": {
    "name": "H2O-Lightning-4B v1.1 (job-zbtbj)",

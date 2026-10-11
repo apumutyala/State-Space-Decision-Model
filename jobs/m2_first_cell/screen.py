@@ -482,7 +482,7 @@ def jevkit_block(params: dict, template: str) -> dict | None:
                   | ({"slice_first": True} if jk.get("slice_first") else {})
                   # JEV3-SYM: bitwise G1 KEEP gate, the 8-op flip battery, the H2O target reference, slice/train disjointness
                   | {k: jk[k] for k in ("g1_max_dp", "g1_keep_gate", "flip_ops_all", "flip_reference", "target_ref",
-                                        "slice_state_disjoint") if k in jk})
+                                        "slice_state_disjoint", "g1_per_arm") if k in jk})
     if jk.get("slice_floor") and not (stock and tfit):
         raise ScreenError("jevkit.slice_floor needs stock_shim (step 0 = the untrained host) and tfit (the slice)", 5)
     return {**extra_keys, "price": jk["price"], "price_parsed": price, "lean_template": lean, "extra_templates": extra,
@@ -600,7 +600,8 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: st
     if jk.get("perturb_ops"):  # JEV2-4B G1: jobs.sym_eval.perturb_eval (the A-PREREG-JEV1-4B-SYM eval path) in process
         from jobs.sym_eval.perturb_eval import run as perturb_run
         t0 = time.perf_counter()
-        g1 = perturb_run(decider, items, out_dir / "g1", ops=jk["perturb_ops"], seeds=(0,),
+        g1dir = out_dir / "g1" / "native" if jk.get("g1_per_arm") else out_dir / "g1"
+        g1 = perturb_run(decider, items, g1dir, ops=jk["perturb_ops"], seeds=(0,),
                          row_fn=lambda req: decider.backend._rows(req)[0], max_dp=float(jk.get("g1_max_dp", 1e-3)))
         ident["g1"] = {"g1_pass": g1["g1_pass"], "rows_all_identical": g1.get("rows_all_identical"),
                        "n_perturbed": g1["n_perturbed"], "seconds": round(time.perf_counter() - t0, 2)}
@@ -647,6 +648,13 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: st
                 f.write(json.dumps(r, separators=(",", ":"), default=str) + "\n")
         ident["stock_shim"] = {**eng.identity(), "seconds": round(time.perf_counter() - t0, 2), "n": len(recs),
                                "status": _count(r["status"] for r in recs)}
+        if jk.get("g1_per_arm") and jk.get("perturb_ops"):  # JEV3-SYM: the control's reorder/relabel preds (report)
+            from jobs.sym_eval.perturb_eval import run as perturb_run
+            t0 = time.perf_counter()
+            with eng.lora_off():
+                g1s = perturb_run(eng, items, out_dir / "g1" / "stock_shim", ops=jk["perturb_ops"], seeds=(0,),
+                                  max_dp=1.0, kind="request")
+            ident["g1_stock_shim"] = {"n_perturbed": g1s["n_perturbed"], "seconds": round(time.perf_counter() - t0, 2)}
         if jk.get("slice_floor") and jk.get("tfit") and first is None:  # A-PREREG-JEV2-H2O: step 0 on the slice
             t0 = time.perf_counter()
             try:
@@ -1280,7 +1288,8 @@ def jevkit_report(jk: dict, d: Path) -> dict:
         out["noul_band_gate"] = {"rule": "native yes/no band rate <= stock_shim's (reported gate, A-PREREG-JEV2-4B Am. 2)",
                                  "native": nb, "stock_shim": sb, "pass": bool(nb is not None and sb is not None and nb <= sb)}
     if jk.get("perturb_ops"):  # JEV2-4B G1 (guarantee check beside the primary)
-        g1 = json.loads((d / "g1" / "perturb_report.json").read_text(encoding="utf-8"))
+        g1p = d / "g1" / "native" / "perturb_report.json"
+        g1 = json.loads((g1p if g1p.is_file() else d / "g1" / "perturb_report.json").read_text(encoding="utf-8"))
         out["g1"] = {k: g1.get(k) for k in ("ops", "n_base", "n_perturbed", "g1_pass", "g1_failures",
                                             "rows_all_identical", "duplicate_tie_items", "max_dp_bound", "status")} | {
             "per_operator": g1["flip_report"]["per_operator"],
