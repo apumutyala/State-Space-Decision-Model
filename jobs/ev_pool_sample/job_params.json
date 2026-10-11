@@ -1,0 +1,47 @@
+{
+ "_comment": "Evidence lane, CPU-only build on the SF box (laptop < 0.5 GB free RAM): the unseen split of B-PREREG-GUAR-FSCRR, a seeded answer-free sample of the Decision Index 0.2.1 POOL (scoreable index rows in neither DEV nor TEST). Streams the suite; no model loaded, no prediction made, no GPU work.",
+ "job": "ev-pool-sample",
+ "test_env": {"transformers": null},
+ "chip": "h100",
+ "chip_count": 1,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 0,
+ "queue_ttl_minutes": 720,
+ "resume": "none",
+ "batch_usd_per_min": 0.063,
+ "runner": "jobs/ev_pool_sample/ev_pool_sample_job.sh",
+ "decision_rule": null,
+ "no_verdict_reason": "builds an evaluation row sample by a pre-registered answer-free procedure (B-PREREG-GUAR-FSCRR); nothing is scored, selected or promoted",
+ "mission": "ssdm-evidence-rescore",
+ "max_duration_minutes": 30,
+ "hf_cache": false,
+ "hard_cap_usd": 5.67,
+ "reserve_minutes": 4,
+ "phase_caps_minutes": {"setup": 3, "preflight": 2, "build": 20, "final": 1},
+ "expected_minutes": {"build": 6, "setup": 1, "preflight": 1, "final": 1},
+ "model": "none: CPU-only row sampling of the pinned 0.2.1 suite",
+ "submit": {
+  "command": "bash /opt/ssdm/m1/jobs/ev_pool_sample/ev_pool_sample_job.sh",
+  "key": "ev-pool-sample-fscrr",
+  "env": {},
+  "label": "evidence: B-PREREG-GUAR-FSCRR unseen split (Index 0.2.1 pool sample; CPU-only)",
+  "checks": {
+   "success": {"check": {"all_of": [{"type": "file_exists", "path": "/output/EV_POOL_SAMPLE_DONE"},
+                                    {"type": "file_exists", "path": "/output/MANIFEST.jsonl"}]}},
+   "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"}, "interval_s": 300, "grace_period_s": 900,
+              "fail_threshold": 2, "on_fail": "kill"}
+  }
+ },
+ "context": {
+  "dockerfile": "jobs/ev_pool_sample/Dockerfile",
+  "data": [
+   {"src": "suite-0.2/selected-rows.jsonl.gz", "dest": "suite-0.2/selected-rows.jsonl.gz", "pin": "jobs/ev_pool_sample/data.sha256"},
+   {"src": "suite-0.2/added-rows.jsonl.gz", "dest": "suite-0.2/added-rows.jsonl.gz", "pin": "jobs/ev_pool_sample/data.sha256"},
+   {"src": "suite-0.2/excluded-questions.json", "dest": "suite-0.2/excluded-questions.json", "pin": "jobs/ev_pool_sample/data.sha256"},
+   {"src": "suite-0.2/manifest.json", "dest": "suite-0.2/manifest.json", "pin": "jobs/ev_pool_sample/data.sha256"},
+   {"src": "slices/dev-rows.jsonl.gz", "dest": "slices/dev-rows.jsonl.gz", "pin": "jobs/ev_pool_sample/data.sha256"}
+  ],
+  "manifest_files": ["jobs/ev_pool_sample/data.sha256"]
+ }
+}
