@@ -21,7 +21,7 @@
  ],
  "n_train_records": 2664,
  "n_eval_records": 0,
- "min_train_items": 5000,
+ "min_train_items": 2664,
  "max_steps": 320,
  "max_minutes": 125,
  "min_steps": 200,
@@ -227,5 +227,6 @@
    ]
   },
   "why": "lead 2026-10-11: the FINAL cleared data; jev1 IN (minus long_policy)"
- }
+ },
+ "min_train_items_note": "= n_train_records (2,664): job-ivm8w stopped at exit 25 (too few items 2664 < the inherited 5,000); assert_no_truncation already requires every drawn row to survive"
 }

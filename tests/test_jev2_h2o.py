@@ -90,6 +90,7 @@ def test_anti_forgetting_guards(mode):
     assert c["max_steps"] == MODES[mode][2] <= c["n_train_records"] // 8 and c["min_steps"] == 200
     assert c["max_minutes"] >= math.ceil(c["max_steps"] * MODES[mode][1] * 1.3 / 60)
     assert "lr_horizon_steps" not in c
+    assert c["min_train_items"] <= c["n_train_records"]  # job-ivm8w: exit 25 with the inherited 5,000 floor
 
 
 @pytest.mark.parametrize("mode", MODES)

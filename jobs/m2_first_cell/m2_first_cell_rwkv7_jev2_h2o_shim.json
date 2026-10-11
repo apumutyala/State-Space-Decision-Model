@@ -21,7 +21,7 @@
  ],
  "n_train_records": 2664,
  "n_eval_records": 0,
- "min_train_items": 5000,
+ "min_train_items": 2664,
  "max_steps": 333,
  "max_minutes": 130,
  "min_steps": 200,
@@ -221,5 +221,6 @@
   },
   "why": "lead 2026-10-11: the FINAL cleared data; jev1 IN (minus long_policy)"
  },
- "head_note": "heads.heads.LMLabelHead: logit_k = s * <W_emb[label_k], q_end> = the shim label-token log-likelihood at the Answer: slot (tied LM head, final-norm hidden state), softmax over the option labels for EVERY type (no CumulativeLink). Step 0 == the untrained H2O readout (s = 1, LoRA B = 0). The loss (clef arm: LS-CE 0.05 on choice / score, 0 on noul, + Brier) is on exactly this distribution, which the primary arm scores after the shim T 0.8 + floor. No fork pass (needs_fork False), so cont_chunk 0. The fork head is kept only for the sym-fork secondary."
+ "head_note": "heads.heads.LMLabelHead: logit_k = s * <W_emb[label_k], q_end> = the shim label-token log-likelihood at the Answer: slot (tied LM head, final-norm hidden state), softmax over the option labels for EVERY type (no CumulativeLink). Step 0 == the untrained H2O readout (s = 1, LoRA B = 0). The loss (clef arm: LS-CE 0.05 on choice / score, 0 on noul, + Brier) is on exactly this distribution, which the primary arm scores after the shim T 0.8 + floor. No fork pass (needs_fork False), so cont_chunk 0. The fork head is kept only for the sym-fork secondary.",
+ "min_train_items_note": "= n_train_records (2,664): job-ivm8w stopped at exit 25 (too few items 2664 < the inherited 5,000); assert_no_truncation already requires every drawn row to survive"
 }
