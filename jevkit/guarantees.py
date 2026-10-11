@@ -326,9 +326,22 @@ def _crr_order(seed: int, cluster: str) -> str:
     return hashlib.sha256(f"{seed}|crr-order|{cluster}".encode()).hexdigest()
 
 
+def _fs_grid(lambdas: Sequence[float], method: str, fs_start: float | None) -> list[float]:
+    """Descending test order. With ``fs_start`` (fixed sequence only; docs/guarantees/CONFORMAL.md D2): the grid
+    from the pre-registered start lambda down, every point tested in order, a lambda that acts on nothing STOPS."""
+    order = sorted(lambdas, reverse=True)
+    if fs_start is None:
+        return order
+    if method != "fixed_sequence":
+        raise ValueError("fs_start needs method='fixed_sequence'")
+    if not any(abs(lam - fs_start) <= 1e-12 for lam in order):
+        raise ValueError(f"fs_start {fs_start} is not a grid point")
+    return [lam for lam in order if lam <= fs_start + 1e-12]
+
+
 def _ltt_crr(cal: Sequence[Scored], fit: dict, epsilon: float, level: float, lambdas: Sequence[float], method: str,
              cluster_of: Callable[[Scored], str], cap: float, cluster_size: Callable[[str], int] | None,
-             order_seed: int) -> tuple[list[dict], dict]:
+             order_seed: int, fs_start: float | None = None) -> tuple[list[dict], dict]:
     """Cluster-robust ratio test of R_c(lambda) = E[w_r L_r] / E[w_r n_r] <= epsilon (w_r = min(1, cap / s_r))."""
     if not cap >= 1:
         raise ValueError("crr_cap must be >= 1")
@@ -350,7 +363,8 @@ def _ltt_crr(cal: Sequence[Scored], fit: dict, epsilon: float, level: float, lam
             if len(s) == 1:
                 thr[c].append((r.probs[s[0]], s[0] != r.label))
     valid: list[dict] = []
-    for lam in sorted(lambdas, reverse=True):
+    stop = None
+    for lam in _fs_grid(lambdas, method, fs_start):
         y, n_act, err, wn, wl = [], 0, 0, 0.0, 0.0
         for c in keys:
             a = e = 0
@@ -361,12 +375,17 @@ def _ltt_crr(cal: Sequence[Scored], fit: dict, epsilon: float, level: float, lam
             n_act, err, wn, wl = n_act + a, err + e, wn + w[c] * a, wl + w[c] * e
             y.append(w[c] * (e - epsilon * a) / cap)
         if n_act == 0:
+            if fs_start is not None:
+                stop = {"lambda": lam, "reason": "acts on nothing", "n_act": 0}
+                break
             continue
         pval, logk = crr_betting_pvalue(y, epsilon, level)
         if pval <= level:
             valid.append({"lambda": lam, "n_act": n_act, "errors": err, "p_value": pval, "log_capital": logk,
                           "weighted_error": wl / wn})
         elif method == "fixed_sequence":
+            stop = {"lambda": lam, "reason": "not rejected", "n_act": n_act, "errors": err, "p_value": pval,
+                    "log_capital": logk, "weighted_error": wl / wn}
             break
     info = {"cluster_test": "crr: Waudby-Smith-Ramdas betting on Y_r = w_r (L_r - eps n_r) / cap, "
                             "w_r = min(1, cap / s_r), clusters in sha256(seed|crr-order|cluster) order",
@@ -374,6 +393,9 @@ def _ltt_crr(cal: Sequence[Scored], fit: dict, epsilon: float, level: float, lam
             "n_decisions": len(cal), "cluster_size_source": "given" if cluster_size is not None else "present",
             "max_cluster_size": max(size.values(), default=0),
             "n_clusters_above_cap": sum(s > cap for s in size.values())}
+    if fs_start is not None:
+        info.update({"fs_start": fs_start, "fs_stop": stop or {"lambda": None, "reason": "grid exhausted"},
+                     "fs_tested": [v["lambda"] for v in valid] + ([stop["lambda"]] if stop else [])})
     return valid, info
 
 
@@ -381,7 +403,7 @@ def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
                lambdas: Sequence[float] = DEFAULT_LAMBDAS, method: str = "bonferroni",
                cluster_of: Callable[[Scored], str] | None = None, pick_seed: int = 0,
                cluster_test: str = "pick", crr_cap: float = 8, cluster_size: Callable[[str], int] | None = None,
-               crr_seed: int = 0) -> dict:
+               crr_seed: int = 0, fs_start: float | None = None) -> dict:
     """Learn-then-Test over a data-independent lambda grid: H0(lambda): P(error | act) > epsilon.
 
     p(lambda) = P(Bin(n_act, epsilon) <= errors) on the acted calibration decisions (a lambda that acts on nothing
@@ -400,6 +422,12 @@ def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
     and acts; w_r = min(1, crr_cap / s_r), s_r = ``cluster_size(key)`` or the number of decisions present) with the
     betting p-value ``crr_betting_pvalue`` on Y_r = w_r (L_r - epsilon n_r) / crr_cap. crr_cap = 1 targets the
     cluster-weighted risk, crr_cap >= every s_r the decision-weighted risk. Valid for any within-cluster dependence.
+
+    ``fs_start`` (opt-in, needs ``method="fixed_sequence"``; PREREG B-PREREG-GUAR-FSCRR; fixes CONFORMAL.md D2): a
+    pre-registered start lambda (a grid point). The grid points <= fs_start are tested in descending order, each at
+    level delta, and the procedure STOPS at the first lambda that is not rejected OR acts on nothing (never skips),
+    so the hypotheses form a fixed, data-independent sequence and the family-wise error is <= delta. The output
+    gains fs_start, fs_stop (where and why it stopped) and fs_tested. Default None: unchanged behaviour.
     """
     if method not in ("bonferroni", "fixed_sequence"):
         raise ValueError("method must be bonferroni or fixed_sequence")
@@ -414,7 +442,7 @@ def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
             raise ValueError("cluster_test='crr' needs cluster_of")
         level = delta / len(lambdas) if method == "bonferroni" else delta
         valid, info = _ltt_crr(cal, fit, epsilon, level, lambdas, method, cluster_of, crr_cap, cluster_size,
-                               crr_seed)
+                               crr_seed, fs_start)
         base = {"epsilon": epsilon, "delta": delta, "method": method, "test_level": level, "n_cal": len(cal),
                 "ltt_ids_sha256": ids_sha256(r.id for r in cal), "fit_ids_sha256": fit.get("ids_sha256"),
                 "grid": [min(lambdas), max(lambdas), len(lambdas)], **info}
@@ -430,19 +458,27 @@ def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
         cal = cluster_pick(cal_all, cluster_of, pick_seed)
     level = delta / len(lambdas) if method == "bonferroni" else delta
     valid: list[dict] = []
-    for lam in sorted(lambdas, reverse=True):
+    stop = None
+    for lam in _fs_grid(lambdas, method, fs_start):
         acted = [(r, y) for r in cal for ok, y in [_acts(r, fit, lam)] if ok]
         n, err = len(acted), sum(y != r.label for r, y in acted)
         if n == 0:
+            if fs_start is not None:
+                stop = {"lambda": lam, "reason": "acts on nothing", "n_act": 0}
+                break
             continue
         pval = binom_cdf(err, n, epsilon)
         if pval <= level:
             valid.append({"lambda": lam, "n_act": n, "errors": err, "p_value": pval})
         elif method == "fixed_sequence":
+            stop = {"lambda": lam, "reason": "not rejected", "n_act": n, "errors": err, "p_value": pval}
             break
     base = {"epsilon": epsilon, "delta": delta, "method": method, "test_level": level, "n_cal": len(cal),
             "ltt_ids_sha256": ids_sha256(r.id for r in cal_all), "fit_ids_sha256": fit.get("ids_sha256"),
             "grid": [min(lambdas), max(lambdas), len(lambdas)]}
+    if fs_start is not None:
+        base.update({"fs_start": fs_start, "fs_stop": stop or {"lambda": None, "reason": "grid exhausted"},
+                     "fs_tested": [v["lambda"] for v in valid] + ([stop["lambda"]] if stop else [])})
     if cluster_of is not None:
         base.update({"cluster_test": "one decision per cluster: min sha256(pick_seed|ltt-cluster-pick|id)",
                      "pick_seed": pick_seed, "n_decisions": len(cal_all), "n_clusters": len(cal),
