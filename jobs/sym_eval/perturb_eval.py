@@ -75,6 +75,7 @@ def run(decider: Any, items: list, out_dir: str | Path, ops: Iterable[str] = REO
     # reorder flips read from that file were vacuously 0); the in-process run above never round-trips through JSON
     with open(out / "perturbed.jsonl", "w", encoding="utf-8", newline="\n") as fh:  # same rows as `jevkit perturb make`
         fh.writelines(json.dumps(p.to_dict(), ensure_ascii=False) + "\n" for p in ps)
+    assert_file_order(out / "perturbed.jsonl", ps)
     rep = perturb.flip_report(items, ps, preds_to_answers(base), preds_to_answers(pert))
     ties = [r["id"] for r in base if isinstance(r.get("answer"), dict) and len(r["answer"].get("tie_set") or []) > 1]
     report = {"ops": ops, "seeds": list(seeds), "n_base": len(items), "n_perturbed": len(ps), "flip_report": rep,
@@ -86,6 +87,18 @@ def run(decider: Any, items: list, out_dir: str | Path, ops: Iterable[str] = REO
     report.update(g1_verdict(ops, rep["per_operator"], report.get("row_identity"), max_dp, report["presented_order"]))
     (out / "perturb_report.json").write_text(json.dumps(report, indent=1, default=str), encoding="utf-8")
     return report
+
+
+def assert_file_order(path: Path, ps) -> None:
+    """The written perturbation file must list every question's options in the SAME order as the in-memory
+    perturbations (a sort_keys dump silently restores base order: #245, 0/213 reordered rows in a receipt)."""
+    with open(path, encoding="utf-8") as fh:
+        rows = [json.loads(line) for line in fh if line.strip()]
+    got = [list(((r.get("item") or r).get("question") or {}).get("criteria") or []) for r in rows]
+    want = [list(p.item.question.get("criteria") or []) for p in ps]
+    if got != want:
+        bad = sum(g != w for g, w in zip(got, want)) + abs(len(got) - len(want))
+        raise AssertionError(f"{path}: {bad} rows do not preserve the in-memory option order")
 
 
 REORDER_OPS = ("option_reverse", "option_shuffle")

@@ -78,6 +78,23 @@ def test_perturb_eval_sym_fork_passes_g1_with_identical_rows(tmp_path):
                      str(tmp_path / "perturbed.preds.jsonl"), "--out", str(tmp_path / "cli.json")]) == 0
 
 
+def test_written_perturbation_file_must_preserve_the_in_memory_order(tmp_path):
+    """#245: a sort_keys dump restores base order (0/213 reordered rows in a receipt); assert_file_order catches it."""
+    import json as _json
+
+    from jevkit import perturb as _P
+    from jobs.sym_eval.perturb_eval import assert_file_order
+
+    ps = _P.make_perturbations(_items(5), ["option_reverse", "option_shuffle", "key_relabel"], [0])
+    good, bad = tmp_path / "good.jsonl", tmp_path / "bad.jsonl"
+    good.write_text("".join(_json.dumps(p.to_dict(), ensure_ascii=False) + "\n" for p in ps), encoding="utf-8")
+    bad.write_text("".join(_json.dumps(p.to_dict(), ensure_ascii=False, sort_keys=True) + "\n" for p in ps),
+                   encoding="utf-8")
+    assert_file_order(good, ps)
+    with pytest.raises(AssertionError, match="in-memory option order"):
+        assert_file_order(bad, ps)
+
+
 def test_g1_verdict_fails_closed():
     """Every requested operator must be present with n > 0, the dp bound defaults to 0 (bitwise), and the rows must
     be checked and identical (SYM_CHECK.md section 3)."""
