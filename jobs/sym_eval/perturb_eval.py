@@ -69,8 +69,14 @@ def run(decider: Any, items: list, out_dir: str | Path, ops: Iterable[str] = REO
     pert = run_items(ad, [p.item for p in ps])
     _write_jsonl(out / "base.preds.jsonl", base)
     _write_jsonl(out / "perturbed.preds.jsonl", pert)
-    with open(out / "perturbed.jsonl", "w", encoding="utf-8", newline="\n") as fh:  # == `jevkit perturb make` output
-        fh.writelines(json.dumps(p.to_dict(), ensure_ascii=False, sort_keys=True) + "\n" for p in ps)
+    # NOT sort_keys: a sorted dump puts every option list back in BASE order (#245: 0/213 reordered rows in a receipt)
+    with open(out / "perturbed.jsonl", "w", encoding="utf-8", newline="\n") as fh:  # same rows as `jevkit perturb make`
+        fh.writelines(json.dumps(p.to_dict(), ensure_ascii=False) + "\n" for p in ps)
+    with open(out / "perturbed.jsonl", encoding="utf-8") as fh:  # the file must keep the in-memory option order
+        got = [list(((r.get("item") or r).get("question") or {}).get("criteria") or [])
+               for r in (json.loads(x) for x in fh if x.strip())]
+    if got != [list(p.item.question.get("criteria") or []) for p in ps]:
+        raise AssertionError("perturbed.jsonl does not preserve the in-memory option order")
     rep = perturb.flip_report(items, ps, preds_to_answers(base), preds_to_answers(pert))
     ties = [r["id"] for r in base if isinstance(r.get("answer"), dict) and len(r["answer"].get("tie_set") or []) > 1]
     per = rep["per_operator"]
