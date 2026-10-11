@@ -11,15 +11,24 @@ board's 72.5.
   exclude 0 against us.
 - **Intelligence is the largest axis in every decomposition.** An exact Shapley split over the 4 axes gives Intelligence
   **6.3 of 9.4 points for stock 4B+shim (67%)**, 8.1 of 13.2 for JEV1-4B r2 (61%) and 7.3 of 14.4 for D19 (50%).
-  Calibration comes second (3.1 / 4.2 / 1.8). Speed and Cost matter only for D19 (13.3B price class and 0.50 s readout: 5.3 points).
-- **Intelligence alone does not close the gap. Intelligence and Calibration together do.** Composite A is a harmonic mean, so
+  Calibration comes second for the 4B line (3.1 / 4.2). **For D19, Cost (3.18) and Speed (2.12) both come before Calibration (1.83)**:
+  the 13.3B price class and the 0.50 s readout cost 5.3 points. I is the largest Shapley term in 97.9–98.4% of bootstrap resamples
+  (evidence review, claude/ev-review-gap-attr @f2a04059).
+- **I and C are both necessary, but they are sufficient only when S and K already match H2O's.** Composite A is a harmonic mean, so
   with C held fixed even I = 100 leaves D19 (72.4) and JEV1-4B r2 (74.7) below H2O's 76.6. Stock 4B+shim would need I = 95.3.
-  Setting I and C to H2O's values recovers 9.4 / 12.1 / 8.4 points respectively. The real target is therefore
-  **Capability (I and C), which is −17.7 to −22.6 behind H2O.**
+  With I and C both set to H2O's values:
+  - stock 4B+shim reaches 76.69 and clears by only +0.05, because its S is 0.29 above H2O's;
+  - **JEV1-4B r2 reaches 75.55, still 1.09 short.** The shortfall is the native readout's Speed;
+  - **D19 reaches 70.64, 6.0 short.** It needs S and K as well.
+
+  Bootstrap probability that I, C := H2O's closes the gap: 1.00 / 0.00 / 0.00 (review §c). So the target is
+  **Capability (I and C), which is −17.7 to −22.6 behind H2O, plus the shim-speed readout. D19 also needs a cheaper, faster host.**
 - **Within Intelligence, noul (yes/no) is the biggest hole.** It accounts for −12.2 / −16.2 / −13.4 of the −21.3 / −26.4 / −24.9 I gap,
-  against choice −6.7 / −7.6 / −5.3 and score −2.4 / −2.6 / −6.2. **Six families** (probability, temporal_numeric,
-  long_policy, trap, adequacy and judge_hard; 80 of 231 items) hold 66% / 81% / 66% of the I gap.
-- **The causes, all measured:** (a) a train/eval data shape mismatch (the jev1 audit); (b) noul indecision, where the 0.2–0.8 band counts as
+  against choice −6.7 / −7.6 / −5.3 and score −2.4 / −2.6 / −6.2. Part of this comes from the scorer's per-item weights: one noul miss costs
+  0.79–1.00 I points, against 0.17–0.38 for a choice miss.
+- **By family, only probability is robustly behind for all three candidates, and temporal_numeric for stock and JEV1.** Every other family
+  is unresolved at 4–24 items per family. The earlier "six families hold 66–81%" claim is **retracted** (it was post hoc and optimistic; see §2).
+- **Causes, all measured:** (a) a train/eval data shape mismatch (the jev1 audit); (b) noul indecision, where the 0.2–0.8 band counts as
   wrong; (c) a slow native readout (0.197 s vs 0.067 s); (d) 0.093 epoch of training. Post-hoc calibration on H2O itself buys
   at most +0.5 Composite (not significant), so **the remaining gap is answer quality, not calibration.**
 
@@ -35,6 +44,7 @@ board's 72.5.
 | GU | claude/ev-guarantee-proofs @b4835e05 (cluster) / @01738528 (CRR) | receipts/2026-10-10-ev-guar-cluster/, receipts/2026-10-10-ev-guar-crr/GUARANTEES_CRR.md |
 | DC | claude/ev-d19-cal-rescore @281a0bb9 | RESCORE_D19_CAL.md, receipts/2026-10-10-ev-d19-cal-rescore/ |
 | ST | origin/state @9b47aca5 | BOARD.md, PREREG.md, results/ledger.tsv |
+| RV | claude/ev-review-gap-attr @f2a04059 | docs/REVIEW_GAP_ATTRIBUTION.md, receipts/2026-10-11-ev-review-gap-attr/ (independent review: reproduction + Shapley CONFIRMED; 5 edits applied here) |
 | HRN | local notes (not in git) | ssdm-wt/b-landscape/H2O_RECIPE.md (web research 2026-10-10; summarised pages) |
 | **GA** | **this branch** | **scripts/gap_attribution.py, receipts/2026-10-11-gap-attribution/** (gap_attribution.json, cfg.json, run.log, SHA256SUMS) |
 
@@ -79,8 +89,14 @@ Reading the table:
 - Speed and Cost are about 0 for the Qwen-4B line, because H2O shares the host, the price class and the shim.
 - For D19, S and K together cost 5.3 points. Those come from the 13.3B price class and the 0.50 s raw p50 (SC latency).
 
-**I is necessary but not sufficient.** With C held, I = 100 gives D19 72.4 and JEV1 74.7, both below 76.6. Stock 4B+shim needs I ≥ 95.3. Only
-I and C together close the 4B gaps (I+C column). So the target is Capability: ΔCap −17.7 [−26.5, −8.2] for stock 4B+shim and
+**I is necessary but not sufficient, and so are I and C together.** With C held, I = 100 gives D19 72.4 and JEV1 74.7, both below 76.6.
+Stock 4B+shim needs I ≥ 95.3. Setting I and C to H2O's values reaches different places:
+- stock 4B+shim: 76.69, which clears by +0.05 only because its S is 0.29 above H2O's;
+- JEV1-4B r2: 75.55, **1.09 short**, the Speed gap of the native readout (S 85.25 vs 91.31);
+- D19: 70.64, **6.0 short**. Even with I = 100 and C at H2O's value it is still 2.2 short, so it needs S and K.
+
+The bootstrap probability that I, C := H2O's closes the gap is 1.00 / 0.00 / 0.00 (review §c, `shap_rank.json`). I and C are sufficient only
+when S and K already match H2O's (the shim readout on the 4B host). Capability gaps: ΔCap −17.7 [−26.5, −8.2] for stock 4B+shim and
 −17.2 [−26.6, −10.7] for D19 (SC), and −22.6 [−32.0, −12.4] for JEV1 (J1).
 
 ## (2) Within Intelligence: where the points are lost
@@ -94,6 +110,20 @@ contribution to the I gap is therefore ΔCC_type / 3 (GA `per_type`; the CCs are
 | JEV1-4B r2 native | 60.0 (−7.63) | 27.9 (**−16.21**) | 65.6 (−2.55) | −26.38 | 10 / 74 |
 | JEV1-4B r2 native_shimcal | 60.0 (−7.63) | 44.1 (−10.82) | 65.8 (−2.48) | −20.92 | 0 / 74 |
 | D19 | 66.9 (−5.32) | 36.3 (**−13.41**) | 54.6 (−6.19) | −24.92 | 12 / 74 |
+
+**Per-item I weights.** Each type weighs 1/3 whatever its n, and tiers are weighted within a type (easy 0.1, standard 0.2, judge 0.3, hard 0.4).
+So one full miss is worth very different amounts of I depending on the item (review §d):
+
+| item | I points lost per full miss |
+|---|---|
+| choice easy / standard / hard (n 36 / 36 / 67) | 0.17 / 0.33 / 0.38 |
+| noul easy / standard / hard (n 12 / 24 / 38) | 0.79 / 0.79 / 1.00 |
+| score standard / hard (n 12 / 6) | 2.2 / **10.4** (per unit nMAE / nMAE_chance) |
+
+- The 6 hard score items carry **22% of all I weight**, and one noul flip is worth about 2.6 hard-choice flips.
+- "noul is the biggest hole" holds under this scorer: P(noul is the largest type) = 0.895 / 0.925 / 0.986. But part of that is per-item weight, not item count.
+- Per-type I-gap CIs for noul: stock [5.97, 19.38], D19 [6.39, 20.22], JEV1 [9.61, 22.81]. The score-type terms span 0 for all three
+  (for example D19 [−1.69, 12.33]), so that row is dominated by noise.
 
 **Per family: the family-swap counterfactual** (GA `per_family`). For each family, the candidate's answers on that family are replaced by H2O's and
 I is recomputed. The I points recovered sum exactly to the I gap (21.29 / 24.92 / 26.38) because no type is clipped at 0. The table
@@ -122,9 +152,25 @@ also in `receipts/2026-10-11-gap-attribution/famtable.md`.
 | tool_selection | 12 | choice | 12 | 12 / 0.00 | 12 / 0.00 | 12 / 0.00 |
 | **sum** | 231 | | 205 | 172 / 21.29 | 172 (12) / 24.92 | 166 (10) / 26.38 |
 
-- **Concentration.** The top six families (80 items) hold 13.99 / 16.41 / 21.41 I points, which is 66% / 66% / 81% of the gap.
-  The seven short "original/easy" families (intent, extraction, routing, routing_hard, tool_selection, fact, policy; 101 items) together hold
-  ≤ 2.6 points for every candidate. They are solved.
+**Concentration: RETRACTED as stated in 2d2f346f; corrected per the evidence review (§e, `fam_boot.json`, `split_half.json`).**
+- **Point values.** The top six families by summed gap (probability, temporal_numeric, long_policy, trap, adequacy and judge_hard) hold
+  65.6% [27.5, 86.0] / 65.8% [39.4, 83.6] / 81.2% [60.3, 94.4] of the I gap. These come from a paired bootstrap, B 1000.
+- **Null reference.** The six are 35% of the items but **45% of the I weight**, because they are almost all hard-tier. The fair comparison is
+  66 / 66 / 81% against 45%, not against 35%.
+- **Which families are robust.** Only **probability** excludes 0 for all three candidates: stock 3.52 [0.76, 6.91], D19 4.91 [1.52, 8.67],
+  JEV1 3.15 [0.75, 6.46]. **temporal_numeric** also excludes 0 for stock (4.05 [0.38, 9.81]) and JEV1 (4.72 [1.00, 9.50]), but not for
+  D19 ([−0.38, 6.48]). long_policy spans 0 for every candidate (for example JEV1 4.57 [−4.92, 13.86]), because it holds 2 hard score items
+  worth about 10 I points each.
+- **The six are a post-hoc union across candidates.** Per candidate, they are the wrong six:
+  - D19's most certain family loss is **ordinal**, 4.06 [3.25, 4.71], in the top 6 in 100% of resamples, and it is not among the six;
+  - stock's #3 is adversarial, 2.36 [0.00, 6.73], also not among the six;
+  - trap is only stock's #9 (P(top 6) = 0.29).
+- **Split-half shrinkage.** Pick the top 6 on one random stratified half and measure them on the other half (500 splits). Their share
+  drops from about 90% to **30% [−11, 61] / 45% [22, 70] / 54% [18, 83]** (stock / D19 / JEV1).
+- **Supportable statement:** noul, probability and (for the 4B line) temporal_numeric are reliably behind. Family-level attribution beyond
+  that is not resolved with 4–24 items per family.
+- The seven short "original/easy" families (intent, extraction, routing, routing_hard, tool_selection, fact, policy; 101 items) together hold
+  ≤ 2.6 I points for every candidate.
 - **Content.** The families we lose (probability, temporal_numeric, multi_hop, long_policy) match what H2O's card says its stage 2
   targets: long documents plus numbers, dates and probabilities, and 37% documents/policies plus 22% numbers/dates/probability in the mix (HRN).
   That is the card's statement, not something we measured.
@@ -171,3 +217,16 @@ vs the in-job H2O control on public-231, with Holm over JEV2-H2O and JEV2-H2O-L.
   still need a board submission (operator approval) before any board claim.
 - The attribution above is valid only on the local basis. The sealed split could reorder candidates whose open I advantage comes from public-like
   item shapes.
+
+**Adaptive-analysis caveat** (evidence review §f). The family and type rankings above are exploratory: they were chosen post hoc by looking at
+our losses on the same public-231 items that will measure any fix. Five rules follow from that:
+1. Any training aimed at these families is judged only by the **pre-registered overall Composite A** (EV-PREREG-COMPOSITE-LOCAL: paired Δ vs the
+   in-job control, 95% CI). It is never judged by a targeted-family subtotal. Family deltas are reported as descriptive, labelled "selected post hoc on
+   these items".
+2. The primary metric is pre-registered before the run.
+3. Confirmation happens off the selection set:
+   - first on a held-out jev slice, which must **never** be the T-fit ids 204e9bfe;
+   - then on the sealed split, through a board submission that needs operator approval.
+4. Family-targeted data is generated from **family descriptions** (H2O card, task taxonomy), never from public item text or templates. A leak
+   audit (n-gram/embedding overlap against public-231) is attached to the data receipt before training (hard rule 3).
+5. A family share is always quoted next to its I-weight share (the six: 45%), not its item share (35%).
