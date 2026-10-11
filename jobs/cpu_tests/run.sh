@@ -17,7 +17,7 @@ PYT="python -X utf8 -m pytest -v -rs -p no:cacheprovider"
 
 # ---------------------------------------------------------------- 1. nupi (c3f3a3f9) + base golden (5e159437)
 log "golden: base 5e159437"
-(cd "$T/base" && timeout 600 python -X utf8 "$J/golden.py" > "$OUT/golden_base_losses.json" 2> "$OUT/golden.stderr")
+(cd "$T/base" && PYTHONPATH="$T/base" timeout 600 python -X utf8 "$J/golden.py" > "$OUT/golden_base_losses.json" 2> "$OUT/golden.stderr")
 G_RC=$?
 log "golden rc=$G_RC $(cat "$OUT/golden_base_losses.json" 2>/dev/null)"
 if [ "$G_RC" = 0 ]; then

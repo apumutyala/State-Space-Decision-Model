@@ -6,7 +6,7 @@ import hashlib, io, json, pathlib, subprocess, sys, tarfile
 import zstandard
 
 TREES = {"nupi": "c3f3a3f9", "base": "5e159437", "g16": "2d913b3e", "sym": "42388c2c"}
-SKIP = ("receipts/", "third_party/", "docs/nupi_toy_traces.svg")  # not imported by any of the suites
+SKIP = ("receipts/", "docs/nupi_toy_traces.svg")  # not imported by any of the suites (third_party/ is: rwkv7_hf)
 KEEP = ("docs/nupi_toy_traces.json",)
 JOB_FILES = ("run.sh", "golden.py", "patch_golden.py")
 MTIME = 1767225600
@@ -61,7 +61,7 @@ def main():
               "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"}, "interval_s": 300,
                          "grace_period_s": 900, "fail_threshold": 2, "on_fail": "kill"}}
     sub = {"chip": "cpu-8", "mission": "ssdm-cpu-tests", "idempotency_key": f"ssdm-cpu-tests-{sha[:12]}",
-           "label": "cpu_tests: nupi c3f3a3f9 (+5e159437 golden), g16-sym 2d913b3e, sym-invariant 42388c2c",
+           "label": "cpu_tests: nupi c3f3a3f9 (+5e159437 golden), g16-sym 2d913b3e, sym-invariant 42388c2c (r2)",
            "dockerfile_path": "Dockerfile", "build_timeout_minutes": 20, "command": "bash /opt/job/run.sh", "env": {},
            "max_duration_minutes": 45, "max_restarts": 0, "resume": "none", "queue_ttl_minutes": 1440,
            "hf_cache": False, "checks": checks}
