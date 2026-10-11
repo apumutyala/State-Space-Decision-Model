@@ -373,3 +373,24 @@ def test_jev2_h2o_l_same_recipe_and_selection_slice():
     assert c["max_minutes"] >= math.ceil(c["max_steps"] * 2.55 * 1.15 / 60)
     assert f"{costs.worst_case_usd(p):.2f}" in (M / "JOB_SPEC.md").read_text(encoding="utf-8")
     assert "job_params_jev2_h2o_shim_l.json" in (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
+
+
+def test_jev3_h2o_draft_package():
+    """A-PREREG-JEV3-H2O (draft): the jev2_h2o_shim recipe / readout, PLACEHOLDER data pins that the runner refuses,
+    the slice evidence before the screen, worst case <= $22."""
+    from jobs.common import costs
+
+    c, p, s = cell("jev3_h2o_shim"), params("jev3_h2o_shim"), cell("jev2_h2o_shim")
+    for k in SAME + ("head", "layout", "lora_rank", "lr_lora", "qwen35", "label_smoothing", "label_smoothing_noul"):
+        assert c.get(k) == s.get(k), k
+    assert c["data_pins"]["status"] == "PLACEHOLDER" and c["max_steps"] == 500 and c["min_steps"] == 250
+    job = (M / "first_cell_job.sh").read_text(encoding="utf-8")
+    assert 'd.get("status") != "final"' in job  # the runner refuses placeholder pins
+    jk = p["jevkit"]
+    assert jk["slice_first"] and jk["slice_floor"] and jk["tfit"] and jk["paired_primary"] == "native_shimcal"
+    assert costs.worst_case_usd(p) <= p["hard_cap_usd"] <= 22.0
+    assert p["max_duration_minutes"] == sum(p["phase_caps_minutes"].values()) + p["reserve_minutes"]
+    assert f"{costs.worst_case_usd(p):.2f}" in (M / "JOB_SPEC.md").read_text(encoding="utf-8")
+    src = (M / "screen.py").read_text(encoding="utf-8")
+    i = src.index("def score(a)")
+    assert src.index("slice_first(jk0", i) < src.index("G.index_predict", i)  # slice work before any screen row

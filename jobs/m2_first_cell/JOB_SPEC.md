@@ -794,3 +794,52 @@ before any public-231 answer of a trained JEV2-H2O checkpoint existed.
   - **MULTIPLICITY (Holm over 2 arms):** both JEV2-H2O (job-x7c42) and JEV2-H2O-L may claim "H2O-Lightning-4B v1.1 +
     SSDM beats H2O". Holm: the arm with the smaller p must have p < 0.025 (its 97.5% paired CI on delta Composite A
     excludes 0), and only then the other arm is tested at 0.05 (95% CI). Each arm also needs its step-0 floor to pass.
+
+## Mode `jev3_h2o_shim` (PARKED, operator directive 2026-10-11: no more fine-tuning / benchmarking of third-party models such as H2O; A-PREREG-JEV3-H2O DRAFT: the JEV2-H2O cell on the jev3 draw; NOT submitted, data pins PLACEHOLDER)
+
+Branch `stack/qwen35/jev3-h2o` (child of stack/qwen35/jev2-h2o @c5a2fb33). The same recipe, pins and readout as
+`jev2_h2o_shim`: H2O-Lightning-4B v1.1 @193ad740 (fail-closed host loading, LICENSE / README copied), head lm_label
+(train == score), LoRA r16, lr_lora 4e-5 / lr_head 3e-4, LS 0.05 on choice / score and 0 on noul, max_len 4,096 with 0
+truncation asserted, cosine horizon 0.6717 x plan, the step-10 measured-rate logic, PRIMARY native_shimcal vs the
+in-job H2O v1.1 control, the inference checkpoint exported right after the cell.
+
+- **Data (PLACEHOLDER):** the jev3 draw the evidence lane is building: human-labelled public TRAIN rubric data for
+  judge_hard / adequacy / policy / ambiguous, real human-answered TRAIN sources for temporal_numeric / long_policy,
+  public-matched shapes, and its own 200-per-family held-out selection slice. Until it lands, the cell's `data_pins`
+  block is `PLACEHOLDER` and the pins are a STUB pointing at bschema-draw-jev2h-L (so the package and `sf_submit --dry`
+  validate). The runner refuses any cell with `data_pins.status != final` (setup, exit 5, before any download). To fill:
+  train_set.pointer (+ pools / build note), `data_jev3.sha256` + the params' context.data, n_train_records /
+  min_train_items, calib_slice / dev_card_records / jevkit.tfit = the jev3 slice (records + ids sha), status final.
+- **Slice evidence first (`jevkit.slice_first`, new):** screen score now runs native_tfit (calib_probs + T) and the
+  step-0 floor (selected checkpoint vs the untrained H2O, top-1 on every slice decision) BEFORE any proxy600 or
+  public-231 row, and writes `slice_first.json` with UTC times. In x7c42 / L the floor ran after the public arms
+  (selection itself was frozen earlier, in cell.json).
+- **Steps and cost:** max 500 steps (4,000 rows), min 250. clock 46 = ceil(500 x 3.93 s/step (MEASURED, job-q668q's
+  step-10 check on the larger draw) x 1.15 / 60) + 8 dev-card minutes; dev cards every 100 steps. Caps: setup 15 +
+  guard 5 + heldout 5 + cell 61 + screen 45 + report 5 + reserve 7 = 143 min; quoted hold $9.01; **worst case $21.80**
+  (hard cap $22; balance $26.07, ~$4 kept for rescoring); expected ~$4.35 (billed run time only).
+
+### A-PREREG-JEV3-H2O (DRAFT, lead, 2026-10-11; NOT on state yet; register before any submission)
+
+- **A-PREREG-JEV3-H2O (DRAFT):** the JEV2-H2O cell (A-PREREG-JEV2-H2O + amendments 1-3, head lm_label, r16, LR 4e-5)
+  trained on the jev3 draw (pins to be filled from the evidence lane's final draw: pointer, data shas, the 200-per-family
+  selection slice ids sha), max 500 steps with the step-10 measured-rate plan, worst-case hold <= $22.
+  - **Prior, stated honestly (weak):** both earlier arms improved the held-out slice but not public-231: x7c42 slice
+    top-1 +4.44 pp [+3.44, +5.39], public delta Composite A -0.41 [-1.75, +1.39]; L slice +8.97 pp [+7.69, +10.22],
+    public -0.97 [-3.38, +1.12]. Per-family slice-vs-public transfer correlation +0.15 (x7c42) and -0.32 (L): the
+    jev2 gains were in-distribution. jev3 targets that gap with human-labelled / human-answered TRAIN rows in
+    public-matched shapes; we expect at most a small positive effect.
+  - **PRIMARY:** delta Composite A of native_shimcal (the trained arm under H2O's own shim T 0.8 + yes/no floor 0.801)
+    vs the IN-JOB H2O v1.1 control (rev 193ad740, same 231 public items, same B = 1,000 seed-16 bootstrap draws, same
+    shim readout).
+  - **MULTIPLICITY (Holm over 3 arms: x7c42, L, JEV3-H2O):** the arm with the smallest p must have p < 0.0167 (its
+    98.33% paired CI excludes 0); then the next at 0.025 (97.5%), then the last at 0.05 (95%). x7c42 and L are already
+    landed and FLAT, so a JEV3-H2O claim needs its 98.33% CI to exclude 0.
+  - **Selection and step-0 floor:** the checkpoint is selected ONLY on the jev3 draw's own fixed 200-per-family
+    selection slice (ids sha recorded, never trained). The step-0 floor (the untrained H2O on the same slice) and the
+    tfit are computed in job BEFORE any public-231 row; if no checkpoint beats step 0, step 0 = no change and the run is
+    negative. Nothing is selected or fitted on public-231.
+  - **SECONDARY (EV-PREREG-SECONDARY-AXES, reported):** per-axis paired CIs; per-type and per-family deltas; the
+    slice-vs-public transfer per family; the noul 0.2-0.8 band rate vs the control; raw native and native_tfit; G1
+    (reported).
+  - **Caveat:** open-split Intelligence only; never a board score. Label "H2O-Lightning-4B v1.1 + SSDM jev3 data".
