@@ -168,6 +168,23 @@ def load_rev_shim(model_dir: Path):
     return mod, mod.Contract(conf, env={})
 
 
+def t_by_type(contract) -> dict[str, float]:
+    """The shim's temperature per question type: the 0940cbd7 shim's ``temperature_by_type``, else (the v1.1 shim)
+    its one scalar ``temperature`` for every type."""
+    tb = getattr(contract, "temperature_by_type", None)
+    return {t: float(tb[t]) for t in TYPES} if tb else {t: float(contract.temperature) for t in TYPES}
+
+
+def noul_threshold(mod, q: dict) -> float | None:
+    """The shim's own ``noul_threshold`` when it has one, else the v1.1 shim's inline rule (host_scan.ShimEngine)."""
+    if hasattr(mod, "noul_threshold"):
+        return mod.noul_threshold(q)
+    if q.get("type", "choice") != "noul":
+        return None
+    t = q.get("threshold", q.get("noul_threshold"))
+    return float(t) if isinstance(t, (int, float)) and not isinstance(t, bool) and 0.0 <= float(t) <= 1.0 else None
+
+
 class RevShimEngine:
     """The revision's shim readout over a transformers plug-in; ``post`` decides the post-processing:
     ``post(type, family) -> (T, floor)``. ``last_raw`` holds the raw label log-probabilities of the last request."""
@@ -178,7 +195,7 @@ class RevShimEngine:
         self._tok, self.truncated = None, 0
         self.label_ids = self._label_ids()
         self.c.label_ids = self.label_ids
-        self.post = lambda typ, fam=None: (self.c.temperature_by_type[typ], self.c.noul_floor)
+        self.post = lambda typ, fam=None: (t_by_type(self.c)[typ], self.c.noul_floor)
         self.last_raw: list[dict] = []
 
     def tokenize(self, text: str) -> list[int]:
@@ -230,7 +247,7 @@ class RevShimEngine:
                 lp = torch.log_softmax(lg[0, -1].float(), dim=-1)
             lab = [self.label_ids[l] for l in labels]
             vals = lp.index_select(0, torch.tensor(lab, device=lp.device)).tolist()
-            thr = self.mod.noul_threshold(q) if hasattr(self.mod, "noul_threshold") else None
+            thr = noul_threshold(self.mod, q)
             out.append({"qid": qid, "type": q.get("type", "choice"), "names": list(names), "descs": list(descs),
                         "lp": vals, "threshold": thr, "ntok": len(ids)})
         return out
@@ -414,7 +431,7 @@ def cmd_run(a) -> int:
 
     # 1) the held-out slice: raw label log-probs under the revision's shim (no answers scored, nothing public)
     eng = RevShimEngine(plug, md, c["repo"])
-    meta["shim"] = {"temperature_by_type": dict(eng.c.temperature_by_type), "noul_floor": eng.c.noul_floor,
+    meta["shim"] = {"temperature_by_type": t_by_type(eng.c), "noul_floor": eng.c.noul_floor,
                     "labels": len(eng.c.labels), "system": eng.c.system,
                     "label_ids_sha256": hashlib.sha256(json.dumps(eng.label_ids, sort_keys=True).encode()).hexdigest()}
     sl = json.loads(Path(a.slice).read_text(encoding="utf-8"))
@@ -543,7 +560,7 @@ def derive(out: Path, model_dir: Path) -> dict:
         a, it = r.get("answer"), items.get(r["id"])
         if r.get("status") == "ok" and isinstance(a, dict) and it is not None:
             q = it.question
-            t = c.temperature_by_type[q["type"]]
+            t = t_by_type(c)[q["type"]]
             if q["type"] == "noul":
                 py = float(a["noul"])
                 r["answer"] = mod.format_answer("noul", ["true", "false"], ["", ""], [lg(py), lg(1 - py)], t, floor)
@@ -558,7 +575,7 @@ def derive(out: Path, model_dir: Path) -> dict:
     _jsonl(out / "arms" / "b_shimcal" / "preds.jsonl", recs)
     made["b_shimcal"] = len(recs)
     doc = {"T_J": tj, "T_by_type": ttype, "T_by_family": tfam, "noul_floor": floor, "arms": made,
-           "shim_temperature_by_type": dict(c.temperature_by_type)}
+           "shim_temperature_by_type": t_by_type(c)}
     (out / "derive.json").write_text(json.dumps(doc, indent=1), encoding="utf-8")
     return doc
 
@@ -671,6 +688,10 @@ def summarize(root: Path) -> dict:
         rows[nm]["composite_A_quantiles"] = {str(q): float(np.percentile(a_, q)) for q in qs} if a_ else None
         rows[nm]["frac_resamples_I_lt_50"] = float(np.mean([x < 50 for x in draws[nm]["I"] if x is not None]))
         rows[nm]["top1"] = {"correct": int(sum(top[nm])), "n": len(top[nm])}
+        tn = tables[nm]
+        nm_mask = (tn.typ == JS.TYPE_IX["noul"]) & tn.valid
+        rows[nm]["noul_band_0.2_0.8"] = {"n_valid": int(nm_mask.sum()), "in_band": int((nm_mask & tn.abstain).sum()),
+                                         "rate": float((nm_mask & tn.abstain).sum() / nm_mask.sum()) if nm_mask.any() else None}
         v = [x for x in nll[nm] if x is not None]
         rows[nm]["mean_nll_choice"] = float(np.mean(v)) if v else None
         # per-TYPE breakdown (point values on the full item set + bootstrap CIs on the shared draws)

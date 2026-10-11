@@ -1,0 +1,211 @@
+{
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [
+   "safetensors",
+   "accelerate",
+   "jinja2"
+  ],
+  "allowed_skips": [],
+  "image": "jobs/probe9b/Dockerfile"
+ },
+ "_comment": "EV-PREREG-H2O-HOST eval-only arms (lead, 2026-10-11): H2O-Lightning-4B at the v1.1 tag revision 193ad740 (the board / host-scan / kit-parity anchor) (fail closed on any other sha) on the 231 public JevBench items; control = the revision's own shim; (a) T fitted on a fixed held-out jev2a slice (scalar; per-type and per-family secondary), (b) shimcal readout, (c) sym-fork LM readout (G1 probe, not a contender); all paired in this job (B=1000 seed 16). One H100. Phases 14 + 30 + 8 + reserve 8 = 60 min; worst case (60 + 2 x 60) x 0.063 = $11.34; expected ~33 min, ~$2.1.",
+ "job": "jev-host-scan-h2o-eval-v11",
+ "runner": "jobs/jev_host_scan/h2o_eval.sh",
+ "decision_rule": null,
+ "no_verdict_reason": "the claim rule is the pre-registration (state PREREG.md EV-PREREG-H2O-HOST + EV-PREREG-COMPOSITE-LOCAL: paired delta Composite A vs H2O in this job, 95% CI excluding 0); decision.json reports it per arm, and the evidence lane rescores before any claim",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 60,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": false,
+ "batch_usd_per_min": 0.063,
+ "hard_cap_usd": 12.0,
+ "reserve_minutes": 8,
+ "phase_caps_minutes": {
+  "setup": 14,
+  "run": 30,
+  "summarize": 8
+ },
+ "download_cap_minutes": 10,
+ "score_cap_minutes": 2,
+ "expected_minutes": {
+  "build": 10,
+  "setup": 6,
+  "run": 12,
+  "summarize": 5
+ },
+ "model": "h2oai/h2o-lightning-4b@193ad740925b176a3b70a5a13a7cff2f2fadd01e",
+ "mission": "jev-host-scan-h2o-eval-v11",
+ "h2o_eval": {
+  "repo": "h2oai/h2o-lightning-4b",
+  "revision": "193ad740925b176a3b70a5a13a7cff2f2fadd01e",
+  "revision_note": "v1.1 tag (the revision job-zbtbj / kit parity / the scorecard ran: 205/231). Pins: sha256 of jobs/jev_host_scan/snapshots/h2o-lightning-4b.sha256 (fetched 2026-10-09); LICENSE / README by git blob id from the HF API at this revision. No NOTICE file exists at this revision. Scalar shim T 0.8.",
+  "price_class": {
+   "kind": "base_model_reference",
+   "usd_per_m_input": 0.03,
+   "usd_per_m_output": 0.15,
+   "source": "JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1): deepinfra:Qwen/Qwen3.5-4B (0.03 / 0.15 per 1M) frozen 25 Sep 2026, the price basis of every Qwen3.5-4B row incl. h2o-lightning-4b",
+   "as_of": "2026-10-09",
+   "model": "Qwen/Qwen3.5-4B"
+  },
+  "allow_patterns": [
+   "model.safetensors",
+   "config.json",
+   "generation_config.json",
+   "tokenizer.json",
+   "tokenizer_config.json",
+   "chat_template.jinja",
+   "vocab.json",
+   "merges.txt",
+   "h2o_lightning_shim.py",
+   "serve_config.json",
+   "LICENSE*",
+   "NOTICE*",
+   "README.md"
+  ],
+  "license_files": [
+   "LICENSE",
+   "NOTICE",
+   "NOTICE.md",
+   "README.md"
+  ],
+  "files": {
+   "chat_template.jinja": {
+    "sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715"
+   },
+   "config.json": {
+    "sha256": "6240a991871a574ff04525c90d8f75a2a11bad2f7012ab0774cbc69aca745859"
+   },
+   "generation_config.json": {
+    "sha256": "731e41edbcd0336b21c36d03fdf6fc54977dfc28cd9396491999ca8ddb052c42"
+   },
+   "h2o_lightning_shim.py": {
+    "sha256": "355791c3f7b50a5dc9fa759dfa1b861874678d6e04c70dbf8b86fddccd3c0932"
+   },
+   "merges.txt": {
+    "sha256": "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d"
+   },
+   "model.safetensors": {
+    "sha256": "c65443b1d28891ffc4b6f7d90028c542d6ccb24c2f9cd6a46a8294a44ab0ffae"
+   },
+   "serve_config.json": {
+    "sha256": "dfe5fd08b5b89cfd1be2797baf7a570c32f2883c6520d2b047cd5528591cee7a"
+   },
+   "tokenizer.json": {
+    "sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
+   },
+   "tokenizer_config.json": {
+    "sha256": "316230d6a809701f4db5ea8f8fc862bc3a6f3229c937c174e674ff3ca0a64ac8"
+   },
+   "vocab.json": {
+    "sha256": "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003"
+   },
+   "LICENSE": {
+    "git_blob": "f938136e3adacfd92be087f6e113b5d6d97f678f"
+   },
+   "README.md": {
+    "git_blob": "3e2b14d58e6dce66bb8ae3fb5f84e04aad204b72"
+   }
+  },
+  "symfork_template": "jrt-h2o-shim:qwen3.5-4b",
+  "slice": {
+   "source": "bschema-draw-jev2a (claude/ev-jev2-draw @77065b1c, data/manifests/bschema-draw-jev2a.pointer.json sha256 53416094f957a6aebb6514dceaaef11b18473da1a6a910c89057639865c24eda)",
+   "records_uncompressed_sha256": "393d0f0fffd0beec658a4d3a50a463422ea4156aae59c7ed5c3df05508809a14",
+   "rule": "per aug.jev1.family8, the per_family ids with the smallest sha256(salt + '\\n' + id); ids_sha256 = sha256 of the sorted ids joined by '\\n' plus a final '\\n' (= jobs/jev_host_scan/h2o_slice_ids.txt bytes)",
+   "salt": "ev-prereg-h2o-host:jev2a-heldout-slice:v1",
+   "per_family": 200,
+   "n": 1000,
+   "families": {
+    "fact": 200,
+    "judge_hard": 200,
+    "multi_hop": 200,
+    "temporal_numeric": 200,
+    "tool_selection": 200
+   },
+   "types": {
+    "choice": 519,
+    "noul": 451,
+    "score": 30
+   },
+   "ids_sha256": "204e9bfe20d29ca95bd895ff368cf26f7b282635d615aeb85df47e69fcba2a9c",
+   "ids_file": "jobs/jev_host_scan/h2o_slice_ids.txt"
+  }
+ },
+ "submit": {
+  "command": "bash /opt/ssdm/m1/jobs/jev_host_scan/h2o_eval.sh",
+  "env": {
+   "PYTHONUNBUFFERED": "1",
+   "PYTHONUTF8": "1",
+   "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
+   "JEV_SCAN_PARAMS": "jobs/jev_host_scan/job_params_h2o_eval_v11.json"
+  },
+  "key": "jev-host-scan-h2o-eval-v11-v1",
+  "label": "EV-PREREG-H2O-HOST eval-only: H2O-Lightning-4B v1.1 @193ad740 control + (a) jev2a-slice T, (b) shimcal, (c) sym-fork G1 probe, paired on the 231 public JevBench items",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/H2O_EVAL_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 2400,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "dockerfile": "jobs/probe9b/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/probe9b/probe_job.sh",
+   "jobs/jev_host_scan/h2o_eval.sh"
+  ],
+  "manifest_files": [
+   "jobs/jev_host_scan/h2o_slice_ids.txt",
+   "jevkit/data/jevbench_public_pin.json",
+   "jobs/jev_host_scan/snapshots/h2o-lightning-4b.sha256"
+  ],
+  "data": [
+   {
+    "src": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/original.jsonl",
+    "dest": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/original.jsonl",
+    "pin_sha256": "5c2414edb3006b8bfcb70fda433f0f9ca015759433849f8d3104328a1f7c4180"
+   },
+   {
+    "src": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/easy.jsonl",
+    "dest": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/easy.jsonl",
+    "pin_sha256": "231df3c2c8e88a1a8c137ebe85de96ba70fabd330849098ac7b3c52c70b7172b"
+   },
+   {
+    "src": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/hard.jsonl",
+    "dest": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/hard.jsonl",
+    "pin_sha256": "89e9e6becb33ed88c1de7d42dcc87531b2fb64cfaef4e1986faf7c37b3f80ebb"
+   },
+   {
+    "src": "m2/build/bschema-draw-jev2a/records.jsonl.gz",
+    "dest": "jev2a/records.jsonl.gz",
+    "gunzip": true,
+    "pin_sha256": "393d0f0fffd0beec658a4d3a50a463422ea4156aae59c7ed5c3df05508809a14"
+   }
+  ]
+ }
+}

@@ -60,6 +60,7 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 | q9af_cell cell_r256 (same cell, LoRA r256; E9 pair) | `jobs/q9af_cell/job_params_cell_r256.json` | $94.50 | $95.46 | ~$29.46 |
 | jev_host_scan (EVAL-ONLY measurement: candidate small decision-model hosts on the 231 public JevBench items through jevkit, H2O-Lightning-4B v1.1 as the parity anchor; serial, rate-guarded per candidate; hold 240 x $0.063 = $15.12) | `jobs/jev_host_scan/job_params.json` | $26.73 | $27 | ~$5.15 |
 | jev_host_scan h2o_eval (EV-PREREG-H2O-HOST eval-only arms: H2O-Lightning-4B @0940cbd7 control + jev2a-slice T / shimcal / sym-fork G1 probe, paired on the 231 public items; hold 60 x $0.063 = $3.78) | `jobs/jev_host_scan/job_params_h2o_eval.json` | $11.34 | $12 | ~$2.08 |
+| jev_host_scan h2o_eval_v11 (the same arms on H2O-Lightning-4B v1.1 @193ad740, the board / host-scan / kit-parity anchor revision; scalar shim T 0.8) | `jobs/jev_host_scan/job_params_h2o_eval_v11.json` | $11.34 | $12 | ~$2.08 |
 
 **Workspace cap when jobs overlap.** `set_workspace_cap` is workspace-wide, so jobs that can bill at the same time
 need one cap covering all of them: MTD + `costs.concurrent_cap_usd([...])` = the ceiling of the sum of their worst

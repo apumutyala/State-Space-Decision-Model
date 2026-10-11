@@ -13,7 +13,8 @@
 set -Euo pipefail
 MAIN_PID=$$  # jobs/clef_baseline/watchdog.sh beats only while this PID lives
 CODE=/opt/ssdm/m1
-export JEV_SCAN_PARAMS=jobs/jev_host_scan/job_params_h2o_eval.json
+# mode h2o_eval_v11 (submit env) points this at job_params_h2o_eval_v11.json: the v1.1 tag revision 193ad740
+export JEV_SCAN_PARAMS=${JEV_SCAN_PARAMS:-jobs/jev_host_scan/job_params_h2o_eval.json}
 PARAMS=$CODE/$JEV_SCAN_PARAMS
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}

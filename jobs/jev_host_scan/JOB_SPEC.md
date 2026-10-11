@@ -85,5 +85,10 @@ paired vs the control on the SAME bootstrap draws (B = 1000, seed 16): Δ Compos
 Composite-A quantiles; a per-TYPE breakdown (choice 139 / noul 74 / score 18); the G1 flip report (option_reverse,
 option_shuffle, key_relabel, seed 0) for c_symfork and the control. Every report carries the sealed-split caveat.
 
+**Mode h2o_eval_v11** (`job_params_h2o_eval_v11.json`, same runner via `JEV_SCAN_PARAMS`): the identical arms on the
+v1.1 tag revision **193ad740** (the revision job-zbtbj / kit parity / the scorecard ran; 4.2058 B text params, no
+vision tower, scalar shim T 0.8), pinned by `snapshots/h2o-lightning-4b.sha256` + LICENSE / README blob ids. Which
+revision governs the prereg is the lead / evidence decision; both packages are built from the same sha.
+
 **Caps.** setup 14 (download cap 10) + run 30 (rate-guarded) + summarize 8 + reserve 8 = 60 min. **Cost.** Hold
 60 x $0.063 = $3.78. Worst case (costs.worst_case_usd): **$11.34** (hard cap $12). Expected ~33 min, ~$2.08.
