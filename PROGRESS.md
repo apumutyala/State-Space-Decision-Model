@@ -1,5 +1,9 @@
 # PROGRESS: rolling, 3–5 lines per session (did / learned / next). Older entries roll into history/.
 
+## 2026-10-11: evidence bschema-draw-jev2 (TRAIN-only rows for the 10 JevBench families jev1 lacks + long_policy rebuilt)
+- Did: claude/ev-jev2-draw @282a4867. Combined pointer data/manifests/bschema-draw-jev2.pointer.json bef9ec72 = jev2a-v2 eba70d2c (multi_hop/judge_hard/temporal_numeric/fact/tool_selection x1,500) + jev2b 35620f5f (probability/trap/ambiguous/tradeoff/adversarial x1,500, 23-58% score rows) + jev2c-v2 86960d90 (long_policy 1,500: 12 prose rule-engine domains, 2,007-3,981 tok, 20% score, noul 47/53). Mix bschema-mix-jev1-jev2 71b503eb: 18 families, equal_family, jev1 long_policy replaced. Every stage: doc_overlap Index+JevBench 0, attack 0, jevbench rescan 0, cohort/fingerprint/frozen/D1-B/gold-once 0; new SHAPE gate (scripts/jev2_shape_gate.py, public statistics only) reported per pointer.
+- Learned: ContractNLI train is unusable (all 303 candidates hit the production Index fingerprint). Shape gate still flags length_p90 below public for jev2b (all 5), judge_hard, multi_hop and temporal_numeric (jev2c-v2 passes all checks). jev2a / jev2c v1 superseded (pre-audit format / 5% score).
+- Next: lead trains JEV2-4B on the mix; evidence rescores. If length matters for those families, lengthen jev2b/temporal states (cap 4,096).
 ## 2026-10-11: evidence consolidated EVIDENCE_REPORT (every target, receipt-linked)
 - Did: claude/ev-evidence-report @ae7575f7 docs/EVIDENCE_REPORT.md (+3 charts in docs/evidence_report/): kit parity, Composite/Capability vs H2O, JEV1-4B r2, MD1 flip rate, Index vs Clef, guarantee suite, data audits, per-target gap attribution; all cited shas = branch tips, numbers re-read from receipts. Note: EV_JEV_QA's 0940cbd7 pin advice is superseded by H2O-HOST amendment 1 (193ad740).
 
