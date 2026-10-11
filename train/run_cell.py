@@ -666,6 +666,15 @@ def steps_needed(rule: dict, min_steps: int | None = None) -> int:
     return max(2 * rule.get("window", 50), int(min_steps or 0))
 
 
+def plan_horizon(step: int, affordable_steps: float, max_steps: int, frac: float) -> dict:
+    """JEV2-4B short-budget scheduler (``lr_horizon_frac``): at the step-10 rate check the planned final step is
+    min(max_steps, step + the clock-affordable steps at the measured rate); the cosine horizon is ``frac`` x that
+    (at least step + 1). ``shortened`` = the plan ends before max_steps (the run continues; too_slow / min_steps still
+    decides exit 26)."""
+    final = min(int(max_steps), int(step) + int(affordable_steps))
+    return {"final": final, "horizon": max(int(step) + 1, round(float(frac) * final)), "shortened": final < int(max_steps)}
+
+
 def too_slow(step_s: float, minutes_left: float, need_steps: int) -> dict:
     """Measured stop condition (exit 26): at the measured seconds per optimiser step, can the remaining wall-clock
     budget still reach the steps the pass rule needs? A no is a throughput finding, not a pilot-fail."""
@@ -1270,12 +1279,12 @@ def _main(argv=None, ctx: dict | None = None):
                 # stored in the checkpoint (a resumed attempt or chain link keeps it, and its record)
                 if tr.cfg.lr_schedule == "cosine" and not tr.horizon_fixed:
                     if frac:  # opt-in: the planned final step = min(max_steps, clock projection); horizon = frac x it
-                        final = min(int(cfg["max_steps"]), tr.step + int(chk["affordable_steps"]))
-                        tr.set_horizon(max(tr.step + 1, round(float(frac) * final)))
-                        cell["lr_horizon"] = {"step": tr.horizon, "fixed_at_step": tr.step, "planned_final_step": final,
-                                              "frac": float(frac)}
-                        if final < int(cfg["max_steps"]):  # continue with the affordable steps (>= min_steps)
-                            cell["train_budget_shortened"] = {"planned_final_step": final,
+                        hp = plan_horizon(tr.step, chk["affordable_steps"], int(cfg["max_steps"]), float(frac))
+                        tr.set_horizon(hp["horizon"])
+                        cell["lr_horizon"] = {"step": tr.horizon, "fixed_at_step": tr.step,
+                                              "planned_final_step": hp["final"], "frac": float(frac)}
+                        if hp["shortened"]:  # continue with the affordable steps (>= min_steps)
+                            cell["train_budget_shortened"] = {"planned_final_step": hp["final"],
                                                               "max_steps": int(cfg["max_steps"]), **chk}
                     else:
                         tr.set_horizon(tr.step + int(chk["affordable_steps"]))

@@ -45,6 +45,19 @@ def test_noul_rows_unsmoothed_choice_rows_smoothed():
     assert "label_smoothing_noul" not in LossConfig(arm="clef").identity()  # old config hashes unchanged
 
 
+def test_short_budget_scheduler_continues_with_shortened_horizon():
+    pytest.importorskip("torch")  # train.run_cell imports torch at module level
+    from train.run_cell import plan_horizon, steps_needed, too_slow
+
+    full = plan_horizon(10, 5000, 1281, 753 / 1121)  # clock affords more than max_steps: the planned run
+    assert full == {"final": 1281, "horizon": round(753 / 1121 * 1281), "shortened": False}
+    short = plan_horizon(10, 900, 1281, 753 / 1121)  # 1.5x slower than estimated: continue to step 910
+    assert short["shortened"] and short["final"] == 910 and short["horizon"] == round(753 / 1121 * 910)
+    rule = {"window": 100}
+    assert not too_slow(25.0, 400, steps_needed(rule, 600) - 10)["too_slow"]  # 960 affordable >= 590: continue
+    assert too_slow(60.0, 400, steps_needed(rule, 600) - 10)["too_slow"]  # 400 affordable < 590: exit 26
+
+
 def test_t_constrained_by_noul_band():
     import math
 
