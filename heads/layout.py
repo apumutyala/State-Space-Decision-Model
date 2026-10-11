@@ -70,6 +70,8 @@ TaggedSegment = tuple[str, bool, str]
 # provenance contract), or None for template text.
 ID_PATH = "#ids"
 
+from .symmetric import SYM_LAYOUTS as _SYM_LAYOUTS  # noqa: E402  (symmetric imports nothing from here at import time)
+
 
 def _instr_path(qid: str, q: dict[str, Any]) -> str:
     instr = q.get("instructions")
@@ -318,9 +320,13 @@ def build_row(
     prefix is unaffected (ordered layout keeps canonical rendering).
     """
     tpl = resolve_template(template)
+    if layout in _SYM_LAYOUTS:  # opt-in: reorder + relabel invariant by construction (heads.symmetric)
+        from .symmetric import build_row_sym
+
+        return build_row_sym(request, qid, encode, tpl, layout, option_order, empty_state)
     if layout == G1V2_LAYOUT:
         return _build_row_g1v2(request, qid, encode, tpl, option_order, empty_state)
-    segs4 = _tagged_segments_paths(tpl, request, qid, layout)
+    segs4 =_tagged_segments_paths(tpl, request, qid, layout)
     q = request["questions"][qid]
     opts = canonical_options(q)
     ids: list[int] = []

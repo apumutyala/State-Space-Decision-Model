@@ -54,6 +54,10 @@ class LoRALinear(nn.Module):
         return self.base(x) + (self.dropout(x) @ a.t() @ b.t()) * self.scaling
 
 
+#: heads.rwkv7_scalar_a.SUFFIX (literal here: no heads import from train.lora); absent unless a cell enables scalar a
+_SCALAR_A = "scalar_a.logit_bias"
+
+
 def apply_lora(model: nn.Module, targets, rank: int = 256, alpha: float | None = None,
                dropout: float = 0.0, check_counts: bool = True,
                generator: torch.Generator | None = None) -> dict[str, list[str]]:
@@ -83,15 +87,18 @@ def apply_lora(model: nn.Module, targets, rank: int = 256, alpha: float | None =
             parent = model.get_submodule(parent_name) if parent_name else model
             setattr(parent, attr, LoRALinear(model.get_submodule(name), rank, alpha, dropout, generator))
             done.add(name)
+    for n, p in model.named_parameters():  # opt-in per-head shared RWKV-7 `a` (heads.rwkv7_scalar_a): stays trainable
+        if n.endswith(_SCALAR_A):
+            p.requires_grad_(True)
     return found
 
 
 def lora_parameters(model: nn.Module) -> list[nn.Parameter]:
-    return [p for n, p in model.named_parameters() if n.endswith(("lora_A", "lora_B"))]
+    return [p for n, p in model.named_parameters() if n.endswith(("lora_A", "lora_B", _SCALAR_A))]
 
 
 def lora_state_dict(model: nn.Module) -> dict[str, torch.Tensor]:
-    return {n: p.detach().clone() for n, p in model.named_parameters() if n.endswith(("lora_A", "lora_B"))}
+    return {n: p.detach().clone() for n, p in model.named_parameters() if n.endswith(("lora_A", "lora_B", _SCALAR_A))}
 
 
 def lora_param_count(shapes, rank: int) -> int:

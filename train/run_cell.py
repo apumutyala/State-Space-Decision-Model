@@ -53,7 +53,8 @@ def load_parent_backbone(parent: str, model_dir: str, cfg: dict, gdn_ckpt: str |
     if parent == "rwkv7":
         from heads.backbone import load_rwkv7_hf_backbone
 
-        return load_rwkv7_hf_backbone(model_dir, device=device, fork_mode="cache", wkv=cfg.get("rwkv7_wkv"))
+        return load_rwkv7_hf_backbone(model_dir, device=device, fork_mode="cache", wkv=cfg.get("rwkv7_wkv"),
+                                      scalar_a=bool(cfg.get("rwkv7_scalar_a", False)))
     if parent == "q9af":
         from heads.backbone import load_q9af_backbone
 

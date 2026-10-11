@@ -493,8 +493,63 @@ class JointRecordHead(DecisionHead):
                 "streaming_implemented": False, "backbone_fork_rows": K}
 
 
+class JointRecordSymHead(JointRecordHead):
+    """``joint_record`` with a DeepSets record mixer instead of the bidirectional scan (docs/D21_DESIGN.md, (A)):
+
+        c[i] = rho(tanh(p) + sum_{j != i} tanh(phi(x_j)))
+
+    The sum is EXCLUSIVE, so a single-question record still sees only its own options + the payload, and the mixer is
+    symmetric in the record's questions (question order changes c only through float summation order). Option-order
+    invariance is unchanged (field tokens pool options by mean / max). Base fork head, typed outputs and every parent
+    parameter init exactly as ``joint_record`` (the extra parameters draw from their own RNG stream); ``w`` and
+    ``lex_scale`` start at 0, so at init this head IS the fork head. A new name, so D19 checkpoints still load."""
+
+    name = "joint_record_sym"
+
+    def __init__(self, d_model: int, hidden: int = 256, width: int = 128) -> None:
+        super().__init__(d_model, hidden, width)
+        with torch.random.fork_rng(devices=[]):
+            torch.manual_seed((torch.initial_seed() + 0x53594D) % (2**63))
+            self.phi = nn.Linear(width, width)
+            self.rho = nn.Linear(width, 2 * width)
+
+    def forward(self, x: HeadInput, return_attribution: bool = False) -> HeadOutput:
+        if x.fork is None:
+            raise ValueError("JointRecordSymHead needs fork features")
+        bsz, kmax = x.option_mask.shape
+        z0 = self.base(x).logits
+        m = x.option_mask.unsqueeze(-1)
+        v = self.opt(self.n_f(x.fork))
+        if x.lex is not None:
+            v = v + self.lex_v(self.n_l(x.lex))
+        mean = (v * m).sum(1) / m.sum(1).clamp_min(1)
+        vmax = v.masked_fill(~m, -1e4).max(1).values
+        q = self.n_q(x.q_end)
+        tok = self.field(torch.cat([mean, vmax, self.qv(q)], -1))
+        evm = x.evidence_mask.unsqueeze(-1).to(x.h.dtype)
+        pay = self.pay(self.n_p((x.h * evm).sum(1) / evm.sum(1).clamp_min(1)))
+        groups = x.groups if x.groups is not None else [[i] for i in range(bsz)]
+        c = tok.new_zeros((bsz, 2 * self.W))
+        parts, idx = [], []
+        for g in groups:
+            gi = torch.tensor(g, dtype=torch.long, device=tok.device)
+            f = torch.tanh(self.phi(tok[gi]))  # [n, W]
+            excl = f.sum(0, keepdim=True) - f  # sum over the OTHER questions of the record
+            parts.append(self.rho(torch.tanh(pay[g[0]]).unsqueeze(0) + excl))
+            idx.append(gi)
+        c = c.index_copy(0, torch.cat(idx), torch.cat(parts).to(c.dtype))
+        cw = self.ctx(c).unsqueeze(1)
+        z = z0 + F.gelu(self.A(v) + cw + v * cw) @ self.w
+        if x.lex is not None:
+            lo = F.normalize(self.lex_o(self.n_l(x.lex)), dim=-1)
+            lq = F.normalize(self.lex_q(q), dim=-1).unsqueeze(-1)
+            z = z + self.lex_scale * (lo @ lq).squeeze(-1)
+        return HeadOutput(_masked(z, x.option_mask))
+
+
 HEADS = {
     "joint_record": JointRecordHead,
+    "joint_record_sym": JointRecordSymHead,
     "qend_axes": QEndSemanticAxes,
     "integrator": IntegratorBank,
     "fork": FinalStateFork,

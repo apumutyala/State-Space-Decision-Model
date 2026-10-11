@@ -12,6 +12,7 @@ from .backbone import HiddenStateBackbone
 from .features import HeadInput, build_head_input
 from .heads import DecisionHead, HeadOutput, make_head
 from .layout import EncodeFn, LayoutRow, build_row
+from .symmetric import SYM_LAYOUTS
 from .typed import TypedOutput, to_wire
 
 
@@ -62,7 +63,9 @@ def lexical_vectors(backbone, rows: Sequence[LayoutRow], kmax: int) -> torch.Ten
     out = torch.zeros((len(rows), kmax, emb.weight.shape[1]), dtype=torch.float32, device=dev)
     for i, r in enumerate(rows):
         for k in range(r.n_options):
-            if r.layout in ("ordered", "g1v2") and r.option_spans and r.option_spans[k][1] > r.option_spans[k][0]:
+            if r.layout in SYM_LAYOUTS:  # the description tokens alone: no id, no position code (D19 leak-map row 5)
+                toks = r.option_seqs[k]
+            elif r.layout in ("ordered", "g1v2") and r.option_spans and r.option_spans[k][1] > r.option_spans[k][0]:
                 a, b = r.option_spans[k]
                 toks = r.ids[a:b]
             else:
