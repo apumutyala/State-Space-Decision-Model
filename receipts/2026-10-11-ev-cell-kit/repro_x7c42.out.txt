@@ -1,0 +1,16 @@
+﻿OK      24 values  arms (I,C,S,K,cap,A)
+OK      25 values  primary dCompA (point, ci95, ci97.5, ci99, p, p+1, quantiles, dI)
+OK       3 values  primary vs core.primary.delta_composite_A
+OK      15 values  per-type cc
+OK      27 values  per-type top-1
+OK     259 values  EV-PREREG-SECONDARY-AXES block
+OK       4 values  noul band
+OK       4 values  top-1 public
+OK       4 values  control vs job-4g6m8 H2O (bitwise answers, top-1)
+OK     204 values  step-0 floor
+OK       1 values  slice ids sha
+OK     216 values  public by family (transfer)
+OK       2 values  order (selection vs first public pred)
+OK       5 values  selection (best, trained steps)
+OK       2 values  screen.json diff (n fields, max |d|)
+REPRODUCED: 795/795 values exactly equal

@@ -1,0 +1,23 @@
+﻿{
+ "verdict": "AGREES",
+ "flags": [],
+ "warnings": [
+  "identity-child.json missing: the scored checkpoint cannot be tied to the selected step (pass --identity-child)",
+  "no G1 dir (jevkit/g1 or --g1): G1 not evaluated"
+ ],
+ "primary": {
+  "point": -0.40914451579938316,
+  "ci95": [
+   -1.7537641088641345,
+   1.3947140963854112
+  ],
+  "ci975": [
+   -2.0595692677643407,
+   1.5790059072179727
+  ],
+  "p_one_sided_boot": 0.565,
+  "holm_claimable": false
+ },
+ "g1": {},
+ "out": "C:\\Users\\apumu\\AppData\\Local\\Temp\\claude\\C--Users-apumu-research-CHLabs\\8ba1e3cb-efb0-46e2-9fd6-7683f7008f8a\\scratchpad\\cellkit\\out-final"
+}
