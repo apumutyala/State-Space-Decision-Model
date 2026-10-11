@@ -40,7 +40,7 @@ whose caps no longer fit the scan phase is skipped. Phases: setup 10, scan 220, 
 
 **B-PREREG-FLIP mode (branch claude/ev-flip-hs).** Candidates trimmed to H2O-Lightning-4B v1.1 and stock Qwen3.5-4B,
 both under the H2O shim; each answers the 231 public items and then the 1,593 pinned jevkit perturbations (`jevkit
-perturb make --public --seeds 0`, sha256 655d028a...79d7, shipped as /data/jevbench-perturb/seed0-655d028a/). Base
+perturb make --public --seeds 0`, order-preserving file sha256 be4abaa3...c42f (B-PREREG-FLIP amendment 1), shipped as /data/jevbench-perturb/seed0-be4abaa3/). Base
 predictions stay in `<arm>/preds.jsonl` (the jevkit report is unchanged); perturbed ones go to `<arm>/preds_pert.jsonl`,
 and `jevkit perturb score` writes `<arm>/flip.json`. Phases: setup 10, scan 46, summarize 5, reserve 5 = 66 min.
 

@@ -47,8 +47,8 @@
    "PYTHONUTF8": "1",
    "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"
   },
-  "key": "jev-flip-hs-v1",
-  "label": "B-PREREG-FLIP: flip rates of H2O-Lightning-4B and stock Qwen3.5-4B (H2O shim) on 231 public JevBench items + 1,593 jevkit perturbations",
+  "key": "jev-flip-hs-v2",
+  "label": "B-PREREG-FLIP: flip rates of H2O-Lightning-4B and stock Qwen3.5-4B (H2O shim) on 231 public JevBench items + 1,593 jevkit perturbations (run 2, order-preserving perturbations)",
   "checks": {
    "success": {
     "check": {
@@ -105,9 +105,9 @@
     "pin_sha256": "89e9e6becb33ed88c1de7d42dcc87531b2fb64cfaef4e1986faf7c37b3f80ebb"
    },
    {
-    "src": "jevbench-perturb/seed0-655d028a/pert_public_seed0.jsonl",
-    "dest": "jevbench-perturb/seed0-655d028a/pert_public_seed0.jsonl",
-    "pin_sha256": "655d028a633959db74e2046b585beaae9dff48c0c6f77417bfdd02a147ad79d7"
+    "src": "jevbench-perturb/seed0-be4abaa3/pert_public_seed0_nosort.jsonl",
+    "dest": "jevbench-perturb/seed0-be4abaa3/pert_public_seed0_nosort.jsonl",
+    "pin_sha256": "be4abaa3dbe3d4a4af86be00c1a7af5cc9ecdab5a0bdcf8787bc81708e9fc42f"
    }
   ]
  }

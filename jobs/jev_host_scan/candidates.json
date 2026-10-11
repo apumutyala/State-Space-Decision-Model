@@ -1,5 +1,5 @@
 {
- "_comment": "B-PREREG-FLIP (claude/ev-flip-hs): the two Qwen3.5-4B-family systems under H2O's shim readout, each on the 231 public items + their 1,593 jevkit perturbations (seed 0, sha256 655d028a...79d7, /data/jevbench-perturb/seed0-655d028a/pert_public_seed0.jsonl). Caps = measured job-zbtbj rates (H2O 75 s / 231, Qwen shim arm ~45 s / 231) x 7.9 items x ~1.7. Original list: claude/jev-host-scan.",
+ "_comment": "B-PREREG-FLIP (claude/ev-flip-hs): the two Qwen3.5-4B-family systems under H2O's shim readout, each on the 231 public items + their 1,593 jevkit perturbations (seed 0, order-preserving file sha256 be4abaa3...c42f, /data/jevbench-perturb/seed0-be4abaa3/pert_public_seed0_nosort.jsonl). Caps = measured job-zbtbj rates (H2O 75 s / 231, Qwen shim arm ~45 s / 231) x 7.9 items x ~1.7. Original list: claude/jev-host-scan.",
  "items": {
   "pin": "jevkit/data/jevbench_public_pin.json",
   "n": 231
@@ -119,8 +119,9 @@
   }
  ],
  "perturbed_items": {
-  "path": "jevbench-perturb/seed0-655d028a/pert_public_seed0.jsonl",
+  "path": "jevbench-perturb/seed0-be4abaa3/pert_public_seed0_nosort.jsonl",
   "n": 1593,
-  "sha256": "655d028a633959db74e2046b585beaae9dff48c0c6f77417bfdd02a147ad79d7"
+  "sha256": "be4abaa3dbe3d4a4af86be00c1a7af5cc9ecdab5a0bdcf8787bc81708e9fc42f",
+  "note": "B-PREREG-FLIP amendment 1: order-preserving serialization (run 1 file 655d028a was written with sort_keys, voiding reorder ops)"
  }
 }
