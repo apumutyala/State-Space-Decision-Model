@@ -1,8 +1,0 @@
-{
- "rebuild_sha256_equal": true,
- "records": 20000,
- "manifest_mismatches": 0,
- "whole_payload_overlap_recomputed": 4942,
- "whole_payload_overlap_logged": 4942,
- "ok": true
-}
