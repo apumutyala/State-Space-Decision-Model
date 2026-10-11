@@ -635,3 +635,5 @@ The text below is ready to paste.
     value. Both T_nll and the used T are reported.
 - **Unchanged:** max_len 4,096 (with the longest-row probe and require_t_max), PRIMARY / CI method, G1,
   native_shimcal, the calibration slice (200 per family, ids sha256 pinned at the build), the row-cache speed fix.
+
+- **Amendment 2 addendum (score-type weighting, 2026-10-10, before any JEV2 run):** score-type rows (4-5-level ratings) are ~25% of the train rows via per-family score quotas in the balanced sampler (`--score-share 0.25`); total rows, steps and cost are unchanged. Provisional 12-family type mix: choice 41.0% / noul 34.0% / score 25.1%.

@@ -45,6 +45,18 @@ def test_noul_rows_unsmoothed_choice_rows_smoothed():
     assert "label_smoothing_noul" not in LossConfig(arm="clef").identity()  # old config hashes unchanged
 
 
+def test_score_quota_hits_share_with_rating_only_family():
+    from scripts.jev12_balanced_draw import score_quotas
+    nts = {"severity": 100, "intent": 100, "fact": 100, "policy": 100}
+    avail = {"severity": 5000, "intent": 0, "fact": 50, "policy": 3000}
+    avail_ns = {"severity": 0, "intent": 5000, "fact": 5000, "policy": 3000}  # severity: ratings only
+    q = score_quotas(avail, nts, 0.25, 20, avail_ns)
+    assert q["severity"] == 100 and q["intent"] == 0  # forced floor; no score rows
+    assert sum(q.values()) == 100 and q["policy"] == 0  # the floor alone meets 25%: nothing extra
+    q2 = score_quotas(avail, nts, 0.4, 20, avail_ns)
+    assert abs(sum(q2.values()) - 160) <= 2 and q2["fact"] <= 50 - 12
+
+
 def test_short_budget_scheduler_continues_with_shortened_horizon():
     pytest.importorskip("torch")  # train.run_cell imports torch at module level
     from train.run_cell import plan_horizon, steps_needed, too_slow
@@ -74,6 +86,7 @@ def test_pools_jev2a_wired_placeholders_declared():
     assert {pools["jev2b"]["status"], pools["jev2c"]["status"]} == {"PLACEHOLDER"}
     assert len({f for p in pools.values() for f in p["families"]}) == 18
     assert "--exclude long_policy=bschema-draw-jev1" in CELL["train_set"]["note"]
+    assert "--score-share 0.25" in CELL["train_set"]["note"] and CELL["train_set"]["score_share"] == 0.25
     assert (ROOT / pools["jev2a"]["pointer"]).is_file()
 
 

@@ -108,7 +108,9 @@
     "note": "rebuilt long_policy, prose state 2-4.5k tokens; the ONLY long_policy source (jev1 long_policy excluded)"
    }
   },
-  "note": "scripts/jev12_balanced_draw.py --src <each gated pool dir> --exclude long_policy=bschema-draw-jev1 --family-cap adequacy=293 --train-per-family 586 --calib-per-family 200 --name bschema-draw-jev2-mix. jev1's long_policy is NEVER drawn (r2 rescore: its templates / label priors, not length, caused the long_policy loss); long_policy comes only from jev2c once it gates (absent until then). jev1 adequacy at half weight (293 train rows). n_train_records == its n_train: the whole balanced draw once. Wire a pool the moment it gates: fill its pointer_sha256 + status, rebuild the mix, refill data_jev2.sha256 and the calib ids sha; with fewer than 18 gated families the same steps give more rows per family (re-run the generator)."
+  "note": "scripts/jev12_balanced_draw.py --src <each gated pool dir> --exclude long_policy=bschema-draw-jev1 --family-cap adequacy=293 --score-share 0.25 --train-per-family 586 --calib-per-family 200 --name bschema-draw-jev2-mix. jev1's long_policy is NEVER drawn (r2 rescore: its templates / label priors, not length, caused the long_policy loss); long_policy comes only from jev2c once it gates (absent until then). jev1 adequacy at half weight (293 train rows). n_train_records == its n_train: the whole balanced draw once. Wire a pool the moment it gates: fill its pointer_sha256 + status, rebuild the mix, refill data_jev2.sha256 and the calib ids sha; with fewer than 18 gated families the same steps give more rows per family (re-run the generator).",
+  "score_share": 0.25,
+  "type_mix_note": "score-type rows (4-5 level ratings) weighted to ~25% of the train rows (jevkit score items are 7.8% of public items but ~1/3 of Intelligence): per-family score quotas inside the balanced sampler, total rows / steps / cost unchanged. PROVISIONAL 12-family mix: choice 41.0% / noul 34.0% / score 25.1% (draw-report train_type_mix)."
  },
  "act_ckpt": true,
  "row_batch": 1,
@@ -164,7 +166,7 @@
   "records": "m2-jev2mix-calib/records.jsonl.gz",
   "per_family": 200,
   "n": 3600,
-  "ids_sha256": "512fb99f4c3fd9e5d330cdc03d6b28f82257baec3d6b877c4a8f0db67ac71659",
+  "ids_sha256": "a572e7c67a6b2a8427b9a79dd0cc96f31de7584c8a5548808c49d2d11186efdc",
   "rule": "per JevBench family, ascending sha256('<seed>:<id>'), the next 200 after the train rows (scripts/jev12_balanced_draw.py); id AND content disjoint from training; never JevBench items",
   "use": "EV-PREREG-AREA-TEMP addendum: T_J / per-family T_f fitted on this slice only (never public-231); the screen exports every slice decision's per-option probabilities (calib_probs.jsonl) and fits the scalar native_tfit T in job (tfit.json)",
   "ids_note": "PROVISIONAL (12 gated families x 200): refill from the final draw-report"
