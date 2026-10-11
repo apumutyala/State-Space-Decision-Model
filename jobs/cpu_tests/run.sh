@@ -73,6 +73,13 @@ if [[ " $SUITES " == *" jev2 "* ]]; then
 J2_RC=$?
 log "jev2 rc=$J2_RC"
 fi
+J2H_RC=0
+if [[ " $SUITES " == *" jev2h "* ]]; then
+# ---------------------------------------------------------------- 3c. jev2-h2o (A-PREREG-JEV2-H2O: lm_label head, host loader)
+(cd "$T/jev2h" && timeout 900 $PYT --junitxml="$OUT/junit-jev2h.xml" tests/test_jev2_h2o.py tests/test_jev2_4b.py    > "$OUT/jev2h.log" 2>&1)
+J2H_RC=$?
+log "jev2h rc=$J2H_RC"
+fi
 B_RC=0
 if [[ " $SUITES " == *" baseline "* ]]; then
 # ---------------------------------------------------------------- 3b. pre-fix shas, same tests (informational: env vs change)
@@ -93,13 +100,13 @@ log "symall rc=$A_RC (informational, not gating)"
 fi
 
 # ---------------------------------------------------------------- summary
-python - "$OUT" "$G_RC" "$N_RC" "$G16_RC" "$H_RC" "$S_RC" "$J2_RC" <<'EOF' >> "$OUT/run.log" 2>&1
+python - "$OUT" "$G_RC" "$N_RC" "$G16_RC" "$H_RC" "$S_RC" "$J2_RC" "$J2H_RC" <<'EOF' >> "$OUT/run.log" 2>&1
 import hashlib, json, os, sys, xml.etree.ElementTree as ET
 out = sys.argv[1]
-rcs = dict(zip(["golden", "nupi", "g16", "g16_harness", "sym", "jev2"], map(int, sys.argv[2:])))
+rcs = dict(zip(["golden", "nupi", "g16", "g16_harness", "sym", "jev2", "jev2h"], map(int, sys.argv[2:])))
 suites = {}
 want = os.environ.get("SUITES", "nupi g16 sym").split()
-for name in [n for n in ["nupi", "g16", "g16-harness", "sym", "jev2", "baseline-g16old", "baseline-g16v2", "baseline-sym", "symall"]
+for name in [n for n in ["nupi", "g16", "g16-harness", "sym", "jev2", "jev2h", "baseline-g16old", "baseline-g16v2", "baseline-sym", "symall"]
              if os.path.isfile(os.path.join(out, f"junit-{n}.xml")) or n.split("-")[0] in want]:
     f = os.path.join(out, f"junit-{name}.xml")
     s = {"passed": 0, "failed": 0, "skipped": 0, "failures": [], "skips": []}

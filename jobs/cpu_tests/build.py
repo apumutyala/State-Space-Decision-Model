@@ -13,7 +13,10 @@ TREES = {"nupi": os.environ.get("NUPI_SHA", "c3f3a3f9"), "base": "5e159437",
          "ev": os.environ.get("EV_SHA", "1351ed9f"),
          # stack/qwen35/jev2-4b (A-PREREG-JEV2-4B): row-cache bit-identity, LS per qtype, noul band gate, short-budget
          # scheduler (suite "jev2"; JEV2_SHA overrides)
-         "jev2": os.environ.get("JEV2_SHA", "a5b4cb33")}
+         "jev2": os.environ.get("JEV2_SHA", "a5b4cb33"),
+         # stack/qwen35/jev2-h2o (A-PREREG-JEV2-H2O): host pins, lm_label head == the shim readout, tiny host
+         # forward/backward (suite "jev2h"; JEV2H_SHA overrides)
+         "jev2h": os.environ.get("JEV2H_SHA", "63277ebd")}
 # BASELINE="g16old=2d913b3e symold=42388c2c": extra trees for the "baseline" suite (same tests on the pre-fix shas)
 TREES.update(dict(x.split("=", 1) for x in os.environ.get("BASELINE", "").split()))
 SUITES = os.environ.get("SUITES", "nupi g16 sym")
@@ -89,12 +92,13 @@ def main():
                          "grace_period_s": 900, "fail_threshold": 2, "on_fail": "kill"}}
     sub = {"chip": "cpu-8", "mission": "ssdm-cpu-tests", "idempotency_key": f"ssdm-cpu-tests-{sha[:12]}",
            "label": f"cpu_tests: suites [{SUITES}] nupi {TREES['nupi']} (+5e159437 golden), g16-sym {TREES['g16']}, "
-                    f"sym-invariant {TREES['sym']}, ev {TREES['ev']}, jev2 {TREES['jev2']}",
+                    f"sym-invariant {TREES['sym']}, ev {TREES['ev']}, jev2 {TREES['jev2']}, jev2h {TREES['jev2h']}",
            "dockerfile_path": "Dockerfile", "build_timeout_minutes": 20, "command": "bash /opt/job/run.sh", "env": {"SUITES": SUITES},
-           "max_duration_minutes": 75, "max_restarts": 0, "resume": "none", "queue_ttl_minutes": 1440,
+           "max_duration_minutes": int(os.environ.get("MAX_MIN", "75")), "max_restarts": 0, "resume": "none", "queue_ttl_minutes": 1440,
            "hf_cache": False, "checks": checks}
     receipt = {"job": "cpu_tests", "trees": shas, "context": {"file": str(f), "sha256": sha, "size_bytes": len(blob)},
-               "cost": {"worst_case_usd": 0.68, "basis": "validate_job cpu-8: $0.27 per 30 min -> 75 min"},
+               "cost": {"worst_case_usd": round(0.27 * int(os.environ.get("MAX_MIN", "75")) / 30, 2),
+                        "basis": "validate_job cpu-8: $0.27 per 30 min x max_duration_minutes"},
                "calls": [{"tool": "open_mission", "args": {"name": "ssdm-cpu-tests"}},
                          {"tool": "submit_job", "args": sub}]}
     (out / "submit.json").write_text(json.dumps(receipt, indent=1) + "\n", encoding="utf-8", newline="\n")
