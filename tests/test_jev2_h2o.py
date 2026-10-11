@@ -343,3 +343,10 @@ def test_screen_score_gets_the_data_root():
                                         "--parent-arm-sha256", "--reference") for x in (k, "x")] + ["--data", "/data"]
         screen.main(args)
     assert seen["a"].data == "/data"
+
+
+def test_screen_stage_exports_the_checkpoint_right_after_the_cell():
+    """job-9fy9p lost its trained weights when the screen crashed (export only at the end)."""
+    job = (M / "first_cell_job.sh").read_text(encoding="utf-8")
+    i, j = job.index('gate "cell" $r; export_phase cell'), job.index("stage screen: ONE proxy600")
+    assert "train.ckpt_export inference" in job[i:j] and 'ckpt-export-early.log' in job[i:j]

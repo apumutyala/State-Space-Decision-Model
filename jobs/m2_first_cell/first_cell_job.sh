@@ -562,6 +562,21 @@ timeout --kill-after=30s ${CELL_MIN}m python -m train.run_cell --config "$CELL" 
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
 case $r in 0) ;; 3) fail 33 "cell: eval attack template in the training rows (train.attack_guard)" ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|34|35|36) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
+# job-9fy9p: the screen crashed after training and the weights (exported only at the very end) were lost. Stage screen
+# exports the inference checkpoint (latest + best, small) right after the cell, so a later failure keeps them; the
+# end-of-job export below re-runs the same export (idempotent).
+if [ "$STAGE" = screen ] && [ "$INTERMEDIATE" != 1 ]; then
+  EL=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$CK/cell/latest.json" 2>/dev/null)
+  EB=$(python -c "import json,sys; print((json.load(open(sys.argv[1])).get('best') or {}).get('path') or '')" "$CK/cell/latest.json" 2>/dev/null)
+  EARGS=()
+  [ -n "$EB" ] && [ "$EB" != "$EL" ] && EARGS=(--best "$CK/cell/$EB")
+  if [ -n "$EL" ]; then
+    mkdir -p "$OUT/ckpt"
+    python -X utf8 -m train.ckpt_export inference --ckpt "$CK/cell/$EL" ${EARGS[@]+"${EARGS[@]}"} --out-dir "$OUT/ckpt" \
+      > "$WORK/logs/ckpt-export-early.log" 2>&1 && say "checkpoint exported after the cell ($EL${EB:+, best $EB})" \
+      || say "early checkpoint export failed: $(tail -1 "$WORK/logs/ckpt-export-early.log")"
+  fi
+fi
 
 # ------------------------------------------------------------------ intermediate chain link: export the resumable state, end
 if [ "$INTERMEDIATE" = 1 ]; then
