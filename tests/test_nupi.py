@@ -103,7 +103,11 @@ def base(**kw):
 
 #: (c) the base branch's losses for ``base()`` on ``toy`` (12 steps, seed 0), float.hex, recorded by running the
 #: same script on stack/qwen35/jev1-4b @ 5e159437 (train/trainer.py before this change); see docs/NUPI.md
-BASE_LOSSES_HEX = None  # filled in below by the recorded receipt
+#: recorded on SF cpu-8 by jobs/cpu_tests/golden.py (claude/cpu-tests-job) on a git archive of base 5e159437: job-jxawy,
+#: art-jcm9f run.log (reproduced by job-urjpw, art-hxxxt)
+BASE_LOSSES_HEX = ["0x1.3bfa040000000p+0", "0x1.3da7e20000000p+0", "0x1.46ad980000000p+0", "0x1.3cdd700000000p+0",
+                   "0x1.34847c0000000p+0", "0x1.592cf00000000p+0", "0x1.371b840000000p+0", "0x1.38e4a20000000p+0",
+                   "0x1.2dcf580000000p+0", "0x1.29ac060000000p+0", "0x1.473bca0000000p+0", "0x1.54ebe60000000p+0"]
 
 
 def test_off_mode_is_bit_identical_to_the_base_branch(toy, tmp_path):
