@@ -1,5 +1,8 @@
 # PROGRESS: rolling, 3–5 lines per session (did / learned / next). Older entries roll into history/.
 
+## 2026-10-12: evidence EVIDENCE_REPORT v2 (target-by-target final status)
+- Did: claude/ev-evidence-report-v2 @e4d4913f docs/EVIDENCE_REPORT_V2.md (+8 charts): PROVEN kit parity (public-231), invariance (incl. JEV3-SYM GPU G1 0/565), conformal + injection-robust machinery (G15 real-BPE 1000/1000), leak-free data, rescores; FALSIFIED Composite/Capability/Clef/'D19 more actionable' with attribution; MD1 not met/not comparable; OPEN FS-CRR ~$35, trained G16 ~$6 (hold $21.67), nuPI ON/OFF ~$12 (hold $43.34) vs balance $19.10; 11 mismatch notes.
+
 ## 2026-10-12: evidence independent rescore of JEV3-SYM seed 0 (job-6zs79, eval-only of job-5x4vr step 200)
 - Did: self-downloaded art-xkhwy (146a6996 = job record); streamed art-8xs32 (933cc0ac) without saving it, to pull 5x4vr's small cell files and the step-200 member sha; ran ev-cell-kit @ef25e482 (primary native, plus native_shimcal as a secondary); claude/ev-6zs79-rescore @f93eccfe.
 - Learned: AGREES on every lead number except the floor CI bounds (minor). PRIMARY NEGATIVE: -36.66 [-47.97,-19.19]; G1 bitwise PASS on real perturbations; lineage and order clean. The noul collapse (64.9% of yes/no answers in the 0.2-0.8 band) is a readout/calibration effect, since noul top-1 is +5.4pp, but score/routing/ordinal top-1 losses are real. Slice-to-public transfer: top-1 corr -0.50.
