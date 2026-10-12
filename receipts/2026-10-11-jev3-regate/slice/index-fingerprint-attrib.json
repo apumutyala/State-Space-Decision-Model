@@ -1,0 +1,9 @@
+{
+ "rows_with_any_segment_hit": 0,
+ "rows_with_state_segment_hit_by_family": {},
+ "rows_only_question_segment_hit_by_family": {},
+ "segment_hits_by_role_and_wordlen": {},
+ "segment_hits_by_role_matcher": {},
+ "catalog_hits_top": [],
+ "state_segment_hits_ge6_words_examples": []
+}

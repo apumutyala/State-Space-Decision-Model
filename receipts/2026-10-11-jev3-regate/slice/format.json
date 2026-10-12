@@ -1,0 +1,554 @@
+{
+ "n_records": 1200,
+ "unique_ids": 1200,
+ "dup_ids": [],
+ "by_family": {
+  "policy": 200,
+  "ambiguous": 200,
+  "adequacy": 200,
+  "long_policy": 200,
+  "judge_hard": 200,
+  "temporal_numeric": 200
+ },
+ "type_by_family": {
+  "policy": {
+   "noul": 200
+  },
+  "ambiguous": {
+   "choice": 200
+  },
+  "adequacy": {
+   "noul": 200
+  },
+  "long_policy": {
+   "noul": 71,
+   "choice": 101,
+   "score": 28
+  },
+  "judge_hard": {
+   "noul": 200
+  },
+  "temporal_numeric": {
+   "score": 15,
+   "noul": 70,
+   "choice": 115
+  }
+ },
+ "by_source": {
+  "aegis2": 200,
+  "ambignq": 200,
+  "helpsteer2": 80,
+  "helpsteer3": 120,
+  "privacyqa": 200,
+  "prm800k": 200,
+  "tatqa": 143,
+  "timeqa": 57
+ },
+ "split_by_source": {
+  "aegis2": {
+   "train": 200
+  },
+  "ambignq": {
+   "train": 200
+  },
+  "helpsteer2": {
+   "train": 80
+  },
+  "helpsteer3": {
+   "train": 120
+  },
+  "privacyqa": {
+   "train": 200
+  },
+  "prm800k": {
+   "train": 200
+  },
+  "tatqa": {
+   "train": 143
+  },
+  "timeqa": {
+   "train": 57
+  }
+ },
+ "license_by_source": {
+  "aegis2": {
+   "CC-BY-4.0": 200
+  },
+  "ambignq": {
+   "CC-BY-SA-3.0": 200
+  },
+  "helpsteer2": {
+   "CC-BY-4.0": 80
+  },
+  "helpsteer3": {
+   "CC-BY-4.0": 120
+  },
+  "privacyqa": {
+   "MIT": 200
+  },
+  "prm800k": {
+   "MIT": 200
+  },
+  "tatqa": {
+   "CC-BY-4.0 (data)": 143
+  },
+  "timeqa": {
+   "BSD-3-Clause": 57
+  }
+ },
+ "missing_license": 0,
+ "missing_license_ids": [],
+ "state_type_by_family": {
+  "policy": {
+   "str": 200
+  },
+  "ambiguous": {
+   "dict": 30,
+   "str": 170
+  },
+  "adequacy": {
+   "str": 200
+  },
+  "long_policy": {
+   "str": 200
+  },
+  "judge_hard": {
+   "dict": 200
+  },
+  "temporal_numeric": {
+   "str": 168,
+   "dict": 32
+  }
+ },
+ "gold_failures": {},
+ "gold_position_presented": {
+  "ambiguous": {
+   "n_tested": 200,
+   "chi2": 1.68,
+   "df": 5,
+   "p": 0.8917,
+   "per_k": {
+    "3": {
+     "n": 168,
+     "positions": [
+      54,
+      54,
+      60
+     ]
+    },
+    "4": {
+     "n": 32,
+     "positions": [
+      7,
+      6,
+      9,
+      10
+     ]
+    }
+   }
+  },
+  "long_policy": {
+   "n_tested": 88,
+   "chi2": 7.9,
+   "df": 7,
+   "p": 0.3415,
+   "per_k": {
+    "4": {
+     "n": 55,
+     "positions": [
+      10,
+      12,
+      21,
+      12
+     ]
+    },
+    "5": {
+     "n": 33,
+     "positions": [
+      8,
+      5,
+      9,
+      4,
+      7
+     ]
+    },
+    "6": {
+     "n": 13,
+     "positions": [
+      3,
+      1,
+      3,
+      2,
+      2,
+      2
+     ]
+    }
+   }
+  },
+  "temporal_numeric": {
+   "n_tested": 107,
+   "chi2": 5.33,
+   "df": 9,
+   "p": 0.8061,
+   "per_k": {
+    "3": {
+     "n": 41,
+     "positions": [
+      17,
+      10,
+      14
+     ]
+    },
+    "4": {
+     "n": 23,
+     "positions": [
+      6,
+      5,
+      8,
+      4
+     ]
+    },
+    "5": {
+     "n": 43,
+     "positions": [
+      9,
+      9,
+      10,
+      5,
+      10
+     ]
+    },
+    "6": {
+     "n": 8,
+     "positions": [
+      1,
+      4,
+      0,
+      1,
+      0,
+      2
+     ]
+    }
+   }
+  }
+ },
+ "choice_keys_already_sorted": {
+  "ambiguous": {
+   "n_choice": 200,
+   "n_sorted": 27,
+   "expected_if_shuffled": 29.3
+  },
+  "long_policy": {
+   "n_choice": 101,
+   "n_sorted": 5,
+   "expected_if_shuffled": 2.6
+  },
+  "temporal_numeric": {
+   "n_choice": 115,
+   "n_sorted": 8,
+   "expected_if_shuffled": 8.2
+  }
+ },
+ "empty_criteria_rows": {},
+ "empty_option_description_rows": {},
+ "noul_criteria_variants": {
+  "policy": {
+   "n_variants": 19,
+   "top": [
+    [
+     "{\"false\": \"it does not violate the policy\", \"true\": \"it violates the policy\"}",
+     59
+    ],
+    [
+     "{\"false\": \"no, safe\", \"true\": \"yes, unsafe\"}",
+     44
+    ],
+    [
+     "{\"false\": \"safe: no flag\", \"true\": \"unsafe: flag it\"}",
+     42
+    ],
+    [
+     "{\"false\": \"allow as safe\", \"true\": \"flag as unsafe\"}",
+     28
+    ],
+    [
+     "{\"false\": \"no: it is not 'Criminal Planning/Confessions' content\", \"true\": \"yes: it is 'Criminal Planning/Confessions' content\"}",
+     4
+    ]
+   ]
+  },
+  "adequacy": {
+   "n_variants": 4,
+   "top": [
+    [
+     "{\"false\": \"fail: below the bar\", \"true\": \"pass: above the bar\"}",
+     56
+    ],
+    [
+     "{\"false\": \"no, it does not meet the standard\", \"true\": \"yes, it meets the standard\"}",
+     51
+    ],
+    [
+     "{\"false\": \"the response falls short of the bar\", \"true\": \"the response meets the bar\"}",
+     49
+    ],
+    [
+     "{\"false\": \"it does not clear the bar\", \"true\": \"it clears the bar\"}",
+     44
+    ]
+   ]
+  },
+  "long_policy": {
+   "n_variants": 4,
+   "top": [
+    [
+     "{\"false\": \"no statement addresses the question\", \"true\": \"yes, some statement addresses the question\"}",
+     19
+    ],
+    [
+     "{\"false\": \"not answered by the policy\", \"true\": \"answered by the policy\"}",
+     18
+    ],
+    [
+     "{\"false\": \"the policy does not cover it\", \"true\": \"the policy covers it\"}",
+     18
+    ],
+    [
+     "{\"false\": \"no: the policy text does not answer it\", \"true\": \"yes: the policy text answers it\"}",
+     16
+    ]
+   ]
+  },
+  "judge_hard": {
+   "n_variants": 8,
+   "top": [
+    [
+     "{\"false\": \"at least one step is incorrect\", \"true\": \"every step is correct\"}",
+     44
+    ],
+    [
+     "{\"false\": \"contains an incorrect step\", \"true\": \"correct throughout\"}",
+     41
+    ],
+    [
+     "{\"false\": \"no: a step is wrong\", \"true\": \"yes: no step is wrong\"}",
+     40
+    ],
+    [
+     "{\"false\": \"the solution has a mistake\", \"true\": \"the solution has no mistake\"}",
+     34
+    ],
+    [
+     "{\"false\": \"that step is incorrect\", \"true\": \"that step is correct\"}",
+     12
+    ]
+   ]
+  },
+  "temporal_numeric": {
+   "n_variants": 4,
+   "top": [
+    [
+     "{\"false\": \"no: it does not match the source\", \"true\": \"yes: it matches the source\"}",
+     23
+    ],
+    [
+     "{\"false\": \"no, the excerpt supports a different answer\", \"true\": \"yes, that is the answer the excerpt supports\"}",
+     22
+    ],
+    [
+     "{\"false\": \"false: the source gives another answer\", \"true\": \"true: the source gives exactly this answer\"}",
+     15
+    ],
+    [
+     "{\"false\": \"incorrect\", \"true\": \"correct\"}",
+     10
+    ]
+   ]
+  }
+ },
+ "label_dist_by_family_sub": {
+  "policy/aegis_message": {
+   "false": 47,
+   "true": 99
+  },
+  "policy/aegis_reply": {
+   "false": 27
+  },
+  "policy/aegis_category": {
+   "false": 21,
+   "true": 6
+  },
+  "ambiguous/ambignq_multi": {
+   "ask": 102
+  },
+  "ambiguous/ambignq_single": {
+   "answer": 98
+  },
+  "adequacy/hs2_bar_correctness": {
+   "true": 16,
+   "false": 11
+  },
+  "adequacy/hs2_bar_helpfulness": {
+   "false": 11,
+   "true": 31
+  },
+  "adequacy/hs2_bar_coherence": {
+   "true": 11
+  },
+  "adequacy/hs3_helpful": {
+   "true": 57,
+   "false": 63
+  },
+  "long_policy/pqa_answerable": {
+   "true": 51,
+   "false": 20
+  },
+  "long_policy/pqa_sentence": {
+   "n_distinct": 58,
+   "top5": [
+    [
+     "none",
+     22
+    ],
+    [
+     "s_60f204eba4",
+     7
+    ],
+    [
+     "s_d78e4e8ccb",
+     5
+    ],
+    [
+     "s_eeb00d1f2f",
+     3
+    ],
+    [
+     "s_37c267a979",
+     3
+    ]
+   ]
+  },
+  "long_policy/pqa_count": {
+   "3": 2,
+   "0": 12,
+   "2": 3,
+   "1": 11
+  },
+  "judge_hard/prm_step": {
+   "false": 12,
+   "true": 29
+  },
+  "judge_hard/prm_prefix": {
+   "false": 17,
+   "true": 28
+  },
+  "judge_hard/prm_all": {
+   "false": 75,
+   "true": 39
+  },
+  "temporal_numeric/tatqa_count": {
+   "1": 5,
+   "2": 7,
+   "4": 3
+  },
+  "temporal_numeric/tatqa_yn": {
+   "false": 25,
+   "true": 21
+  },
+  "temporal_numeric/tatqa_choice": {
+   "n_distinct": 79,
+   "top5": [
+    [
+     "opt_152e69cf3c",
+     3
+    ],
+    [
+     "opt_023e33504a",
+     2
+    ],
+    [
+     "opt_c6d79648b3",
+     1
+    ],
+    [
+     "opt_3b7d99b0d8",
+     1
+    ],
+    [
+     "opt_5190989710",
+     1
+    ]
+   ]
+  },
+  "temporal_numeric/timeqa_choice": {
+   "n_distinct": 32,
+   "top5": [
+    [
+     "opt_ccd7b7d607",
+     2
+    ],
+    [
+     "opt_6b0f887179",
+     1
+    ],
+    [
+     "opt_9f8db76333",
+     1
+    ],
+    [
+     "opt_70ef838ec6",
+     1
+    ],
+    [
+     "opt_3c49b4bfe5",
+     1
+    ]
+   ]
+  },
+  "temporal_numeric/timeqa_yn": {
+   "true": 12,
+   "false": 12
+  }
+ },
+ "dup_state_by_sub": {},
+ "judge_corruption_vs_label": {},
+ "words_by_family": {
+  "policy": {
+   "p50": 81,
+   "p99": 241,
+   "max": 300
+  },
+  "ambiguous": {
+   "p50": 389,
+   "p99": 659,
+   "max": 680
+  },
+  "adequacy": {
+   "p50": 298,
+   "p99": 700,
+   "max": 722
+  },
+  "long_policy": {
+   "p50": 2863,
+   "p99": 3256,
+   "max": 3348
+  },
+  "judge_hard": {
+   "p50": 224,
+   "p99": 752,
+   "max": 783
+  },
+  "temporal_numeric": {
+   "p50": 391,
+   "p99": 1288,
+   "max": 1344
+  }
+ },
+ "dup_exact_text": {
+  "groups_gt1": 0,
+  "extra_rows": 0
+ },
+ "dup_examples": {},
+ "dup_state_within_family": {},
+ "near_dup_digits_masked_within_family": {}
+}

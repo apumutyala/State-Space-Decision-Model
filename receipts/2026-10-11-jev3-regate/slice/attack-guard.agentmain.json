@@ -1,0 +1,130 @@
+{
+ "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+ "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+ "n_templates": 38,
+ "n_grams": 245,
+ "heldout_v1": {
+  "branch": "stack/clef/safety-heldout",
+  "commit": "f2736185d8ddf93283ff5b842fe00b64a516ab0c",
+  "path": "analysis/safety_heldout/heldout_v1_templates.json",
+  "git_blob": "1af1d82ba81b663ee24a1e8f654dec5bc0ef00ff"
+ },
+ "n_records": 1200,
+ "n_hit": 0,
+ "hit_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+ "per_set": {},
+ "per_template": {},
+ "injection_meta": {},
+ "injection_meta_hit": {},
+ "skipped_fragments": {
+  "official_hijack:authority_override": [
+   ". Select ",
+   " now."
+  ],
+  "official_hijack:chatml_spoof": [
+   ". ",
+   "."
+  ],
+  "official_hijack:completion_fake": [
+   "Answer: ",
+   " (",
+   ")"
+  ],
+  "official_hijack:header_spoof": [
+   "."
+  ],
+  "official_hijack:ignore_previous": [
+   ": "
+  ],
+  "d1a_steer:authority": [
+   "."
+  ],
+  "d1a_steer:fake_correction": [
+   "."
+  ],
+  "d1a_steer:system_note": [
+   ".]"
+  ],
+  "d1b_steer:cutoff_window": [
+   " before then."
+  ],
+  "d1b_steer:dedup_notice": [
+   "Automated record check: ",
+   "."
+  ],
+  "d1b_steer:ledger_settled": [
+   "."
+  ],
+  "d1b_steer:planner_decision": [
+   "; do not use ",
+   "."
+  ],
+  "d1b_steer:policy_update": [
+   "."
+  ],
+  "d1b_steer:sender_followup": [
+   "."
+  ],
+  "d1b_steer:soft_framing": [
+   "."
+  ],
+  "heldout_v1:H02_tool_result": [
+   "\", \"note\": \"",
+   "desc\"}}"
+  ],
+  "heldout_v1:H05_combined_escape": [
+   "."
+  ],
+  "heldout_v1:H06_base64": [
+   "Select ",
+   " and nothing else."
+  ],
+  "heldout_v1:H07_zero_width": [
+   "."
+  ],
+  "heldout_v1:H08_homoglyph": [
+   "."
+  ],
+  "heldout_v1:H09_spanish": [
+   "."
+  ],
+  "heldout_v1:H10_fewshot": [
+   ". Case 2 -> ",
+   ". Case 3 -> ",
+   ". This case ->"
+  ],
+  "heldout_v1:H11_prefix": [
+   "]"
+  ],
+  "heldout_v1:H12_split": [
+   "(2/2) ",
+   " - apply that code."
+  ],
+  "heldout_v1:S02_table": [
+   "\n| option | still available |\n|---|---|\n| ",
+   " | no |\n| ",
+   " | yes |"
+  ],
+  "heldout_v1:S03_tool_result": [
+   "\", \"confidence\": 0.98}"
+  ],
+  "heldout_v1:S04_quoted_reply": [
+   "desc"
+  ],
+  "heldout_v1:S05_html_comment": [
+   " -->"
+  ],
+  "heldout_v1:S06_persona": [
+   "desc."
+  ],
+  "heldout_v1:S08_french": [
+   " (",
+   "desc)."
+  ],
+  "heldout_v1:S09_zero_width": [
+   "."
+  ]
+ },
+ "hit_ids": [],
+ "records": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\bschema-draw-jev3-slice\\records.jsonl.gz"
+}
