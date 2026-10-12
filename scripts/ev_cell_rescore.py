@@ -7,7 +7,7 @@ perturb_report.json are only diffed against. Artifact = untrusted data: run with
       [--target NAME=<preds.jsonl>::<price spec | price.json>]... [--holm-arm ARM]... [--holm-ext NAME=P]... \
       [--g1 NAME=<dir>]... [--g1-max-dp 0] [--flip8 <dir>] [--flip-baseline NAME=<base.jsonl>,<pert.jsonl>] \
       [--flip-baseline-receipt <flip_ci_8op.json>::<model>] [--mtimes <json>] [--identity-child <json>] \
-      [--groups "A=f1+f2;B=..."] [--B 1000] [--seed 16]
+      [--groups "A=f1+f2;B=..."] [--B 1000] [--seed 16] [--score-inv <dir> [--score-inv-max-dp 0]]
 
 Sections of the report (<out>/cell_rescore.json + <out>/CELL_RESCORE.md):
   (1) PRIMARY  paired delta Composite A (primary - in-job control; B=1000 seed 16, strata of the control table, S/K
@@ -25,6 +25,10 @@ Sections of the report (<out>/cell_rescore.json + <out>/CELL_RESCORE.md):
                op n > 0, 0 invalid, the ON-DISK perturbed.jsonl must list each row in the regenerated in-memory order
                and differ from base order (file-order check; a sort_keys dump makes the check vacuous -> FAIL);
                PASS only with 0 flips and max|dp| == 0 (bitwise), or <= --g1-max-dp flagged NON-BITWISE.
+  (6b) SCORE-INV  (optional, --score-inv <dir>) score-item invariance, SEPARATE from G1: scripts/ev_score_flip.py on
+               the requests of scripts/ev_score_perturb.py (score_reverse / score_shuffle / score_relabel /
+               score_permute, level-as-content rendering) + the head's preds. Reported alongside G1; it never changes
+               the G1 section or its verdict, and its FAIL is a warning (exit code unchanged); read ``score_inv_pass``.
   (7) FLIPS    the 8-op battery (whatever ops the --flip8 dir holds) with bootstrap CIs over base items, paired vs a
                supplied baseline on the same resamples, plus a reported baseline (stock shim 7.55% [5.71, 9.67]).
   (8) TRANSFER per family: slice delta (selected - step 0) next to public delta (primary - control), flags.
@@ -55,6 +59,7 @@ from jevkit import scoring as JS  # noqa: E402
 from jevkit.items import load_public  # noqa: E402
 from jevkit.systemone import preds_to_answers  # noqa: E402
 from scripts import ev_rescore_jevkit as R  # noqa: E402
+from scripts import ev_score_flip as SF  # noqa: E402
 
 TYPES = ("choice", "noul", "score")
 G1_OPS = ("option_reverse", "option_shuffle", "key_relabel")
@@ -469,6 +474,10 @@ def main(argv=None) -> int:
     ap.add_argument("--g1", action="append", default=[], help="NAME=<dir with base.preds.jsonl, perturbed.preds.jsonl, "
                                                               "perturbed.jsonl>; default: the artifact's jevkit/g1")
     ap.add_argument("--g1-max-dp", type=float, default=0.0, help="declared tolerance; > 0 = NON-BITWISE pass")
+    ap.add_argument("--score-inv", default=None, help="dir with base.jsonl, perturbed.jsonl (scripts/ev_score_perturb.py) "
+                                                     "+ base.preds.jsonl, perturbed.preds.jsonl: score-item invariance, "
+                                                     "separate from G1")
+    ap.add_argument("--score-inv-max-dp", type=float, default=0.0, help="declared tolerance; > 0 = NON-BITWISE pass")
     ap.add_argument("--flip8", default=None, help="dir with base.preds.jsonl + perturbed.preds.jsonl [+ perturbed.jsonl]")
     ap.add_argument("--flip-baseline", action="append", default=[], help="NAME=<base.jsonl>,<pert.jsonl> (paired)")
     ap.add_argument("--flip-baseline-receipt", default=None, help="<flip_ci json>::<model> (reported, unpaired)")
@@ -759,6 +768,18 @@ def main(argv=None) -> int:
     if not g1_specs:
         warn.append("no G1 dir (jevkit/g1 or --g1): G1 not evaluated")
 
+    # ---- (6b) score-item invariance (separate from G1; never touches g1 / its verdict; FAIL -> warning only)
+    score_inv = None
+    if a.score_inv:
+        score_inv = SF.run_dir(items, Path(a.score_inv), max_dp=a.score_inv_max_dp)
+        score_inv["dir"] = str(Path(a.score_inv).resolve())
+        if "missing" in score_inv:
+            warn.append(f"score-inv: inputs missing {score_inv['missing']}: score-item invariance NOT evaluated")
+        elif not score_inv["score_inv_pass"]:
+            warn.append(f"score-inv FAIL (separate from G1): {'; '.join(score_inv['failures'][:5])}")
+        elif score_inv["non_bitwise_within_tolerance"]:
+            warn.append(f"score-inv: PASS only within the declared tolerance {a.score_inv_max_dp} (NON-BITWISE)")
+
     # ---- (7) 8-op flip battery
     flips = None
     f8 = a.flip8 if a.flip8 else (str(jdir / "g1") if (jdir / "g1" / "perturbed.preds.jsonl").is_file() else None)
@@ -843,7 +864,7 @@ def main(argv=None) -> int:
                                                   | {"A": core["arms"][n]["composite"]["A"],
                                                      "preds_sha256": core["arms"][n]["preds_sha256"]} for n in arms},
            "1_primary": primary, "2_secondary": secondary, "3_target": target or None, "4_integrity": integrity,
-           "5_selection": sel_block, "6_g1": g1 or None, "7_flips": flips, "8_transfer": transfer_block,
+           "5_selection": sel_block, "6_g1": g1 or None, "6b_score_inv": score_inv, "7_flips": flips, "8_transfer": transfer_block,
            "screen_diffs": core["diffs_vs_screen"], "flags": flags, "warnings": warn,
            "verdict": "AGREES" if not flags else "FLAGGED"}
     (out / "cell_rescore.json").write_text(json.dumps(res, indent=1, default=str) + "\n", encoding="utf-8")
@@ -852,6 +873,8 @@ def main(argv=None) -> int:
                       "primary": {k: primary[k] for k in ("point", "ci95", "ci975", "p_one_sided_boot")}
                       | {"holm_claimable": primary["holm"]["primary_claimable"]},
                       "g1": {k: {x: v[x] for x in ("g1_pass", "bitwise", "max_abs_dp_observed")} for k, v in g1.items()},
+                      "score_inv_separate_from_g1": None if not score_inv or "missing" in score_inv else
+                      {x: score_inv[x] for x in ("score_inv_pass", "bitwise", "max_abs_dp_observed")},
                       "out": str(out)}, indent=1, default=str))
     return 0 if not flags else 3
 
@@ -947,6 +970,15 @@ def render_md(r: dict) -> str:
             L.append(f"  - FAIL: {f_}")
         if "in_job" in g:
             L.append(f"  - in-job report: g1_pass {g['in_job']['g1_pass']}, counts agree {g['agrees_with_in_job_counts']}")
+    si = r.get("6b_score_inv")
+    L += ["", "## (6b) Score-item invariance (separate from G1; does not change the G1 verdict)"]
+    if not si:
+        L.append("- not evaluated (no --score-inv)")
+    elif "missing" in si:
+        L.append(f"- NOT evaluated: inputs missing {si['missing']}")
+    else:
+        L += SF.render_md(si).splitlines()[2:]
+        L.append(f"- **score-inv {'PASS' if si['score_inv_pass'] else 'FAIL'}** (dir `{si['dir']}`)")
     f7 = r["7_flips"]
     L += ["", "## (7) FLIP battery"]
     if not f7:

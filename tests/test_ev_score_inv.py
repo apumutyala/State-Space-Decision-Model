@@ -192,3 +192,47 @@ def test_cli_end_to_end(tmp_path):
     (d / "perturbed.preds.jsonl").write_text("".join(json.dumps(p) + "\n" for p in _preds(SF.rj(d / "perturbed.jsonl"), handle_head)),
                                              encoding="utf-8")
     assert SF.main(["--items", str(ip), "--dir", str(d), "--out", str(tmp_path / "o2")]) == 3
+
+
+def test_cell_rescore_section_separate_from_g1(tmp_path):
+    """--score-inv adds section 6b; the G1 section, verdict, flags and exit code are unchanged by it."""
+    from jevkit.items import load_public
+    from scripts import ev_cell_rescore as K
+    from tests import test_ev_cell_rescore as T
+
+    pub = load_public()
+    art = tmp_path / "art"
+    jd = art / "out" / "screen" / "jevkit"
+    jd.mkdir(parents=True)
+    for arm, model in (("stock_shim", T.first_listed_model), ("native_shimcal", T.invariant_model)):
+        (jd / f"{arm}.preds.jsonl").write_text("".join(json.dumps(T._rec(it, model(it))) + "\n" for it in pub),
+                                               encoding="utf-8")
+    (art / "out" / "screen.json").write_text(json.dumps({"jevkit": {}}), encoding="utf-8")
+    T.make_g1_dir(jd / "g1", T.invariant_model)
+    runs = {}
+    for name, head in (("none", None), ("content", content_head), ("handle", handle_head)):
+        argv = ["--art", str(art), "--out", str(tmp_path / f"out_{name}"), "--price", T.PRICE, "--B", "20"]
+        if head is not None:
+            d = tmp_path / f"si_{name}"
+            base, pert = SP.make(pub)
+            d.mkdir()
+            SP.write_rows(base, d / "base.jsonl")
+            SP.write_rows(pert, d / "perturbed.jsonl")
+            for fn, rows in (("base.preds.jsonl", base), ("perturbed.preds.jsonl", pert)):
+                (d / fn).write_text("".join(json.dumps(p) + "\n" for p in _preds(rows, head)), encoding="utf-8")
+            argv += ["--score-inv", str(d)]
+        rc = K.main(argv)
+        runs[name] = (rc, json.loads((tmp_path / f"out_{name}" / "cell_rescore.json").read_text(encoding="utf-8")))
+    g1 = {k: json.dumps(v[1]["6_g1"], sort_keys=True) for k, v in runs.items()}
+    assert g1["none"] == g1["content"] == g1["handle"]
+    assert runs["none"][0] == runs["content"][0] == runs["handle"][0]
+    assert runs["none"][1]["flags"] == runs["content"][1]["flags"] == runs["handle"][1]["flags"]
+    assert runs["none"][1]["6b_score_inv"] is None
+    si = runs["content"][1]["6b_score_inv"]
+    assert si["score_inv_pass"] and si["bitwise"] and si["n_score_items"] == 18
+    assert {op: si["per_operator"][op]["n"] for op in SP.OPS} == {"score_reverse": 18, "score_shuffle": 54,
+                                                                  "score_relabel": 18, "score_permute": 18}
+    assert not runs["handle"][1]["6b_score_inv"]["score_inv_pass"]
+    assert any(w.startswith("score-inv FAIL") for w in runs["handle"][1]["warnings"])
+    md = (tmp_path / "out_content" / "CELL_RESCORE.md").read_text(encoding="utf-8")
+    assert "(6b) Score-item invariance (separate from G1" in md and "score-inv PASS" in md and "(6) G1" in md
