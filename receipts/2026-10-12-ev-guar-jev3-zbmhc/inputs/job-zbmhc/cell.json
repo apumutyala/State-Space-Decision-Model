@@ -1,0 +1,1372 @@
+{
+ "config": {
+  "_comment": "JEV3-LM-S (A-PREREG-JEV3-LM Amendment 2): the JEV3-LM cell with a FIXED step budget N = 200 (budget-limited), warmup 50 + cosine over exactly 200 steps, dev cards every 50 steps, the head-aware lm_label collapse guard, best-checkpoint export on save, a 22-min safety clock",
+  "seed": 0,
+  "head": "lm_label",
+  "head_kwargs": {},
+  "layout": "g1v2-canon",
+  "template": "jrt-h2o-shim:qwen3.5-4b",
+  "loss_arm": "clef",
+  "lora_rank": 16,
+  "lr_head": 0.0003,
+  "lr_lora": 4e-05,
+  "warmup_steps": 50,
+  "batch_size": 1,
+  "grad_accum": 8,
+  "max_k": 16,
+  "t_ladder": [
+   512,
+   1024,
+   2048,
+   4096
+  ],
+  "n_train_records": 5836,
+  "n_eval_records": 0,
+  "min_train_items": 5836,
+  "max_steps": 200,
+  "max_minutes": 22,
+  "min_steps": 110,
+  "ckpt_every": 100,
+  "eval_every": 100000,
+  "tokenize_workers": 8,
+  "smoke": {
+   "rows": 2,
+   "max_k": 4,
+   "max_t": 512,
+   "lora_rank": 8,
+   "max_rel_feature_diff": 0.03,
+   "min_grad_cos": 0.99
+  },
+  "pass_rule": {
+   "window": 50,
+   "loss_drop_frac_min": 0.05,
+   "max_peak_gb": 76
+  },
+  "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+  "require_guard_readiness": true,
+  "calibration_role": "calibration",
+  "parent": "qwen35",
+  "eval_max_t": 4096,
+  "train_set": {
+   "pointer": "data/manifests/bschema-draw-jev3.pointer.json",
+   "heldout_excluded": {
+    "ids": [],
+    "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+    "reason": "the merged draw inherits each pool's gates (0 held-out D1-B hits each); the in-job heldout phase rescans the whole set"
+   },
+   "pools": {
+    "jev1": {
+     "dir": "m2/build/bschema-draw-jev1",
+     "pointer": "data/manifests/bschema-draw-jev1.pointer.json",
+     "pointer_sha256": "582ffe1cb34602473a847833758e06d69dbb6755594b4609e95f8fa39a2b464b",
+     "status": "gated",
+     "families": [
+      "adequacy",
+      "enum",
+      "intent",
+      "long_policy",
+      "policy",
+      "routing",
+      "severity",
+      "state_tracking"
+     ]
+    },
+    "jev2a": {
+     "dir": "m2/build/bschema-draw-jev2a",
+     "pointer": "data/manifests/bschema-draw-jev2a.pointer.json",
+     "pointer_sha256": "53416094f957a6aebb6514dceaaef11b18473da1a6a910c89057639865c24eda",
+     "status": "gated + re-gated (claude/ev-jev2a-regate @97d55f2e)",
+     "branch": "claude/ev-jev2-draw@77065b1c",
+     "families": [
+      "multi_hop",
+      "judge_hard",
+      "temporal_numeric",
+      "fact",
+      "tool_selection"
+     ],
+     "exclude": {
+      "file": "receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt",
+      "sha256": "aeb8027aaaebdb6fad2b24f8b5bee9d37c4e176fcc4e18ad0d366acf1b579705",
+      "n_ids": 105,
+      "rows_after": 29895,
+      "rule": "97 Glaive rows whose tool descriptions are verbatim in JevBench easy tool_selection items + 8 MuSiQue rows; asserted at build (sha + count)"
+     }
+    },
+    "jev2b": {
+     "dir": "m2/build/bschema-draw-jev2b",
+     "pointer": "data/manifests/bschema-draw-jev2b.pointer.json",
+     "pointer_sha256": "35620f5f47c6e48bb61de0a336ccfb54dad5bf11f606a15f30b32fe48fee4127",
+     "status": "gated + re-gated (claude/ev-jev2a-regate @7a742d6a: empty exclusion list)",
+     "branch": "claude/ev-jev2-draw@a4aaa7de",
+     "families": [
+      "probability",
+      "trap",
+      "ambiguous",
+      "tradeoff",
+      "adversarial"
+     ],
+     "exclude": {
+      "file": "receipts/2026-10-10-jev2b-regate/jev2b_exclude_ids.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "n_ids": 0,
+      "rows_after": 7500
+     },
+     "excluded_subs": {
+      "prob_indep": 124,
+      "why": "constant gold 'same' in all 124 rows"
+     }
+    },
+    "jev2c": {
+     "dir": "m2/build/bschema-draw-jev2c-v2",
+     "pointer": "data/manifests/bschema-draw-jev2c-v2.pointer.json",
+     "pointer_sha256": "86960d903d613bc88eca9ee131b486a749afa9a89c9cebca77744178721c5a99",
+     "status": "gated + re-gated (claude/ev-jev2a-regate @c76f150a: empty exclusion list)",
+     "families": [
+      "long_policy"
+     ],
+     "exclude": {
+      "file": "receipts/2026-10-11-jev2c-v2-regate/jev2c-v2_exclude_ids.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "n_ids": 0,
+      "rows_after": 1500
+     },
+     "note": "jev2c-v2 (replaces jev2c): 1,500 synthetic long_policy rows, prose states, more score rows; shim tokens p99 3,892 / max 3,981, 0 over 4,096 (tokens-shim.json); the ONLY long_policy source"
+    }
+   },
+   "note": "jev3 ONLY: 5,960 train rows (judge_hard / adequacy / policy / ambiguous / temporal_numeric 1,000 each, long_policy 960), ids sha256 feb681f3... (verified locally); held-out selection slice 1,200 (200 x 6), ids sha256 844233f2... (verified), state-disjoint from training (pointer slice_disjoint counts 0; asserted in job). Pointers: claude/ev-jev3-draw @5c963b25. Sampler: policy/aegis_reply (109, constant gold) and adequacy/hs2_bar_coherence (27, 26:1) dropped via train_set.exclude_files (sha-pinned) -> pool 5,824; re-gate exclusion list empty (01ba4719).",
+   "score_share": 0.25,
+   "type_mix_note": "FINAL mix (18 families, 586/family, adequacy 293): choice 44.9% / noul 30.1% / score 25.1% (4599 / 3086 / 2570 of 10255)",
+   "exclude_files": [
+    {
+     "file": "receipts/2026-10-12-jev3-lm/jev3_lm_train_exclude.txt",
+     "sha256": "be643f632856ffcf27d3d29e425966372e8d10559db52a5bb226a00fa42bb06b",
+     "n": 124,
+     "reason": "lead 2026-10-12: drop policy/aegis_reply (109, constant gold) and DOWN-WEIGHT adequacy/hs2_bar_coherence (26:1) by keeping half: 14 of its 27 rows dropped, ranked by sha256('jev3-lm-hs2-downweight:' + id); + the ONE row the canonical shim renders past the 4,096-token cap (m2:privacyqa:290c5bc2b2~view:jev3-lp-score-r1, prefix 4,118 tokens under g1v2-canon-shuffle; scripts/cell_preflight.py, job-5rvm3; A-PREREG-JEV3-LM Amendment 1)"
+    },
+    {
+     "file": "receipts/2026-10-11-jev3-regate/jev3_exclude_ids.txt",
+     "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+     "n": 0,
+     "reason": "evidence re-gate (claude/ev-jev2a-regate @688e8d7c, REGATE_JEV3.md 4b): CLEARED, empty list (sha asserted)"
+    }
+   ]
+  },
+  "act_ckpt": true,
+  "row_batch": 1,
+  "row_tokens": 0,
+  "row_plan": "min_cost",
+  "cont_plan": "single",
+  "compile_blocks": false,
+  "min_steps_note": "Amendment 2: N = 200 steps (dev cards at 50 / 100 / 150 / 200 = N/4 .. N); the 22-min clock is a safety bound only (200 x 5.07 s + 4 cards x 41 s = 19.6 min, measured job-wm8b5)",
+  "lora_rank_note": "r=16 (the JEV2-H2O lm_label recipe), every GDN / attention / MLP projection",
+  "variant": "jev3_lm_s",
+  "train_max_k": 255,
+  "row_options": 160,
+  "train_max_k_note": "D8 code (#221 on agent-main): K cap of the training items only (train.run_cell.train_max_k; cell_items default, also used by the m2_gates lineage rebuild); max_k 16 remains the eval cap (train.m2_gates.unit_spec, run_cell eval_items). B1 100k-v2 carries rows with > 16 options (BANKING77 77-option catalogs, Glaive catalog views K 17-27), which max_k 16 alone would drop.",
+  "row_options_note": "execution guard (train.trainer.row_groups / single_cont_fits): <= 160 forked continuations per backbone call; a row with K > 160 runs alone, and a step whose summed K exceeds 160 runs per group under cont_plan single. Worst call = 8,192 prefix tokens + 160 copies ~= 53.8 GB (tvuat ladder 1,024 rung) + 80 x <= 87 MB ~= 61 GB < 76 GB stop (D8 sizing). Not in the TrainConfig hash; never binds on K <= 16 steps (8 x 16 = 128).",
+  "lr_schedule": "cosine",
+  "lr_min_frac": 0.1,
+  "dev_card_every": 50,
+  "dev_card_rows": 360,
+  "best_ckpt": true,
+  "collapse_guard": true,
+  "anti_collapse_note": "train/trainer.py TrainConfig anti-collapse fields; each absent key = the old behaviour. lr_schedule and collapse_* are in the config hash; dev_card_* and best_ckpt are operational. Each dev card scores 200 rows (budget it inside max_minutes).",
+  "execution_note": "row_batch 1: one row per backbone call (8 rows / optimiser step via grad_accum 8); act_ckpt true (heads/act_ckpt.py covers Qwen3.5 decoders); the cache fork reads each row's prompt once and forks its K continuations. row_plan / cont_plan / row_options only act with row_batch > 1 (train/trainer.py). The clock binds (max_steps 20,000).",
+  "v3w_note": "generic v3w (decide/v3w_generic.py, PINNED_SPEC_SHA256 'jrt-v3w-generic:qwen3.5' 2e4907ee...; 255 single-token codes after the Qwen answer prefix, word ids by unique first token, Qwen3.5 chat template with enable_thinking=False -> empty think block, budget 16,383). Bound to the snapshot's own tokenizer files on the box (run_cell / score_parent / m2_gates / screen): any other tokenizer or template fails closed.",
+  "qwen35": {
+   "repo": "Qwen/Qwen3.5-4B",
+   "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+   "config_sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+   "snapshot_sha256_file": "jobs/m2_first_cell/qwen35_4b_snapshot.sha256",
+   "note": "heads.backbone.qwen35_pin_check (repo@revision in QWEN35_STOCK + config.json sha256) before the tokenizer or any weight; the runner checks the whole snapshot against the manifest"
+  },
+  "shim_note": "template jrt-h2o-shim:qwen3.5-4b (decide/shim_format.py, pinned identity): the vendored, unmodified H2O-Lightning-4B v1.1 shim prompt (third_party/h2o_lightning_shim, the host scan's replica that matched H2O's card 205/231): Qwen chat turn, thinking off, the shim system text, 'record: / question: / options: A) name: desc', 'Answer:' prefill; option k = shim label k (A, B, ...), its continuation the ONE token of ' <label>' (the shim's own probe); bound to the snapshot's tokenizer files, any other tokenizer fails closed. Train rows == the shim prompt ids (and == transformers' whole-string tokenization = vLLM /tokenize): scripts/check_sizecliff_cpu.py.",
+  "cont_chunk": 0,
+  "budget_note": "A-PREREG-JEV3-LM: worst case $17.89 <= $18 (<= $15 is not reachable for 1 epoch: the screen cap 44 is the setup preflight's, so a 89-min job leaves ~20 training minutes)",
+  "sym_reprice_note": "Clock re-price (CPU 2026-10-10, real Qwen3.5-4B tokenizer, systematic 1-in-24 sample of bschema-draw-jev1 = 4,000 items, all kept by train.run_cell.keep_item under both layouts; K mean 4.78, max 16): tokens the backbone RUNS per row (prefix + continuation calls right-padded per cont_chunk 64 chunk, MIN_CONT_WIDTH 2) g1v2 368.1 vs sym-fork 362.7, factor 0.985 (fed tokens without padding 363.3 vs 352.1, 0.969): the options move from the prefix into the continuations, about token-neutral. Projected 10.92 x 0.985 = 10.76 s/step -> ceil(1,121 x 10.76 x 1.3 / 60) = 262 min; max_minutes stays 270 (the measured g1v2 budget; the factor is a token model, not a measurement: the step-10 rate check (exit 26) re-measures it in-job). Script: scripts/sym_reprice_jev1.py 24 (receipt in docs/PROOF_INVARIANCE.md).",
+  "require_t_max": 4096,
+  "ladder_probe_longest": true,
+  "max_len_note": "public long_policy items are 2,350-3,952 tokens (r2 preds usage.input_tokens) vs jev1 long_policy train rows p50 935 / max 1,263 (build-report): the trained head never saw > 2k contexts. 4,096 for training (t_ladder top rung; require_t_max fails closed instead of silently dropping rows > T_max) and eval. Memory at 4k on H100 80 GB (4B, act_ckpt): the attention-layer KV copy per forked option grows ~0.7 GB at T 1,020 (cf3929b) -> ~2.8 GB at 4,096; long_policy rows carry K 4-6 -> <= ~17 GB of copies + ~8 GB weights + checkpointed activations; the cont_chunk probe (4b0fb1d) re-picks the chunk over the worst K x T rows <= 4,096 (candidates 8..64, peak <= 0.85 x 76 GB) and ladder_probe_longest steps the LONGEST rows of each rung (the max-K rung rows are short), so 4k is measured before training.",
+  "label_smoothing": 0.05,
+  "label_smoothing_noul": 0.0,
+  "label_smoothing_note": "yes/no (noul) rows: eps 0 (sharp targets). jevkit scores a noul answer with p in (0.2, 0.8) as WRONG; r2 put 10/74 noul items in that band (stock 0), the whole argmax-vs-jevkit gap (claude/ev-j1-rescore @a8ca3e7e), and smoothing pulls yes/no answers toward 0.5. choice / score rows: eps 0.05 (was the clef default 0.1 on every row; r2's head was under-confident, shim T 0.8 raised its Capability 57.93 -> 59.62). Per-row eps by question type (train.losses.arm_loss already receives qtypes).",
+  "noul_band_gate": "reported gate: the native arm's yes/no 0.2-0.8 band rate on the 231 items <= stock_shim's (screen.jevkit_report noul_band_gate); the calib-slice band rate at T = 1 and at the fitted T are reported, and T is moved toward 1 if it would raise the slice band rate (constrain_t_by_band)",
+  "assert_no_truncation": true,
+  "assert_no_truncation_note": "fail closed (run_cell exit 25 'data') if ANY drawn training question is dropped by the K / T filter at tokenization or by the measured T_max; jev2c has 1,448 / 1,500 rows > 2,048 tokens (max 3,347), all inside 4,096. The screen fails (9) if any JevBench item is refused for input length (jevkit.assert_no_truncation).",
+  "dev_card_records": {
+   "records": "m2-jev3-calib/records.jsonl.gz",
+   "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
+  },
+  "data_pins": {
+   "status": "final",
+   "draw": "bschema-draw-jev3 ONLY (the jev2 component is dropped)",
+   "fill": [],
+   "expected": {
+    "train_rows": 5960,
+    "train_ids_sha256": "feb681f3517c69863d7180dbbf3307dd7b6ded4b4a6411b2ae8f360af33f3120",
+    "train_per_family": {
+     "judge_hard": 1000,
+     "adequacy": 1000,
+     "policy": 1000,
+     "ambiguous": 1000,
+     "temporal_numeric": 1000,
+     "long_policy": 960
+    },
+    "slice_rows": 1200,
+    "slice_per_family": 200,
+    "slice_ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
+   },
+   "pinned": {
+    "train_pointer": "data/manifests/bschema-draw-jev3.pointer.json",
+    "train_pointer_sha256": "ce70500db28739ada3506a3db51888beca7ae3b1f58ee3ac999010dcbeaafdfd",
+    "slice_pointer": "data/manifests/bschema-draw-jev3-slice.pointer.json",
+    "slice_pointer_sha256": "4d1cbba60302402dca33a7d92ea68496b3bb526b7be34e1ced4c913ad652d514",
+    "branch": "claude/ev-jev3-draw@5c963b25",
+    "ids_check": "scripts/verify_ids_sha.py: train feb681f3 and slice 844233f2 both match the no-trailing-newline convention (2026-10-11)"
+   },
+   "exclusion": {
+    "status": "landed (empty)",
+    "file": "receipts/2026-10-11-jev3-regate/jev3_exclude_ids.txt",
+    "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "n": 0,
+    "regate": "claude/ev-jev2a-regate @688e8d7c REGATE_JEV3.md 4b"
+   },
+   "sampler": {
+    "dropped": {
+     "policy/aegis_reply": 109,
+     "adequacy/hs2_bar_coherence": 14,
+     "long_policy/overlength_canonical": 1
+    },
+    "pool_after": 5836
+   }
+  },
+  "train_layout": "g1v2-canon-shuffle",
+  "layout_note": "decide.canon_shim: inference rows (g1v2-canon) render every choice option in the canonical order (NFC + whitespace-collapse + casefold key, sha256 tie-break), lettered A, B, ... in that order, ids never rendered (names 001..K), mapped back outside the model; noul (true, false); score = 'level v of K: <rubric>' in level order. TRAINING rows (train_layout g1v2-canon-shuffle): choice options in a seeded random order (seed = the row's content hash; one shuffle per row, 1 epoch), so the model learns no canonical-letter prior (evidence claude/ev-canonical-prior @1ccdc676: canonical train gold = A 35% vs 28% chance); score / noul as at inference",
+  "lr_horizon_steps": 200,
+  "lr_horizon_steps_note": "Amendment 2: the cosine horizon is the step budget N = 200 (warmup 50 steps to the peak LR, then cosine to 0.1 x at step 200), fixed before the first step; NOT a truncated 729-step schedule"
+ },
+ "dev_card_source": {
+  "records": "m2-jev3-calib/records.jsonl.gz",
+  "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078",
+  "n_records": 1200,
+  "n_items": 1200
+ },
+ "data_checks": {
+  "no_truncation_tokenize": {
+   "rows": 5836,
+   "max_row_tokens": 4066,
+   "t_cap": 4096
+  }
+ },
+ "data": {
+  "records_sha256": "824671c97070c0e61a40df8f0103ebeb6fddc557e0974a61226653887d57ceb7",
+  "n_train_records": 5836,
+  "tokenize_s": 37.7,
+  "n_train_items": 5836,
+  "n_eval_items": 1130,
+  "guard_manifests": {
+   "/opt/ssdm/m1/harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+   "/opt/ssdm/m1/harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+  },
+  "guard": {
+   "manifests": {
+    "/opt/ssdm/m1/harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+    "/opt/ssdm/m1/harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+   },
+   "n_ids": 47249,
+   "n_hashes": 48415,
+   "note": "",
+   "content_index": {
+    "path": "/tmp/m2-first-cell/out/guard/index-content-hashes.txt.gz",
+    "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+    "n": 24150
+   }
+  },
+  "max_k": 16,
+  "train_max_k": 255,
+  "cohort": {
+   "cohort": "m2-dev-cohort-v2",
+   "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 1670,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "train_set": {
+   "train_set": "bschema-draw-jev3 (data/jev3.py + scripts/jev3_build.py: HUMAN-labelled TRAIN-split rows for judge_hard, adequacy, policy, ambiguous, temporal_numeric, long_policy; role train)",
+   "pointer": "data/manifests/bschema-draw-jev3.pointer.json",
+   "pointer_sha256": "ce70500db28739ada3506a3db51888beca7ae3b1f58ee3ac999010dcbeaafdfd",
+   "files_uncompressed_sha256": {
+    "records": "368fd715d8c9290989da53927e2785c5802ee07e03490ca2bd8817ebb801e020",
+    "manifest": "4350f8a8db2024ddbb1cee2ddd7cc8d7479cafa7a80a562490fa54bf00261969",
+    "content_map": "9f77efe71c1c057da67e23fd434dc43a59906f71df871b84a3109fed8aab623e"
+   },
+   "n_pool": 5836,
+   "heldout_excluded": [],
+   "drawn_heldout_scan": {
+    "n_texts": 5836,
+    "hits": 0,
+    "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5"
+   },
+   "held_out_in_set": {
+    "by_id": 0,
+    "by_content": 0
+   },
+   "n_drawn": 5836,
+   "draw_seed": 0,
+   "drawn_ids_sha256": "ecc62030f704fff99f864a9f6dec3ecd5f8006d4817d259ab81da76ac6cb7c45",
+   "lines_manifest_verified": 5960,
+   "cohort": {
+    "cohort": "m2-dev-cohort-v2",
+    "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+    "n": {
+     "dev": 835,
+     "calibration": 1000,
+     "retention": 1670,
+     "steer_dev": 1800,
+     "steer_gate": 1000
+    }
+   },
+   "cohort_v3_excluded": {
+    "n": 0,
+    "rule": "id OR normalized content OR source item OR key-free text held out by the cohort (train.cohort_v3)",
+    "cohort": {
+     "cohort": "m2-dev-cohort-v3",
+     "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+     "n": {
+      "dev": 835,
+      "calibration": 1000,
+      "retention": 39872,
+      "steer_dev": 1800,
+      "steer_gate": 1000
+     }
+    },
+    "drawn_overlap": 0
+   },
+   "attack_guard": {
+    "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+    "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+    "n_records": 5960,
+    "n_excluded": 0,
+    "excluded_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "per_set": {},
+    "per_template": {},
+    "n_heldout_excluded_overlap": 0,
+    "per_counts_include_heldout_excluded": true,
+    "check": "no hit",
+    "drawn_hits": 0
+   },
+   "doc_overlap_guard": {
+    "n_records": 5960,
+    "n_fail": 0,
+    "per_source_fail": {},
+    "per_reason": {},
+    "eval_rows_attributed_by_split": {},
+    "eval_rows_union_covered_by_split": {},
+    "secs": 11.8,
+    "jevbench": {
+     "n_fail": 0,
+     "n_fail_doc": 0,
+     "n_fail_exact": 0,
+     "index_sha256": "0fe994c40dfc70fa3a0cd711fa88abb7f439cb8f2546ecffd53e5ca232d3934b"
+    },
+    "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+    "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+    "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
+    "excluded_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "n_excluded": 0,
+    "allowlist_saved": {},
+    "n_heldout_excluded_overlap": 0,
+    "check": "no fail",
+    "drawn_fails": 0,
+    "n_pool_removed": 0
+   },
+   "exclude_files": [
+    {
+     "file": "receipts/2026-10-12-jev3-lm/jev3_lm_train_exclude.txt",
+     "sha256": "be643f632856ffcf27d3d29e425966372e8d10559db52a5bb226a00fa42bb06b",
+     "n": 124,
+     "reason": "lead 2026-10-12: drop policy/aegis_reply (109, constant gold) and DOWN-WEIGHT adequacy/hs2_bar_coherence (26:1) by keeping half: 14 of its 27 rows dropped, ranked by sha256('jev3-lm-hs2-downweight:' + id); + the ONE row the canonical shim renders past the 4,096-token cap (m2:privacyqa:290c5bc2b2~view:jev3-lp-score-r1, prefix 4,118 tokens under g1v2-canon-shuffle; scripts/cell_preflight.py, job-5rvm3; A-PREREG-JEV3-LM Amendment 1)"
+    },
+    {
+     "file": "receipts/2026-10-11-jev3-regate/jev3_exclude_ids.txt",
+     "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+     "n": 0,
+     "reason": "evidence re-gate (claude/ev-jev2a-regate @688e8d7c, REGATE_JEV3.md 4b): CLEARED, empty list (sha asserted)"
+    }
+   ]
+  }
+ },
+ "weights_gb": 8.411531264,
+ "smoke": {
+  "rows": 2,
+  "rel_feature_diff": 0.016574585810303688,
+  "grad_cos": 0.996322512626648,
+  "pass": true,
+  "peak_gb": 9.61199616,
+  "lora_modules": {
+   "gdn": 72,
+   "attn": 32,
+   "mlp": 96
+  },
+  "pass_rule": {
+   "rows": 2,
+   "max_k": 4,
+   "max_t": 512,
+   "lora_rank": 8,
+   "max_rel_feature_diff": 0.03,
+   "min_grad_cos": 0.99
+  },
+  "act_ckpt": true
+ },
+ "ladder": {
+  "points": {
+   "512": {
+    "ok": true,
+    "peak_gb": 9.093559808,
+    "step_s": 3.465284824371338,
+    "row_len": 481,
+    "k": 6
+   },
+   "512_longest": {
+    "ok": true,
+    "peak_gb": 9.094727168,
+    "step_s": 3.1338255405426025,
+    "row_len": 512,
+    "k": 3
+   },
+   "1024": {
+    "ok": true,
+    "peak_gb": 9.104562176,
+    "step_s": 3.4567761421203613,
+    "row_len": 854,
+    "k": 6
+   },
+   "1024_longest": {
+    "ok": true,
+    "peak_gb": 9.179912704,
+    "step_s": 3.3711657524108887,
+    "row_len": 1024,
+    "k": 2
+   },
+   "2048": {
+    "ok": true,
+    "peak_gb": 9.593750528,
+    "step_s": 3.2843382358551025,
+    "row_len": 1957,
+    "k": 6
+   },
+   "2048_longest": {
+    "ok": true,
+    "peak_gb": 9.630993408,
+    "step_s": 3.2230656147003174,
+    "row_len": 2041,
+    "k": 5
+   },
+   "4096": {
+    "ok": true,
+    "peak_gb": 10.45902848,
+    "step_s": 23.04931116104126,
+    "row_len": 3908,
+    "k": 6
+   },
+   "4096_longest": {
+    "ok": true,
+    "peak_gb": 10.529083392,
+    "step_s": 4.631217956542969,
+    "row_len": 4066,
+    "k": 4
+   }
+  },
+  "T_max": 4096,
+  "rate_check": {
+   "step_s": 3.2843382358551025,
+   "minutes_left": 22,
+   "affordable_steps": 401.907448383229,
+   "need_steps": 110,
+   "too_slow": false
+  }
+ },
+ "dev_card_sample": {
+  "rows": 360,
+  "seed": 0,
+  "n": 360,
+  "n_pool": 1200,
+  "design": "hash-stratified by source: sha256(seed:id) within source, round-robin across sources",
+  "per_source": {
+   "aegis2": 45,
+   "ambignq": 45,
+   "helpsteer2": 45,
+   "helpsteer3": 45,
+   "privacyqa": 45,
+   "prm800k": 45,
+   "tatqa": 45,
+   "timeqa": 45
+  },
+  "ids": [
+   "m2:aegis2:c109d06528924fd0953e46f73ce80350~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-2639660647813019469~view:jev3-amb-k3/q",
+   "m2:helpsteer2:97~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:23977-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:c63ff5711c~view:jev3-lp-score-r1/q",
+   "m2:prm800k:train/number_theory/196.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:b23dff98-e801-4aa2-b8a5-b98596278647~view:jev3-tn-yn/q",
+   "m2:timeqa:894d5aaed1-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:8c5b26e20c674971bb0f4022871b866e~view:jev3-jev3pol-message/q",
+   "m2:ambignq:5872845962420620183~view:jev3-amb-k3/q",
+   "m2:helpsteer2:14491~view:jev3-jev3bar-coherence/q",
+   "m2:helpsteer3:18646-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:fedc1ddd57~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/counting_and_probability/712.json~view:jev3-jh-step/q",
+   "m2:tatqa:6009d8f4-a6c6-4f60-8638-2b5ca26c1d2f~view:jev3-tn-c4/q",
+   "m2:timeqa:63d7c15e81-2~view:jev3-tn-time-c3/q",
+   "m2:aegis2:37b7981bd2344411974936a54c672bd5~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:8815644747440292961~view:jev3-amb-k3/q",
+   "m2:helpsteer2:12876~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:10664-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:a1906f798c~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/860.json~view:jev3-jh-all/q",
+   "m2:tatqa:db13f896-ef54-4664-8e83-b1cd70a2b826~view:jev3-tn-yn/q",
+   "m2:timeqa:bfade7d7ba-0~view:jev3-tn-time-c3/q",
+   "m2:aegis2:42e2515e73e946eba4f707c4b2a9bfa3~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-3986112329531314493~view:jev3-amb-k3/q",
+   "m2:helpsteer2:3331~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:15625-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:35e9ee4e82~view:jev3-lp-choice-r1/q",
+   "m2:prm800k:train/algebra/984.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:9d05ca5e-63ce-47c0-8590-ce227ae34943~view:jev3-tn-c3/q",
+   "m2:timeqa:8ecafef578-2~view:jev3-tn-time-c4/q",
+   "m2:aegis2:98d2fd725b4f4556a3b900aa6ecacdb0~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-8845908040715607923~view:jev3-amb-k3/q",
+   "m2:helpsteer2:5586~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:18730-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:1ec1b9fab7~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/algebra/2170.json~view:jev3-jh-step/q",
+   "m2:tatqa:057082c7-09f7-47e3-87c1-3af14860a615~view:jev3-tn-c3/q",
+   "m2:timeqa:6277d83c3f-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:0fe157e8b58745f499b54997967d8d50~view:jev3-jev3pol-message/q",
+   "m2:ambignq:6999425735966102184~view:jev3-amb-k3/q",
+   "m2:helpsteer2:11340~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:15298-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:5990987b03~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/algebra/1217.json~view:jev3-jh-all/q",
+   "m2:tatqa:70b05eb3-abb5-4204-86d9-2ffce11f9171~view:jev3-tn-yn/q",
+   "m2:timeqa:e7e692a18d-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:3f9c822c2c9a4e8f85e0810232eb9b74~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-6838210957287403206~view:jev3-amb-k3/q",
+   "m2:helpsteer2:8903~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:11141-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:5f5c52bd53~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/algebra/1607.json~view:jev3-jh-all/q",
+   "m2:tatqa:b29f8e9b-790c-48fc-aede-96bc09bf8054~view:jev3-tn-c4/q",
+   "m2:timeqa:32e06dbb64-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:b45e620b40914b469ecdf16fbf9147d9~view:jev3-jev3pol-message/q",
+   "m2:ambignq:94169181720489886~view:jev3-amb-k4/q",
+   "m2:helpsteer2:334~view:jev3-jev3bar-coherence/q",
+   "m2:helpsteer3:17516-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:d33a46a50d~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/1116.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:50be65ba-d3de-47fb-b516-f6d8f2a6dd45~view:jev3-tn-c5/q",
+   "m2:timeqa:b42216fbd4-5~view:jev3-tn-time-c4/q",
+   "m2:aegis2:d0b5e63deb704869b09759fe29324eac~view:jev3-jev3pol-message/q",
+   "m2:ambignq:5464332172782532042~view:jev3-amb-k3/q",
+   "m2:helpsteer2:17785~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:25820-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:2af7658660~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/precalculus/795.json~view:jev3-jh-all/q",
+   "m2:tatqa:7005a9d6-50d9-43b0-9137-d5c1e25eef5d~view:jev3-tn-count/q",
+   "m2:timeqa:b5cc036f16-1~view:jev3-tn-time-yn/q",
+   "m2:aegis2:f8f2b24cc1024ace975d080f45298de5~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:8842376681553707657~view:jev3-amb-k3/q",
+   "m2:helpsteer2:3509~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:16362-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:968f35ea65~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/intermediate_algebra/1322.json~view:jev3-jh-all/q",
+   "m2:tatqa:5faaef41-36b4-48db-9466-44c397c7fede~view:jev3-tn-yn/q",
+   "m2:timeqa:63d7c15e81-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:31ec65cb939a439db06e87dd1251a60b~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:7418702283851051508~view:jev3-amb-k3/q",
+   "m2:helpsteer2:4537~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:15958-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:3f49cd8f4c~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/intermediate_algebra/65.json~view:jev3-jh-all/q",
+   "m2:tatqa:789a37d0-5d7f-422b-9bd4-46293cea01ca~view:jev3-tn-yn/q",
+   "m2:timeqa:6ec168346b-0~view:jev3-tn-time-c3/q",
+   "m2:aegis2:f4f147f8c35148969c4e94d2c15633ac~view:jev3-jev3pol-category/q",
+   "m2:ambignq:-2754699403432135938~view:jev3-amb-k3/q",
+   "m2:helpsteer2:810~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:11819-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:4b564f5f03~view:jev3-lp-score-r0/q",
+   "m2:prm800k:train/precalculus/136.json~view:jev3-jh-all/q",
+   "m2:tatqa:0a14f957-3f01-4c22-a12d-9ed74fa8ab29~view:jev3-tn-c5/q",
+   "m2:timeqa:88b35a2f19-4~view:jev3-tn-time-c5/q",
+   "m2:aegis2:d9a660f0a90e471a8f30b7f8f381b043~view:jev3-jev3pol-message/q",
+   "m2:ambignq:1732899639419747956~view:jev3-amb-k4/q",
+   "m2:helpsteer2:7589~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:15239-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:12f0414c62~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/algebra/1007.json~view:jev3-jh-step/q",
+   "m2:tatqa:863aed17-e535-4e2a-8c6f-6d1460945c7d~view:jev3-tn-c3/q",
+   "m2:timeqa:edf5c3b477-1~view:jev3-tn-time-c3/q",
+   "m2:aegis2:86f94e6dd7f7440185e9d141ea71bb1f~view:jev3-jev3pol-message/q",
+   "m2:ambignq:3240942651859718397~view:jev3-amb-k3/q",
+   "m2:helpsteer2:8023~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:23019-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:0d4a5be345~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/number_theory/305.json~view:jev3-jh-all/q",
+   "m2:tatqa:0c9a2926-b51b-4ecb-a73a-ba26236a7872~view:jev3-tn-c4/q",
+   "m2:timeqa:cf3fb9669e-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:3007378c46f54583ae7f5fc7e8024935~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-6888259864192677951~view:jev3-amb-k3/q",
+   "m2:helpsteer2:9368~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:21298-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:abd29b5995~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/98.json~view:jev3-jh-all/q",
+   "m2:tatqa:3ea8901f-fae5-4cf7-812e-a7ef2b27e089~view:jev3-tn-yn/q",
+   "m2:timeqa:32e06dbb64-2~view:jev3-tn-time-yn/q",
+   "m2:aegis2:4665ad9b76b5458cb8ab437a0d121538~view:jev3-jev3pol-message/q",
+   "m2:ambignq:5063898393705140943~view:jev3-amb-k4/q",
+   "m2:helpsteer2:14834~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:28810-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:aa1becb727~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/algebra/322.json~view:jev3-jh-all/q",
+   "m2:tatqa:7700bdc1-cea3-406f-8848-577ba195baff~view:jev3-tn-yn/q",
+   "m2:timeqa:afe39d69ce-3~view:jev3-tn-time-yn/q",
+   "m2:aegis2:f5266d51d61c4143a7fa88e07e15fd92~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-3912964809477172567~view:jev3-amb-k3/q",
+   "m2:helpsteer2:3119~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:17627-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:67d39eb058~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/algebra/1475.json~view:jev3-jh-all/q",
+   "m2:tatqa:15c366af-d696-466b-a7b4-d56928d13cae~view:jev3-tn-c6/q",
+   "m2:timeqa:88b35a2f19-1~view:jev3-tn-time-c5/q",
+   "m2:aegis2:f27cd5b3c0ae403680e3ee665bc0efa8~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-3082047270779824701~view:jev3-amb-k3/q",
+   "m2:helpsteer2:13174~view:jev3-jev3bar-coherence/q",
+   "m2:helpsteer3:30460-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:12896f2ee8~view:jev3-lp-choice-r1/q",
+   "m2:prm800k:train/number_theory/873.json~view:jev3-jh-all/q",
+   "m2:tatqa:91d5f3d0-c5f0-41dd-a12a-916ed52cf82e~view:jev3-tn-yn/q",
+   "m2:timeqa:be509a3bb2-2~view:jev3-tn-time-c3/q",
+   "m2:aegis2:0ea5d9f27e684d94bb53850ab4b12aae~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-5283919567456439969~view:jev3-amb-k3/q",
+   "m2:helpsteer2:11610~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:16682-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:a03985fe04~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/intermediate_algebra/349.json~view:jev3-jh-all/q",
+   "m2:tatqa:0142d0c2-3f8c-4d3c-b3a8-b3a7b8f8cf22~view:jev3-tn-count/q",
+   "m2:timeqa:afe39d69ce-1~view:jev3-tn-time-yn/q",
+   "m2:aegis2:f7fc27eb2ceb48fd966c1f6cddc25c3b~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:-6043912590688854854~view:jev3-amb-k3/q",
+   "m2:helpsteer2:6379~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:15370-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:09d6b74d92~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/precalculus/950.json~view:jev3-jh-all/q",
+   "m2:tatqa:2023a356-7496-4453-ba54-ed4733dedd0a~view:jev3-tn-yn/q",
+   "m2:timeqa:894d5aaed1-3~view:jev3-tn-time-c3/q",
+   "m2:aegis2:6910e19bf822434583d73a257dc08ec4~view:jev3-jev3pol-message/q",
+   "m2:ambignq:2054536745116975268~view:jev3-amb-k3/q",
+   "m2:helpsteer2:301~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:22277-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:94e475e0f8~view:jev3-lp-noul-r0/q",
+   "m2:prm800k:train/precalculus/85.json~view:jev3-jh-step/q",
+   "m2:tatqa:730956bf-1fe1-42a0-8230-1af5ed1284c9~view:jev3-tn-c5/q",
+   "m2:timeqa:bfade7d7ba-2~view:jev3-tn-time-yn/q",
+   "m2:aegis2:bac85ddd562b48edb9ec9dcb083e642e~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-9048779243079411399~view:jev3-amb-k3/q",
+   "m2:helpsteer2:8778~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:14101-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:4890dfde17~view:jev3-lp-score-r1/q",
+   "m2:prm800k:train/counting_and_probability/478.json~view:jev3-jh-step/q",
+   "m2:tatqa:e7b9e4e8-dd80-493d-8332-2e114b57686b~view:jev3-tn-yn/q",
+   "m2:timeqa:6e16102804-5~view:jev3-tn-time-c6/q",
+   "m2:aegis2:769dbc3ab78047e889771632b9050bb6~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:1470572608642113516~view:jev3-amb-k3/q",
+   "m2:helpsteer2:9373~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:27659-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:52df618026~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/algebra/770.json~view:jev3-jh-step/q",
+   "m2:tatqa:0d202966-b9dd-423e-b729-82d28501266f~view:jev3-tn-yn/q",
+   "m2:timeqa:ffd20961c1-1~view:jev3-tn-time-yn/q",
+   "m2:aegis2:0abb026ce40f4528b2a35c3160940ecb~view:jev3-jev3pol-message/q",
+   "m2:ambignq:3271670088178834297~view:jev3-amb-k3/q",
+   "m2:helpsteer2:18300~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:26645-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:0a0fb2c2c6~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/geometry/678.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:bd43aee5-91b4-46f2-b1a7-e91b3a6f9eb2~view:jev3-tn-yn/q",
+   "m2:timeqa:88b35a2f19-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:99635d50eec44e478af92a9c9637e0e0~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:-3652456346988708411~view:jev3-amb-k3/q",
+   "m2:helpsteer2:10016~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:27388-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:85ae6ef8ce~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/399.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:123811f4-c27e-4625-891c-7f863db389c7~view:jev3-tn-count/q",
+   "m2:timeqa:8ecafef578-1~view:jev3-tn-time-c3/q",
+   "m2:aegis2:e6a4a1f9a38244d2bc3f5e106e7c9149~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:-2279466021312477251~view:jev3-amb-k3/q",
+   "m2:helpsteer2:1949~view:jev3-jev3bar-coherence/q",
+   "m2:helpsteer3:18610-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:f6882a5091~view:jev3-lp-noul-r0/q",
+   "m2:prm800k:train/intermediate_algebra/19.json~view:jev3-jh-all/q",
+   "m2:tatqa:807f645e-a90c-44a1-858a-17ec90b5900b~view:jev3-tn-yn/q",
+   "m2:timeqa:6e16102804-0~view:jev3-tn-time-c4/q",
+   "m2:aegis2:bbda36089198446f9528fceb48e6f2f2~view:jev3-jev3pol-message/q",
+   "m2:ambignq:614103533538969407~view:jev3-amb-k3/q",
+   "m2:helpsteer2:11470~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:12744-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:483d017fbd~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/1629.json~view:jev3-jh-all/q",
+   "m2:tatqa:3be74b45-d80e-4b2b-9bcc-5bfe731036d4~view:jev3-tn-yn/q",
+   "m2:timeqa:b42216fbd4-2~view:jev3-tn-time-c5/q",
+   "m2:aegis2:8730082284a1422981e7d6b8c9bf0139~view:jev3-jev3pol-message/q",
+   "m2:ambignq:6682685195140867582~view:jev3-amb-k3/q",
+   "m2:helpsteer2:17526~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:12891-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:93a9da82d9~view:jev3-lp-noul-r0/q",
+   "m2:prm800k:train/algebra/2730.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:28c09b02-a5d8-4ecf-921d-b89a3be3e217~view:jev3-tn-yn/q",
+   "m2:timeqa:88b35a2f19-3~view:jev3-tn-time-c3/q",
+   "m2:aegis2:01fc46b70aff4619887e44464ed54c54~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-9151677412578049720~view:jev3-amb-k3/q",
+   "m2:helpsteer2:10281~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:30417-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:fc07a44589~view:jev3-lp-noul-r0/q",
+   "m2:prm800k:train/algebra/1330.json~view:jev3-jh-all/q",
+   "m2:tatqa:66210694-acb9-4386-b71e-930cb2ba0da0~view:jev3-tn-c4/q",
+   "m2:timeqa:8388bc2d54-1~view:jev3-tn-time-yn/q",
+   "m2:aegis2:7fa0beb0052b42d79da50239ca91b020~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:-1988657307358981823~view:jev3-amb-k4/q",
+   "m2:helpsteer2:11081~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:13187-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:898a0965b7~view:jev3-lp-noul-r0/q",
+   "m2:prm800k:train/algebra/2601.json~view:jev3-jh-all/q",
+   "m2:tatqa:18325315-ca12-42ec-9fe0-8da02420965f~view:jev3-tn-c3/q",
+   "m2:timeqa:6e16102804-7~view:jev3-tn-time-c5/q",
+   "m2:aegis2:d45192a582854fd69e49c142e8f269a5~view:jev3-jev3pol-message/q",
+   "m2:ambignq:3038488362368423274~view:jev3-amb-k4/q",
+   "m2:helpsteer2:14421~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:28752-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:0089d41d7f~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/intermediate_algebra/1362.json~view:jev3-jh-all/q",
+   "m2:tatqa:2c719108-1686-4600-8757-af143052fc8f~view:jev3-tn-c5/q",
+   "m2:timeqa:6bf7d33024-1~view:jev3-tn-time-yn/q",
+   "m2:aegis2:5cc75d9f7f27400ab78393daa85234d6~view:jev3-jev3pol-message/q",
+   "m2:ambignq:8171543720735333501~view:jev3-amb-k3/q",
+   "m2:helpsteer2:5808~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:29823-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:478d18575d~view:jev3-lp-noul-r0/q",
+   "m2:prm800k:train/intermediate_algebra/1469.json~view:jev3-jh-all/q",
+   "m2:tatqa:98e3a187-8947-41d6-a719-5e0573ece47c~view:jev3-tn-count/q",
+   "m2:timeqa:077899d308-0~view:jev3-tn-time-c3/q",
+   "m2:aegis2:0cc9750b420e43c9b16ea1109ce77574~view:jev3-jev3pol-message/q",
+   "m2:ambignq:2205307574948120843~view:jev3-amb-k3/q",
+   "m2:helpsteer2:17617~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:17197-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:3e2c626238~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/1882.json~view:jev3-jh-all/q",
+   "m2:tatqa:6b6bd6bb-7296-4c05-a358-a3f8de8342ec~view:jev3-tn-yn/q",
+   "m2:timeqa:b42216fbd4-3~view:jev3-tn-time-yn/q",
+   "m2:aegis2:796e0ac5a63341628833c8408a4b7e03~view:jev3-jev3pol-category/q",
+   "m2:ambignq:-3620308253862872969~view:jev3-amb-k3/q",
+   "m2:helpsteer2:18538~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:26206-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:1e799fcccf~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/intermediate_algebra/505.json~view:jev3-jh-all/q",
+   "m2:tatqa:a77e724f-fefb-435a-a591-ea44fcdaae1f~view:jev3-tn-yn/q",
+   "m2:timeqa:b0d7f6eebf-0~view:jev3-tn-time-c3/q",
+   "m2:aegis2:e6b249787eab4be583532923f1b5d2c0~view:jev3-jev3pol-message/q",
+   "m2:ambignq:8443066589371036269~view:jev3-amb-k3/q",
+   "m2:helpsteer2:4559~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:23176-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:0d0f65826c~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/number_theory/768.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:0aca3852-d17c-4ef4-8ef4-108bffbb8ea1~view:jev3-tn-c4/q",
+   "m2:timeqa:6ec168346b-1~view:jev3-tn-time-c3/q",
+   "m2:aegis2:bd0c7b54033e42198bc881c8c2fba384~view:jev3-jev3pol-message/q",
+   "m2:ambignq:4073422343565987327~view:jev3-amb-k4/q",
+   "m2:helpsteer2:6142~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:16032-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:44f64d3625~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/196.json~view:jev3-jh-step/q",
+   "m2:tatqa:dd47151a-e645-492f-af54-08e3e5b4254d~view:jev3-tn-c5/q",
+   "m2:timeqa:625b352839-0~view:jev3-tn-time-c3/q",
+   "m2:aegis2:6564d8c981394fa5af18a96eb2f2236e~view:jev3-jev3pol-message/q",
+   "m2:ambignq:5457626066017413026~view:jev3-amb-k3/q",
+   "m2:helpsteer2:1783~view:jev3-jev3bar-coherence/q",
+   "m2:helpsteer3:10020-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:ae4784d0ee~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/counting_and_probability/360.json~view:jev3-jh-step/q",
+   "m2:tatqa:d485759b-37c4-49a9-a33a-a39eb973b92a~view:jev3-tn-yn/q",
+   "m2:timeqa:b42216fbd4-1~view:jev3-tn-time-c5/q",
+   "m2:aegis2:44437c1ebff84468969d45ae1fa5abdb~view:jev3-jev3pol-message/q",
+   "m2:ambignq:1266845414956490286~view:jev3-amb-k3/q",
+   "m2:helpsteer2:10245~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:9501-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:d72c30c06c~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/counting_and_probability/597.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:02de36cb-deb6-4b83-acf0-79edca90c728~view:jev3-tn-yn/q",
+   "m2:timeqa:894d5aaed1-4~view:jev3-tn-time-c3/q",
+   "m2:aegis2:8541ed9dce39474eaf832561e9a7c256~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-2498431943961521881~view:jev3-amb-k3/q",
+   "m2:helpsteer2:13968~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:24940-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:555f5f7901~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/precalculus/129.json~view:jev3-jh-all/q",
+   "m2:tatqa:07a9c21a-55dd-4158-a16e-c401e13fd6da~view:jev3-tn-c6/q",
+   "m2:timeqa:be509a3bb2-0~view:jev3-tn-time-c3/q",
+   "m2:aegis2:2bce69d262ac4056a63c74afbd5f2bdd~view:jev3-jev3pol-message/q",
+   "m2:ambignq:1441682718751489437~view:jev3-amb-k4/q",
+   "m2:helpsteer2:5532~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:21676-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:bf6533564b~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/precalculus/1220.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:98a8a0aa-9063-467e-90e6-f11da642550e~view:jev3-tn-yn/q",
+   "m2:timeqa:63d7c15e81-1~view:jev3-tn-time-c5/q",
+   "m2:aegis2:4b932c9e4a3a40f992a8076250e895e5~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:-8314608371226617031~view:jev3-amb-k3/q",
+   "m2:helpsteer2:11313~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:27301-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:4590ea7916~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/number_theory/7034.json~view:jev3-jh-all/q",
+   "m2:tatqa:d4db58c4-659b-4350-9093-83f4f1ad72ae~view:jev3-tn-c5/q",
+   "m2:timeqa:625b352839-2~view:jev3-tn-time-c3/q",
+   "m2:aegis2:2a8043a5a5a9431795bd52572e61685a~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-918354977905091656~view:jev3-amb-k4/q",
+   "m2:helpsteer2:2512~view:jev3-jev3bar-coherence/q",
+   "m2:helpsteer3:9071-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:fc677eefe9~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/number_theory/7033.json~view:jev3-jh-all/q",
+   "m2:tatqa:87717744-bc5f-45f1-b3ac-1b44f134da3c~view:jev3-tn-c4/q",
+   "m2:timeqa:6ec168346b-3~view:jev3-tn-time-yn/q",
+   "m2:aegis2:5dd4f34082a6437d8b8c287c0cb83685~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:-3122279817334284547~view:jev3-amb-k3/q",
+   "m2:helpsteer2:7970~view:jev3-jev3bar-coherence/q",
+   "m2:helpsteer3:22673-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:aeefcdd12b~view:jev3-lp-score-r1/q",
+   "m2:prm800k:train/geometry/596.json~view:jev3-jh-all/q",
+   "m2:tatqa:1dd5da67-e619-4117-8336-fe86baae0244~view:jev3-tn-yn/q",
+   "m2:timeqa:b5cc036f16-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:3cca2e0d470a4250ade2bdf5beffc72b~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:-4518510921859807231~view:jev3-amb-k3/q",
+   "m2:helpsteer2:16147~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:15781-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:99388c3c36~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/1996.json~view:jev3-jh-all/q",
+   "m2:tatqa:5065a4f0-0cc6-4693-a51a-dcfce2801211~view:jev3-tn-c4/q",
+   "m2:timeqa:06d254e71b-1~view:jev3-tn-time-c3/q",
+   "m2:aegis2:ec1aa8357b8547508aa5b060b7aee733~view:jev3-jev3pol-category/q",
+   "m2:ambignq:218459979141227855~view:jev3-amb-k3/q",
+   "m2:helpsteer2:6501~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:13205-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:187b45fdbb~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/number_theory/331.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:f440390f-d988-4765-b573-273d5e351be2~view:jev3-tn-c5/q",
+   "m2:timeqa:673c326fc2-1~view:jev3-tn-time-c4/q"
+  ],
+  "ids_sha256": "8f313487c8d6a92651e7213de1fe7b0e451d53cc518d14f17c561ee56a6cada6"
+ },
+ "train_clock": {
+  "step": 200,
+  "used_s": 921.3562755584717
+ },
+ "best_export": {
+  "step": 150,
+  "file": "trainable-step0000150.safetensors",
+  "sha256": "8e9360083ad6b6ea705a7b72afd93ee88bb6b74daefa1ebb1eaafa640e025c89"
+ },
+ "dev_cards": [
+  {
+   "step": 0,
+   "n_items": 360,
+   "nll": 0.741261501748981,
+   "accuracy": 0.6777777777777778,
+   "best": true
+  },
+  {
+   "step": 50,
+   "n_items": 360,
+   "nll": 0.6423585006398951,
+   "accuracy": 0.6916666666666667,
+   "best": true
+  },
+  {
+   "step": 100,
+   "n_items": 360,
+   "nll": 0.6183399512823433,
+   "accuracy": 0.7055555555555556,
+   "best": true
+  },
+  {
+   "step": 150,
+   "n_items": 360,
+   "nll": 0.5772574858044974,
+   "accuracy": 0.7277777777777777,
+   "best": true
+  },
+  {
+   "step": 200,
+   "n_items": 360,
+   "nll": 0.5811461521665181,
+   "accuracy": 0.7194444444444444,
+   "best": false
+  }
+ ],
+ "collapse_events": [],
+ "best": {
+  "step": 150,
+  "nll": 0.5772574858044974,
+  "accuracy": 0.7277777777777777,
+  "path": "ckpt-step0000150.pt"
+ },
+ "train_clock_resume": {
+  "resumed": false,
+  "step": 0,
+  "used_s_before": 0.0,
+  "left_s": 1320.0
+ },
+ "lr_horizon": {
+  "step": 200,
+  "fixed_at_step": 0,
+  "source": "lr_horizon_steps"
+ },
+ "train_rate_check": {
+  "step_s": 3.5182872295379637,
+  "minutes_left": 21.41361874739329,
+  "affordable_steps": 365.18255646010033,
+  "need_steps": 100,
+  "too_slow": false
+ },
+ "train": {
+  "steps": 200,
+  "resumed": false,
+  "T_max": 4096,
+  "cards": [
+   {
+    "step": 0,
+    "n_items": 1130,
+    "cohort": null,
+    "raw": {
+     "n": 1130,
+     "accuracy": 0.8176991150442477,
+     "nll": 0.4679768620747738,
+     "brier": 0.24491500206304206,
+     "ece_binned15": 0.038162845636891075,
+     "ece_debiased": {
+      "debiased_l2": 0.04904572374738868,
+      "debiased_sq": 0.0024054830179051656,
+      "bins": 15
+     },
+     "mean_conf": 0.8460463656788378,
+     "by_length_bin": {
+      "[0,512)": {
+       "n": 964,
+       "accuracy": 0.8163900414937759,
+       "ece_debiased": {
+        "debiased_l2": 0.046282574569832244,
+        "debiased_sq": 0.0021420767088120825,
+        "bins": 15
+       }
+      },
+      "[2048,8192)": {
+       "n": 29,
+       "accuracy": 0.8620689655172413,
+       "ece_debiased": {
+        "debiased_l2": 0.0,
+        "debiased_sq": -0.02515522426844753,
+        "bins": 14
+       }
+      },
+      "[512,2048)": {
+       "n": 137,
+       "accuracy": 0.8175182481751825,
+       "ece_debiased": {
+        "debiased_l2": 0.11408712621199503,
+        "debiased_sq": 0.013015872367311684,
+        "bins": 15
+       }
+      }
+     }
+    },
+    "index_score": {
+     "status": "stub",
+     "reason": "no Index dev-slice rows/predictor passed"
+    },
+    "steer": {
+     "status": "stub",
+     "reason": "no steer variants/decider passed"
+    },
+    "seconds": 135.721
+   },
+   {
+    "step": 200,
+    "n_items": 1130,
+    "cohort": null,
+    "raw": {
+     "n": 1130,
+     "accuracy": 0.8530973451327434,
+     "nll": 0.423517159975533,
+     "brier": 0.2150190727308262,
+     "ece_binned15": 0.06650083800860213,
+     "ece_debiased": {
+      "debiased_l2": 0.07087721416058396,
+      "debiased_sq": 0.005023579487165282,
+      "bins": 15
+     },
+     "mean_conf": 0.7892554367274309,
+     "by_length_bin": {
+      "[0,512)": {
+       "n": 964,
+       "accuracy": 0.8516597510373444,
+       "ece_debiased": {
+        "debiased_l2": 0.07431257481056805,
+        "debiased_sq": 0.005522358774976274,
+        "bins": 15
+       }
+      },
+      "[2048,8192)": {
+       "n": 29,
+       "accuracy": 0.896551724137931,
+       "ece_debiased": {
+        "debiased_l2": 0.0,
+        "debiased_sq": -0.00427702102591489,
+        "bins": 14
+       }
+      },
+      "[512,2048)": {
+       "n": 137,
+       "accuracy": 0.8540145985401459,
+       "ece_debiased": {
+        "debiased_l2": 0.01820280589396419,
+        "debiased_sq": 0.0003313421424133375,
+        "bins": 15
+       }
+      }
+     }
+    },
+    "index_score": {
+     "status": "stub",
+     "reason": "no Index dev-slice rows/predictor passed"
+    },
+    "steer": {
+     "status": "stub",
+     "reason": "no steer variants/decider passed"
+    },
+    "seconds": 66.475
+   }
+  ],
+  "lineage": {
+   "backbone": {
+    "spec": "qwen3.5-4b-stock",
+    "class": "Qwen3_5TextModel",
+    "config_sha256": "5180a154a329b975ba7ee22354176b7c1b67cc5d8fb69f19d5880d3094b35959",
+    "name_or_path": "",
+    "commit_hash": null,
+    "capture": "hidden_states",
+    "layer": -1,
+    "provenance": {
+     "kind": "qwen35-stock",
+     "repo": "Qwen/Qwen3.5-4B",
+     "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+     "config_sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+     "attention_free": false
+    },
+    "weights_digest": "39b8384b37181392c08057820e4e4eab23a1aca362e3e743e4624b7c37fc2e7b",
+    "weights_digest_mode": "sampled"
+   },
+   "tokenizer": [
+    "{\"kind\": \"hf\", \"name_or_path\": \"/hfcache/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a\", \"untrusted\": {\"id\": \"untrusted-split-special+cut-leaking-added-v1\", \"n_control_ids\": 33}, \"vocab_sha256\": \"7ef6def600d70a2dbf3c4f35b73db100a74bf2936b7f4b805e91ad184b7aabce\"}"
+   ],
+   "layout": {
+    "layouts": [
+     [
+      "g1v2",
+      "jrt-h2o-shim:qwen3.5-4b"
+     ]
+    ],
+    "body_version": "jrt-body-v2-segmented",
+    "layout_version": "m2-layout-v2"
+   },
+   "data": {
+    "n": 5836,
+    "sha256": "ca89b901c28e639c24296da4e0186728cb3adcb531b6d40e3be83fcf3743cefc",
+    "order_fn": "randperm(seed*100003+epoch); batches = consecutive bs-slices; partial tail dropped"
+   }
+  },
+  "verdict": {
+   "pass": true,
+   "checks": {
+    "finite": true,
+    "enough_steps": true,
+    "loss_drop": true,
+    "eval_nll_improves": true,
+    "memory": true
+   },
+   "loss_first": 1.2781279808995896,
+   "loss_last": 1.0975186170404776,
+   "loss_drop_frac": 0.14130773017893952,
+   "eval_nll_first": 0.4679768620747738,
+   "eval_nll_last": 0.423517159975533,
+   "peak_gb": 17.74514176
+  },
+  "anti_collapse": {
+   "horizon": 200,
+   "horizon_fixed": true,
+   "lr_scale": 1.0,
+   "dev_cards": [
+    {
+     "step": 0,
+     "n_items": 360,
+     "nll": 0.741261501748981,
+     "accuracy": 0.6777777777777778,
+     "best": true
+    },
+    {
+     "step": 50,
+     "n_items": 360,
+     "nll": 0.6423585006398951,
+     "accuracy": 0.6916666666666667,
+     "best": true
+    },
+    {
+     "step": 100,
+     "n_items": 360,
+     "nll": 0.6183399512823433,
+     "accuracy": 0.7055555555555556,
+     "best": true
+    },
+    {
+     "step": 150,
+     "n_items": 360,
+     "nll": 0.5772574858044974,
+     "accuracy": 0.7277777777777777,
+     "best": true
+    },
+    {
+     "step": 200,
+     "n_items": 360,
+     "nll": 0.5811461521665181,
+     "accuracy": 0.7194444444444444,
+     "best": false
+    }
+   ],
+   "best": {
+    "step": 150,
+    "nll": 0.5772574858044974,
+    "accuracy": 0.7277777777777777,
+    "path": "ckpt-step0000150.pt"
+   },
+   "collapse_events": [],
+   "stopped": null,
+   "guard_armed": true,
+   "guard_mode": "start",
+   "guard_ref": 1.2781279808995896,
+   "guard_window": [
+    [
+     1.7462007803842425,
+     1.5809703469276428
+    ],
+    [
+     1.137295771855861,
+     1.416700005531311
+    ],
+    [
+     1.9351881369948387,
+     1.717879742383957
+    ],
+    [
+     0.32206062506884336,
+     1.5866897404193878
+    ],
+    [
+     1.4397396382992156,
+     1.4905318319797516
+    ],
+    [
+     0.9385462338104844,
+     1.407696545124054
+    ],
+    [
+     0.6512684617191553,
+     1.5004504323005676
+    ],
+    [
+     1.1879501106450334,
+     1.5719668865203857
+    ],
+    [
+     1.4835741140996106,
+     1.8638056516647339
+    ],
+    [
+     0.6915094014257193,
+     1.597106397151947
+    ],
+    [
+     1.0705458845186513,
+     1.7014451026916504
+    ],
+    [
+     0.625217642635107,
+     1.5004504323005676
+    ],
+    [
+     1.2198986141011119,
+     1.3474989235401154
+    ],
+    [
+     0.8777464544400573,
+     1.4696984887123108
+    ],
+    [
+     0.8436121109407395,
+     1.3825570344924927
+    ],
+    [
+     0.9081704700365663,
+     1.2646636366844177
+    ],
+    [
+     1.0470165042206645,
+     1.2646636366844177
+    ],
+    [
+     1.3781087077222764,
+     1.407696545124054
+    ],
+    [
+     1.0881822109222412,
+     1.5468273758888245
+    ],
+    [
+     0.7571243029087782,
+     1.3825570344924927
+    ],
+    [
+     1.0115097942762077,
+     1.506966471672058
+    ],
+    [
+     0.40146299125626683,
+     1.4289339780807495
+    ],
+    [
+     1.2550381179898977,
+     1.5615502297878265
+    ],
+    [
+     1.4818585570901632,
+     1.8068385422229767
+    ],
+    [
+     0.9414312122389674,
+     1.606109857559204
+    ],
+    [
+     1.0435605235397816,
+     1.407696545124054
+    ],
+    [
+     1.2009444991126657,
+     1.5809703469276428
+    ],
+    [
+     0.8268885035067797,
+     1.4630769491195679
+    ],
+    [
+     0.8616658989340067,
+     1.7604615986347198
+    ],
+    [
+     1.5418062172830105,
+     1.5875918865203857
+    ],
+    [
+     1.0867924131453037,
+     1.6153453588485718
+    ],
+    [
+     1.0095964465290308,
+     1.5257164537906647
+    ],
+    [
+     1.105787834734656,
+     1.5965953171253204
+    ],
+    [
+     0.9554416795435827,
+     1.4882164597511292
+    ],
+    [
+     0.6489379964768887,
+     1.3361800909042358
+    ],
+    [
+     1.809813036583364,
+     1.407696545124054
+    ],
+    [
+     1.297258649021387,
+     1.7387261092662811
+    ],
+    [
+     0.42956632003188133,
+     1.345183551311493
+    ],
+    [
+     0.7690390776842833,
+     1.3825570344924927
+    ],
+    [
+     0.9312075250199996,
+     1.5719668865203857
+    ],
+    [
+     1.1880139210261405,
+     1.4653923213481903
+    ],
+    [
+     1.8333105593919754,
+     1.597106397151947
+    ],
+    [
+     1.211905475705862,
+     1.9101825952529907
+    ],
+    [
+     1.1117496034130454,
+     1.621734857559204
+    ],
+    [
+     0.8759578295284882,
+     1.4882164597511292
+    ],
+    [
+     0.6731731351464987,
+     1.3361800909042358
+    ],
+    [
+     1.053560132626444,
+     1.652486801147461
+    ],
+    [
+     1.7580941459164023,
+     1.724003255367279
+    ],
+    [
+     0.993839199305512,
+     1.8045231699943542
+    ],
+    [
+     2.217763379216194,
+     1.5470933616161346
+    ]
+   ]
+  }
+ }
+}

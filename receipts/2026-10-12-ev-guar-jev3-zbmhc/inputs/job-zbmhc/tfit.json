@@ -1,0 +1,62 @@
+{
+ "T": 1.0014694896309733,
+ "nll_T": 0.6152554437906332,
+ "nll_1": 0.6166168207132842,
+ "n": 1200,
+ "bounds": [
+  0.25,
+  4.0
+ ],
+ "at_bound": false,
+ "T_nll": 1.0921024146773004,
+ "band_T1": 0.39541160593792174,
+ "band_T_nll": 0.43859649122807015,
+ "constrained": true,
+ "band_T": 0.39541160593792174,
+ "nll_T_nll": 0.6152554437906332,
+ "n_noul": 741,
+ "records": "/data/m2-jev3-calib/records.jsonl.gz",
+ "records_gz_sha256": "00fafdae46e77d39078f7a798d031f3c6f4fa2f4d07148fb706b8d8d034aadb6",
+ "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078",
+ "calib_probs": "calib_probs.jsonl (per-option probabilities of every slice decision, untempered)",
+ "rule": "scalar T = the NLL minimiser over all calib questions (bounded), moved toward 1 if it would raise the slice's yes/no 0.2-0.8 band rate above T = 1's; fitted before any eval answer is tempered",
+ "per_type": {
+  "min_cell": 200,
+  "types": {
+   "choice": {
+    "T": 1.0238394420253498,
+    "n": 416,
+    "nll_T": 0.8324192780513378,
+    "nll_1": 0.8325573066430041,
+    "at_bound": false
+   },
+   "noul": {
+    "T": 0.2606436063705284,
+    "nll_T": 0.9973799985689121,
+    "band_T": 0.10661268556005399,
+    "feasible": false,
+    "threshold": 0.05,
+    "n": 741,
+    "nll_1": 0.470118610154607,
+    "band_T1": 0.39541160593792174,
+    "flag": "no T in [lo, hi] meets the band threshold: T with the lowest band rate"
+   },
+   "score": {
+    "T": 0.42890935622702814,
+    "n": 43,
+    "nll_T": 0.9276235664566908,
+    "nll_1": 1.0520570969276544,
+    "at_bound": false
+   }
+  },
+  "cells": {
+   "choice:3": {
+    "T": 0.9547516732567366,
+    "n": 209,
+    "at_bound": false
+   }
+  },
+  "rule": "T_noul is chosen to minimise slice NLL subject to slice yes/no band rate <= stock's + 0.05 (stock = the in-job stock + shim readout on the same slice); choice / score T = the slice-NLL minimiser (+ (type, K) cells with >= min_cell decisions)",
+  "stock_noul_band": 0.0
+ }
+}
