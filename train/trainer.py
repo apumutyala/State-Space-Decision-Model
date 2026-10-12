@@ -147,11 +147,16 @@ class TrainConfig:
     #: consistency-view training (docs/CONSISTENCY.md; ``consistency_spec``). Empty = OFF: left out of to_json / the
     #: hash and never read by the step, so an OFF run is the old run bit for bit (tests/test_consistency.py).
     consistency: dict = field(default_factory=dict)
+    #: JEV3-SYM-NU decisiveness constraint on yes/no (noul) rows (``decisive_spec``). Empty = OFF: left out of to_json /
+    #: the hash and never read by the step, so an OFF run is the old run bit for bit (tests/test_jev3_sym_nu.py).
+    decisive: dict = field(default_factory=dict)
 
     def to_json(self) -> dict:
         d = asdict(self)
         if not d["consistency"]:
             d.pop("consistency")  # OFF: old records, hashes and checkpoints byte-identical
+        if not d["decisive"]:
+            d.pop("decisive")  # OFF: old records, hashes and checkpoints byte-identical
         d["loss"] = self.loss.identity()  # optional KD/order-consistency fields only when enabled (old hashes unchanged)
         if d["axis_loss_weight"] == 0.0:
             d.pop("axis_loss_weight")  # preserve legacy config identities
@@ -225,6 +230,60 @@ def consistency_spec(block: dict) -> dict:
             raise ValueError("consistency.controller.epsilon must be > 0")
         s["controller"] = {k: float(v) for k, v in c.items()}
     return s
+
+
+#: ``TrainConfig.decisive`` keys -> defaults (``decisive_spec``). margin 0.3 = jevkit's yes/no band (0.2, 0.8): the
+#: penalty relu(margin - |p_true - 0.5|) is > 0 exactly on the rows jevkit scores as wrong for being undecided.
+DECISIVE_DEFAULTS = {"margin": 0.3, "epsilon": 0.005, "lambda": 0.0, "controller": None, "select_band_max": None}
+DECISIVE_CONTROLLER_KEYS = {"kappa_p", "kappa_i", "nu", "lambda_init", "lambda_max"}
+NOUL_BAND = (0.2, 0.8)  # == jobs.m2_first_cell.screen.NOUL_BAND (strict inequalities, jevkit's scoring band)
+
+
+def decisive_spec(block: dict) -> dict:
+    """The validated, defaults-filled decisiveness block, or {} (OFF) for an empty / absent block.
+
+    g = mean over the step's noul rows of relu(margin - |p_true - 0.5|) (a smooth-enough band penalty; 0 outside the
+    band); the step objective adds lambda_d * sum_noul_rows(penalty) / n_rows (expressed per base row, like the
+    consistency term). With a ``controller`` {kappa_p, kappa_i, nu, lambda_init, lambda_max}, lambda_d is the nuPI
+    multiplier (train.pi_control.PIController) of the constraint g <= epsilon, updated once per optimiser step from the
+    step's measured g; without one, lambda_d = ``lambda`` (fixed; 0 = the measured-only OFF-arm ablation).
+    ``select_band_max``: None = best checkpoint by dev-card NLL as before; a float = band-feasible selection (a dev card
+    whose noul band rate is > select_band_max ranks after every feasible card; among infeasible cards the lower band
+    rate wins)."""
+    if not block:
+        return {}
+    if not isinstance(block, dict) or set(block) - set(DECISIVE_DEFAULTS):
+        raise ValueError(f"decisive: unknown keys {sorted(set(block) - set(DECISIVE_DEFAULTS))}")
+    s = {**DECISIVE_DEFAULTS, **block}
+    for k in ("margin", "epsilon", "lambda"):
+        if type(s[k]) not in (int, float) or not 0.0 <= float(s[k]) < float("inf"):
+            raise ValueError(f"decisive.{k} must be finite and >= 0")
+        s[k] = float(s[k])
+    if not 0.0 < s["margin"] <= 0.5:
+        raise ValueError("decisive.margin must be in (0, 0.5]")
+    sb = s["select_band_max"]
+    if sb is not None and (type(sb) not in (int, float) or not 0.0 <= float(sb) <= 1.0):
+        raise ValueError("decisive.select_band_max must be None or in [0, 1]")
+    s["select_band_max"] = None if sb is None else float(sb)
+    c = s["controller"]
+    if c is not None:
+        if not isinstance(c, dict) or set(c) != DECISIVE_CONTROLLER_KEYS:
+            raise ValueError(f"decisive.controller must have exactly the keys {sorted(DECISIVE_CONTROLLER_KEYS)}")
+        if any(type(v) not in (int, float) or not math.isfinite(float(v)) for v in c.values()):
+            raise ValueError("decisive.controller values must be finite numbers")
+        s["controller"] = {k: float(v) for k, v in c.items()}
+    return s
+
+
+def noul_band_stats(probs: list[list[float]], qtypes: list[str], margin: float = 0.3) -> dict[str, Any]:
+    """Band rate (P(option 0) strictly inside NOUL_BAND) and the mean penalty g over the 2-option noul rows. The band
+    and the penalty are symmetric in the two options, so the option order (true/false or content-canonical) is moot."""
+    ps = [float(p[0]) for p, q in zip(probs, qtypes) if q == "noul" and len(p) == 2]
+    n = len(ps)
+    k = sum(1 for p in ps if NOUL_BAND[0] < p < NOUL_BAND[1])
+    g = sum(max(0.0, margin - abs(p - 0.5)) for p in ps)
+    return {"rate": (k / n) if n else None, "in_band": k, "n": n, "g": (g / n) if n else None,
+            "band": list(NOUL_BAND)}
 
 
 def with_execution(cfg: TrainConfig, cell: dict) -> TrainConfig:
@@ -566,6 +625,21 @@ class Trainer:
                                               ctl["lambda_max"], integral_min=imin)
             self.cons_lambda = float(ctl["lambda_init"] if ctl is not None else self.cons["lambda"])
             self._cons_kl, self._cons_n = 0.0, 0
+        #: decisiveness constraint on noul rows ({} = OFF: none of the code below the checks reads it)
+        self.dec = decisive_spec(cfg.decisive)
+        self.dec_ctrl = None
+        self.warm: dict[str, Any] | None = None  # ``warm_start`` identity (None = trained from the LoRA / head init)
+        if self.dec:
+            dctl = self.dec["controller"]
+            if dctl is not None:
+                from .pi_control import PIController
+
+                # as for consistency: integral_min = -lambda_init / kappa_i lets the I term wind a warm start back to 0
+                imin = -dctl["lambda_init"] / dctl["kappa_i"] if dctl["kappa_i"] > 0 else 0.0
+                self.dec_ctrl = PIController(dctl["kappa_p"], dctl["kappa_i"], dctl["nu"], dctl["lambda_init"],
+                                             dctl["lambda_max"], integral_min=imin)
+            self.dec_lambda = float(dctl["lambda_init"] if dctl is not None else self.dec["lambda"])
+            self._dec_pen, self._dec_n, self._dec_band = 0.0, 0, 0
 
     # ------------------------------------------------------------------ LR schedule
     def lr_factor(self, s: int) -> float:
@@ -611,8 +685,11 @@ class Trainer:
         its = self.dev_items(items)
         if not its:
             return None
-        card = run_card(self.model, its, self.step, out_dir)
-        card.pop("units", None)
+        card = run_card(self.model, its, self.step, out_dir, keep_units=bool(self.dec))
+        units = card.pop("units", None)
+        if self.dec and units is not None:  # JEV3-SYM-NU: the in-training noul band rate on the dev-card (slice) rows
+            card["noul_band"] = noul_band_stats(units["decision_probs"], [i.row.qtype for i in its],
+                                                self.dec["margin"])
         self.consider_card(card)
         return card
 
@@ -622,6 +699,16 @@ class Trainer:
         nll, acc = raw.get("nll", float("nan")), raw.get("accuracy", float("nan"))
         return (nll if math.isfinite(nll) else float("inf"), -(acc if math.isfinite(acc) else -1.0))
 
+    def _select_key(self, nll: float, acc: float, band: float | None) -> tuple:
+        """Best-checkpoint order (lower is better). Default: (NLL, -accuracy). With decisive.select_band_max: band-
+        feasible cards first (rate <= max), then, among infeasible cards, the lower band rate; NLL / accuracy after."""
+        sb = self.dec.get("select_band_max") if self.dec else None
+        if sb is None:
+            return (nll, -acc)
+        b = 1.0 if band is None else float(band)
+        feasible = b <= sb
+        return (0 if feasible else 1, 0.0 if feasible else b, nll, -acc)
+
     def consider_card(self, card: dict) -> dict:
         """Log a dev card; if it is the best so far (lowest NLL, tie -> higher accuracy) and ``best_ckpt``, save its
         checkpoint as the best. With ``collapse_guard``, an accuracy below collapse_acc_frac x the best card's fires
@@ -629,15 +716,22 @@ class Trainer:
         raw = card.get("raw") or {}
         entry = {"step": card["step"], "n_items": card.get("n_items"), "nll": raw.get("nll"),
                  "accuracy": raw.get("accuracy"), "best": False}
+        if "noul_band" in card:
+            entry["noul_band"] = card["noul_band"]
+            entry["dec_lambda"] = self.dec_lambda
         if (self.cfg.collapse_guard and not self.stopped and self.best is not None and entry["accuracy"] is not None
                 and entry["accuracy"] < self.cfg.collapse_acc_frac * self.best["accuracy"]):
             self.dev_cards.append(entry)
             self.collapse("dev_accuracy", accuracy=entry["accuracy"], best_accuracy=self.best["accuracy"])
             return entry
-        if self.best is None or self._card_key(card) < (self.best["nll"], -self.best["accuracy"]):
+        nll_k, acc_k = self._card_key(card)
+        band = (card.get("noul_band") or {}).get("rate")
+        if self.best is None or self._select_key(nll_k, -acc_k, band) < self._select_key(
+                self.best["nll"], self.best["accuracy"], self.best.get("noul_band_rate")):
             entry["best"] = True
-            nll, acc = self._card_key(card)
-            self.best = {"step": card["step"], "nll": nll, "accuracy": -acc}
+            self.best = {"step": card["step"], "nll": nll_k, "accuracy": -acc_k}
+            if self.dec and self.dec.get("select_band_max") is not None:
+                self.best["noul_band_rate"] = band
             if self.cfg.best_ckpt and self.cfg.ckpt_dir:
                 self.best["path"] = f"ckpt-step{self.step:07d}.pt"
                 self.save()  # the step's checkpoint; latest.json carries the best pointer
@@ -776,6 +870,11 @@ class Trainer:
                                                 len(paired), weight_order)
         if self.cons:
             loss = loss + self._consistency_term(lp, batch)  # the uniform predictor's KL is 0: ref unchanged
+        if self.dec:
+            term, n_noul = self._decisive_term(lp, batch)
+            loss = loss + term
+            if ref is not None and n_noul:  # the uniform predictor (p = 0.5) pays the full margin on every noul row
+                ref = ref + self.dec_lambda * self.dec["margin"] * n_noul / len(batch)
         weight = self.cfg.axis_loss_weight
         if type(weight) not in (int, float) or not 0 <= weight < float("inf"):
             raise ValueError("axis_loss_weight must be finite and nonnegative")
@@ -824,12 +923,80 @@ class Trainer:
         self._cons_n += len(idx)
         return (len(idx) / len(batch)) * self.cons_lambda * kl.mean()
 
+    def _decisive_term(self, lp: torch.Tensor, batch: list[Item]) -> tuple[torch.Tensor, int]:
+        """``lambda_d * sum_{noul rows} relu(margin - |p_true - 0.5|) / n_rows`` (per base row, like the consistency
+        term) and the number of noul rows. ``lp`` is the head's option log-probabilities (padded options = -inf); a noul
+        row has exactly 2 finite options. The detached penalty sum, count and band count feed the controller / log."""
+        idx = [b for b, it in enumerate(batch) if it.row.qtype == "noul"]
+        if not idx:
+            return lp.new_zeros(()), 0
+        sub = lp[idx]
+        if sub.shape[1] < 2 or not bool(torch.isfinite(sub[:, :2]).all()) or bool(torch.isfinite(sub[:, 2:]).any()):
+            raise ValueError("decisive: a noul row does not have exactly two options")
+        p = sub[:, 0].exp()
+        pen = torch.relu(self.dec["margin"] - (p - 0.5).abs())
+        with torch.no_grad():
+            self._dec_pen += float(pen.sum())
+            self._dec_n += len(idx)
+            self._dec_band += int(((p > NOUL_BAND[0]) & (p < NOUL_BAND[1])).sum())
+        return self.dec_lambda * pen.sum() / len(batch), len(idx)
+
+    def _decisive_update(self) -> dict[str, Any]:
+        """End of an optimiser step: g = the step's mean penalty over its noul rows; with a controller, lambda_d <- the
+        nuPI multiplier of (g - epsilon), used from the next step on (a step without noul rows does not move it).
+        Returns the history fields (dec_lambda = the multiplier this step's gradient used)."""
+        n = self._dec_n
+        g = self._dec_pen / n if n else float("nan")
+        out = {"dec_g": g, "dec_n": n, "dec_band": (self._dec_band / n) if n else float("nan"),
+               "dec_lambda": self.dec_lambda, "dec_violation": (g - self.dec["epsilon"]) if n else float("nan")}
+        self._dec_pen, self._dec_n, self._dec_band = 0.0, 0, 0
+        if self.dec_ctrl is not None and n:
+            self.dec_lambda = self.dec_ctrl.update(g - self.dec["epsilon"])
+        return out
+
+    def warm_start(self, path: str | Path, sha256: str | None = None) -> dict[str, Any]:
+        """JEV3-SYM-NU: initialise the trainable weights from an INFERENCE export (``train.ckpt_export``) of an earlier
+        run of the SAME stack and continue its data order: the export's lineage (frozen backbone, tokenizer, layout,
+        training items) must equal this run's (fail closed, ValueError), its file sha256 must be ``sha256`` when given,
+        and the data cursor (epoch, cursor) continues from the export, so the next batches are the rows the earlier
+        run had not reached. The optimiser starts fresh (the export carries no AdamW moments): step 0, warmup and the
+        cosine schedule of THIS run. The config hash may differ (that is the point: a new objective term)."""
+        from .ckpt_export import _jsonable, read_inference, sha256_file
+
+        if self.step != 0 or self.history:
+            raise ValueError("warm_start: only before the first step of a fresh run")
+        got = sha256_file(path)
+        if sha256 is not None and got != sha256:
+            raise ValueError(f"warm_start: {Path(path).name} sha256 {got} != the pinned {sha256}")
+        tensors, side = read_inference(path)
+        bad = lineage_diff(side.get("lineage") or {}, _jsonable(self.lineage))
+        if bad:
+            raise ValueError(f"warm_start: the export's lineage differs from this run: {bad}")
+        params = dict(self.model.named_parameters())
+        trainable = {n for n, p in params.items() if p.requires_grad}
+        missing = sorted(set(tensors) - set(params))
+        uncovered = sorted(trainable - set(tensors))
+        if missing or uncovered:
+            raise ValueError(f"warm_start: export tensors not in the model {missing[:5]} / trainable parameters not in "
+                             f"the export {uncovered[:5]}")
+        with torch.no_grad():
+            for n, t in tensors.items():
+                params[n].copy_(t.to(params[n].dtype))
+        self.epoch, self.cursor = int(side.get("epoch") or 0), int(side.get("cursor") or 0)
+        self.warm = {"file": Path(path).name, "sha256": got, "source_step": side.get("step"),
+                     "source_config_hash": side.get("config_hash"), "source_ckpt_sha256": side.get("source_ckpt_sha256"),
+                     "epoch": self.epoch, "cursor": self.cursor, "n_tensors": len(tensors),
+                     "dtype": side.get("dtype"), "optimizer": "fresh AdamW (the export has no moments)"}
+        return self.warm
+
     def train_step(self) -> float:
         self.model.train()
         self.opt.zero_grad(set_to_none=True)
         self._step_uniform = 0.0
         if self.cons:
             self._cons_kl, self._cons_n = 0.0, 0
+        if self.dec:
+            self._dec_pen, self._dec_n, self._dec_band = 0.0, 0, 0
         total = 0.0
         if self.cfg.row_batch > 1:
             # the same rows as the micro-batch loop below (same _next_batch calls, so epoch roll-over is unchanged); the
@@ -877,6 +1044,8 @@ class Trainer:
         rec = {"step": self.step, "loss": total}
         if self.cons:
             rec.update(self._consistency_update())
+        if self.dec:
+            rec.update(self._decisive_update())
         self.history.append(rec)
         self._guard_step(total)
         return total
@@ -926,6 +1095,10 @@ class Trainer:
             **({"consistency": {"lambda": self.cons_lambda,
                                 "controller": None if self.cons_ctrl is None else self.cons_ctrl.state_dict()}}
                if self.cons else {}),
+            **({"decisive": {"lambda": self.dec_lambda,
+                             "controller": None if self.dec_ctrl is None else self.dec_ctrl.state_dict(),
+                             "warm_start": self.warm}}
+               if self.dec else {}),
         }
 
     def anti_collapse_on(self) -> bool:
@@ -1019,6 +1192,12 @@ class Trainer:
             self.cons_lambda = float(cs["lambda"])
             if self.cons_ctrl is not None and cs.get("controller") is not None:
                 self.cons_ctrl.load_state_dict(cs["controller"])
+        ds = st.get("decisive")
+        if ds is not None and self.dec:  # the config hash pins the block; this restores lambda_d's state (+ warm start)
+            self.dec_lambda = float(ds["lambda"])
+            if self.dec_ctrl is not None and ds.get("controller") is not None:
+                self.dec_ctrl.load_state_dict(ds["controller"])
+            self.warm = ds.get("warm_start")
         if is_inference(path):
             self.loaded_format = "inference"
             return

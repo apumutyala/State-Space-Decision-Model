@@ -215,9 +215,17 @@ def main(argv=None) -> int:
     i.add_argument("--cell-out", default=None)
     i.add_argument("--url", default=None, help="default: $<checkpoint.url_env>")
     i.add_argument("--out", default=None, help="write the identity record here")
+    i.add_argument("--block", default="checkpoint", choices=["checkpoint", "warm_start"],
+                   help="the job_params block to install (warm_start: JEV3-SYM-NU's pinned warm-start export; its "
+                        "--cell-config is the SOURCE run's config, --ck-dir a dir of its own, never the cell's)")
     a = ap.parse_args(argv)
     try:
-        block = checkpoint_block(json.loads(Path(a.params).read_text(encoding="utf-8")))
+        params = json.loads(Path(a.params).read_text(encoding="utf-8"))
+        if a.block != "checkpoint":
+            if not isinstance(params.get(a.block), dict):
+                raise CheckpointError(f"job_params has no {a.block} block", 5)
+            params = {"checkpoint": {k: v for k, v in params[a.block].items() if k != "cell_config"}}
+        block = checkpoint_block(params)
         rec = install(block, cell_src=a.cell_src, cell_config=a.cell_config, ck_dir=a.ck_dir, work=a.work,
                       cell_out=a.cell_out, url=a.url)
     except CheckpointError as e:

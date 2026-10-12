@@ -475,6 +475,32 @@ timeout --kill-after=30s $(cap heldout)m python -X utf8 -m train.train_set heldo
 gate "heldout" $r; export_phase heldout
 case $r in 0) ;; 124|137) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B fragment or eval attack template (train.attack_guard) outside the pinned exclusions" ;; 4) fail 34 "Index eval document text (train.doc_overlap_guard) outside the pinned doc_clean spec" ;; *) fail 5 "heldout rc=$r" ;; esac
 
+# ------------------------------------------------------------------ JEV3-SYM-NU warm start (params "warm_start"; exit 10)
+# The shared loader (block warm_start): the pinned artifact from $<warm_start.url_env>, its sha256, the member export +
+# sidecar + latest.json pins, and the SOURCE run's cell.json against warm_start.cell_config (the source run's config,
+# not this cell's). Installed under $WORK (never $CK/cell: the cell's own resume dir); run_cell then checks the export's
+# lineage against this run (exit 29) and starts from its weights + data cursor with a fresh optimiser.
+WARM_ARGS=()
+WS_CELL=$(python -I -c 'import json,sys; w=json.load(open(sys.argv[1])).get("warm_start"); print((w or {}).get("cell_config", ""))' "$PARAMS") \
+  || fail 5 "job_params warm_start"
+if [ -n "$WS_CELL" ]; then
+  { [ "$EVAL_ONLY" = none ] && [ "$CHAIN_LINK" = 0 ]; } || fail 5 "warm_start: a fresh (unchained) training mode only"
+  say "phase warmstart (shared loader, block warm_start: pinned artifact + member export + the source run's cell.json)"
+  mkdir -p "$WORK/warmck" "$WORK/warm"
+  timeout --kill-after=30s $(cap warmstart)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS" \
+    --block warm_start --cell-src "$DATA/checkpoint/cell.json" --cell-config "$WS_CELL" --ck-dir "$WORK/warmck" \
+    --work "$WORK/warm" --out "$WORK/out/warm-start.json" > "$WORK/logs/warmstart.log" 2>&1; r=$?
+  rm -f "$WORK/warm/artifact.tar"
+  gate "warmstart" $r; export_phase warmstart
+  case $r in 0) ;; 124|137) fail 7 "warm-start install timeout" ;; 10) fail 10 "warm-start identity: $(tail -1 "$WORK/logs/warmstart.log")" ;;
+    *) fail 5 "warm-start install rc=$r: $(tail -1 "$WORK/logs/warmstart.log")" ;; esac
+  read -r WS_PATH WS_SHA <<< "$(python -I -c 'import json,os,sys; r=json.load(open(sys.argv[1])); print(os.path.join(os.path.dirname(r["path"]), r["member"]), r["member_sha256"])' "$WORK/out/warm-start.json")" \
+    || fail 5 "warm-start.json"
+  [ -f "$WS_PATH" ] || fail 10 "warm-start member $WS_PATH not installed"
+  WARM_ARGS=(--warm-start "$WS_PATH" --warm-start-sha256 "$WS_SHA")
+  say "warm start: $(basename "$WS_PATH") sha256 $WS_SHA"
+fi
+
 # ------------------------------------------------------------------ chain links >= 2: install link K-1's state (exit 10)
 # train.chain install: the artifact from $<chain.from.url_env>, its sha256 and CHAIN.json's pinned; chain id, link order
 # and the carried cell.json config checked; a restart of this link keeps its own newer checkpoint (CHAIN_INSTALLED.json)
@@ -588,7 +614,7 @@ if [ "$CHAIN_LINK" -gt 0 ]; then
 fi
 timeout --kill-after=30s ${CELL_MIN}m python -m train.run_cell --config "$CELL" --model-dir "$SNAP" "${GDN_ARGS[@]}" --records "$RECORDS" \
   --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" --out "$WORK/out" --ckpt-dir "$CK/cell" --stage all \
-  --guard-readiness "$WORK/out/guard/readiness.json" "${CHAIN_ARGS[@]}" > "$WORK/logs/cell.log" 2>&1; r=$?
+  --guard-readiness "$WORK/out/guard/readiness.json" "${CHAIN_ARGS[@]}" "${WARM_ARGS[@]}" > "$WORK/logs/cell.log" 2>&1; r=$?
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
 case $r in 0) ;; 3) fail 33 "cell: eval attack template in the training rows (train.attack_guard)" ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|34|35|36) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac

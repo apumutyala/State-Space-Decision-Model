@@ -482,9 +482,17 @@ def jevkit_block(params: dict, template: str) -> dict | None:
                   | ({"slice_first": True} if jk.get("slice_first") else {})
                   # JEV3-SYM: bitwise G1 KEEP gate, the 8-op flip battery, the H2O target reference, slice/train disjointness
                   | {k: jk[k] for k in ("g1_max_dp", "g1_keep_gate", "flip_ops_all", "flip_reference", "target_ref",
-                                        "slice_state_disjoint", "g1_per_arm") if k in jk})
+                                        "slice_state_disjoint", "g1_per_arm", "slice_band_gate", "nu_claim") if k in jk})
     if jk.get("slice_floor") and not (stock and tfit):
         raise ScreenError("jevkit.slice_floor needs stock_shim (step 0 = the untrained host) and tfit (the slice)", 5)
+    sbg = jk.get("slice_band_gate")  # JEV3-SYM-NU KEEP gate 2: native slice band rate <= stock (shim readout) + margin
+    if sbg is not None and not (isinstance(sbg, dict) and set(sbg) == {"margin"} and type(sbg["margin"]) in (int, float)
+                                and 0 <= sbg["margin"] < 1 and jk.get("slice_floor")):
+        raise ScreenError("jevkit.slice_band_gate: {margin: [0, 1)} and needs slice_floor (the slice pass)", 5)
+    nuc = jk.get("nu_claim")  # JEV3-SYM-NU claim: primary CI > 0 AND both KEEP gates AND Comp A >= prior + min_gain
+    if nuc is not None and not (isinstance(nuc, dict) and set(nuc) == {"prior_composite_A", "min_gain", "prior"}
+                                and sbg is not None and jk.get("g1_keep_gate")):
+        raise ScreenError("jevkit.nu_claim: {prior_composite_A, min_gain, prior}; needs slice_band_gate and g1_keep_gate", 5)
     return {**extra_keys, "price": jk["price"], "price_parsed": price, "lean_template": lean, "extra_templates": extra,
             "shim_calibration": bool(jk.get("shim_calibration")), "stock_shim": bool(stock),
             "paired_primary": jk.get("paired_primary"),
@@ -663,7 +671,8 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: st
             t0 = time.perf_counter()
             try:
                 ident["slice_floor"] = slice_floor(eng, Path(data_dir) / jk["tfit"]["records"], out_dir / "calib_probs.jsonl",
-                                                   out_dir / "slice_floor.json", jk["tfit"].get("ids_sha256"))
+                                                   out_dir / "slice_floor.json", jk["tfit"].get("ids_sha256"),
+                                                   band=bool(jk.get("slice_band_gate")))
             except (OSError, ValueError, KeyError) as e:  # recorded; the report then calls the floor UNEVALUATED
                 ident["slice_floor"] = {"error": f"{type(e).__name__}: {e}"}
             ident["slice_floor"]["seconds"] = round(time.perf_counter() - t0, 2)
@@ -804,7 +813,8 @@ def slice_first(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: str 
                                                float(jk["tfit"].get("hi", 4.0)), jk["tfit"].get("ids_sha256"))
         eng = StockShimEngine(decider.backend, model_dir)
         ident["slice_floor"] = slice_floor(eng, Path(data_dir) / jk["tfit"]["records"], out_dir / "calib_probs.jsonl",
-                                           out_dir / "slice_floor.json", jk["tfit"].get("ids_sha256"))
+                                           out_dir / "slice_floor.json", jk["tfit"].get("ids_sha256"),
+                                           band=bool(jk.get("slice_band_gate")))
     except (OSError, ValueError, KeyError) as e:
         print(f"identity: slice_first: {type(e).__name__}: {e}", file=sys.stderr)
         return 10
@@ -814,7 +824,7 @@ def slice_first(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: str 
 
 
 def slice_floor(eng: "StockShimEngine", records_path: Path, calib_probs: Path, out: Path,
-                expect_ids_sha256: str | None = None) -> dict:
+                expect_ids_sha256: str | None = None, band: bool = False) -> dict:
     """A-PREREG-JEV2-H2O step-0 FLOOR on the fixed held-out jev2 slice (the calib slice; ids sha recorded): top-1 accuracy
     of the selected trained checkpoint (``calib_probs.jsonl``, written by ``fit_native_temperature``) vs the untrained
     host = step 0 (``eng`` with every LoRA off, the host's own shim prompt + tied LM head) on the SAME decisions. The
@@ -829,12 +839,15 @@ def slice_floor(eng: "StockShimEngine", records_path: Path, calib_probs: Path, o
     with gzip.open(records_path, "rt", encoding="utf-8") as f:
         raws = [json.loads(x) for x in f if x.strip()]
     sha = check_ids_pin([r["id"] for r in raws], expect_ids_sha256, "slice floor")["sha"]  # both conventions logged
-    native = {}
+    native, native_p = {}, {}
     for line in calib_probs.read_text(encoding="utf-8").splitlines():
         if line.strip():
             r = json.loads(line)
             ps = r["probs"]
             native[r["id"]] = (r.get("family"), r.get("type"), max(range(len(ps)), key=ps.__getitem__) == r["gold"])
+            if band and r.get("type") == "noul" and len(ps) == 2:  # P(true) (the band is symmetric in the 2 options)
+                oi = list(r.get("option_ids") or [])
+                native_p[r["id"]] = float(ps[oi.index("true") if "true" in oi else 0])
     rows, unmatched = [], 0
     with eng.lora_off():
         for raw in raws:
@@ -853,6 +866,12 @@ def slice_floor(eng: "StockShimEngine", records_path: Path, calib_probs: Path, o
                 fam, typ, n_ok = native[key]
                 rows.append({"id": key, "family": fam, "type": typ, "native": bool(n_ok),
                              "step0": names[max(range(len(lp)), key=lp.__getitem__)] == gold})
+                if band and typ == "noul" and len(lp) == 2 and key in native_p:
+                    # the shim's own functions: p[0] is P(yes); raw = T 1, no floor; shim = its T + the yes/no commit
+                    rows[-1]["native_p_true"] = native_p[key]
+                    rows[-1]["stock_p_raw"] = float(eng.mod.probabilities(lp, 1.0)[0])
+                    rows[-1]["stock_p_shim"] = float(eng.mod.commit_noul(
+                        eng.mod.probabilities(lp, eng.c.temperature)[0], eng.c.noul_floor))
     if not rows:
         raise ValueError("slice floor: no decision matched between the trained arm and the host")
     with open(out.parent / "slice_floor_rows.jsonl", "w", encoding="utf-8", newline="\n") as g:
@@ -874,8 +893,18 @@ def slice_floor(eng: "StockShimEngine", records_path: Path, calib_probs: Path, o
                    "slice top-1; otherwise step 0 = no change and the run is NEGATIVE"}
     rep["delta"] = rep["native_top1"] - rep["step0_top1"]
     rep["pass"] = bool(rep["delta"] > 0)
+    if band:  # JEV3-SYM-NU: the slice noul band rates (the KEEP gate reads these; jevkit_report.slice_band_gate)
+        nb = [r for r in rows if "stock_p_raw" in r]
+        rep["noul_band_slice"] = {
+            "native_T1": noul_band_rate([r["native_p_true"] for r in nb]),
+            "stock_raw_T1": noul_band_rate([r["stock_p_raw"] for r in nb]),
+            "stock_shim_readout": noul_band_rate([r["stock_p_shim"] for r in nb]),
+            "note": "native = the selected checkpoint's untempered head (calib_probs.jsonl, the native arm's readout); "
+                    "stock_shim_readout = the paired control as scored (shim T + yes/no commit floor); stock_raw_T1 = "
+                    "the same stock forward without T / floor (diagnostic)"}
     out.write_text(json.dumps(rep, indent=1), encoding="utf-8")
-    return {k: rep[k] for k in ("n_decisions", "native_top1", "step0_top1", "delta", "pass", "ids_sha256")}
+    keep = ("n_decisions", "native_top1", "step0_top1", "delta", "pass", "ids_sha256") + (("noul_band_slice",) if band else ())
+    return {k: rep[k] for k in keep}
 
 
 # ------------------------------------------------------------------------------------------------ CPU: report
@@ -1361,7 +1390,51 @@ def jevkit_report(jk: dict, d: Path) -> dict:
                 out["primary"]["floor_verdict"] = ("NEGATIVE: no trained checkpoint beats step 0 (H2O untrained) on the "
                                                    "held-out slice; reported as step 0 = no change"
                                                    if fl is not None else "NEGATIVE: the step-0 floor was not evaluated")
+    if jk.get("slice_band_gate"):
+        out["slice_band_gate"] = slice_band_gate(d / "slice_floor.json", float(jk["slice_band_gate"]["margin"]))
+    if jk.get("nu_claim"):
+        out["nu_claim"] = nu_claim(out, jk["nu_claim"])
     return out
+
+
+def slice_band_gate(floor_json: Path, margin: float) -> dict:
+    """A-PREREG-JEV3-SYM-NU KEEP gate 2: the selected checkpoint's yes/no band rate on the held-out jev3 slice (native
+    head, T = 1, every noul decision) <= the paired stock control's band rate on the same decisions under its scored
+    shim readout + ``margin``. Fails closed (pass False) if the slice pass did not record the band rates."""
+    fl = json.loads(floor_json.read_text(encoding="utf-8")) if floor_json.is_file() else {}
+    b = fl.get("noul_band_slice")
+    rule = (f"native slice noul band rate (0.2-0.8, T = 1) <= stock_shim's (shim readout) + {margin:g} "
+            "(A-PREREG-JEV3-SYM-NU KEEP gate 2)")
+    if not b or b["native_T1"]["rate"] is None or b["stock_shim_readout"]["rate"] is None:
+        return {"rule": rule, "pass": False, "status": "UNEVALUATED: no noul_band_slice in slice_floor.json"}
+    nat, ref = b["native_T1"]["rate"], b["stock_shim_readout"]["rate"]
+    return {"rule": rule, "native": nat, "stock_shim_readout": ref, "stock_raw_T1": b["stock_raw_T1"]["rate"],
+            "n": b["native_T1"]["n"], "threshold": ref + margin, "pass": bool(nat <= ref + margin)}
+
+
+def nu_claim(out: dict, spec: dict) -> dict:
+    """A-PREREG-JEV3-SYM-NU: CLAIM iff the paired primary (Delta Composite A vs the in-job stock-shim control) has its
+    95% CI > 0 AND G1 bitwise KEEP AND the slice band KEEP gate pass; DIRECTION (pre-committed): the native Composite A
+    must also be >= the prior seed's (``prior_composite_A``) + ``min_gain``, else the nuPI line is reported NEGATIVE."""
+    pr = out.get("primary") or {}
+    d = pr.get("delta_composite_A") or {}
+    ci = d.get("ci95") or [None, None]
+    ci_pass = ci[0] is not None and ci[0] > 0
+    g1 = bool((out.get("g1") or {}).get("keep_gate_pass"))
+    band = bool((out.get("slice_band_gate") or {}).get("pass"))
+    comp = d.get("a")
+    need = float(spec["prior_composite_A"]) + float(spec["min_gain"])
+    direction = comp is not None and comp >= need
+    claim = bool(ci_pass and g1 and band)
+    return {"rule": "CLAIM iff primary CI > 0 AND G1 bitwise KEEP AND slice band KEEP; the nuPI line is NEGATIVE unless "
+                    f"native Composite A >= {need:g} (prior {spec['prior']} {float(spec['prior_composite_A']):g} + "
+                    f"{float(spec['min_gain']):g})",
+            "primary_ci95": ci, "primary_ci_pass": ci_pass, "g1_keep_pass": g1, "slice_band_keep_pass": band,
+            "native_composite_A": comp, "direction_threshold": need, "direction_pass": bool(direction),
+            "claim": claim, "nu_line": "POSITIVE" if (claim and direction) else "NEGATIVE",
+            "label": "design informed by a prior public result on the same items (seed 0, job-6zs79); optimistically "
+                     "biased; single seed, replication pending; nuPI's causal effect is NOT established (the lambda = 0 "
+                     "warm-start ablation is unfunded)"}
 
 
 def paired_vs(tables: dict, axes: dict, a: str, b: str, B: int = 1000, seed: int = 16) -> dict:

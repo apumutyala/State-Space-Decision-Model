@@ -545,6 +545,30 @@ def consistency_fields(cfg: dict) -> dict:
     return spec
 
 
+def decisive_trace(tr) -> dict:
+    """cell.json ``decisive``: the spec, lambda_d(t) / g(t) / violation(t) / batch band rate(t) per optimiser step, the
+    dev-card (selection-slice) band rate per card, the final multiplier and controller state, the warm start."""
+    h = [x for x in tr.history if "dec_lambda" in x]
+    fin = lambda v: v if isinstance(v, (int, float)) and math.isfinite(v) else None  # noqa: E731  (JSON: NaN -> null)
+    return {"spec": tr.dec, "steps": [x["step"] for x in h], "lambda_t": [fin(x["dec_lambda"]) for x in h],
+            "g_t": [fin(x["dec_g"]) for x in h], "violation_t": [fin(x["dec_violation"]) for x in h],
+            "batch_band_t": [fin(x["dec_band"]) for x in h], "noul_rows_t": [x["dec_n"] for x in h],
+            "dev_band": [{"step": c["step"], **(c.get("noul_band") or {}), "dec_lambda": c.get("dec_lambda"),
+                          "nll": c.get("nll"), "accuracy": c.get("accuracy"), "best": c.get("best")}
+                         for c in tr.dev_cards],
+            "lambda_final": tr.dec_lambda,
+            "controller_state": None if tr.dec_ctrl is None else tr.dec_ctrl.state_dict(),
+            "warm_start": tr.warm}
+
+
+def decisive_fields(cfg: dict) -> dict:
+    """The cell's ``decisive`` block (JEV3-SYM-NU), validated and defaults-filled (train.trainer.decisive_spec); absent
+    or empty = {} = OFF (the TrainConfig hash and the step are unchanged)."""
+    from train.trainer import decisive_spec
+
+    return decisive_spec(cfg.get("decisive") or {})
+
+
 def attach_consistency_views(cfg: dict, train_items: list, train_records: dict, enc, guard, max_t: int) -> dict | None:
     """Attach consistency views to the filtered TRAINING list only (evaluation data is never passed here)."""
     spec = consistency_fields(cfg)
@@ -622,7 +646,8 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
                        seed=cfg["seed"], ckpt_dir=ckpt_dir, ckpt_every=cfg["ckpt_every"],
                        eval_every=cfg["eval_every"], controlsafe=cfg.get("controlsafe") or {},
                        **anti_collapse_fields(cfg),
-                       **({"consistency": consistency_fields(cfg)} if consistency_fields(cfg) else {}))
+                       **({"consistency": consistency_fields(cfg)} if consistency_fields(cfg) else {}),
+                       **({"decisive": decisive_fields(cfg)} if decisive_fields(cfg) else {}))
 
 
 #: cell config keys -> TrainConfig anti-collapse fields (research-notes/D10_DIVERGENCE.md); absent = old behaviour
@@ -949,7 +974,13 @@ def _main(argv=None, ctx: dict | None = None):
     ap.add_argument("--chain-of", type=int, default=0)
     ap.add_argument("--train-deadline", type=float, default=None, help="train.chain: unix time the training loop "
                     "stops by (the job's deadline); an intermediate link then saves and ends as 'link_end'")
+    ap.add_argument("--warm-start", default=None, help="JEV3-SYM-NU: an inference export (trainable-stepN.safetensors + "
+                    "sidecar) of an earlier run of the SAME stack; a fresh run starts from its weights and data cursor")
+    ap.add_argument("--warm-start-sha256", default=None, help="the pinned sha256 of --warm-start (required with it)")
     a = ap.parse_args(argv)
+    if bool(a.warm_start) != bool(a.warm_start_sha256):
+        print("config: --warm-start and --warm-start-sha256 go together", flush=True)
+        return EXIT["config"]
     chain = None
     if a.chain_link or a.chain_of:
         if not (a.chain_of >= 2 and 1 <= a.chain_link <= a.chain_of):
@@ -1020,6 +1051,7 @@ def _main(argv=None, ctx: dict | None = None):
         validate_head(cfg)
         order_consistency_fields(cfg)
         consistency_fields(cfg)
+        decisive_fields(cfg)
         train_max_k(cfg)
         if parent == "q9af" or cfg.get("teacher") or cfg.get("head_from_proxy"):
             from jobs.q9af_cell import hooks  # typed KD-teacher / proxy-head hooks (fail closed until wired)
@@ -1352,6 +1384,20 @@ def _main(argv=None, ctx: dict | None = None):
                 tr.cards = list(cell.get("train_cards") or [])
             chain = {**chain, "chain_id": chain_id(cfg)}
             cell["chain"] = chain
+        if a.warm_start and chain is not None:
+            print("config: --warm-start is not supported on chain links", flush=True)
+            return EXIT["config"]
+        if a.warm_start and not resumed:  # JEV3-SYM-NU: weights + data cursor of the pinned export, before the step-0 cards
+            try:
+                cell["warm_start"] = tr.warm_start(a.warm_start, a.warm_start_sha256)
+            except (OSError, ValueError, KeyError) as e:
+                print(f"warm start lineage: {e}", flush=True)
+                return EXIT["lineage"]
+            print(f"warm start: {json.dumps(cell['warm_start'])}", flush=True)
+            save()
+        elif a.warm_start:  # a restart resumes its own checkpoint (which carries the warm-start identity)
+            cell["warm_start_resumed"] = tr.warm
+            save()
         dev_out = out / "dev_cards"
         n_events = len(tr.collapse_events)
 
@@ -1437,7 +1483,10 @@ def _main(argv=None, ctx: dict | None = None):
                     cell["train"] = {"stopped": "too_slow", "step": tr.step, **chk}
                     save()
                     return EXIT["too_slow"]
-            logf.write(json.dumps({"step": tr.step, "loss": loss, "peak_gb": peak(), "t": time.time()}) + "\n")
+            rec = {"step": tr.step, "loss": loss, "peak_gb": peak(), "t": time.time()}
+            if tr.dec:  # JEV3-SYM-NU: lambda_d(t), the constraint value g(t), its violation and the batch band rate
+                rec.update({k: v for k, v in tr.history[-1].items() if k.startswith("dec_")})
+            logf.write(json.dumps(rec) + "\n")
             logf.flush()
             if not math.isfinite(loss):
                 cell["train"] = {"stopped": "nonfinite", "step": tr.step}
@@ -1501,6 +1550,8 @@ def _main(argv=None, ctx: dict | None = None):
         if tr.anti_collapse_on():
             cell["train"]["anti_collapse"] = tr.anti_collapse_state()
             cell["dev_cards"], cell["collapse_events"], cell["best"] = tr.dev_cards, tr.collapse_events, tr.best
+        if tr.dec:  # JEV3-SYM-NU: the controller trace (per step) and the in-training slice band rate (per dev card)
+            cell["decisive"] = decisive_trace(tr)
         save()
         if fla_requested(cfg) and tr.step > step0 and not cell["fla"]["n_calls"]:
             print("fla: requested but no training call ran fla", flush=True)
