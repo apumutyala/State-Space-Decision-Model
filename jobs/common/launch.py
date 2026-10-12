@@ -249,10 +249,16 @@ def archive(root: Path, sha: str, dest: Path | None = None) -> dict[str, tuple[b
         err = p.stderr.read().decode(errors="replace").strip()
         p.wait()
         raise LaunchError(f"git archive {sha}: {err or e}") from e
+    # drain the tar's trailing zero blocks before closing: tarfile stops at the end-of-archive marker, and closing the
+    # pipe while git is still writing its padding gives git a SIGPIPE (non-zero exit, empty stderr): a timing race that
+    # a slow / memory-pressured laptop hits every time (JEV3-SYM seed 0 resubmit, 2026-10-12)
+    while p.stdout.read(BLOCK):
+        pass
     p.stdout.close()
     err = p.stderr.read().decode(errors="replace").strip()
-    if p.wait():
-        raise LaunchError(f"git archive {sha}: {err}")
+    rc = p.wait()
+    if rc:
+        raise LaunchError(f"git archive {sha}: exit {rc}: {err}")
     if odd:
         raise LaunchError(f"the archive has non-regular members (symlinks are not shipped silently): {odd}")
     return out
