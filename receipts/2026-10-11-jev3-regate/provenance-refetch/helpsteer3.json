@@ -1,0 +1,27 @@
+{
+ "file": {
+  "url": "https://huggingface.co/datasets/nvidia/HelpSteer3/resolve/f6d145777bcbde96137596340fab89793acd1031/feedback/train.jsonl.gz",
+  "expected_sha256": "6f51cf5b7224436b0c5a4c80b280eddc566f7d2b589f5a4be0ba7a3637f0519c",
+  "got_sha256": "6f51cf5b7224436b0c5a4c80b280eddc566f7d2b589f5a4be0ba7a3637f0519c",
+  "sha_match": true,
+  "lines": 38782
+ },
+ "per_role": {
+  "train": {
+   "rows": 570,
+   "row_sha_match": 570,
+   "response_text_match": 570,
+   "gold_equals_human_consensus": 570,
+   "verified": 570
+  },
+  "slice": {
+   "rows": 120,
+   "row_sha_match": 120,
+   "response_text_match": 120,
+   "gold_equals_human_consensus": 120,
+   "verified": 120
+  }
+ },
+ "unverified_ids": [],
+ "n_unverified": 0
+}

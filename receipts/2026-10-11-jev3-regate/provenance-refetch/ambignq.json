@@ -1,0 +1,32 @@
+{
+ "file": {
+  "url": "https://nlp.cs.washington.edu/ambigqa/data/ambignq_light.zip",
+  "expected_sha256": "3f5dada69dec05cef1533a64945cd7bafde1aa94b0cdd6fa9a22f881206220db",
+  "got_sha256": "3f5dada69dec05cef1533a64945cd7bafde1aa94b0cdd6fa9a22f881206220db",
+  "bytes": 1061383,
+  "sha_match": true
+ },
+ "zip_members": [
+  "LICENSE",
+  "train_light.json",
+  "dev_light.json"
+ ],
+ "n_train": 10036,
+ "n_dev": 2002,
+ "per_role": {
+  "train": {
+   "rows": 1000,
+   "annotation_matches": 1000,
+   "in_dev": 0,
+   "verified": 1000
+  },
+  "slice": {
+   "rows": 200,
+   "annotation_matches": 200,
+   "in_dev": 0,
+   "verified": 200
+  }
+ },
+ "unverified_ids": [],
+ "n_unverified": 0
+}

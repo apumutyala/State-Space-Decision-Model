@@ -1,0 +1,93 @@
+{
+ "files": [
+  {
+   "url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math/resolve/21a5633873b6a120296cce3e2df9d5550074f4a3/algebra/train-00000-of-00001.parquet",
+   "sha_match": true,
+   "bytes": 505186
+  },
+  {
+   "url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math/resolve/21a5633873b6a120296cce3e2df9d5550074f4a3/algebra/test-00000-of-00001.parquet",
+   "sha_match": true,
+   "bytes": 353114
+  },
+  {
+   "url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math/resolve/21a5633873b6a120296cce3e2df9d5550074f4a3/counting_and_probability/train-00000-of-00001.parquet",
+   "sha_match": true,
+   "bytes": 329354
+  },
+  {
+   "url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math/resolve/21a5633873b6a120296cce3e2df9d5550074f4a3/counting_and_probability/test-00000-of-00001.parquet",
+   "sha_match": true,
+   "bytes": 175032
+  },
+  {
+   "url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math/resolve/21a5633873b6a120296cce3e2df9d5550074f4a3/geometry/train-00000-of-00001.parquet",
+   "sha_match": true,
+   "bytes": 549388
+  },
+  {
+   "url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math/resolve/21a5633873b6a120296cce3e2df9d5550074f4a3/geometry/test-00000-of-00001.parquet",
+   "sha_match": true,
+   "bytes": 263835
+  },
+  {
+   "url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math/resolve/21a5633873b6a120296cce3e2df9d5550074f4a3/intermediate_algebra/train-00000-of-00001.parquet",
+   "sha_match": true,
+   "bytes": 575154
+  },
+  {
+   "url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math/resolve/21a5633873b6a120296cce3e2df9d5550074f4a3/intermediate_algebra/test-00000-of-00001.parquet",
+   "sha_match": true,
+   "bytes": 394797
+  },
+  {
+   "url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math/resolve/21a5633873b6a120296cce3e2df9d5550074f4a3/number_theory/train-00000-of-00001.parquet",
+   "sha_match": true,
+   "bytes": 308653
+  },
+  {
+   "url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math/resolve/21a5633873b6a120296cce3e2df9d5550074f4a3/number_theory/test-00000-of-00001.parquet",
+   "sha_match": true,
+   "bytes": 182003
+  },
+  {
+   "url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math/resolve/21a5633873b6a120296cce3e2df9d5550074f4a3/prealgebra/train-00000-of-00001.parquet",
+   "sha_match": true,
+   "bytes": 383626
+  },
+  {
+   "url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math/resolve/21a5633873b6a120296cce3e2df9d5550074f4a3/prealgebra/test-00000-of-00001.parquet",
+   "sha_match": true,
+   "bytes": 267729
+  },
+  {
+   "url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math/resolve/21a5633873b6a120296cce3e2df9d5550074f4a3/precalculus/train-00000-of-00001.parquet",
+   "sha_match": true,
+   "bytes": 353745
+  },
+  {
+   "url": "https://huggingface.co/datasets/EleutherAI/hendrycks_math/resolve/21a5633873b6a120296cce3e2df9d5550074f4a3/precalculus/test-00000-of-00001.parquet",
+   "sha_match": true,
+   "bytes": 242241
+  }
+ ],
+ "n_train_problems": 7499,
+ "n_test_problems": 5000,
+ "per_role": {
+  "train": {
+   "rows": 1000,
+   "in_math_train": 1000,
+   "in_math_test": 0,
+   "uid_test_prefix": 0
+  },
+  "slice": {
+   "rows": 200,
+   "in_math_train": 200,
+   "in_math_test": 0,
+   "uid_test_prefix": 0
+  }
+ },
+ "math500_note": "MATH-500 is a subset of the MATH test split; 0 in_math_test implies 0 MATH-500",
+ "unverified_ids": [],
+ "n_unverified": 0
+}

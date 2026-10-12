@@ -1,0 +1,23 @@
+{
+ "file": {
+  "url": "https://raw.githubusercontent.com/NExTplusplus/TAT-QA/870accc41953dcde885aabeb963d94aabdc0fbc3/dataset_raw/tatqa_dataset_train.json",
+  "expected_sha256": "2df6e722cdbaaa37efcbfb280f5c9a15be29a6ec18f618ef936fe63cc6d07c69",
+  "got_sha256": "2df6e722cdbaaa37efcbfb280f5c9a15be29a6ec18f618ef936fe63cc6d07c69",
+  "bytes": 12845647,
+  "sha_match": true
+ },
+ "n_tables": 2201,
+ "n_questions": 13215,
+ "per_role": {
+  "train": {
+   "rows": 730,
+   "verified": 730
+  },
+  "slice": {
+   "rows": 143,
+   "verified": 143
+  }
+ },
+ "unverified_ids": [],
+ "n_unverified": 0
+}

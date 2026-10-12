@@ -1,0 +1,27 @@
+{
+ "file": {
+  "url": "https://raw.githubusercontent.com/AbhilashaRavichander/PrivacyQA_EMNLP/5178ff3eaf61cbdaea03d85ff23b676b3fea451f/data/policy_train_data.csv",
+  "expected_sha256": "81aa674452fc822a49d7d96aead91fc85199ec99b6a56c7a862bb9deb02f004a",
+  "got_sha256": "81aa674452fc822a49d7d96aead91fc85199ec99b6a56c7a862bb9deb02f004a",
+  "bytes": 62602240,
+  "sha_match": true
+ },
+ "csv_split_counts": {
+  "train": 185200
+ },
+ "n_train_queries": 1350,
+ "per_role": {
+  "train": {
+   "rows": 960,
+   "policy_text_from_train_doc": 960,
+   "verified": 960
+  },
+  "slice": {
+   "rows": 200,
+   "policy_text_from_train_doc": 200,
+   "verified": 200
+  }
+ },
+ "unverified_ids": [],
+ "n_unverified": 0
+}

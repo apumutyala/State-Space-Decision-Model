@@ -1,11 +1,11 @@
 # REGATE_JEV3: independent re-gate of bschema-draw-jev3 (train) + bschema-draw-jev3-slice (evidence lane, 2026-10-11)
 
-**Verdict: LEAK-FREE. The exclusion list is empty. Cleared for the JEV3-SYM run.** Two caveats:
-- **(P)** Train-split provenance is verified file-to-file only for Aegis 2.0 and HelpSteer2. For PRM800K, train
-  provenance is verified through the MATH `unique_id` split prefix. The split files for HelpSteer3, AmbigNQ, TAT-QA,
-  TimeQA, PrivacyQA, PRM800K phase2 and MATH were deleted after the build. Counts that could not be verified are given
-  below.
-- **(L)** Two label shortcuts (section 8).
+**Verdict: LEAK-FREE, and every row's provenance is VERIFIED. The exclusion list is empty. Cleared for the JEV3-SYM
+run.**
+- **Provenance (updated 2026-10-11).** All 7,160 rows (train + slice) trace to the official TRAIN file of their source.
+  The 4,250-row gap from the first pass is closed by a re-fetch at the logged revisions (section 4b). The PRM800K text
+  check against MATH test (and therefore MATH-500) gives 0.
+- **(L)** Two label shortcuts remain. They are listed in section 8 and not excluded.
 
 **Exclusion list:** `jev3_exclude_ids.txt` is empty: a single LF, sha256
 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b.
@@ -87,6 +87,25 @@ download, which I did not do.
 
 **Licences:** present and consistent with prov on every row of both draws (0 missing).
 
+## 4b. Gap closed: re-fetch at the logged revisions (`provenance-refetch/*.json`, `scripts/regate_jev3_fetch.py`)
+Each source was fetched one at a time, after a free-disk check (C: 1,262 MB). Every download was held in memory or
+streamed and parsed with `python -I` (json / csv / gzip / zipfile / pyarrow only). **Nothing was written to disk**, so
+there was nothing to delete; only the JSON receipts were kept. Each file's sha256 was compared against
+`raw/jev3/fetch-log.jsonl`; for HelpSteer3 it was compared against the gz sha in the rows' prov.
+
+| source | file sha vs log | trace (train / slice) | result |
+|---|---|---|---|
+| hendrycks_math @21a56338, 14 parquets | 14/14 match | each PRM800K problem (normalised text) against MATH train (7,499) and test (5,000) | **1,200/1,200 in MATH train, 0 in MATH test** (and so 0 in MATH-500, a subset of test); 0 `test/` unique ids |
+| AmbigNQ `ambignq_light.zip` | 3f5dada6… match | id in `train_light.json`; `row_sha256` = sha(canon(train entry)); annotation type; not in `dev_light.json` (2,002 ids) | **1,000 / 200 verified**; 0 in dev |
+| TAT-QA `tatqa_dataset_train.json` @870accc4 | 2df6e722… match | (table uid, question uid) present; `row_sha256` = sha(canon(question)) | **730 / 143 verified** |
+| TimeQA `human_annotated_train.json` @38b05989 | 99eec051… match | (index, question #) present; `row_sha256` of {index, question, answer} recomputed | **270 / 57 verified** |
+| PrivacyQA `policy_train_data.csv` @5178ff3e | 81aa6744… match (every CSV row has Split = train) | (DocID, QueryID) present; `row_sha256` of {DocID, QueryID, query, relevant_sent_ids} recomputed from the Relevant labels; the policy text in the state comes from that train document (≥ 3 sentences) | **960 / 200 verified** |
+| HelpSteer3 feedback/train.jsonl.gz @f6d14577 (streamed, 38,782 lines) | 6f51cf5b… match | `line_sha256` of the raw line plus k equals `row_sha256`; response text present in the state; gold recomputed from the annotators' "The response is … helpful" verdicts (strict consensus) | **570 / 120 verified**; 690/690 gold equals the human consensus |
+
+**0 rows remain unverifiable**, so nothing is added to the exclusion list. `jev3_exclude_ids.txt` stays empty
+(sha256 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b). The "not verifiable" table in section 4
+is superseded by this section.
+
 ## 5. Slice against train: disjoint (`disjoint`)
 - 0 shared values for each of: id, source item (base id), group, content hash, normalised state, and long_policy
   policy document (PrivacyQA DocID).
@@ -122,7 +141,7 @@ download, which I did not do.
   - Other families: max 2,532 (temporal), with 15 train rows and 2 slice rows over 2,048.
   - The cell needs max_len 4,096.
 - **(L) Label shortcuts. Not leaks; for the lead's attention.**
-  - `policy/aegis_reply`: the gold is **false in all rows (109 train, 27 slice)**. Every sampled reply is human-labelled
+  - `policy/aegis_reply`: the gold is **false in all 136 rows (109 train, 27 slice)**. Every sampled reply is human-labelled
     safe, so "is the reply unsafe?" always has the answer no.
   - `adequacy/hs2_bar_coherence`: 26 true / 1 false.
   - `ambiguous`: the label follows the AmbigNQ annotation by construction (single → answer, multi → ask, 500 / 500).

@@ -1,0 +1,22 @@
+{
+ "file": {
+  "url": "https://raw.githubusercontent.com/wenhuchen/Time-Sensitive-QA/38b05989070c1168b2bef3d5a2656afeeba763dc/dataset/human_annotated_train.json",
+  "expected_sha256": "99eec0514569ecbdea087ae3751a1e7d5ae0e45fcf82f9b4e9226f30967939b5",
+  "got_sha256": "99eec0514569ecbdea087ae3751a1e7d5ae0e45fcf82f9b4e9226f30967939b5",
+  "bytes": 4064336,
+  "sha_match": true
+ },
+ "n_docs": 320,
+ "per_role": {
+  "train": {
+   "rows": 270,
+   "verified": 270
+  },
+  "slice": {
+   "rows": 57,
+   "verified": 57
+  }
+ },
+ "unverified_ids": [],
+ "n_unverified": 0
+}
