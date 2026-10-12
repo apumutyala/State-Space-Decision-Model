@@ -20,7 +20,7 @@ TREES.update(dict(x.split("=", 1) for x in os.environ.get("BASELINE", "").split(
 TREES.update({"rsc": os.environ.get("RSC_SHA", "c6cc6a5e"), "d20": os.environ.get("D20_SHA", "9323085c")})
 # stack/qwen35/jev3-sym (suite "jev3", A-PREREG-JEV3-SYM): its package checks + the sym / consistency suites; the
 # consistency OFF-path golden runs against the "jev2" tree (a5b4cb33 = consistency's parent; SSDM_BASE_TREE)
-TREES.update({"jev3": os.environ.get("JEV3_SHA", "079d6eaa")})
+TREES.update({"jev3": os.environ.get("JEV3_SHA", "eac3765f")})
 #: TREES_ONLY="rsc d20": package only these trees (low RAM on the laptop)
 if os.environ.get("TREES_ONLY"):
     TREES = {k: v for k, v in TREES.items() if k in os.environ["TREES_ONLY"].split()}
@@ -33,7 +33,8 @@ TOKENIZERS = ("Qwen--Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",)
 TOK_FILES = ("tokenizer.json", "tokenizer_config.json", "vocab.json", "merges.txt", "config.json",
              "chat_template.jinja", "special_tokens_map.json", "generation_config.json")
 SKIP = ("receipts/", "docs/nupi_toy_traces.svg")  # not imported by any of the suites (third_party/ is: rwkv7_hf)
-KEEP = ("docs/nupi_toy_traces.json",)
+KEEP = ("docs/nupi_toy_traces.json", "receipts/2026-10-11-jev3-sampler/jev3_train_exclude_subs.txt",
+        "receipts/2026-10-11-jev3-regate/jev3_exclude_ids.txt")  # jev3 exclude_files read by tests/test_jev3_sym.py
 EV_ONLY = ("tests/guarantees/test_sym_fork_adversarial.py", "tests/guarantees/test_g16_sym_adversarial.py")
 JOB_FILES = ("run.sh", "golden.py", "patch_golden.py")
 MTIME = 1767225600
