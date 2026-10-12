@@ -1,0 +1,9989 @@
+{
+ "key": "NFC -> whitespace-collapse -> casefold of the option description; ties by sha256(NFC desc); score = level order",
+ "order_fields": {
+  "can": "canonical (this key)",
+  "pres": "presented criteria dict order",
+  "pres_labels": "public only: item.labels list order",
+  "idsort": "choice sorted by option id (decide.schema.canonical_options)"
+ },
+ "abstain_regex": "\\b(none|other|unknown|cannot|can't|can ?not|escalat\\w*|declin\\w*|refus\\w*|neither|not possible|no listed|no final|abstain)\\b",
+ "train": {
+  "n_questions": 5960,
+  "can": {
+   "ALL": {
+    "choice": {
+     "n": 2094,
+     "n_scored": 2094,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "3": 1057,
+      "4": 587,
+      "5": 334,
+      "6": 116
+     },
+     "letter_share": {
+      "A": 0.35,
+      "B": 0.2679,
+      "C": 0.2245,
+      "D": 0.1065,
+      "E": 0.0415,
+      "F": 0.0096
+     },
+     "uniform_share": {
+      "A": 0.2795,
+      "B": 0.2795,
+      "C": 0.2795,
+      "D": 0.1112,
+      "E": 0.0411,
+      "F": 0.0092
+     },
+     "share_A": 0.35,
+     "chance_A": 0.2795,
+     "best_constant_letter": "A",
+     "best_constant_acc": 0.35,
+     "chance_acc": 0.2795,
+     "chi2_vs_uniform": {
+      "chi2": 122.015,
+      "df": 14,
+      "p": 2.534117417440085e-19,
+      "by_k": {
+       "3": {
+        "n": 1057,
+        "counts": [
+         499,
+         326,
+         232
+        ],
+        "chi2": 104.119,
+        "df": 2,
+        "p": 2.459245239992698e-23,
+        "min_expected": 352.33
+       },
+       "4": {
+        "n": 587,
+        "counts": [
+         162,
+         149,
+         157,
+         119
+        ],
+        "chi2": 7.583,
+        "df": 3,
+        "p": 0.05547307650996552,
+        "min_expected": 146.75
+       },
+       "5": {
+        "n": 334,
+        "counts": [
+         62,
+         66,
+         62,
+         81,
+         63
+        ],
+        "chi2": 3.934,
+        "df": 4,
+        "p": 0.4149935392644112,
+        "min_expected": 66.8
+       },
+       "6": {
+        "n": 116,
+        "counts": [
+         10,
+         20,
+         19,
+         23,
+         24,
+         20
+        ],
+        "chi2": 6.379,
+        "df": 5,
+        "p": 0.2710395999097339,
+        "min_expected": 19.33
+       }
+      }
+     },
+     "items_with_any_tie_set": 0,
+     "abstain": {
+      "has_abstain_option": 1516,
+      "abstain_sorts_first": 219,
+      "abstain_first_and_gold": 36,
+      "gold_is_abstain": 228
+     }
+    },
+    "noul": {
+     "n": 3670,
+     "n_scored": 3670,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "2": 3670
+     },
+     "letter_share": {
+      "A": 0.5207,
+      "B": 0.4793
+     },
+     "uniform_share": {
+      "A": 0.5,
+      "B": 0.5
+     },
+     "share_A": 0.5207,
+     "chance_A": 0.5,
+     "best_constant_letter": "A",
+     "best_constant_acc": 0.5207,
+     "chance_acc": 0.5,
+     "chi2_vs_uniform": {
+      "chi2": 6.295,
+      "df": 1,
+      "p": 0.012105389302705563,
+      "by_k": {
+       "2": {
+        "n": 3670,
+        "counts": [
+         1911,
+         1759
+        ],
+        "chi2": 6.295,
+        "df": 1,
+        "p": 0.012105389302705563,
+        "min_expected": 1835.0
+       }
+      }
+     },
+     "items_with_any_tie_set": 0,
+     "abstain": {
+      "has_abstain_option": 0,
+      "abstain_sorts_first": 0,
+      "abstain_first_and_gold": 0,
+      "gold_is_abstain": 0
+     },
+     "true_option_letter": {
+      "A": 635,
+      "B": 3035
+     },
+     "gold_true_share": 0.4916
+    },
+    "score": {
+     "n": 196,
+     "n_scored": 196,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "4": 111,
+      "5": 85
+     },
+     "letter_share": {
+      "A": 0.2806,
+      "B": 0.3163,
+      "C": 0.2398,
+      "D": 0.102,
+      "E": 0.0612
+     },
+     "uniform_share": {
+      "A": 0.2283,
+      "B": 0.2283,
+      "C": 0.2283,
+      "D": 0.2283,
+      "E": 0.0867
+     },
+     "share_A": 0.2806,
+     "chance_A": 0.2283,
+     "best_constant_letter": "B",
+     "best_constant_acc": 0.3163,
+     "chance_acc": 0.2283,
+     "chi2_vs_uniform": {
+      "chi2": 92.175,
+      "df": 7,
+      "p": 4.4200396085054206e-17,
+      "by_k": {
+       "4": {
+        "n": 111,
+        "counts": [
+         55,
+         26,
+         18,
+         12
+        ],
+        "chi2": 39.234,
+        "df": 3,
+        "p": 1.5482498536961822e-08,
+        "min_expected": 27.75
+       },
+       "5": {
+        "n": 85,
+        "counts": [
+         0,
+         36,
+         29,
+         8,
+         12
+        ],
+        "chi2": 52.941,
+        "df": 4,
+        "p": 8.766728478349629e-11,
+        "min_expected": 17.0
+       }
+      }
+     }
+    }
+   },
+   "by_family": {
+    "adequacy": {
+     "noul": {
+      "n": 1000,
+      "n_scored": 1000,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 1000
+      },
+      "letter_share": {
+       "A": 0.491,
+       "B": 0.509
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.491,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.509,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.324,
+       "df": 1,
+       "p": 0.569213649473711,
+       "by_k": {
+        "2": {
+         "n": 1000,
+         "counts": [
+          491,
+          509
+         ],
+         "chi2": 0.324,
+         "df": 1,
+         "p": 0.569213649473711,
+         "min_expected": 500.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 246,
+       "B": 754
+      },
+      "gold_true_share": 0.541
+     }
+    },
+    "ambiguous": {
+     "choice": {
+      "n": 1000,
+      "n_scored": 1000,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 863,
+       "4": 137
+      },
+      "letter_share": {
+       "A": 0.462,
+       "B": 0.3,
+       "C": 0.223,
+       "D": 0.015
+      },
+      "uniform_share": {
+       "A": 0.3219,
+       "B": 0.3219,
+       "C": 0.3219,
+       "D": 0.0343
+      },
+      "share_A": 0.462,
+      "chance_A": 0.3219,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.462,
+      "chance_acc": 0.3219,
+      "chi2_vs_uniform": {
+       "chi2": 121.688,
+       "df": 5,
+       "p": 1.3775761975765103e-24,
+       "by_k": {
+        "3": {
+         "n": 863,
+         "counts": [
+          420,
+          266,
+          177
+         ],
+         "chi2": 105.082,
+         "df": 2,
+         "p": 1.519409185097868e-23,
+         "min_expected": 287.67
+        },
+        "4": {
+         "n": 137,
+         "counts": [
+          42,
+          34,
+          46,
+          15
+         ],
+         "chi2": 16.606,
+         "df": 3,
+         "p": 0.0008516811358641595,
+         "min_expected": 34.25
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 1000,
+       "abstain_sorts_first": 69,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 1
+      }
+     }
+    },
+    "judge_hard": {
+     "noul": {
+      "n": 1000,
+      "n_scored": 1000,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 1000
+      },
+      "letter_share": {
+       "A": 0.594,
+       "B": 0.406
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.594,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.594,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 35.344,
+       "df": 1,
+       "p": 2.76318494854887e-09,
+       "by_k": {
+        "2": {
+         "n": 1000,
+         "counts": [
+          594,
+          406
+         ],
+         "chi2": 35.344,
+         "df": 1,
+         "p": 2.76318494854887e-09,
+         "min_expected": 500.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 117,
+       "B": 883
+      },
+      "gold_true_share": 0.447
+     }
+    },
+    "long_policy": {
+     "choice": {
+      "n": 503,
+      "n_scored": 503,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 259,
+       "5": 164,
+       "6": 80
+      },
+      "letter_share": {
+       "A": 0.2147,
+       "B": 0.2366,
+       "C": 0.2087,
+       "D": 0.2286,
+       "E": 0.0895,
+       "F": 0.0219
+      },
+      "uniform_share": {
+       "A": 0.2204,
+       "B": 0.2204,
+       "C": 0.2204,
+       "D": 0.2204,
+       "E": 0.0917,
+       "F": 0.0265
+      },
+      "share_A": 0.2147,
+      "chance_A": 0.2204,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.2366,
+      "chance_acc": 0.2204,
+      "chi2_vs_uniform": {
+       "chi2": 11.68,
+       "df": 12,
+       "p": 0.47168002605271586,
+       "by_k": {
+        "4": {
+         "n": 259,
+         "counts": [
+          69,
+          68,
+          66,
+          56
+         ],
+         "chi2": 1.649,
+         "df": 3,
+         "p": 0.6484100522996117,
+         "min_expected": 64.75
+        },
+        "5": {
+         "n": 164,
+         "counts": [
+          32,
+          36,
+          26,
+          41,
+          29
+         ],
+         "chi2": 4.232,
+         "df": 4,
+         "p": 0.37555494403301337,
+         "min_expected": 32.8
+        },
+        "6": {
+         "n": 80,
+         "counts": [
+          7,
+          15,
+          13,
+          18,
+          16,
+          11
+         ],
+         "chi2": 5.8,
+         "df": 5,
+         "p": 0.32616881369357376,
+         "min_expected": 13.33
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 503,
+       "abstain_sorts_first": 147,
+       "abstain_first_and_gold": 36,
+       "gold_is_abstain": 224
+      }
+     },
+     "noul": {
+      "n": 346,
+      "n_scored": 346,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 346
+      },
+      "letter_share": {
+       "A": 0.4769,
+       "B": 0.5231
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.4769,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5231,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.74,
+       "df": 1,
+       "p": 0.3896979136523929,
+       "by_k": {
+        "2": {
+         "n": 346,
+         "counts": [
+          165,
+          181
+         ],
+         "chi2": 0.74,
+         "df": 1,
+         "p": 0.3896979136523929,
+         "min_expected": 173.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 186,
+       "B": 160
+      },
+      "gold_true_share": 0.4538
+     },
+     "score": {
+      "n": 111,
+      "n_scored": 111,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 111
+      },
+      "letter_share": {
+       "A": 0.4955,
+       "B": 0.2342,
+       "C": 0.1622,
+       "D": 0.1081
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.4955,
+      "chance_A": 0.25,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.4955,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 39.234,
+       "df": 3,
+       "p": 1.5482498536961822e-08,
+       "by_k": {
+        "4": {
+         "n": 111,
+         "counts": [
+          55,
+          26,
+          18,
+          12
+         ],
+         "chi2": 39.234,
+         "df": 3,
+         "p": 1.5482498536961822e-08,
+         "min_expected": 27.75
+        }
+       }
+      }
+     }
+    },
+    "policy": {
+     "noul": {
+      "n": 1000,
+      "n_scored": 1000,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 1000
+      },
+      "letter_share": {
+       "A": 0.505,
+       "B": 0.495
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.505,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.505,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.1,
+       "df": 1,
+       "p": 0.7518296340458493,
+       "by_k": {
+        "2": {
+         "n": 1000,
+         "counts": [
+          505,
+          495
+         ],
+         "chi2": 0.1,
+         "df": 1,
+         "p": 0.7518296340458493,
+         "min_expected": 500.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "B": 1000
+      },
+      "gold_true_share": 0.495
+     }
+    },
+    "temporal_numeric": {
+     "choice": {
+      "n": 591,
+      "n_scored": 591,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 194,
+       "4": 191,
+       "5": 170,
+       "6": 36
+      },
+      "letter_share": {
+       "A": 0.2758,
+       "B": 0.2403,
+       "C": 0.2403,
+       "D": 0.1574,
+       "E": 0.0711,
+       "F": 0.0152
+      },
+      "uniform_share": {
+       "A": 0.2579,
+       "B": 0.2579,
+       "C": 0.2579,
+       "D": 0.1485,
+       "E": 0.0677,
+       "F": 0.0102
+      },
+      "share_A": 0.2758,
+      "chance_A": 0.2579,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.2758,
+      "chance_acc": 0.2579,
+      "chi2_vs_uniform": {
+       "chi2": 11.469,
+       "df": 14,
+       "p": 0.6488565860165987,
+       "by_k": {
+        "3": {
+         "n": 194,
+         "counts": [
+          79,
+          60,
+          55
+         ],
+         "chi2": 4.959,
+         "df": 2,
+         "p": 0.08379504154945365,
+         "min_expected": 64.67
+        },
+        "4": {
+         "n": 191,
+         "counts": [
+          51,
+          47,
+          45,
+          48
+         ],
+         "chi2": 0.393,
+         "df": 3,
+         "p": 0.9417524720431575,
+         "min_expected": 47.75
+        },
+        "5": {
+         "n": 170,
+         "counts": [
+          30,
+          30,
+          36,
+          40,
+          34
+         ],
+         "chi2": 2.118,
+         "df": 4,
+         "p": 0.7141310343524253,
+         "min_expected": 34.0
+        },
+        "6": {
+         "n": 36,
+         "counts": [
+          3,
+          5,
+          6,
+          5,
+          8,
+          9
+         ],
+         "chi2": 4.0,
+         "df": 5,
+         "p": 0.5494159513527805,
+         "min_expected": 6.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 13,
+       "abstain_sorts_first": 3,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 3
+      }
+     },
+     "noul": {
+      "n": 324,
+      "n_scored": 324,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 324
+      },
+      "letter_share": {
+       "A": 0.4815,
+       "B": 0.5185
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.4815,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5185,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.444,
+       "df": 1,
+       "p": 0.5049850750938459,
+       "by_k": {
+        "2": {
+         "n": 324,
+         "counts": [
+          156,
+          168
+         ],
+         "chi2": 0.444,
+         "df": 1,
+         "p": 0.5049850750938459,
+         "min_expected": 162.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 86,
+       "B": 238
+      },
+      "gold_true_share": 0.5062
+     },
+     "score": {
+      "n": 85,
+      "n_scored": 85,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 85
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.4235,
+       "C": 0.3412,
+       "D": 0.0941,
+       "E": 0.1412
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.4235,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 52.941,
+       "df": 4,
+       "p": 8.766728478349629e-11,
+       "by_k": {
+        "5": {
+         "n": 85,
+         "counts": [
+          0,
+          36,
+          29,
+          8,
+          12
+         ],
+         "chi2": 52.941,
+         "df": 4,
+         "p": 8.766728478349629e-11,
+         "min_expected": 17.0
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "pres": {
+   "ALL": {
+    "choice": {
+     "n": 2094,
+     "n_scored": 2094,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "3": 1057,
+      "4": 587,
+      "5": 334,
+      "6": 116
+     },
+     "letter_share": {
+      "A": 0.2875,
+      "B": 0.2841,
+      "C": 0.2746,
+      "D": 0.1046,
+      "E": 0.0406,
+      "F": 0.0086
+     },
+     "uniform_share": {
+      "A": 0.2795,
+      "B": 0.2795,
+      "C": 0.2795,
+      "D": 0.1112,
+      "E": 0.0411,
+      "F": 0.0092
+     },
+     "share_A": 0.2875,
+     "chance_A": 0.2795,
+     "best_constant_letter": "A",
+     "best_constant_acc": 0.2875,
+     "chance_acc": 0.2795,
+     "chi2_vs_uniform": {
+      "chi2": 9.822,
+      "df": 14,
+      "p": 0.7751040094868591,
+      "by_k": {
+       "3": {
+        "n": 1057,
+        "counts": [
+         361,
+         337,
+         359
+        ],
+        "chi2": 1.007,
+        "df": 2,
+        "p": 0.604525601509524,
+        "min_expected": 352.33
+       },
+       "4": {
+        "n": 587,
+        "counts": [
+         153,
+         167,
+         132,
+         135
+        ],
+        "chi2": 5.484,
+        "df": 3,
+        "p": 0.13960980970298123,
+        "min_expected": 146.75
+       },
+       "5": {
+        "n": 334,
+        "counts": [
+         67,
+         71,
+         62,
+         63,
+         71
+        ],
+        "chi2": 1.09,
+        "df": 4,
+        "p": 0.8958839386662503,
+        "min_expected": 66.8
+       },
+       "6": {
+        "n": 116,
+        "counts": [
+         21,
+         20,
+         22,
+         21,
+         14,
+         18
+        ],
+        "chi2": 2.241,
+        "df": 5,
+        "p": 0.8148369706049561,
+        "min_expected": 19.33
+       }
+      }
+     }
+    },
+    "noul": {
+     "n": 3670,
+     "n_scored": 3670,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "2": 3670
+     },
+     "letter_share": {
+      "A": 0.4916,
+      "B": 0.5084
+     },
+     "uniform_share": {
+      "A": 0.5,
+      "B": 0.5
+     },
+     "share_A": 0.4916,
+     "chance_A": 0.5,
+     "best_constant_letter": "B",
+     "best_constant_acc": 0.5084,
+     "chance_acc": 0.5,
+     "chi2_vs_uniform": {
+      "chi2": 1.047,
+      "df": 1,
+      "p": 0.30610400861287745,
+      "by_k": {
+       "2": {
+        "n": 3670,
+        "counts": [
+         1804,
+         1866
+        ],
+        "chi2": 1.047,
+        "df": 1,
+        "p": 0.30610400861287745,
+        "min_expected": 1835.0
+       }
+      }
+     }
+    },
+    "score": {
+     "n": 196,
+     "n_scored": 196,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "4": 111,
+      "5": 85
+     },
+     "letter_share": {
+      "A": 0.2806,
+      "B": 0.3163,
+      "C": 0.2398,
+      "D": 0.102,
+      "E": 0.0612
+     },
+     "uniform_share": {
+      "A": 0.2283,
+      "B": 0.2283,
+      "C": 0.2283,
+      "D": 0.2283,
+      "E": 0.0867
+     },
+     "share_A": 0.2806,
+     "chance_A": 0.2283,
+     "best_constant_letter": "B",
+     "best_constant_acc": 0.3163,
+     "chance_acc": 0.2283,
+     "chi2_vs_uniform": {
+      "chi2": 92.175,
+      "df": 7,
+      "p": 4.4200396085054206e-17,
+      "by_k": {
+       "4": {
+        "n": 111,
+        "counts": [
+         55,
+         26,
+         18,
+         12
+        ],
+        "chi2": 39.234,
+        "df": 3,
+        "p": 1.5482498536961822e-08,
+        "min_expected": 27.75
+       },
+       "5": {
+        "n": 85,
+        "counts": [
+         0,
+         36,
+         29,
+         8,
+         12
+        ],
+        "chi2": 52.941,
+        "df": 4,
+        "p": 8.766728478349629e-11,
+        "min_expected": 17.0
+       }
+      }
+     }
+    }
+   },
+   "by_family": {
+    "adequacy": {
+     "noul": {
+      "n": 1000,
+      "n_scored": 1000,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 1000
+      },
+      "letter_share": {
+       "A": 0.541,
+       "B": 0.459
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.541,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.541,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 6.724,
+       "df": 1,
+       "p": 0.009512404872503386,
+       "by_k": {
+        "2": {
+         "n": 1000,
+         "counts": [
+          541,
+          459
+         ],
+         "chi2": 6.724,
+         "df": 1,
+         "p": 0.009512404872503386,
+         "min_expected": 500.0
+        }
+       }
+      }
+     }
+    },
+    "ambiguous": {
+     "choice": {
+      "n": 1000,
+      "n_scored": 1000,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 863,
+       "4": 137
+      },
+      "letter_share": {
+       "A": 0.333,
+       "B": 0.324,
+       "C": 0.312,
+       "D": 0.031
+      },
+      "uniform_share": {
+       "A": 0.3219,
+       "B": 0.3219,
+       "C": 0.3219,
+       "D": 0.0343
+      },
+      "share_A": 0.333,
+      "chance_A": 0.3219,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.333,
+      "chance_acc": 0.3219,
+      "chi2_vs_uniform": {
+       "chi2": 8.243,
+       "df": 5,
+       "p": 0.1433650927128824,
+       "by_k": {
+        "3": {
+         "n": 863,
+         "counts": [
+          295,
+          279,
+          289
+         ],
+         "chi2": 0.454,
+         "df": 2,
+         "p": 0.7968293678841755,
+         "min_expected": 287.67
+        },
+        "4": {
+         "n": 137,
+         "counts": [
+          38,
+          45,
+          23,
+          31
+         ],
+         "chi2": 7.788,
+         "df": 3,
+         "p": 0.050595164863898145,
+         "min_expected": 34.25
+        }
+       }
+      }
+     }
+    },
+    "judge_hard": {
+     "noul": {
+      "n": 1000,
+      "n_scored": 1000,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 1000
+      },
+      "letter_share": {
+       "A": 0.447,
+       "B": 0.553
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.447,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.553,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 11.236,
+       "df": 1,
+       "p": 0.00080225869043865,
+       "by_k": {
+        "2": {
+         "n": 1000,
+         "counts": [
+          447,
+          553
+         ],
+         "chi2": 11.236,
+         "df": 1,
+         "p": 0.00080225869043865,
+         "min_expected": 500.0
+        }
+       }
+      }
+     }
+    },
+    "long_policy": {
+     "choice": {
+      "n": 503,
+      "n_scored": 503,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 259,
+       "5": 164,
+       "6": 80
+      },
+      "letter_share": {
+       "A": 0.2266,
+       "B": 0.2485,
+       "C": 0.2187,
+       "D": 0.1789,
+       "E": 0.0974,
+       "F": 0.0298
+      },
+      "uniform_share": {
+       "A": 0.2204,
+       "B": 0.2204,
+       "C": 0.2204,
+       "D": 0.2204,
+       "E": 0.0917,
+       "F": 0.0265
+      },
+      "share_A": 0.2266,
+      "chance_A": 0.2204,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.2485,
+      "chance_acc": 0.2204,
+      "chi2_vs_uniform": {
+       "chi2": 12.442,
+       "df": 12,
+       "p": 0.4108420337646165,
+       "by_k": {
+        "4": {
+         "n": 259,
+         "counts": [
+          69,
+          75,
+          64,
+          51
+         ],
+         "chi2": 4.83,
+         "df": 3,
+         "p": 0.18466801877411443,
+         "min_expected": 64.75
+        },
+        "5": {
+         "n": 164,
+         "counts": [
+          29,
+          36,
+          29,
+          30,
+          40
+         ],
+         "chi2": 3.012,
+         "df": 4,
+         "p": 0.5557866539405727,
+         "min_expected": 32.8
+        },
+        "6": {
+         "n": 80,
+         "counts": [
+          16,
+          14,
+          17,
+          9,
+          9,
+          15
+         ],
+         "chi2": 4.6,
+         "df": 5,
+         "p": 0.466616274115331,
+         "min_expected": 13.33
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 346,
+      "n_scored": 346,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 346
+      },
+      "letter_share": {
+       "A": 0.4538,
+       "B": 0.5462
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.4538,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5462,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 2.96,
+       "df": 1,
+       "p": 0.08537235369061358,
+       "by_k": {
+        "2": {
+         "n": 346,
+         "counts": [
+          157,
+          189
+         ],
+         "chi2": 2.96,
+         "df": 1,
+         "p": 0.08537235369061358,
+         "min_expected": 173.0
+        }
+       }
+      }
+     },
+     "score": {
+      "n": 111,
+      "n_scored": 111,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 111
+      },
+      "letter_share": {
+       "A": 0.4955,
+       "B": 0.2342,
+       "C": 0.1622,
+       "D": 0.1081
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.4955,
+      "chance_A": 0.25,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.4955,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 39.234,
+       "df": 3,
+       "p": 1.5482498536961822e-08,
+       "by_k": {
+        "4": {
+         "n": 111,
+         "counts": [
+          55,
+          26,
+          18,
+          12
+         ],
+         "chi2": 39.234,
+         "df": 3,
+         "p": 1.5482498536961822e-08,
+         "min_expected": 27.75
+        }
+       }
+      }
+     }
+    },
+    "policy": {
+     "noul": {
+      "n": 1000,
+      "n_scored": 1000,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 1000
+      },
+      "letter_share": {
+       "A": 0.495,
+       "B": 0.505
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.495,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.505,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.1,
+       "df": 1,
+       "p": 0.7518296340458493,
+       "by_k": {
+        "2": {
+         "n": 1000,
+         "counts": [
+          495,
+          505
+         ],
+         "chi2": 0.1,
+         "df": 1,
+         "p": 0.7518296340458493,
+         "min_expected": 500.0
+        }
+       }
+      }
+     }
+    },
+    "temporal_numeric": {
+     "choice": {
+      "n": 591,
+      "n_scored": 591,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 194,
+       "4": 191,
+       "5": 170,
+       "6": 36
+      },
+      "letter_share": {
+       "A": 0.2623,
+       "B": 0.247,
+       "C": 0.2589,
+       "D": 0.1658,
+       "E": 0.0609,
+       "F": 0.0051
+      },
+      "uniform_share": {
+       "A": 0.2579,
+       "B": 0.2579,
+       "C": 0.2579,
+       "D": 0.1485,
+       "E": 0.0677,
+       "F": 0.0102
+      },
+      "share_A": 0.2623,
+      "chance_A": 0.2579,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.2623,
+      "chance_acc": 0.2579,
+      "chi2_vs_uniform": {
+       "chi2": 10.79,
+       "df": 14,
+       "p": 0.7024731184297477,
+       "by_k": {
+        "3": {
+         "n": 194,
+         "counts": [
+          66,
+          58,
+          70
+         ],
+         "chi2": 1.155,
+         "df": 2,
+         "p": 0.5614011381978234,
+         "min_expected": 64.67
+        },
+        "4": {
+         "n": 191,
+         "counts": [
+          46,
+          47,
+          45,
+          53
+         ],
+         "chi2": 0.812,
+         "df": 3,
+         "p": 0.8467100648370655,
+         "min_expected": 47.75
+        },
+        "5": {
+         "n": 170,
+         "counts": [
+          38,
+          35,
+          33,
+          33,
+          31
+         ],
+         "chi2": 0.824,
+         "df": 4,
+         "p": 0.9352660734973077,
+         "min_expected": 34.0
+        },
+        "6": {
+         "n": 36,
+         "counts": [
+          5,
+          6,
+          5,
+          12,
+          5,
+          3
+         ],
+         "chi2": 8.0,
+         "df": 5,
+         "p": 0.15623562757772233,
+         "min_expected": 6.0
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 324,
+      "n_scored": 324,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 324
+      },
+      "letter_share": {
+       "A": 0.5062,
+       "B": 0.4938
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5062,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5062,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.049,
+       "df": 1,
+       "p": 0.8241408957418853,
+       "by_k": {
+        "2": {
+         "n": 324,
+         "counts": [
+          164,
+          160
+         ],
+         "chi2": 0.049,
+         "df": 1,
+         "p": 0.8241408957418853,
+         "min_expected": 162.0
+        }
+       }
+      }
+     },
+     "score": {
+      "n": 85,
+      "n_scored": 85,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 85
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.4235,
+       "C": 0.3412,
+       "D": 0.0941,
+       "E": 0.1412
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.4235,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 52.941,
+       "df": 4,
+       "p": 8.766728478349629e-11,
+       "by_k": {
+        "5": {
+         "n": 85,
+         "counts": [
+          0,
+          36,
+          29,
+          8,
+          12
+         ],
+         "chi2": 52.941,
+         "df": 4,
+         "p": 8.766728478349629e-11,
+         "min_expected": 17.0
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "idsort": {
+   "ALL": {
+    "choice": {
+     "n": 2094,
+     "n_scored": 2094,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "3": 1057,
+      "4": 587,
+      "5": 334,
+      "6": 116
+     },
+     "letter_share": {
+      "A": 0.3854,
+      "B": 0.3276,
+      "C": 0.1547,
+      "D": 0.086,
+      "E": 0.0396,
+      "F": 0.0067
+     },
+     "uniform_share": {
+      "A": 0.2795,
+      "B": 0.2795,
+      "C": 0.2795,
+      "D": 0.1112,
+      "E": 0.0411,
+      "F": 0.0092
+     },
+     "share_A": 0.3854,
+     "chance_A": 0.2795,
+     "best_constant_letter": "A",
+     "best_constant_acc": 0.3854,
+     "chance_acc": 0.2795,
+     "chi2_vs_uniform": {
+      "chi2": 423.0,
+      "df": 14,
+      "p": 1.7931250019315228e-81,
+      "by_k": {
+       "3": {
+        "n": 1057,
+        "counts": [
+         508,
+         487,
+         62
+        ],
+        "chi2": 359.491,
+        "df": 2,
+        "p": 8.660012768968057e-79,
+        "min_expected": 352.33
+       },
+       "4": {
+        "n": 587,
+        "counts": [
+         193,
+         111,
+         187,
+         96
+        ],
+        "chi2": 51.876,
+        "df": 3,
+        "p": 3.183553349634021e-11,
+        "min_expected": 146.75
+       },
+       "5": {
+        "n": 334,
+        "counts": [
+         77,
+         71,
+         54,
+         65,
+         67
+        ],
+        "chi2": 4.323,
+        "df": 4,
+        "p": 0.36400991401291516,
+        "min_expected": 66.8
+       },
+       "6": {
+        "n": 116,
+        "counts": [
+         29,
+         17,
+         21,
+         19,
+         16,
+         14
+        ],
+        "chi2": 7.31,
+        "df": 5,
+        "p": 0.19856364856413813,
+        "min_expected": 19.33
+       }
+      }
+     }
+    }
+   },
+   "by_family": {
+    "adequacy": {},
+    "ambiguous": {
+     "choice": {
+      "n": 1000,
+      "n_scored": 1000,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 863,
+       "4": 137
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.427,
+       "C": 0.073,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.3219,
+       "B": 0.3219,
+       "C": 0.3219,
+       "D": 0.0343
+      },
+      "share_A": 0.5,
+      "chance_A": 0.3219,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.3219,
+      "chi2_vs_uniform": {
+       "chi2": 569.823,
+       "df": 5,
+       "p": 6.685943279618534e-121,
+       "by_k": {
+        "3": {
+         "n": 863,
+         "counts": [
+          436,
+          427,
+          0
+         ],
+         "chi2": 431.641,
+         "df": 2,
+         "p": 1.8637764278566548e-94,
+         "min_expected": 287.67
+        },
+        "4": {
+         "n": 137,
+         "counts": [
+          64,
+          0,
+          73,
+          0
+         ],
+         "chi2": 138.182,
+         "df": 3,
+         "p": 9.318185992038625e-30,
+         "min_expected": 34.25
+        }
+       }
+      }
+     }
+    },
+    "judge_hard": {},
+    "long_policy": {
+     "choice": {
+      "n": 503,
+      "n_scored": 503,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 259,
+       "5": 164,
+       "6": 80
+      },
+      "letter_share": {
+       "A": 0.3101,
+       "B": 0.1909,
+       "C": 0.1829,
+       "D": 0.2087,
+       "E": 0.0895,
+       "F": 0.0179
+      },
+      "uniform_share": {
+       "A": 0.2204,
+       "B": 0.2204,
+       "C": 0.2204,
+       "D": 0.2204,
+       "E": 0.0917,
+       "F": 0.0265
+      },
+      "share_A": 0.3101,
+      "chance_A": 0.2204,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.3101,
+      "chance_acc": 0.2204,
+      "chi2_vs_uniform": {
+       "chi2": 31.622,
+       "df": 12,
+       "p": 0.001582119008540739,
+       "by_k": {
+        "4": {
+         "n": 259,
+         "counts": [
+          84,
+          57,
+          57,
+          61
+         ],
+         "chi2": 7.795,
+         "df": 3,
+         "p": 0.05043569720888823,
+         "min_expected": 64.75
+        },
+        "5": {
+         "n": 164,
+         "counts": [
+          48,
+          30,
+          22,
+          29,
+          35
+         ],
+         "chi2": 11.427,
+         "df": 4,
+         "p": 0.022163534621375252,
+         "min_expected": 32.8
+        },
+        "6": {
+         "n": 80,
+         "counts": [
+          24,
+          9,
+          13,
+          15,
+          10,
+          9
+         ],
+         "chi2": 12.4,
+         "df": 5,
+         "p": 0.02969945920352019,
+         "min_expected": 13.33
+        }
+       }
+      }
+     }
+    },
+    "policy": {},
+    "temporal_numeric": {
+     "choice": {
+      "n": 591,
+      "n_scored": 591,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 194,
+       "4": 191,
+       "5": 170,
+       "6": 36
+      },
+      "letter_share": {
+       "A": 0.2555,
+       "B": 0.2758,
+       "C": 0.269,
+       "D": 0.1269,
+       "E": 0.0643,
+       "F": 0.0085
+      },
+      "uniform_share": {
+       "A": 0.2579,
+       "B": 0.2579,
+       "C": 0.2579,
+       "D": 0.1485,
+       "E": 0.0677,
+       "F": 0.0102
+      },
+      "share_A": 0.2555,
+      "chance_A": 0.2579,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.2758,
+      "chance_acc": 0.2579,
+      "chi2_vs_uniform": {
+       "chi2": 12.314,
+       "df": 14,
+       "p": 0.5811123638016861,
+       "by_k": {
+        "3": {
+         "n": 194,
+         "counts": [
+          72,
+          60,
+          62
+         ],
+         "chi2": 1.278,
+         "df": 2,
+         "p": 0.5277274837741889,
+         "min_expected": 64.67
+        },
+        "4": {
+         "n": 191,
+         "counts": [
+          45,
+          54,
+          57,
+          35
+         ],
+         "chi2": 6.173,
+         "df": 3,
+         "p": 0.10350033045407965,
+         "min_expected": 47.75
+        },
+        "5": {
+         "n": 170,
+         "counts": [
+          29,
+          41,
+          32,
+          36,
+          32
+         ],
+         "chi2": 2.529,
+         "df": 4,
+         "p": 0.6393770186128906,
+         "min_expected": 34.0
+        },
+        "6": {
+         "n": 36,
+         "counts": [
+          5,
+          8,
+          8,
+          4,
+          6,
+          5
+         ],
+         "chi2": 2.333,
+         "df": 5,
+         "p": 0.8013589222076913,
+         "min_expected": 6.0
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "slice": {
+  "n_questions": 1200,
+  "can": {
+   "ALL": {
+    "choice": {
+     "n": 416,
+     "n_scored": 416,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "3": 209,
+      "4": 110,
+      "5": 76,
+      "6": 21
+     },
+     "letter_share": {
+      "A": 0.3846,
+      "B": 0.2644,
+      "C": 0.2091,
+      "D": 0.0889,
+      "E": 0.0409,
+      "F": 0.012
+     },
+     "uniform_share": {
+      "A": 0.2785,
+      "B": 0.2785,
+      "C": 0.2785,
+      "D": 0.1111,
+      "E": 0.045,
+      "F": 0.0084
+     },
+     "share_A": 0.3846,
+     "chance_A": 0.2785,
+     "best_constant_letter": "A",
+     "best_constant_acc": 0.3846,
+     "chance_acc": 0.2785,
+     "chi2_vs_uniform": {
+      "chi2": 41.493,
+      "df": 14,
+      "p": 0.0001487461964372226,
+      "by_k": {
+       "3": {
+        "n": 209,
+        "counts": [
+         100,
+         67,
+         42
+        ],
+        "chi2": 24.297,
+        "df": 2,
+        "p": 5.297236127249302e-06,
+        "min_expected": 69.67
+       },
+       "4": {
+        "n": 110,
+        "counts": [
+         39,
+         19,
+         30,
+         22
+        ],
+        "chi2": 8.764,
+        "df": 3,
+        "p": 0.03260427195585612,
+        "min_expected": 27.5
+       },
+       "5": {
+        "n": 76,
+        "counts": [
+         17,
+         18,
+         12,
+         12,
+         17
+        ],
+        "chi2": 2.289,
+        "df": 4,
+        "p": 0.6826861911483717,
+        "min_expected": 15.2
+       },
+       "6": {
+        "n": 21,
+        "counts": [
+         4,
+         6,
+         3,
+         3,
+         0,
+         5
+        ],
+        "chi2": 6.143,
+        "df": 5,
+        "p": 0.2925654892792221,
+        "min_expected": 3.5
+       }
+      }
+     },
+     "items_with_any_tie_set": 0,
+     "abstain": {
+      "has_abstain_option": 303,
+      "abstain_sorts_first": 53,
+      "abstain_first_and_gold": 10,
+      "gold_is_abstain": 37
+     }
+    },
+    "noul": {
+     "n": 741,
+     "n_scored": 741,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "2": 741
+     },
+     "letter_share": {
+      "A": 0.5088,
+      "B": 0.4912
+     },
+     "uniform_share": {
+      "A": 0.5,
+      "B": 0.5
+     },
+     "share_A": 0.5088,
+     "chance_A": 0.5,
+     "best_constant_letter": "A",
+     "best_constant_acc": 0.5088,
+     "chance_acc": 0.5,
+     "chi2_vs_uniform": {
+      "chi2": 0.228,
+      "df": 1,
+      "p": 0.6329584709341931,
+      "by_k": {
+       "2": {
+        "n": 741,
+        "counts": [
+         377,
+         364
+        ],
+        "chi2": 0.228,
+        "df": 1,
+        "p": 0.6329584709341931,
+        "min_expected": 370.5
+       }
+      }
+     },
+     "items_with_any_tie_set": 0,
+     "abstain": {
+      "has_abstain_option": 0,
+      "abstain_sorts_first": 0,
+      "abstain_first_and_gold": 0,
+      "gold_is_abstain": 0
+     },
+     "true_option_letter": {
+      "A": 112,
+      "B": 629
+     },
+     "gold_true_share": 0.5398
+    },
+    "score": {
+     "n": 43,
+     "n_scored": 43,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "4": 28,
+      "5": 15
+     },
+     "letter_share": {
+      "A": 0.2791,
+      "B": 0.3721,
+      "C": 0.2326,
+      "D": 0.0465,
+      "E": 0.0698
+     },
+     "uniform_share": {
+      "A": 0.2326,
+      "B": 0.2326,
+      "C": 0.2326,
+      "D": 0.2326,
+      "E": 0.0698
+     },
+     "share_A": 0.2791,
+     "chance_A": 0.2326,
+     "best_constant_letter": "B",
+     "best_constant_acc": 0.3721,
+     "chance_acc": 0.2326,
+     "chi2_vs_uniform": {
+      "chi2": 24.381,
+      "df": 7,
+      "p": 0.0009763062673652009,
+      "by_k": {
+       "4": {
+        "n": 28,
+        "counts": [
+         12,
+         11,
+         3,
+         2
+        ],
+        "chi2": 11.714,
+        "df": 3,
+        "p": 0.00842882056940403,
+        "min_expected": 7.0
+       },
+       "5": {
+        "n": 15,
+        "counts": [
+         0,
+         5,
+         7,
+         0,
+         3
+        ],
+        "chi2": 12.667,
+        "df": 4,
+        "p": 0.013024759335385444,
+        "min_expected": 3.0
+       }
+      }
+     }
+    }
+   },
+   "by_family": {
+    "adequacy": {
+     "noul": {
+      "n": 200,
+      "n_scored": 200,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 200
+      },
+      "letter_share": {
+       "A": 0.475,
+       "B": 0.525
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.475,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.525,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.5,
+       "df": 1,
+       "p": 0.4795001221869536,
+       "by_k": {
+        "2": {
+         "n": 200,
+         "counts": [
+          95,
+          105
+         ],
+         "chi2": 0.5,
+         "df": 1,
+         "p": 0.4795001221869536,
+         "min_expected": 100.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 44,
+       "B": 156
+      },
+      "gold_true_share": 0.575
+     }
+    },
+    "ambiguous": {
+     "choice": {
+      "n": 200,
+      "n_scored": 200,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 168,
+       "4": 32
+      },
+      "letter_share": {
+       "A": 0.505,
+       "B": 0.305,
+       "C": 0.15,
+       "D": 0.04
+      },
+      "uniform_share": {
+       "A": 0.32,
+       "B": 0.32,
+       "C": 0.32,
+       "D": 0.04
+      },
+      "share_A": 0.505,
+      "chance_A": 0.32,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.505,
+      "chance_acc": 0.32,
+      "chi2_vs_uniform": {
+       "chi2": 40.857,
+       "df": 5,
+       "p": 1.0027373502866103e-07,
+       "by_k": {
+        "3": {
+         "n": 168,
+         "counts": [
+          86,
+          55,
+          27
+         ],
+         "chi2": 31.107,
+         "df": 2,
+         "p": 1.7586108759618984e-07,
+         "min_expected": 56.0
+        },
+        "4": {
+         "n": 32,
+         "counts": [
+          15,
+          6,
+          3,
+          8
+         ],
+         "chi2": 9.75,
+         "df": 3,
+         "p": 0.020815253112752768,
+         "min_expected": 8.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 200,
+       "abstain_sorts_first": 13,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      }
+     }
+    },
+    "judge_hard": {
+     "noul": {
+      "n": 200,
+      "n_scored": 200,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 200
+      },
+      "letter_share": {
+       "A": 0.56,
+       "B": 0.44
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.56,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.56,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 2.88,
+       "df": 1,
+       "p": 0.08968602177036489,
+       "by_k": {
+        "2": {
+         "n": 200,
+         "counts": [
+          112,
+          88
+         ],
+         "chi2": 2.88,
+         "df": 1,
+         "p": 0.08968602177036489,
+         "min_expected": 100.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 22,
+       "B": 178
+      },
+      "gold_true_share": 0.48
+     }
+    },
+    "long_policy": {
+     "choice": {
+      "n": 101,
+      "n_scored": 101,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 55,
+       "5": 33,
+       "6": 13
+      },
+      "letter_share": {
+       "A": 0.297,
+       "B": 0.2079,
+       "C": 0.2475,
+       "D": 0.1386,
+       "E": 0.0792,
+       "F": 0.0297
+      },
+      "uniform_share": {
+       "A": 0.2229,
+       "B": 0.2229,
+       "C": 0.2229,
+       "D": 0.2229,
+       "E": 0.0868,
+       "F": 0.0215
+      },
+      "share_A": 0.297,
+      "chance_A": 0.2229,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.297,
+      "chance_acc": 0.2229,
+      "chi2_vs_uniform": {
+       "chi2": 16.561,
+       "df": 12,
+       "p": 0.16685780309267811,
+       "by_k": {
+        "4": {
+         "n": 55,
+         "counts": [
+          18,
+          9,
+          18,
+          10
+         ],
+         "chi2": 5.291,
+         "df": 3,
+         "p": 0.1516933753093354,
+         "min_expected": 13.75
+        },
+        "5": {
+         "n": 33,
+         "counts": [
+          10,
+          7,
+          5,
+          3,
+          8
+         ],
+         "chi2": 4.424,
+         "df": 4,
+         "p": 0.3516251169844229,
+         "min_expected": 6.6
+        },
+        "6": {
+         "n": 13,
+         "counts": [
+          2,
+          5,
+          2,
+          1,
+          0,
+          3
+         ],
+         "chi2": 6.846,
+         "df": 5,
+         "p": 0.23233578961906043,
+         "min_expected": 2.17
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 101,
+       "abstain_sorts_first": 40,
+       "abstain_first_and_gold": 10,
+       "gold_is_abstain": 37
+      }
+     },
+     "noul": {
+      "n": 71,
+      "n_scored": 71,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 71
+      },
+      "letter_share": {
+       "A": 0.5352,
+       "B": 0.4648
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5352,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5352,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.352,
+       "df": 1,
+       "p": 0.5529196249710486,
+       "by_k": {
+        "2": {
+         "n": 71,
+         "counts": [
+          38,
+          33
+         ],
+         "chi2": 0.352,
+         "df": 1,
+         "p": 0.5529196249710486,
+         "min_expected": 35.5
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 36,
+       "B": 35
+      },
+      "gold_true_share": 0.7183
+     },
+     "score": {
+      "n": 28,
+      "n_scored": 28,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 28
+      },
+      "letter_share": {
+       "A": 0.4286,
+       "B": 0.3929,
+       "C": 0.1071,
+       "D": 0.0714
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.4286,
+      "chance_A": 0.25,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.4286,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 11.714,
+       "df": 3,
+       "p": 0.00842882056940403,
+       "by_k": {
+        "4": {
+         "n": 28,
+         "counts": [
+          12,
+          11,
+          3,
+          2
+         ],
+         "chi2": 11.714,
+         "df": 3,
+         "p": 0.00842882056940403,
+         "min_expected": 7.0
+        }
+       }
+      }
+     }
+    },
+    "policy": {
+     "noul": {
+      "n": 200,
+      "n_scored": 200,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 200
+      },
+      "letter_share": {
+       "A": 0.475,
+       "B": 0.525
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.475,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.525,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.5,
+       "df": 1,
+       "p": 0.4795001221869536,
+       "by_k": {
+        "2": {
+         "n": 200,
+         "counts": [
+          95,
+          105
+         ],
+         "chi2": 0.5,
+         "df": 1,
+         "p": 0.4795001221869536,
+         "min_expected": 100.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "B": 200
+      },
+      "gold_true_share": 0.525
+     }
+    },
+    "temporal_numeric": {
+     "choice": {
+      "n": 115,
+      "n_scored": 115,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 41,
+       "4": 23,
+       "5": 43,
+       "6": 8
+      },
+      "letter_share": {
+       "A": 0.2522,
+       "B": 0.2435,
+       "C": 0.2783,
+       "D": 0.1304,
+       "E": 0.0783,
+       "F": 0.0174
+      },
+      "uniform_share": {
+       "A": 0.2552,
+       "B": 0.2552,
+       "C": 0.2552,
+       "D": 0.1364,
+       "E": 0.0864,
+       "F": 0.0116
+      },
+      "share_A": 0.2522,
+      "chance_A": 0.2552,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.2783,
+      "chance_acc": 0.2552,
+      "chi2_vs_uniform": {
+       "chi2": 7.057,
+       "df": 14,
+       "p": 0.932498818676112,
+       "by_k": {
+        "3": {
+         "n": 41,
+         "counts": [
+          14,
+          12,
+          15
+         ],
+         "chi2": 0.341,
+         "df": 2,
+         "p": 0.8430477266690628,
+         "min_expected": 13.67
+        },
+        "4": {
+         "n": 23,
+         "counts": [
+          6,
+          4,
+          9,
+          4
+         ],
+         "chi2": 2.913,
+         "df": 3,
+         "p": 0.4052273832031362,
+         "min_expected": 5.75
+        },
+        "5": {
+         "n": 43,
+         "counts": [
+          7,
+          11,
+          7,
+          9,
+          9
+         ],
+         "chi2": 1.302,
+         "df": 4,
+         "p": 0.8609808388342761,
+         "min_expected": 8.6
+        },
+        "6": {
+         "n": 8,
+         "counts": [
+          2,
+          1,
+          1,
+          2,
+          0,
+          2
+         ],
+         "chi2": 2.5,
+         "df": 5,
+         "p": 0.7764950711233229,
+         "min_expected": 1.33
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 2,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      }
+     },
+     "noul": {
+      "n": 70,
+      "n_scored": 70,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 70
+      },
+      "letter_share": {
+       "A": 0.5286,
+       "B": 0.4714
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5286,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5286,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.229,
+       "df": 1,
+       "p": 0.6325851216960416,
+       "by_k": {
+        "2": {
+         "n": 70,
+         "counts": [
+          37,
+          33
+         ],
+         "chi2": 0.229,
+         "df": 1,
+         "p": 0.6325851216960416,
+         "min_expected": 35.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 10,
+       "B": 60
+      },
+      "gold_true_share": 0.4714
+     },
+     "score": {
+      "n": 15,
+      "n_scored": 15,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 15
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.3333,
+       "C": 0.4667,
+       "D": 0.0,
+       "E": 0.2
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.4667,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 12.667,
+       "df": 4,
+       "p": 0.013024759335385444,
+       "by_k": {
+        "5": {
+         "n": 15,
+         "counts": [
+          0,
+          5,
+          7,
+          0,
+          3
+         ],
+         "chi2": 12.667,
+         "df": 4,
+         "p": 0.013024759335385444,
+         "min_expected": 3.0
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "pres": {
+   "ALL": {
+    "choice": {
+     "n": 416,
+     "n_scored": 416,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "3": 209,
+      "4": 110,
+      "5": 76,
+      "6": 21
+     },
+     "letter_share": {
+      "A": 0.2764,
+      "B": 0.2548,
+      "C": 0.3221,
+      "D": 0.0913,
+      "E": 0.0457,
+      "F": 0.0096
+     },
+     "uniform_share": {
+      "A": 0.2785,
+      "B": 0.2785,
+      "C": 0.2785,
+      "D": 0.1111,
+      "E": 0.045,
+      "F": 0.0084
+     },
+     "share_A": 0.2764,
+     "chance_A": 0.2785,
+     "best_constant_letter": "C",
+     "best_constant_acc": 0.3221,
+     "chance_acc": 0.2785,
+     "chi2_vs_uniform": {
+      "chi2": 11.891,
+      "df": 14,
+      "p": 0.6150523410349599,
+      "by_k": {
+       "3": {
+        "n": 209,
+        "counts": [
+         71,
+         64,
+         74
+        ],
+        "chi2": 0.756,
+        "df": 2,
+        "p": 0.685237057926916,
+        "min_expected": 69.67
+       },
+       "4": {
+        "n": 110,
+        "counts": [
+         23,
+         23,
+         38,
+         26
+        ],
+        "chi2": 5.564,
+        "df": 3,
+        "p": 0.1348816155109839,
+        "min_expected": 27.5
+       },
+       "5": {
+        "n": 76,
+        "counts": [
+         17,
+         14,
+         19,
+         9,
+         17
+        ],
+        "chi2": 4.0,
+        "df": 4,
+        "p": 0.40600584970983833,
+        "min_expected": 15.2
+       },
+       "6": {
+        "n": 21,
+        "counts": [
+         4,
+         5,
+         3,
+         3,
+         2,
+         4
+        ],
+        "chi2": 1.571,
+        "df": 5,
+        "p": 0.9046827003530794,
+        "min_expected": 3.5
+       }
+      }
+     }
+    },
+    "noul": {
+     "n": 741,
+     "n_scored": 741,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "2": 741
+     },
+     "letter_share": {
+      "A": 0.5398,
+      "B": 0.4602
+     },
+     "uniform_share": {
+      "A": 0.5,
+      "B": 0.5
+     },
+     "share_A": 0.5398,
+     "chance_A": 0.5,
+     "best_constant_letter": "A",
+     "best_constant_acc": 0.5398,
+     "chance_acc": 0.5,
+     "chi2_vs_uniform": {
+      "chi2": 4.698,
+      "df": 1,
+      "p": 0.03020290783277629,
+      "by_k": {
+       "2": {
+        "n": 741,
+        "counts": [
+         400,
+         341
+        ],
+        "chi2": 4.698,
+        "df": 1,
+        "p": 0.03020290783277629,
+        "min_expected": 370.5
+       }
+      }
+     }
+    },
+    "score": {
+     "n": 43,
+     "n_scored": 43,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "4": 28,
+      "5": 15
+     },
+     "letter_share": {
+      "A": 0.2791,
+      "B": 0.3721,
+      "C": 0.2326,
+      "D": 0.0465,
+      "E": 0.0698
+     },
+     "uniform_share": {
+      "A": 0.2326,
+      "B": 0.2326,
+      "C": 0.2326,
+      "D": 0.2326,
+      "E": 0.0698
+     },
+     "share_A": 0.2791,
+     "chance_A": 0.2326,
+     "best_constant_letter": "B",
+     "best_constant_acc": 0.3721,
+     "chance_acc": 0.2326,
+     "chi2_vs_uniform": {
+      "chi2": 24.381,
+      "df": 7,
+      "p": 0.0009763062673652009,
+      "by_k": {
+       "4": {
+        "n": 28,
+        "counts": [
+         12,
+         11,
+         3,
+         2
+        ],
+        "chi2": 11.714,
+        "df": 3,
+        "p": 0.00842882056940403,
+        "min_expected": 7.0
+       },
+       "5": {
+        "n": 15,
+        "counts": [
+         0,
+         5,
+         7,
+         0,
+         3
+        ],
+        "chi2": 12.667,
+        "df": 4,
+        "p": 0.013024759335385444,
+        "min_expected": 3.0
+       }
+      }
+     }
+    }
+   },
+   "by_family": {
+    "adequacy": {
+     "noul": {
+      "n": 200,
+      "n_scored": 200,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 200
+      },
+      "letter_share": {
+       "A": 0.575,
+       "B": 0.425
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.575,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.575,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 4.5,
+       "df": 1,
+       "p": 0.033894853524689204,
+       "by_k": {
+        "2": {
+         "n": 200,
+         "counts": [
+          115,
+          85
+         ],
+         "chi2": 4.5,
+         "df": 1,
+         "p": 0.033894853524689204,
+         "min_expected": 100.0
+        }
+       }
+      }
+     }
+    },
+    "ambiguous": {
+     "choice": {
+      "n": 200,
+      "n_scored": 200,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 168,
+       "4": 32
+      },
+      "letter_share": {
+       "A": 0.305,
+       "B": 0.3,
+       "C": 0.345,
+       "D": 0.05
+      },
+      "uniform_share": {
+       "A": 0.32,
+       "B": 0.32,
+       "C": 0.32,
+       "D": 0.04
+      },
+      "share_A": 0.305,
+      "chance_A": 0.32,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.345,
+      "chance_acc": 0.32,
+      "chi2_vs_uniform": {
+       "chi2": 1.679,
+       "df": 5,
+       "p": 0.8915882582815547,
+       "by_k": {
+        "3": {
+         "n": 168,
+         "counts": [
+          54,
+          54,
+          60
+         ],
+         "chi2": 0.429,
+         "df": 2,
+         "p": 0.8071177470053893,
+         "min_expected": 56.0
+        },
+        "4": {
+         "n": 32,
+         "counts": [
+          7,
+          6,
+          9,
+          10
+         ],
+         "chi2": 1.25,
+         "df": 3,
+         "p": 0.7410388888165292,
+         "min_expected": 8.0
+        }
+       }
+      }
+     }
+    },
+    "judge_hard": {
+     "noul": {
+      "n": 200,
+      "n_scored": 200,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 200
+      },
+      "letter_share": {
+       "A": 0.48,
+       "B": 0.52
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.48,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.52,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.32,
+       "df": 1,
+       "p": 0.5716076449533316,
+       "by_k": {
+        "2": {
+         "n": 200,
+         "counts": [
+          96,
+          104
+         ],
+         "chi2": 0.32,
+         "df": 1,
+         "p": 0.5716076449533316,
+         "min_expected": 100.0
+        }
+       }
+      }
+     }
+    },
+    "long_policy": {
+     "choice": {
+      "n": 101,
+      "n_scored": 101,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 55,
+       "5": 33,
+       "6": 13
+      },
+      "letter_share": {
+       "A": 0.2079,
+       "B": 0.1782,
+       "C": 0.3267,
+       "D": 0.1782,
+       "E": 0.0891,
+       "F": 0.0198
+      },
+      "uniform_share": {
+       "A": 0.2229,
+       "B": 0.2229,
+       "C": 0.2229,
+       "D": 0.2229,
+       "E": 0.0868,
+       "F": 0.0215
+      },
+      "share_A": 0.2079,
+      "chance_A": 0.2229,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.3267,
+      "chance_acc": 0.2229,
+      "chi2_vs_uniform": {
+       "chi2": 9.205,
+       "df": 12,
+       "p": 0.685357303130042,
+       "by_k": {
+        "4": {
+         "n": 55,
+         "counts": [
+          10,
+          12,
+          21,
+          12
+         ],
+         "chi2": 5.291,
+         "df": 3,
+         "p": 0.1516933753093354,
+         "min_expected": 13.75
+        },
+        "5": {
+         "n": 33,
+         "counts": [
+          8,
+          5,
+          9,
+          4,
+          7
+         ],
+         "chi2": 2.606,
+         "df": 4,
+         "p": 0.6257498901557303,
+         "min_expected": 6.6
+        },
+        "6": {
+         "n": 13,
+         "counts": [
+          3,
+          1,
+          3,
+          2,
+          2,
+          2
+         ],
+         "chi2": 1.308,
+         "df": 5,
+         "p": 0.9341381590568383,
+         "min_expected": 2.17
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 71,
+      "n_scored": 71,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 71
+      },
+      "letter_share": {
+       "A": 0.7183,
+       "B": 0.2817
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.7183,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.7183,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 13.535,
+       "df": 1,
+       "p": 0.00023412902607901527,
+       "by_k": {
+        "2": {
+         "n": 71,
+         "counts": [
+          51,
+          20
+         ],
+         "chi2": 13.535,
+         "df": 1,
+         "p": 0.00023412902607901527,
+         "min_expected": 35.5
+        }
+       }
+      }
+     },
+     "score": {
+      "n": 28,
+      "n_scored": 28,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 28
+      },
+      "letter_share": {
+       "A": 0.4286,
+       "B": 0.3929,
+       "C": 0.1071,
+       "D": 0.0714
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.4286,
+      "chance_A": 0.25,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.4286,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 11.714,
+       "df": 3,
+       "p": 0.00842882056940403,
+       "by_k": {
+        "4": {
+         "n": 28,
+         "counts": [
+          12,
+          11,
+          3,
+          2
+         ],
+         "chi2": 11.714,
+         "df": 3,
+         "p": 0.00842882056940403,
+         "min_expected": 7.0
+        }
+       }
+      }
+     }
+    },
+    "policy": {
+     "noul": {
+      "n": 200,
+      "n_scored": 200,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 200
+      },
+      "letter_share": {
+       "A": 0.525,
+       "B": 0.475
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.525,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.525,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.5,
+       "df": 1,
+       "p": 0.4795001221869536,
+       "by_k": {
+        "2": {
+         "n": 200,
+         "counts": [
+          105,
+          95
+         ],
+         "chi2": 0.5,
+         "df": 1,
+         "p": 0.4795001221869536,
+         "min_expected": 100.0
+        }
+       }
+      }
+     }
+    },
+    "temporal_numeric": {
+     "choice": {
+      "n": 115,
+      "n_scored": 115,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 41,
+       "4": 23,
+       "5": 43,
+       "6": 8
+      },
+      "letter_share": {
+       "A": 0.287,
+       "B": 0.2435,
+       "C": 0.2783,
+       "D": 0.087,
+       "E": 0.087,
+       "F": 0.0174
+      },
+      "uniform_share": {
+       "A": 0.2552,
+       "B": 0.2552,
+       "C": 0.2552,
+       "D": 0.1364,
+       "E": 0.0864,
+       "F": 0.0116
+      },
+      "share_A": 0.287,
+      "chance_A": 0.2552,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.287,
+      "chance_acc": 0.2552,
+      "chi2_vs_uniform": {
+       "chi2": 13.827,
+       "df": 14,
+       "p": 0.4627066231339184,
+       "by_k": {
+        "3": {
+         "n": 41,
+         "counts": [
+          17,
+          10,
+          14
+         ],
+         "chi2": 1.805,
+         "df": 2,
+         "p": 0.4055792347505024,
+         "min_expected": 13.67
+        },
+        "4": {
+         "n": 23,
+         "counts": [
+          6,
+          5,
+          8,
+          4
+         ],
+         "chi2": 1.522,
+         "df": 3,
+         "p": 0.6772621156858547,
+         "min_expected": 5.75
+        },
+        "5": {
+         "n": 43,
+         "counts": [
+          9,
+          9,
+          10,
+          5,
+          10
+         ],
+         "chi2": 2.0,
+         "df": 4,
+         "p": 0.7357588823428847,
+         "min_expected": 8.6
+        },
+        "6": {
+         "n": 8,
+         "counts": [
+          1,
+          4,
+          0,
+          1,
+          0,
+          2
+         ],
+         "chi2": 8.5,
+         "df": 5,
+         "p": 0.13074778927442512,
+         "min_expected": 1.33
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 70,
+      "n_scored": 70,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 70
+      },
+      "letter_share": {
+       "A": 0.4714,
+       "B": 0.5286
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.4714,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5286,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.229,
+       "df": 1,
+       "p": 0.6325851216960416,
+       "by_k": {
+        "2": {
+         "n": 70,
+         "counts": [
+          33,
+          37
+         ],
+         "chi2": 0.229,
+         "df": 1,
+         "p": 0.6325851216960416,
+         "min_expected": 35.0
+        }
+       }
+      }
+     },
+     "score": {
+      "n": 15,
+      "n_scored": 15,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 15
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.3333,
+       "C": 0.4667,
+       "D": 0.0,
+       "E": 0.2
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.4667,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 12.667,
+       "df": 4,
+       "p": 0.013024759335385444,
+       "by_k": {
+        "5": {
+         "n": 15,
+         "counts": [
+          0,
+          5,
+          7,
+          0,
+          3
+         ],
+         "chi2": 12.667,
+         "df": 4,
+         "p": 0.013024759335385444,
+         "min_expected": 3.0
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "idsort": {
+   "ALL": {
+    "choice": {
+     "n": 416,
+     "n_scored": 416,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "3": 209,
+      "4": 110,
+      "5": 76,
+      "6": 21
+     },
+     "letter_share": {
+      "A": 0.3558,
+      "B": 0.3221,
+      "C": 0.1707,
+      "D": 0.0889,
+      "E": 0.0529,
+      "F": 0.0096
+     },
+     "uniform_share": {
+      "A": 0.2785,
+      "B": 0.2785,
+      "C": 0.2785,
+      "D": 0.1111,
+      "E": 0.045,
+      "F": 0.0084
+     },
+     "share_A": 0.3558,
+     "chance_A": 0.2785,
+     "best_constant_letter": "A",
+     "best_constant_acc": 0.3558,
+     "chance_acc": 0.2785,
+     "chi2_vs_uniform": {
+      "chi2": 76.477,
+      "df": 14,
+      "p": 1.266518948222059e-10,
+      "by_k": {
+       "3": {
+        "n": 209,
+        "counts": [
+         92,
+         100,
+         17
+        ],
+        "chi2": 60.182,
+        "df": 2,
+        "p": 8.544452235547338e-14,
+        "min_expected": 69.67
+       },
+       "4": {
+        "n": 110,
+        "counts": [
+         36,
+         19,
+         37,
+         18
+        ],
+        "chi2": 11.818,
+        "df": 3,
+        "p": 0.008032667482959726,
+        "min_expected": 27.5
+       },
+       "5": {
+        "n": 76,
+        "counts": [
+         16,
+         12,
+         13,
+         18,
+         17
+        ],
+        "chi2": 1.763,
+        "df": 4,
+        "p": 0.7792154822803972,
+        "min_expected": 15.2
+       },
+       "6": {
+        "n": 21,
+        "counts": [
+         4,
+         3,
+         4,
+         1,
+         5,
+         4
+        ],
+        "chi2": 2.714,
+        "df": 5,
+        "p": 0.7439326487244222,
+        "min_expected": 3.5
+       }
+      }
+     }
+    }
+   },
+   "by_family": {
+    "adequacy": {},
+    "ambiguous": {
+     "choice": {
+      "n": 200,
+      "n_scored": 200,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 168,
+       "4": 32
+      },
+      "letter_share": {
+       "A": 0.49,
+       "B": 0.43,
+       "C": 0.08,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.32,
+       "B": 0.32,
+       "C": 0.32,
+       "D": 0.04
+      },
+      "share_A": 0.49,
+      "chance_A": 0.32,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.49,
+      "chance_acc": 0.32,
+      "chi2_vs_uniform": {
+       "chi2": 116.143,
+       "df": 5,
+       "p": 2.0576686464229304e-23,
+       "by_k": {
+        "3": {
+         "n": 168,
+         "counts": [
+          82,
+          86,
+          0
+         ],
+         "chi2": 84.143,
+         "df": 2,
+         "p": 5.353166181363343e-19,
+         "min_expected": 56.0
+        },
+        "4": {
+         "n": 32,
+         "counts": [
+          16,
+          0,
+          16,
+          0
+         ],
+         "chi2": 32.0,
+         "df": 3,
+         "p": 5.233466447749423e-07,
+         "min_expected": 8.0
+        }
+       }
+      }
+     }
+    },
+    "judge_hard": {},
+    "long_policy": {
+     "choice": {
+      "n": 101,
+      "n_scored": 101,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 55,
+       "5": 33,
+       "6": 13
+      },
+      "letter_share": {
+       "A": 0.2178,
+       "B": 0.198,
+       "C": 0.2277,
+       "D": 0.2178,
+       "E": 0.099,
+       "F": 0.0396
+      },
+      "uniform_share": {
+       "A": 0.2229,
+       "B": 0.2229,
+       "C": 0.2229,
+       "D": 0.2229,
+       "E": 0.0868,
+       "F": 0.0215
+      },
+      "share_A": 0.2178,
+      "chance_A": 0.2229,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.2277,
+      "chance_acc": 0.2229,
+      "chi2_vs_uniform": {
+       "chi2": 7.979,
+       "df": 12,
+       "p": 0.7867313346306679,
+       "by_k": {
+        "4": {
+         "n": 55,
+         "counts": [
+          12,
+          14,
+          15,
+          14
+         ],
+         "chi2": 0.345,
+         "df": 3,
+         "p": 0.9512647817465165,
+         "min_expected": 13.75
+        },
+        "5": {
+         "n": 33,
+         "counts": [
+          7,
+          6,
+          5,
+          8,
+          7
+         ],
+         "chi2": 0.788,
+         "df": 4,
+         "p": 0.9400656564060824,
+         "min_expected": 6.6
+        },
+        "6": {
+         "n": 13,
+         "counts": [
+          3,
+          0,
+          3,
+          0,
+          3,
+          4
+         ],
+         "chi2": 6.846,
+         "df": 5,
+         "p": 0.23233578961906043,
+         "min_expected": 2.17
+        }
+       }
+      }
+     }
+    },
+    "policy": {},
+    "temporal_numeric": {
+     "choice": {
+      "n": 115,
+      "n_scored": 115,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 41,
+       "4": 23,
+       "5": 43,
+       "6": 8
+      },
+      "letter_share": {
+       "A": 0.2435,
+       "B": 0.2435,
+       "C": 0.2783,
+       "D": 0.1304,
+       "E": 0.1043,
+       "F": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2552,
+       "B": 0.2552,
+       "C": 0.2552,
+       "D": 0.1364,
+       "E": 0.0864,
+       "F": 0.0116
+      },
+      "share_A": 0.2435,
+      "chance_A": 0.2552,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.2783,
+      "chance_acc": 0.2552,
+      "chi2_vs_uniform": {
+       "chi2": 8.629,
+       "df": 14,
+       "p": 0.8540611241518461,
+       "by_k": {
+        "3": {
+         "n": 41,
+         "counts": [
+          10,
+          14,
+          17
+         ],
+         "chi2": 1.805,
+         "df": 2,
+         "p": 0.4055792347505024,
+         "min_expected": 13.67
+        },
+        "4": {
+         "n": 23,
+         "counts": [
+          8,
+          5,
+          6,
+          4
+         ],
+         "chi2": 1.522,
+         "df": 3,
+         "p": 0.6772621156858547,
+         "min_expected": 5.75
+        },
+        "5": {
+         "n": 43,
+         "counts": [
+          9,
+          6,
+          8,
+          10,
+          10
+         ],
+         "chi2": 1.302,
+         "df": 4,
+         "p": 0.8609808388342761,
+         "min_expected": 8.6
+        },
+        "6": {
+         "n": 8,
+         "counts": [
+          1,
+          3,
+          1,
+          1,
+          2,
+          0
+         ],
+         "chi2": 4.0,
+         "df": 5,
+         "p": 0.5494159513527803,
+         "min_expected": 1.33
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "public": {
+  "n_questions": 231,
+  "can": {
+   "ALL": {
+    "choice": {
+     "n": 139,
+     "n_scored": 139,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "3": 15,
+      "4": 53,
+      "5": 55,
+      "6": 16
+     },
+     "letter_share": {
+      "A": 0.2446,
+      "B": 0.2374,
+      "C": 0.2086,
+      "D": 0.2014,
+      "E": 0.0935,
+      "F": 0.0144
+     },
+     "uniform_share": {
+      "A": 0.2296,
+      "B": 0.2296,
+      "C": 0.2296,
+      "D": 0.1936,
+      "E": 0.0983,
+      "F": 0.0192
+     },
+     "share_A": 0.2446,
+     "chance_A": 0.2296,
+     "best_constant_letter": "A",
+     "best_constant_acc": 0.2446,
+     "chance_acc": 0.2296,
+     "chi2_vs_uniform": {
+      "chi2": 9.711,
+      "df": 14,
+      "p": 0.7829639510874564,
+      "by_k": {
+       "3": {
+        "n": 15,
+        "counts": [
+         5,
+         5,
+         5
+        ],
+        "chi2": 0.0,
+        "df": 2,
+        "p": 1.0,
+        "min_expected": 5.0
+       },
+       "4": {
+        "n": 53,
+        "counts": [
+         19,
+         15,
+         11,
+         8
+        ],
+        "chi2": 5.189,
+        "df": 3,
+        "p": 0.15849113092759912,
+        "min_expected": 13.25
+       },
+       "5": {
+        "n": 55,
+        "counts": [
+         8,
+         10,
+         11,
+         16,
+         10
+        ],
+        "chi2": 3.273,
+        "df": 4,
+        "p": 0.5132649583285268,
+        "min_expected": 11.0
+       },
+       "6": {
+        "n": 16,
+        "counts": [
+         2,
+         3,
+         2,
+         4,
+         3,
+         2
+        ],
+        "chi2": 1.25,
+        "df": 5,
+        "p": 0.9399915602888446,
+        "min_expected": 2.67
+       }
+      }
+     },
+     "items_with_any_tie_set": 0,
+     "abstain": {
+      "has_abstain_option": 46,
+      "abstain_sorts_first": 2,
+      "abstain_first_and_gold": 1,
+      "gold_is_abstain": 12
+     }
+    },
+    "noul": {
+     "n": 74,
+     "n_scored": 74,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "2": 74
+     },
+     "letter_share": {
+      "A": 0.473,
+      "B": 0.527
+     },
+     "uniform_share": {
+      "A": 0.5,
+      "B": 0.5
+     },
+     "share_A": 0.473,
+     "chance_A": 0.5,
+     "best_constant_letter": "B",
+     "best_constant_acc": 0.527,
+     "chance_acc": 0.5,
+     "chi2_vs_uniform": {
+      "chi2": 0.216,
+      "df": 1,
+      "p": 0.641938220405063,
+      "by_k": {
+       "2": {
+        "n": 74,
+        "counts": [
+         35,
+         39
+        ],
+        "chi2": 0.216,
+        "df": 1,
+        "p": 0.641938220405063,
+        "min_expected": 37.0
+       }
+      }
+     },
+     "items_with_any_tie_set": 0,
+     "abstain": {
+      "has_abstain_option": 2,
+      "abstain_sorts_first": 0,
+      "abstain_first_and_gold": 0,
+      "gold_is_abstain": 1
+     },
+     "true_option_letter": {
+      "A": 30,
+      "B": 44
+     },
+     "gold_true_share": 0.473
+    },
+    "score": {
+     "n": 18,
+     "n_scored": 18,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "4": 17,
+      "5": 1
+     },
+     "letter_share": {
+      "A": 0.2778,
+      "B": 0.2778,
+      "C": 0.3333,
+      "D": 0.1111,
+      "E": 0.0
+     },
+     "uniform_share": {
+      "A": 0.2472,
+      "B": 0.2472,
+      "C": 0.2472,
+      "D": 0.2472,
+      "E": 0.0111
+     },
+     "share_A": 0.2778,
+     "chance_A": 0.2472,
+     "best_constant_letter": "C",
+     "best_constant_acc": 0.3333,
+     "chance_acc": 0.2472,
+     "chi2_vs_uniform": {
+      "chi2": 5.588,
+      "df": 7,
+      "p": 0.588563461031139,
+      "by_k": {
+       "4": {
+        "n": 17,
+        "counts": [
+         5,
+         5,
+         5,
+         2
+        ],
+        "chi2": 1.588,
+        "df": 3,
+        "p": 0.6620603202525777,
+        "min_expected": 4.25
+       },
+       "5": {
+        "n": 1,
+        "counts": [
+         0,
+         0,
+         1,
+         0,
+         0
+        ],
+        "chi2": 4.0,
+        "df": 4,
+        "p": 0.4060058497098382,
+        "min_expected": 0.2
+       }
+      }
+     }
+    }
+   },
+   "by_family": {
+    "adequacy": {
+     "noul": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 12
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 12,
+         "counts": [
+          6,
+          6
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 6.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 12
+      },
+      "gold_true_share": 0.5
+     }
+    },
+    "adversarial": {
+     "choice": {
+      "n": 3,
+      "n_scored": 3,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 3
+      },
+      "letter_share": {
+       "A": 0.6667,
+       "B": 0.3333,
+       "C": 0.0,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.6667,
+      "chance_A": 0.25,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.6667,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.667,
+       "df": 3,
+       "p": 0.2997805885957119,
+       "by_k": {
+        "4": {
+         "n": 3,
+         "counts": [
+          2,
+          1,
+          0,
+          0
+         ],
+         "chi2": 3.667,
+         "df": 3,
+         "p": 0.2997805885957119,
+         "min_expected": 0.75
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      }
+     },
+     "noul": {
+      "n": 2,
+      "n_scored": 2,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 2
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 1.0
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.0,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 2.0,
+       "df": 1,
+       "p": 0.15729920705028533,
+       "by_k": {
+        "2": {
+         "n": 2,
+         "counts": [
+          0,
+          2
+         ],
+         "chi2": 2.0,
+         "df": 1,
+         "p": 0.15729920705028533,
+         "min_expected": 1.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 1,
+       "B": 1
+      },
+      "gold_true_share": 0.5
+     },
+     "score": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 1
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.0,
+       "C": 1.0,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "C",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.0,
+       "df": 3,
+       "p": 0.39162517627108884,
+       "by_k": {
+        "4": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          1,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        }
+       }
+      }
+     }
+    },
+    "ambiguous": {
+     "choice": {
+      "n": 7,
+      "n_scored": 7,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 6,
+       "4": 1
+      },
+      "letter_share": {
+       "A": 0.4286,
+       "B": 0.2857,
+       "C": 0.2857,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.3214,
+       "B": 0.3214,
+       "C": 0.3214,
+       "D": 0.0357
+      },
+      "share_A": 0.4286,
+      "chance_A": 0.3214,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.4286,
+      "chance_acc": 0.3214,
+      "chi2_vs_uniform": {
+       "chi2": 4.0,
+       "df": 5,
+       "p": 0.5494159513527805,
+       "by_k": {
+        "3": {
+         "n": 6,
+         "counts": [
+          3,
+          2,
+          1
+         ],
+         "chi2": 1.0,
+         "df": 2,
+         "p": 0.6065306597126334,
+         "min_expected": 2.0
+        },
+        "4": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          1,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 3,
+       "abstain_sorts_first": 1,
+       "abstain_first_and_gold": 1,
+       "gold_is_abstain": 1
+      }
+     }
+    },
+    "extraction": {
+     "choice": {
+      "n": 24,
+      "n_scored": 24,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 21,
+       "5": 3
+      },
+      "letter_share": {
+       "A": 0.3333,
+       "B": 0.2083,
+       "C": 0.2917,
+       "D": 0.1667,
+       "E": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2437,
+       "B": 0.2437,
+       "C": 0.2437,
+       "D": 0.2437,
+       "E": 0.025
+      },
+      "share_A": 0.3333,
+      "chance_A": 0.2437,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.3333,
+      "chance_acc": 0.2437,
+      "chi2_vs_uniform": {
+       "chi2": 3.286,
+       "df": 7,
+       "p": 0.8573738931821607,
+       "by_k": {
+        "4": {
+         "n": 21,
+         "counts": [
+          7,
+          4,
+          6,
+          4
+         ],
+         "chi2": 1.286,
+         "df": 3,
+         "p": 0.7325281239407652,
+         "min_expected": 5.25
+        },
+        "5": {
+         "n": 3,
+         "counts": [
+          1,
+          1,
+          1,
+          0,
+          0
+         ],
+         "chi2": 2.0,
+         "df": 4,
+         "p": 0.7357588823428847,
+         "min_expected": 0.6
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 12,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 4
+      }
+     }
+    },
+    "fact": {
+     "noul": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 12
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 12,
+         "counts": [
+          6,
+          6
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 6.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "B": 12
+      },
+      "gold_true_share": 0.5
+     }
+    },
+    "intent": {
+     "choice": {
+      "n": 24,
+      "n_scored": 24,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 24
+      },
+      "letter_share": {
+       "A": 0.1667,
+       "B": 0.25,
+       "C": 0.1667,
+       "D": 0.2083,
+       "E": 0.2083
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.1667,
+      "chance_A": 0.2,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.25,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 0.583,
+       "df": 4,
+       "p": 0.9648976045676421,
+       "by_k": {
+        "5": {
+         "n": 24,
+         "counts": [
+          4,
+          6,
+          4,
+          5,
+          5
+         ],
+         "chi2": 0.583,
+         "df": 4,
+         "p": 0.9648976045676421,
+         "min_expected": 4.8
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 12,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 2
+      }
+     }
+    },
+    "judge_hard": {
+     "noul": {
+      "n": 17,
+      "n_scored": 17,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 17
+      },
+      "letter_share": {
+       "A": 0.4706,
+       "B": 0.5294
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.4706,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5294,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.059,
+       "df": 1,
+       "p": 0.8083651559145104,
+       "by_k": {
+        "2": {
+         "n": 17,
+         "counts": [
+          8,
+          9
+         ],
+         "chi2": 0.059,
+         "df": 1,
+         "p": 0.8083651559145104,
+         "min_expected": 8.5
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 8,
+       "B": 9
+      },
+      "gold_true_share": 0.4118
+     }
+    },
+    "long_policy": {
+     "choice": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 7,
+       "5": 4,
+       "6": 1
+      },
+      "letter_share": {
+       "A": 0.0833,
+       "B": 0.3333,
+       "C": 0.0,
+       "D": 0.5833,
+       "E": 0.0,
+       "F": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2264,
+       "B": 0.2264,
+       "C": 0.2264,
+       "D": 0.2264,
+       "E": 0.0806,
+       "F": 0.0139
+      },
+      "share_A": 0.0833,
+      "chance_A": 0.2264,
+      "best_constant_letter": "D",
+      "best_constant_acc": 0.5833,
+      "chance_acc": 0.2264,
+      "chi2_vs_uniform": {
+       "chi2": 26.0,
+       "df": 12,
+       "p": 0.010733889960028399,
+       "by_k": {
+        "4": {
+         "n": 7,
+         "counts": [
+          1,
+          4,
+          0,
+          2
+         ],
+         "chi2": 5.0,
+         "df": 3,
+         "p": 0.17179714429673365,
+         "min_expected": 1.75
+        },
+        "5": {
+         "n": 4,
+         "counts": [
+          0,
+          0,
+          0,
+          4,
+          0
+         ],
+         "chi2": 16.0,
+         "df": 4,
+         "p": 0.003019163651122602,
+         "min_expected": 0.8
+        },
+        "6": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+         ],
+         "chi2": 5.0,
+         "df": 5,
+         "p": 0.415880186995508,
+         "min_expected": 0.17
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 1,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      }
+     },
+     "noul": {
+      "n": 5,
+      "n_scored": 5,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 5
+      },
+      "letter_share": {
+       "A": 0.2,
+       "B": 0.8
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.2,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.8,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 1.8,
+       "df": 1,
+       "p": 0.17971249487900032,
+       "by_k": {
+        "2": {
+         "n": 5,
+         "counts": [
+          1,
+          4
+         ],
+         "chi2": 1.8,
+         "df": 1,
+         "p": 0.17971249487900032,
+         "min_expected": 2.5
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 1,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 1
+      },
+      "true_option_letter": {
+       "A": 3,
+       "B": 2
+      },
+      "gold_true_share": 0.6
+     },
+     "score": {
+      "n": 2,
+      "n_scored": 2,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 2
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 1.0,
+       "C": 0.0,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "B",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 6.0,
+       "df": 3,
+       "p": 0.11161022509471287,
+       "by_k": {
+        "4": {
+         "n": 2,
+         "counts": [
+          0,
+          2,
+          0,
+          0
+         ],
+         "chi2": 6.0,
+         "df": 3,
+         "p": 0.11161022509471287,
+         "min_expected": 0.5
+        }
+       }
+      }
+     }
+    },
+    "multi_hop": {
+     "choice": {
+      "n": 16,
+      "n_scored": 16,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 14,
+       "6": 2
+      },
+      "letter_share": {
+       "A": 0.375,
+       "B": 0.375,
+       "C": 0.1875,
+       "D": 0.0625,
+       "E": 0.0,
+       "F": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2396,
+       "B": 0.2396,
+       "C": 0.2396,
+       "D": 0.2396,
+       "E": 0.0208,
+       "F": 0.0208
+      },
+      "share_A": 0.375,
+      "chance_A": 0.2396,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.375,
+      "chance_acc": 0.2396,
+      "chi2_vs_uniform": {
+       "chi2": 10.0,
+       "df": 8,
+       "p": 0.2650259152973615,
+       "by_k": {
+        "4": {
+         "n": 14,
+         "counts": [
+          6,
+          5,
+          3,
+          0
+         ],
+         "chi2": 6.0,
+         "df": 3,
+         "p": 0.11161022509471287,
+         "min_expected": 3.5
+        },
+        "6": {
+         "n": 2,
+         "counts": [
+          0,
+          1,
+          0,
+          1,
+          0,
+          0
+         ],
+         "chi2": 4.0,
+         "df": 5,
+         "p": 0.5494159513527803,
+         "min_expected": 0.33
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 1,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      }
+     },
+     "noul": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 1
+      },
+      "letter_share": {
+       "A": 1.0,
+       "B": 0.0
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 1.0,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 1.0,
+       "df": 1,
+       "p": 0.31731050786291437,
+       "by_k": {
+        "2": {
+         "n": 1,
+         "counts": [
+          1,
+          0
+         ],
+         "chi2": 1.0,
+         "df": 1,
+         "p": 0.31731050786291437,
+         "min_expected": 0.5
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "B": 1
+      },
+      "gold_true_share": 0.0
+     },
+     "score": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 1
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.0,
+       "C": 1.0,
+       "D": 0.0,
+       "E": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2,
+      "best_constant_letter": "C",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 4.0,
+       "df": 4,
+       "p": 0.4060058497098382,
+       "by_k": {
+        "5": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          1,
+          0,
+          0
+         ],
+         "chi2": 4.0,
+         "df": 4,
+         "p": 0.4060058497098382,
+         "min_expected": 0.2
+        }
+       }
+      }
+     }
+    },
+    "ordinal": {
+     "score": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 12
+      },
+      "letter_share": {
+       "A": 0.3333,
+       "B": 0.1667,
+       "C": 0.3333,
+       "D": 0.1667
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.3333,
+      "chance_A": 0.25,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.3333,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 1.333,
+       "df": 3,
+       "p": 0.7212333746277604,
+       "by_k": {
+        "4": {
+         "n": 12,
+         "counts": [
+          4,
+          2,
+          4,
+          2
+         ],
+         "chi2": 1.333,
+         "df": 3,
+         "p": 0.7212333746277604,
+         "min_expected": 3.0
+        }
+       }
+      }
+     }
+    },
+    "policy": {
+     "noul": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 12
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 12,
+         "counts": [
+          6,
+          6
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 6.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "B": 12
+      },
+      "gold_true_share": 0.5
+     }
+    },
+    "probability": {
+     "choice": {
+      "n": 7,
+      "n_scored": 7,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 7
+      },
+      "letter_share": {
+       "A": 0.1429,
+       "B": 0.4286,
+       "C": 0.4286
+      },
+      "uniform_share": {
+       "A": 0.3333,
+       "B": 0.3333,
+       "C": 0.3333
+      },
+      "share_A": 0.1429,
+      "chance_A": 0.3333,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.4286,
+      "chance_acc": 0.3333,
+      "chi2_vs_uniform": {
+       "chi2": 1.143,
+       "df": 2,
+       "p": 0.5647181220077593,
+       "by_k": {
+        "3": {
+         "n": 7,
+         "counts": [
+          1,
+          3,
+          3
+         ],
+         "chi2": 1.143,
+         "df": 2,
+         "p": 0.5647181220077593,
+         "min_expected": 2.33
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 1,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 1
+      }
+     },
+     "noul": {
+      "n": 3,
+      "n_scored": 3,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 3
+      },
+      "letter_share": {
+       "A": 1.0,
+       "B": 0.0
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 1.0,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 3.0,
+       "df": 1,
+       "p": 0.0832645166635503,
+       "by_k": {
+        "2": {
+         "n": 3,
+         "counts": [
+          3,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 1,
+         "p": 0.0832645166635503,
+         "min_expected": 1.5
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 1,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 2,
+       "B": 1
+      },
+      "gold_true_share": 0.6667
+     }
+    },
+    "routing": {
+     "choice": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "6": 12
+      },
+      "letter_share": {
+       "A": 0.1667,
+       "B": 0.1667,
+       "C": 0.1667,
+       "D": 0.1667,
+       "E": 0.1667,
+       "F": 0.1667
+      },
+      "uniform_share": {
+       "A": 0.1667,
+       "B": 0.1667,
+       "C": 0.1667,
+       "D": 0.1667,
+       "E": 0.1667,
+       "F": 0.1667
+      },
+      "share_A": 0.1667,
+      "chance_A": 0.1667,
+      "best_constant_letter": "E",
+      "best_constant_acc": 0.1667,
+      "chance_acc": 0.1667,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 5,
+       "p": 1.0,
+       "by_k": {
+        "6": {
+         "n": 12,
+         "counts": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+         ],
+         "chi2": 0.0,
+         "df": 5,
+         "p": 1.0,
+         "min_expected": 2.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 12,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 2
+      }
+     }
+    },
+    "routing_hard": {
+     "choice": {
+      "n": 5,
+      "n_scored": 5,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 5
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.0,
+       "C": 0.0,
+       "D": 0.4,
+       "E": 0.6
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2,
+      "best_constant_letter": "E",
+      "best_constant_acc": 0.6,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 8.0,
+       "df": 4,
+       "p": 0.0915781944436709,
+       "by_k": {
+        "5": {
+         "n": 5,
+         "counts": [
+          0,
+          0,
+          0,
+          2,
+          3
+         ],
+         "chi2": 8.0,
+         "df": 4,
+         "p": 0.0915781944436709,
+         "min_expected": 1.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      }
+     }
+    },
+    "temporal_numeric": {
+     "choice": {
+      "n": 10,
+      "n_scored": 10,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 2,
+       "4": 3,
+       "5": 4,
+       "6": 1
+      },
+      "letter_share": {
+       "A": 0.2,
+       "B": 0.1,
+       "C": 0.3,
+       "D": 0.3,
+       "E": 0.1,
+       "F": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2383,
+       "B": 0.2383,
+       "C": 0.2383,
+       "D": 0.1717,
+       "E": 0.0967,
+       "F": 0.0167
+      },
+      "share_A": 0.2,
+      "chance_A": 0.2383,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.3,
+      "chance_acc": 0.2383,
+      "chi2_vs_uniform": {
+       "chi2": 13.167,
+       "df": 14,
+       "p": 0.5134441500432735,
+       "by_k": {
+        "3": {
+         "n": 2,
+         "counts": [
+          1,
+          0,
+          1
+         ],
+         "chi2": 1.0,
+         "df": 2,
+         "p": 0.6065306597126334,
+         "min_expected": 0.67
+        },
+        "4": {
+         "n": 3,
+         "counts": [
+          1,
+          0,
+          0,
+          2
+         ],
+         "chi2": 3.667,
+         "df": 3,
+         "p": 0.2997805885957119,
+         "min_expected": 0.75
+        },
+        "5": {
+         "n": 4,
+         "counts": [
+          0,
+          1,
+          2,
+          1,
+          0
+         ],
+         "chi2": 3.5,
+         "df": 4,
+         "p": 0.477878344488724,
+         "min_expected": 0.8
+        },
+        "6": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+         ],
+         "chi2": 5.0,
+         "df": 5,
+         "p": 0.415880186995508,
+         "min_expected": 0.17
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 1,
+       "abstain_sorts_first": 1,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 1
+      }
+     },
+     "noul": {
+      "n": 4,
+      "n_scored": 4,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 4
+      },
+      "letter_share": {
+       "A": 0.25,
+       "B": 0.75
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.25,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.75,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 1.0,
+       "df": 1,
+       "p": 0.31731050786291437,
+       "by_k": {
+        "2": {
+         "n": 4,
+         "counts": [
+          1,
+          3
+         ],
+         "chi2": 1.0,
+         "df": 1,
+         "p": 0.31731050786291437,
+         "min_expected": 2.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 1,
+       "B": 3
+      },
+      "gold_true_share": 0.5
+     },
+     "score": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 1
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 1.0,
+       "C": 0.0,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "B",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.0,
+       "df": 3,
+       "p": 0.39162517627108884,
+       "by_k": {
+        "4": {
+         "n": 1,
+         "counts": [
+          0,
+          1,
+          0,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        }
+       }
+      }
+     }
+    },
+    "tool_selection": {
+     "choice": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 12
+      },
+      "letter_share": {
+       "A": 0.1667,
+       "B": 0.1667,
+       "C": 0.25,
+       "D": 0.25,
+       "E": 0.1667
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.1667,
+      "chance_A": 0.2,
+      "best_constant_letter": "D",
+      "best_constant_acc": 0.25,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 0.5,
+       "df": 4,
+       "p": 0.9735009788392561,
+       "by_k": {
+        "5": {
+         "n": 12,
+         "counts": [
+          2,
+          2,
+          3,
+          3,
+          2
+         ],
+         "chi2": 0.5,
+         "df": 4,
+         "p": 0.9735009788392561,
+         "min_expected": 2.4
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      }
+     }
+    },
+    "tradeoff": {
+     "choice": {
+      "n": 4,
+      "n_scored": 4,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 1,
+       "5": 3
+      },
+      "letter_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25,
+       "E": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2125,
+       "B": 0.2125,
+       "C": 0.2125,
+       "D": 0.2125,
+       "E": 0.15
+      },
+      "share_A": 0.25,
+      "chance_A": 0.2125,
+      "best_constant_letter": "D",
+      "best_constant_acc": 0.25,
+      "chance_acc": 0.2125,
+      "chi2_vs_uniform": {
+       "chi2": 5.0,
+       "df": 7,
+       "p": 0.6599632296942824,
+       "by_k": {
+        "4": {
+         "n": 1,
+         "counts": [
+          0,
+          1,
+          0,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        },
+        "5": {
+         "n": 3,
+         "counts": [
+          1,
+          0,
+          1,
+          1,
+          0
+         ],
+         "chi2": 2.0,
+         "df": 4,
+         "p": 0.7357588823428847,
+         "min_expected": 0.6
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 2,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 1
+      }
+     },
+     "noul": {
+      "n": 2,
+      "n_scored": 2,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 2
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 2,
+         "counts": [
+          1,
+          1
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 1.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 1,
+       "B": 1
+      },
+      "gold_true_share": 1.0
+     }
+    },
+    "trap": {
+     "choice": {
+      "n": 3,
+      "n_scored": 3,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 3
+      },
+      "letter_share": {
+       "A": 0.6667,
+       "B": 0.0,
+       "C": 0.3333,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.6667,
+      "chance_A": 0.25,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.6667,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.667,
+       "df": 3,
+       "p": 0.2997805885957119,
+       "by_k": {
+        "4": {
+         "n": 3,
+         "counts": [
+          2,
+          0,
+          1,
+          0
+         ],
+         "chi2": 3.667,
+         "df": 3,
+         "p": 0.2997805885957119,
+         "min_expected": 0.75
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 1,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      }
+     },
+     "noul": {
+      "n": 4,
+      "n_scored": 4,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 4
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 4,
+         "counts": [
+          2,
+          2
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 2.0
+        }
+       }
+      },
+      "items_with_any_tie_set": 0,
+      "abstain": {
+       "has_abstain_option": 0,
+       "abstain_sorts_first": 0,
+       "abstain_first_and_gold": 0,
+       "gold_is_abstain": 0
+      },
+      "true_option_letter": {
+       "A": 2,
+       "B": 2
+      },
+      "gold_true_share": 0.0
+     },
+     "score": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 1
+      },
+      "letter_share": {
+       "A": 1.0,
+       "B": 0.0,
+       "C": 0.0,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 1.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "A",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.0,
+       "df": 3,
+       "p": 0.39162517627108884,
+       "by_k": {
+        "4": {
+         "n": 1,
+         "counts": [
+          1,
+          0,
+          0,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "pres": {
+   "ALL": {
+    "choice": {
+     "n": 139,
+     "n_scored": 139,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "3": 15,
+      "4": 53,
+      "5": 55,
+      "6": 16
+     },
+     "letter_share": {
+      "A": 0.2158,
+      "B": 0.2158,
+      "C": 0.2446,
+      "D": 0.1942,
+      "E": 0.1151,
+      "F": 0.0144
+     },
+     "uniform_share": {
+      "A": 0.2296,
+      "B": 0.2296,
+      "C": 0.2296,
+      "D": 0.1936,
+      "E": 0.0983,
+      "F": 0.0192
+     },
+     "share_A": 0.2158,
+     "chance_A": 0.2296,
+     "best_constant_letter": "C",
+     "best_constant_acc": 0.2446,
+     "chance_acc": 0.2296,
+     "chi2_vs_uniform": {
+      "chi2": 8.255,
+      "df": 14,
+      "p": 0.8756285743332775,
+      "by_k": {
+       "3": {
+        "n": 15,
+        "counts": [
+         4,
+         2,
+         9
+        ],
+        "chi2": 5.2,
+        "df": 2,
+        "p": 0.07427357821433386,
+        "min_expected": 5.0
+       },
+       "4": {
+        "n": 53,
+        "counts": [
+         15,
+         12,
+         12,
+         14
+        ],
+        "chi2": 0.509,
+        "df": 3,
+        "p": 0.9168139764566549,
+        "min_expected": 13.25
+       },
+       "5": {
+        "n": 55,
+        "counts": [
+         9,
+         12,
+         11,
+         11,
+         12
+        ],
+        "chi2": 0.545,
+        "df": 4,
+        "p": 0.9689277648869302,
+        "min_expected": 11.0
+       },
+       "6": {
+        "n": 16,
+        "counts": [
+         2,
+         4,
+         2,
+         2,
+         4,
+         2
+        ],
+        "chi2": 2.0,
+        "df": 5,
+        "p": 0.8491450360846097,
+        "min_expected": 2.67
+       }
+      }
+     }
+    },
+    "noul": {
+     "n": 74,
+     "n_scored": 74,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "2": 74
+     },
+     "letter_share": {
+      "A": 0.527,
+      "B": 0.473
+     },
+     "uniform_share": {
+      "A": 0.5,
+      "B": 0.5
+     },
+     "share_A": 0.527,
+     "chance_A": 0.5,
+     "best_constant_letter": "A",
+     "best_constant_acc": 0.527,
+     "chance_acc": 0.5,
+     "chi2_vs_uniform": {
+      "chi2": 0.216,
+      "df": 1,
+      "p": 0.641938220405063,
+      "by_k": {
+       "2": {
+        "n": 74,
+        "counts": [
+         39,
+         35
+        ],
+        "chi2": 0.216,
+        "df": 1,
+        "p": 0.641938220405063,
+        "min_expected": 37.0
+       }
+      }
+     }
+    },
+    "score": {
+     "n": 18,
+     "n_scored": 18,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "4": 17,
+      "5": 1
+     },
+     "letter_share": {
+      "A": 0.2778,
+      "B": 0.2778,
+      "C": 0.3333,
+      "D": 0.1111,
+      "E": 0.0
+     },
+     "uniform_share": {
+      "A": 0.2472,
+      "B": 0.2472,
+      "C": 0.2472,
+      "D": 0.2472,
+      "E": 0.0111
+     },
+     "share_A": 0.2778,
+     "chance_A": 0.2472,
+     "best_constant_letter": "C",
+     "best_constant_acc": 0.3333,
+     "chance_acc": 0.2472,
+     "chi2_vs_uniform": {
+      "chi2": 5.588,
+      "df": 7,
+      "p": 0.588563461031139,
+      "by_k": {
+       "4": {
+        "n": 17,
+        "counts": [
+         5,
+         5,
+         5,
+         2
+        ],
+        "chi2": 1.588,
+        "df": 3,
+        "p": 0.6620603202525777,
+        "min_expected": 4.25
+       },
+       "5": {
+        "n": 1,
+        "counts": [
+         0,
+         0,
+         1,
+         0,
+         0
+        ],
+        "chi2": 4.0,
+        "df": 4,
+        "p": 0.4060058497098382,
+        "min_expected": 0.2
+       }
+      }
+     }
+    }
+   },
+   "by_family": {
+    "adequacy": {
+     "noul": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 12
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 12,
+         "counts": [
+          6,
+          6
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 6.0
+        }
+       }
+      }
+     }
+    },
+    "adversarial": {
+     "choice": {
+      "n": 3,
+      "n_scored": 3,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 3
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.3333,
+       "C": 0.0,
+       "D": 0.6667
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "D",
+      "best_constant_acc": 0.6667,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.667,
+       "df": 3,
+       "p": 0.2997805885957119,
+       "by_k": {
+        "4": {
+         "n": 3,
+         "counts": [
+          0,
+          1,
+          0,
+          2
+         ],
+         "chi2": 3.667,
+         "df": 3,
+         "p": 0.2997805885957119,
+         "min_expected": 0.75
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 2,
+      "n_scored": 2,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 2
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 2,
+         "counts": [
+          1,
+          1
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 1.0
+        }
+       }
+      }
+     },
+     "score": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 1
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.0,
+       "C": 1.0,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "C",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.0,
+       "df": 3,
+       "p": 0.39162517627108884,
+       "by_k": {
+        "4": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          1,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        }
+       }
+      }
+     }
+    },
+    "ambiguous": {
+     "choice": {
+      "n": 7,
+      "n_scored": 7,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 6,
+       "4": 1
+      },
+      "letter_share": {
+       "A": 0.4286,
+       "B": 0.1429,
+       "C": 0.4286,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.3214,
+       "B": 0.3214,
+       "C": 0.3214,
+       "D": 0.0357
+      },
+      "share_A": 0.4286,
+      "chance_A": 0.3214,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.4286,
+      "chance_acc": 0.3214,
+      "chi2_vs_uniform": {
+       "chi2": 4.0,
+       "df": 5,
+       "p": 0.5494159513527805,
+       "by_k": {
+        "3": {
+         "n": 6,
+         "counts": [
+          2,
+          1,
+          3
+         ],
+         "chi2": 1.0,
+         "df": 2,
+         "p": 0.6065306597126334,
+         "min_expected": 2.0
+        },
+        "4": {
+         "n": 1,
+         "counts": [
+          1,
+          0,
+          0,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        }
+       }
+      }
+     }
+    },
+    "extraction": {
+     "choice": {
+      "n": 24,
+      "n_scored": 24,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 21,
+       "5": 3
+      },
+      "letter_share": {
+       "A": 0.2917,
+       "B": 0.25,
+       "C": 0.1667,
+       "D": 0.2917,
+       "E": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2437,
+       "B": 0.2437,
+       "C": 0.2437,
+       "D": 0.2437,
+       "E": 0.025
+      },
+      "share_A": 0.2917,
+      "chance_A": 0.2437,
+      "best_constant_letter": "D",
+      "best_constant_acc": 0.2917,
+      "chance_acc": 0.2437,
+      "chi2_vs_uniform": {
+       "chi2": 3.667,
+       "df": 7,
+       "p": 0.8172700277244709,
+       "by_k": {
+        "4": {
+         "n": 21,
+         "counts": [
+          6,
+          5,
+          3,
+          7
+         ],
+         "chi2": 1.667,
+         "df": 3,
+         "p": 0.6443698056370253,
+         "min_expected": 5.25
+        },
+        "5": {
+         "n": 3,
+         "counts": [
+          1,
+          1,
+          1,
+          0,
+          0
+         ],
+         "chi2": 2.0,
+         "df": 4,
+         "p": 0.7357588823428847,
+         "min_expected": 0.6
+        }
+       }
+      }
+     }
+    },
+    "fact": {
+     "noul": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 12
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 12,
+         "counts": [
+          6,
+          6
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 6.0
+        }
+       }
+      }
+     }
+    },
+    "intent": {
+     "choice": {
+      "n": 24,
+      "n_scored": 24,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 24
+      },
+      "letter_share": {
+       "A": 0.1667,
+       "B": 0.1667,
+       "C": 0.2083,
+       "D": 0.1667,
+       "E": 0.2917
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.1667,
+      "chance_A": 0.2,
+      "best_constant_letter": "E",
+      "best_constant_acc": 0.2917,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 1.417,
+       "df": 4,
+       "p": 0.8412931581121582,
+       "by_k": {
+        "5": {
+         "n": 24,
+         "counts": [
+          4,
+          4,
+          5,
+          4,
+          7
+         ],
+         "chi2": 1.417,
+         "df": 4,
+         "p": 0.8412931581121582,
+         "min_expected": 4.8
+        }
+       }
+      }
+     }
+    },
+    "judge_hard": {
+     "noul": {
+      "n": 17,
+      "n_scored": 17,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 17
+      },
+      "letter_share": {
+       "A": 0.5882,
+       "B": 0.4118
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5882,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5882,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.529,
+       "df": 1,
+       "p": 0.46685427082272557,
+       "by_k": {
+        "2": {
+         "n": 17,
+         "counts": [
+          10,
+          7
+         ],
+         "chi2": 0.529,
+         "df": 1,
+         "p": 0.46685427082272557,
+         "min_expected": 8.5
+        }
+       }
+      }
+     }
+    },
+    "long_policy": {
+     "choice": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 7,
+       "5": 4,
+       "6": 1
+      },
+      "letter_share": {
+       "A": 0.25,
+       "B": 0.3333,
+       "C": 0.0833,
+       "D": 0.1667,
+       "E": 0.1667,
+       "F": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2264,
+       "B": 0.2264,
+       "C": 0.2264,
+       "D": 0.2264,
+       "E": 0.0806,
+       "F": 0.0139
+      },
+      "share_A": 0.25,
+      "chance_A": 0.2264,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.3333,
+      "chance_acc": 0.2264,
+      "chi2_vs_uniform": {
+       "chi2": 8.929,
+       "df": 12,
+       "p": 0.7090189844645809,
+       "by_k": {
+        "4": {
+         "n": 7,
+         "counts": [
+          2,
+          2,
+          1,
+          2
+         ],
+         "chi2": 0.429,
+         "df": 3,
+         "p": 0.9342790756242508,
+         "min_expected": 1.75
+        },
+        "5": {
+         "n": 4,
+         "counts": [
+          1,
+          2,
+          0,
+          0,
+          1
+         ],
+         "chi2": 3.5,
+         "df": 4,
+         "p": 0.477878344488724,
+         "min_expected": 0.8
+        },
+        "6": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+         ],
+         "chi2": 5.0,
+         "df": 5,
+         "p": 0.415880186995508,
+         "min_expected": 0.17
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 5,
+      "n_scored": 5,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 5
+      },
+      "letter_share": {
+       "A": 0.4,
+       "B": 0.6
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.4,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.6,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.2,
+       "df": 1,
+       "p": 0.654720846018577,
+       "by_k": {
+        "2": {
+         "n": 5,
+         "counts": [
+          2,
+          3
+         ],
+         "chi2": 0.2,
+         "df": 1,
+         "p": 0.654720846018577,
+         "min_expected": 2.5
+        }
+       }
+      }
+     },
+     "score": {
+      "n": 2,
+      "n_scored": 2,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 2
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 1.0,
+       "C": 0.0,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "B",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 6.0,
+       "df": 3,
+       "p": 0.11161022509471287,
+       "by_k": {
+        "4": {
+         "n": 2,
+         "counts": [
+          0,
+          2,
+          0,
+          0
+         ],
+         "chi2": 6.0,
+         "df": 3,
+         "p": 0.11161022509471287,
+         "min_expected": 0.5
+        }
+       }
+      }
+     }
+    },
+    "multi_hop": {
+     "choice": {
+      "n": 16,
+      "n_scored": 16,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 14,
+       "6": 2
+      },
+      "letter_share": {
+       "A": 0.375,
+       "B": 0.25,
+       "C": 0.3125,
+       "D": 0.0625,
+       "E": 0.0,
+       "F": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2396,
+       "B": 0.2396,
+       "C": 0.2396,
+       "D": 0.2396,
+       "E": 0.0208,
+       "F": 0.0208
+      },
+      "share_A": 0.375,
+      "chance_A": 0.2396,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.375,
+      "chance_acc": 0.2396,
+      "chi2_vs_uniform": {
+       "chi2": 14.857,
+       "df": 8,
+       "p": 0.06198347971768325,
+       "by_k": {
+        "4": {
+         "n": 14,
+         "counts": [
+          6,
+          2,
+          5,
+          1
+         ],
+         "chi2": 4.857,
+         "df": 3,
+         "p": 0.1825617448869309,
+         "min_expected": 3.5
+        },
+        "6": {
+         "n": 2,
+         "counts": [
+          0,
+          2,
+          0,
+          0,
+          0,
+          0
+         ],
+         "chi2": 10.0,
+         "df": 5,
+         "p": 0.07523524614651199,
+         "min_expected": 0.33
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 1
+      },
+      "letter_share": {
+       "A": 1.0,
+       "B": 0.0
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 1.0,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 1.0,
+       "df": 1,
+       "p": 0.31731050786291437,
+       "by_k": {
+        "2": {
+         "n": 1,
+         "counts": [
+          1,
+          0
+         ],
+         "chi2": 1.0,
+         "df": 1,
+         "p": 0.31731050786291437,
+         "min_expected": 0.5
+        }
+       }
+      }
+     },
+     "score": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 1
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.0,
+       "C": 1.0,
+       "D": 0.0,
+       "E": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2,
+      "best_constant_letter": "C",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 4.0,
+       "df": 4,
+       "p": 0.4060058497098382,
+       "by_k": {
+        "5": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          1,
+          0,
+          0
+         ],
+         "chi2": 4.0,
+         "df": 4,
+         "p": 0.4060058497098382,
+         "min_expected": 0.2
+        }
+       }
+      }
+     }
+    },
+    "ordinal": {
+     "score": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 12
+      },
+      "letter_share": {
+       "A": 0.3333,
+       "B": 0.1667,
+       "C": 0.3333,
+       "D": 0.1667
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.3333,
+      "chance_A": 0.25,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.3333,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 1.333,
+       "df": 3,
+       "p": 0.7212333746277604,
+       "by_k": {
+        "4": {
+         "n": 12,
+         "counts": [
+          4,
+          2,
+          4,
+          2
+         ],
+         "chi2": 1.333,
+         "df": 3,
+         "p": 0.7212333746277604,
+         "min_expected": 3.0
+        }
+       }
+      }
+     }
+    },
+    "policy": {
+     "noul": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 12
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 12,
+         "counts": [
+          6,
+          6
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 6.0
+        }
+       }
+      }
+     }
+    },
+    "probability": {
+     "choice": {
+      "n": 7,
+      "n_scored": 7,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 7
+      },
+      "letter_share": {
+       "A": 0.2857,
+       "B": 0.1429,
+       "C": 0.5714
+      },
+      "uniform_share": {
+       "A": 0.3333,
+       "B": 0.3333,
+       "C": 0.3333
+      },
+      "share_A": 0.2857,
+      "chance_A": 0.3333,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.5714,
+      "chance_acc": 0.3333,
+      "chi2_vs_uniform": {
+       "chi2": 2.0,
+       "df": 2,
+       "p": 0.3678794411714422,
+       "by_k": {
+        "3": {
+         "n": 7,
+         "counts": [
+          2,
+          1,
+          4
+         ],
+         "chi2": 2.0,
+         "df": 2,
+         "p": 0.3678794411714422,
+         "min_expected": 2.33
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 3,
+      "n_scored": 3,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 3
+      },
+      "letter_share": {
+       "A": 0.3333,
+       "B": 0.6667
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.3333,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.6667,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.333,
+       "df": 1,
+       "p": 0.5637028616507733,
+       "by_k": {
+        "2": {
+         "n": 3,
+         "counts": [
+          1,
+          2
+         ],
+         "chi2": 0.333,
+         "df": 1,
+         "p": 0.5637028616507733,
+         "min_expected": 1.5
+        }
+       }
+      }
+     }
+    },
+    "routing": {
+     "choice": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "6": 12
+      },
+      "letter_share": {
+       "A": 0.1667,
+       "B": 0.1667,
+       "C": 0.1667,
+       "D": 0.1667,
+       "E": 0.1667,
+       "F": 0.1667
+      },
+      "uniform_share": {
+       "A": 0.1667,
+       "B": 0.1667,
+       "C": 0.1667,
+       "D": 0.1667,
+       "E": 0.1667,
+       "F": 0.1667
+      },
+      "share_A": 0.1667,
+      "chance_A": 0.1667,
+      "best_constant_letter": "E",
+      "best_constant_acc": 0.1667,
+      "chance_acc": 0.1667,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 5,
+       "p": 1.0,
+       "by_k": {
+        "6": {
+         "n": 12,
+         "counts": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+         ],
+         "chi2": 0.0,
+         "df": 5,
+         "p": 1.0,
+         "min_expected": 2.0
+        }
+       }
+      }
+     }
+    },
+    "routing_hard": {
+     "choice": {
+      "n": 5,
+      "n_scored": 5,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 5
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.0,
+       "C": 0.2,
+       "D": 0.6,
+       "E": 0.2
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2,
+      "best_constant_letter": "D",
+      "best_constant_acc": 0.6,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 6.0,
+       "df": 4,
+       "p": 0.1991482734714558,
+       "by_k": {
+        "5": {
+         "n": 5,
+         "counts": [
+          0,
+          0,
+          1,
+          3,
+          1
+         ],
+         "chi2": 6.0,
+         "df": 4,
+         "p": 0.1991482734714558,
+         "min_expected": 1.0
+        }
+       }
+      }
+     }
+    },
+    "temporal_numeric": {
+     "choice": {
+      "n": 10,
+      "n_scored": 10,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 2,
+       "4": 3,
+       "5": 4,
+       "6": 1
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.1,
+       "C": 0.6,
+       "D": 0.2,
+       "E": 0.1,
+       "F": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2383,
+       "B": 0.2383,
+       "C": 0.2383,
+       "D": 0.1717,
+       "E": 0.0967,
+       "F": 0.0167
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2383,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.6,
+      "chance_acc": 0.2383,
+      "chi2_vs_uniform": {
+       "chi2": 16.167,
+       "df": 14,
+       "p": 0.30330246478477496,
+       "by_k": {
+        "3": {
+         "n": 2,
+         "counts": [
+          0,
+          0,
+          2
+         ],
+         "chi2": 4.0,
+         "df": 2,
+         "p": 0.13533528323661262,
+         "min_expected": 0.67
+        },
+        "4": {
+         "n": 3,
+         "counts": [
+          0,
+          0,
+          2,
+          1
+         ],
+         "chi2": 3.667,
+         "df": 3,
+         "p": 0.2997805885957119,
+         "min_expected": 0.75
+        },
+        "5": {
+         "n": 4,
+         "counts": [
+          0,
+          1,
+          2,
+          1,
+          0
+         ],
+         "chi2": 3.5,
+         "df": 4,
+         "p": 0.477878344488724,
+         "min_expected": 0.8
+        },
+        "6": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+         ],
+         "chi2": 5.0,
+         "df": 5,
+         "p": 0.415880186995508,
+         "min_expected": 0.17
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 4,
+      "n_scored": 4,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 4
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 4,
+         "counts": [
+          2,
+          2
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 2.0
+        }
+       }
+      }
+     },
+     "score": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 1
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 1.0,
+       "C": 0.0,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "B",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.0,
+       "df": 3,
+       "p": 0.39162517627108884,
+       "by_k": {
+        "4": {
+         "n": 1,
+         "counts": [
+          0,
+          1,
+          0,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        }
+       }
+      }
+     }
+    },
+    "tool_selection": {
+     "choice": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 12
+      },
+      "letter_share": {
+       "A": 0.1667,
+       "B": 0.25,
+       "C": 0.1667,
+       "D": 0.1667,
+       "E": 0.25
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.1667,
+      "chance_A": 0.2,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.25,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 0.5,
+       "df": 4,
+       "p": 0.9735009788392561,
+       "by_k": {
+        "5": {
+         "n": 12,
+         "counts": [
+          2,
+          3,
+          2,
+          2,
+          3
+         ],
+         "chi2": 0.5,
+         "df": 4,
+         "p": 0.9735009788392561,
+         "min_expected": 2.4
+        }
+       }
+      }
+     }
+    },
+    "tradeoff": {
+     "choice": {
+      "n": 4,
+      "n_scored": 4,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 1,
+       "5": 3
+      },
+      "letter_share": {
+       "A": 0.25,
+       "B": 0.5,
+       "C": 0.0,
+       "D": 0.25,
+       "E": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2125,
+       "B": 0.2125,
+       "C": 0.2125,
+       "D": 0.2125,
+       "E": 0.15
+      },
+      "share_A": 0.25,
+      "chance_A": 0.2125,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.2125,
+      "chi2_vs_uniform": {
+       "chi2": 5.0,
+       "df": 7,
+       "p": 0.6599632296942824,
+       "by_k": {
+        "4": {
+         "n": 1,
+         "counts": [
+          0,
+          1,
+          0,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        },
+        "5": {
+         "n": 3,
+         "counts": [
+          1,
+          1,
+          0,
+          1,
+          0
+         ],
+         "chi2": 2.0,
+         "df": 4,
+         "p": 0.7357588823428847,
+         "min_expected": 0.6
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 2,
+      "n_scored": 2,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 2
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 1.0
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.0,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 2.0,
+       "df": 1,
+       "p": 0.15729920705028533,
+       "by_k": {
+        "2": {
+         "n": 2,
+         "counts": [
+          0,
+          2
+         ],
+         "chi2": 2.0,
+         "df": 1,
+         "p": 0.15729920705028533,
+         "min_expected": 1.0
+        }
+       }
+      }
+     }
+    },
+    "trap": {
+     "choice": {
+      "n": 3,
+      "n_scored": 3,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 3
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.3333,
+       "C": 0.3333,
+       "D": 0.3333
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "D",
+      "best_constant_acc": 0.3333,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 1.0,
+       "df": 3,
+       "p": 0.8012519569012008,
+       "by_k": {
+        "4": {
+         "n": 3,
+         "counts": [
+          0,
+          1,
+          1,
+          1
+         ],
+         "chi2": 1.0,
+         "df": 3,
+         "p": 0.8012519569012008,
+         "min_expected": 0.75
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 4,
+      "n_scored": 4,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 4
+      },
+      "letter_share": {
+       "A": 1.0,
+       "B": 0.0
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 1.0,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 4.0,
+       "df": 1,
+       "p": 0.04550026389635828,
+       "by_k": {
+        "2": {
+         "n": 4,
+         "counts": [
+          4,
+          0
+         ],
+         "chi2": 4.0,
+         "df": 1,
+         "p": 0.04550026389635828,
+         "min_expected": 2.0
+        }
+       }
+      }
+     },
+     "score": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 1
+      },
+      "letter_share": {
+       "A": 1.0,
+       "B": 0.0,
+       "C": 0.0,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 1.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "A",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.0,
+       "df": 3,
+       "p": 0.39162517627108884,
+       "by_k": {
+        "4": {
+         "n": 1,
+         "counts": [
+          1,
+          0,
+          0,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "pres_labels": {
+   "ALL": {
+    "choice": {
+     "n": 139,
+     "n_scored": 139,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "3": 15,
+      "4": 53,
+      "5": 55,
+      "6": 16
+     },
+     "letter_share": {
+      "A": 0.1871,
+      "B": 0.2734,
+      "C": 0.2446,
+      "D": 0.2014,
+      "E": 0.0791,
+      "F": 0.0144
+     },
+     "uniform_share": {
+      "A": 0.2296,
+      "B": 0.2296,
+      "C": 0.2296,
+      "D": 0.1936,
+      "E": 0.0983,
+      "F": 0.0192
+     },
+     "share_A": 0.1871,
+     "chance_A": 0.2296,
+     "best_constant_letter": "B",
+     "best_constant_acc": 0.2734,
+     "chance_acc": 0.2296,
+     "chi2_vs_uniform": {
+      "chi2": 6.304,
+      "df": 14,
+      "p": 0.958251790137378,
+      "by_k": {
+       "3": {
+        "n": 15,
+        "counts": [
+         4,
+         6,
+         5
+        ],
+        "chi2": 0.4,
+        "df": 2,
+        "p": 0.8187307530779818,
+        "min_expected": 5.0
+       },
+       "4": {
+        "n": 53,
+        "counts": [
+         10,
+         17,
+         11,
+         15
+        ],
+        "chi2": 2.472,
+        "df": 3,
+        "p": 0.4804275880467357,
+        "min_expected": 13.25
+       },
+       "5": {
+        "n": 55,
+        "counts": [
+         10,
+         13,
+         14,
+         10,
+         8
+        ],
+        "chi2": 2.182,
+        "df": 4,
+        "p": 0.7023593244091577,
+        "min_expected": 11.0
+       },
+       "6": {
+        "n": 16,
+        "counts": [
+         2,
+         2,
+         4,
+         3,
+         3,
+         2
+        ],
+        "chi2": 1.25,
+        "df": 5,
+        "p": 0.9399915602888446,
+        "min_expected": 2.67
+       }
+      }
+     }
+    },
+    "noul": {
+     "n": 74,
+     "n_scored": 74,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "2": 74
+     },
+     "letter_share": {
+      "A": 0.527,
+      "B": 0.473
+     },
+     "uniform_share": {
+      "A": 0.5,
+      "B": 0.5
+     },
+     "share_A": 0.527,
+     "chance_A": 0.5,
+     "best_constant_letter": "A",
+     "best_constant_acc": 0.527,
+     "chance_acc": 0.5,
+     "chi2_vs_uniform": {
+      "chi2": 0.216,
+      "df": 1,
+      "p": 0.641938220405063,
+      "by_k": {
+       "2": {
+        "n": 74,
+        "counts": [
+         39,
+         35
+        ],
+        "chi2": 0.216,
+        "df": 1,
+        "p": 0.641938220405063,
+        "min_expected": 37.0
+       }
+      }
+     }
+    },
+    "score": {
+     "n": 18,
+     "n_scored": 18,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "4": 17,
+      "5": 1
+     },
+     "letter_share": {
+      "A": 0.2778,
+      "B": 0.2778,
+      "C": 0.3333,
+      "D": 0.1111,
+      "E": 0.0
+     },
+     "uniform_share": {
+      "A": 0.2472,
+      "B": 0.2472,
+      "C": 0.2472,
+      "D": 0.2472,
+      "E": 0.0111
+     },
+     "share_A": 0.2778,
+     "chance_A": 0.2472,
+     "best_constant_letter": "C",
+     "best_constant_acc": 0.3333,
+     "chance_acc": 0.2472,
+     "chi2_vs_uniform": {
+      "chi2": 5.588,
+      "df": 7,
+      "p": 0.588563461031139,
+      "by_k": {
+       "4": {
+        "n": 17,
+        "counts": [
+         5,
+         5,
+         5,
+         2
+        ],
+        "chi2": 1.588,
+        "df": 3,
+        "p": 0.6620603202525777,
+        "min_expected": 4.25
+       },
+       "5": {
+        "n": 1,
+        "counts": [
+         0,
+         0,
+         1,
+         0,
+         0
+        ],
+        "chi2": 4.0,
+        "df": 4,
+        "p": 0.4060058497098382,
+        "min_expected": 0.2
+       }
+      }
+     }
+    }
+   },
+   "by_family": {
+    "adequacy": {
+     "noul": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 12
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 12,
+         "counts": [
+          6,
+          6
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 6.0
+        }
+       }
+      }
+     }
+    },
+    "adversarial": {
+     "choice": {
+      "n": 3,
+      "n_scored": 3,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 3
+      },
+      "letter_share": {
+       "A": 0.6667,
+       "B": 0.3333,
+       "C": 0.0,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.6667,
+      "chance_A": 0.25,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.6667,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.667,
+       "df": 3,
+       "p": 0.2997805885957119,
+       "by_k": {
+        "4": {
+         "n": 3,
+         "counts": [
+          2,
+          1,
+          0,
+          0
+         ],
+         "chi2": 3.667,
+         "df": 3,
+         "p": 0.2997805885957119,
+         "min_expected": 0.75
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 2,
+      "n_scored": 2,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 2
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 2,
+         "counts": [
+          1,
+          1
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 1.0
+        }
+       }
+      }
+     },
+     "score": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 1
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.0,
+       "C": 1.0,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "C",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.0,
+       "df": 3,
+       "p": 0.39162517627108884,
+       "by_k": {
+        "4": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          1,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        }
+       }
+      }
+     }
+    },
+    "ambiguous": {
+     "choice": {
+      "n": 7,
+      "n_scored": 7,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 6,
+       "4": 1
+      },
+      "letter_share": {
+       "A": 0.5714,
+       "B": 0.2857,
+       "C": 0.1429,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.3214,
+       "B": 0.3214,
+       "C": 0.3214,
+       "D": 0.0357
+      },
+      "share_A": 0.5714,
+      "chance_A": 0.3214,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5714,
+      "chance_acc": 0.3214,
+      "chi2_vs_uniform": {
+       "chi2": 4.0,
+       "df": 5,
+       "p": 0.5494159513527805,
+       "by_k": {
+        "3": {
+         "n": 6,
+         "counts": [
+          3,
+          2,
+          1
+         ],
+         "chi2": 1.0,
+         "df": 2,
+         "p": 0.6065306597126334,
+         "min_expected": 2.0
+        },
+        "4": {
+         "n": 1,
+         "counts": [
+          1,
+          0,
+          0,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        }
+       }
+      }
+     }
+    },
+    "extraction": {
+     "choice": {
+      "n": 24,
+      "n_scored": 24,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 21,
+       "5": 3
+      },
+      "letter_share": {
+       "A": 0.2917,
+       "B": 0.1667,
+       "C": 0.1667,
+       "D": 0.3333,
+       "E": 0.0417
+      },
+      "uniform_share": {
+       "A": 0.2437,
+       "B": 0.2437,
+       "C": 0.2437,
+       "D": 0.2437,
+       "E": 0.025
+      },
+      "share_A": 0.2917,
+      "chance_A": 0.2437,
+      "best_constant_letter": "D",
+      "best_constant_acc": 0.3333,
+      "chance_acc": 0.2437,
+      "chi2_vs_uniform": {
+       "chi2": 3.286,
+       "df": 7,
+       "p": 0.8573738931821607,
+       "by_k": {
+        "4": {
+         "n": 21,
+         "counts": [
+          6,
+          4,
+          4,
+          7
+         ],
+         "chi2": 1.286,
+         "df": 3,
+         "p": 0.7325281239407652,
+         "min_expected": 5.25
+        },
+        "5": {
+         "n": 3,
+         "counts": [
+          1,
+          0,
+          0,
+          1,
+          1
+         ],
+         "chi2": 2.0,
+         "df": 4,
+         "p": 0.7357588823428847,
+         "min_expected": 0.6
+        }
+       }
+      }
+     }
+    },
+    "fact": {
+     "noul": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 12
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 12,
+         "counts": [
+          6,
+          6
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 6.0
+        }
+       }
+      }
+     }
+    },
+    "intent": {
+     "choice": {
+      "n": 24,
+      "n_scored": 24,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 24
+      },
+      "letter_share": {
+       "A": 0.25,
+       "B": 0.1667,
+       "C": 0.25,
+       "D": 0.1667,
+       "E": 0.1667
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.25,
+      "chance_A": 0.2,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.25,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 1.0,
+       "df": 4,
+       "p": 0.9097959895689501,
+       "by_k": {
+        "5": {
+         "n": 24,
+         "counts": [
+          6,
+          4,
+          6,
+          4,
+          4
+         ],
+         "chi2": 1.0,
+         "df": 4,
+         "p": 0.9097959895689501,
+         "min_expected": 4.8
+        }
+       }
+      }
+     }
+    },
+    "judge_hard": {
+     "noul": {
+      "n": 17,
+      "n_scored": 17,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 17
+      },
+      "letter_share": {
+       "A": 0.5882,
+       "B": 0.4118
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5882,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5882,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.529,
+       "df": 1,
+       "p": 0.46685427082272557,
+       "by_k": {
+        "2": {
+         "n": 17,
+         "counts": [
+          10,
+          7
+         ],
+         "chi2": 0.529,
+         "df": 1,
+         "p": 0.46685427082272557,
+         "min_expected": 8.5
+        }
+       }
+      }
+     }
+    },
+    "long_policy": {
+     "choice": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 7,
+       "5": 4,
+       "6": 1
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.3333,
+       "C": 0.25,
+       "D": 0.3333,
+       "E": 0.0833,
+       "F": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2264,
+       "B": 0.2264,
+       "C": 0.2264,
+       "D": 0.2264,
+       "E": 0.0806,
+       "F": 0.0139
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2264,
+      "best_constant_letter": "D",
+      "best_constant_acc": 0.3333,
+      "chance_acc": 0.2264,
+      "chi2_vs_uniform": {
+       "chi2": 16.0,
+       "df": 12,
+       "p": 0.1912360620796248,
+       "by_k": {
+        "4": {
+         "n": 7,
+         "counts": [
+          0,
+          4,
+          1,
+          2
+         ],
+         "chi2": 5.0,
+         "df": 3,
+         "p": 0.17179714429673365,
+         "min_expected": 1.75
+        },
+        "5": {
+         "n": 4,
+         "counts": [
+          0,
+          0,
+          2,
+          2,
+          0
+         ],
+         "chi2": 6.0,
+         "df": 4,
+         "p": 0.1991482734714558,
+         "min_expected": 0.8
+        },
+        "6": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+         ],
+         "chi2": 5.0,
+         "df": 5,
+         "p": 0.415880186995508,
+         "min_expected": 0.17
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 5,
+      "n_scored": 5,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 5
+      },
+      "letter_share": {
+       "A": 0.4,
+       "B": 0.6
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.4,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.6,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.2,
+       "df": 1,
+       "p": 0.654720846018577,
+       "by_k": {
+        "2": {
+         "n": 5,
+         "counts": [
+          2,
+          3
+         ],
+         "chi2": 0.2,
+         "df": 1,
+         "p": 0.654720846018577,
+         "min_expected": 2.5
+        }
+       }
+      }
+     },
+     "score": {
+      "n": 2,
+      "n_scored": 2,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 2
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 1.0,
+       "C": 0.0,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "B",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 6.0,
+       "df": 3,
+       "p": 0.11161022509471287,
+       "by_k": {
+        "4": {
+         "n": 2,
+         "counts": [
+          0,
+          2,
+          0,
+          0
+         ],
+         "chi2": 6.0,
+         "df": 3,
+         "p": 0.11161022509471287,
+         "min_expected": 0.5
+        }
+       }
+      }
+     }
+    },
+    "multi_hop": {
+     "choice": {
+      "n": 16,
+      "n_scored": 16,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 14,
+       "6": 2
+      },
+      "letter_share": {
+       "A": 0.0625,
+       "B": 0.25,
+       "C": 0.375,
+       "D": 0.3125,
+       "E": 0.0,
+       "F": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2396,
+       "B": 0.2396,
+       "C": 0.2396,
+       "D": 0.2396,
+       "E": 0.0208,
+       "F": 0.0208
+      },
+      "share_A": 0.0625,
+      "chance_A": 0.2396,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.375,
+      "chance_acc": 0.2396,
+      "chi2_vs_uniform": {
+       "chi2": 12.571,
+       "df": 8,
+       "p": 0.1274709184127896,
+       "by_k": {
+        "4": {
+         "n": 14,
+         "counts": [
+          1,
+          4,
+          4,
+          5
+         ],
+         "chi2": 2.571,
+         "df": 3,
+         "p": 0.4625205182962655,
+         "min_expected": 3.5
+        },
+        "6": {
+         "n": 2,
+         "counts": [
+          0,
+          0,
+          2,
+          0,
+          0,
+          0
+         ],
+         "chi2": 10.0,
+         "df": 5,
+         "p": 0.07523524614651199,
+         "min_expected": 0.33
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 1
+      },
+      "letter_share": {
+       "A": 1.0,
+       "B": 0.0
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 1.0,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 1.0,
+       "df": 1,
+       "p": 0.31731050786291437,
+       "by_k": {
+        "2": {
+         "n": 1,
+         "counts": [
+          1,
+          0
+         ],
+         "chi2": 1.0,
+         "df": 1,
+         "p": 0.31731050786291437,
+         "min_expected": 0.5
+        }
+       }
+      }
+     },
+     "score": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 1
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.0,
+       "C": 1.0,
+       "D": 0.0,
+       "E": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2,
+      "best_constant_letter": "C",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 4.0,
+       "df": 4,
+       "p": 0.4060058497098382,
+       "by_k": {
+        "5": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          1,
+          0,
+          0
+         ],
+         "chi2": 4.0,
+         "df": 4,
+         "p": 0.4060058497098382,
+         "min_expected": 0.2
+        }
+       }
+      }
+     }
+    },
+    "ordinal": {
+     "score": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 12
+      },
+      "letter_share": {
+       "A": 0.3333,
+       "B": 0.1667,
+       "C": 0.3333,
+       "D": 0.1667
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.3333,
+      "chance_A": 0.25,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.3333,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 1.333,
+       "df": 3,
+       "p": 0.7212333746277604,
+       "by_k": {
+        "4": {
+         "n": 12,
+         "counts": [
+          4,
+          2,
+          4,
+          2
+         ],
+         "chi2": 1.333,
+         "df": 3,
+         "p": 0.7212333746277604,
+         "min_expected": 3.0
+        }
+       }
+      }
+     }
+    },
+    "policy": {
+     "noul": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 12
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 12,
+         "counts": [
+          6,
+          6
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 6.0
+        }
+       }
+      }
+     }
+    },
+    "probability": {
+     "choice": {
+      "n": 7,
+      "n_scored": 7,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 7
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.5714,
+       "C": 0.4286
+      },
+      "uniform_share": {
+       "A": 0.3333,
+       "B": 0.3333,
+       "C": 0.3333
+      },
+      "share_A": 0.0,
+      "chance_A": 0.3333,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5714,
+      "chance_acc": 0.3333,
+      "chi2_vs_uniform": {
+       "chi2": 3.714,
+       "df": 2,
+       "p": 0.15611804531597084,
+       "by_k": {
+        "3": {
+         "n": 7,
+         "counts": [
+          0,
+          4,
+          3
+         ],
+         "chi2": 3.714,
+         "df": 2,
+         "p": 0.15611804531597084,
+         "min_expected": 2.33
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 3,
+      "n_scored": 3,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 3
+      },
+      "letter_share": {
+       "A": 0.3333,
+       "B": 0.6667
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.3333,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.6667,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.333,
+       "df": 1,
+       "p": 0.5637028616507733,
+       "by_k": {
+        "2": {
+         "n": 3,
+         "counts": [
+          1,
+          2
+         ],
+         "chi2": 0.333,
+         "df": 1,
+         "p": 0.5637028616507733,
+         "min_expected": 1.5
+        }
+       }
+      }
+     }
+    },
+    "routing": {
+     "choice": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "6": 12
+      },
+      "letter_share": {
+       "A": 0.1667,
+       "B": 0.1667,
+       "C": 0.1667,
+       "D": 0.1667,
+       "E": 0.1667,
+       "F": 0.1667
+      },
+      "uniform_share": {
+       "A": 0.1667,
+       "B": 0.1667,
+       "C": 0.1667,
+       "D": 0.1667,
+       "E": 0.1667,
+       "F": 0.1667
+      },
+      "share_A": 0.1667,
+      "chance_A": 0.1667,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.1667,
+      "chance_acc": 0.1667,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 5,
+       "p": 1.0,
+       "by_k": {
+        "6": {
+         "n": 12,
+         "counts": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+         ],
+         "chi2": 0.0,
+         "df": 5,
+         "p": 1.0,
+         "min_expected": 2.0
+        }
+       }
+      }
+     }
+    },
+    "routing_hard": {
+     "choice": {
+      "n": 5,
+      "n_scored": 5,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 5
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 1.0,
+       "C": 0.0,
+       "D": 0.0,
+       "E": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2,
+      "best_constant_letter": "B",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 20.0,
+       "df": 4,
+       "p": 0.0004993992273873336,
+       "by_k": {
+        "5": {
+         "n": 5,
+         "counts": [
+          0,
+          5,
+          0,
+          0,
+          0
+         ],
+         "chi2": 20.0,
+         "df": 4,
+         "p": 0.0004993992273873336,
+         "min_expected": 1.0
+        }
+       }
+      }
+     }
+    },
+    "temporal_numeric": {
+     "choice": {
+      "n": 10,
+      "n_scored": 10,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 2,
+       "4": 3,
+       "5": 4,
+       "6": 1
+      },
+      "letter_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.3,
+       "D": 0.3,
+       "E": 0.0,
+       "F": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2383,
+       "B": 0.2383,
+       "C": 0.2383,
+       "D": 0.1717,
+       "E": 0.0967,
+       "F": 0.0167
+      },
+      "share_A": 0.2,
+      "chance_A": 0.2383,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.3,
+      "chance_acc": 0.2383,
+      "chi2_vs_uniform": {
+       "chi2": 8.0,
+       "df": 14,
+       "p": 0.8893260215974266,
+       "by_k": {
+        "3": {
+         "n": 2,
+         "counts": [
+          1,
+          0,
+          1
+         ],
+         "chi2": 1.0,
+         "df": 2,
+         "p": 0.6065306597126334,
+         "min_expected": 0.67
+        },
+        "4": {
+         "n": 3,
+         "counts": [
+          0,
+          1,
+          1,
+          1
+         ],
+         "chi2": 1.0,
+         "df": 3,
+         "p": 0.8012519569012008,
+         "min_expected": 0.75
+        },
+        "5": {
+         "n": 4,
+         "counts": [
+          1,
+          1,
+          1,
+          1,
+          0
+         ],
+         "chi2": 1.0,
+         "df": 4,
+         "p": 0.9097959895689501,
+         "min_expected": 0.8
+        },
+        "6": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+         ],
+         "chi2": 5.0,
+         "df": 5,
+         "p": 0.415880186995508,
+         "min_expected": 0.17
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 4,
+      "n_scored": 4,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 4
+      },
+      "letter_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.5,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 1,
+       "p": 1.0,
+       "by_k": {
+        "2": {
+         "n": 4,
+         "counts": [
+          2,
+          2
+         ],
+         "chi2": 0.0,
+         "df": 1,
+         "p": 1.0,
+         "min_expected": 2.0
+        }
+       }
+      }
+     },
+     "score": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 1
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 1.0,
+       "C": 0.0,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "B",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.0,
+       "df": 3,
+       "p": 0.39162517627108884,
+       "by_k": {
+        "4": {
+         "n": 1,
+         "counts": [
+          0,
+          1,
+          0,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        }
+       }
+      }
+     }
+    },
+    "tool_selection": {
+     "choice": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 12
+      },
+      "letter_share": {
+       "A": 0.1667,
+       "B": 0.1667,
+       "C": 0.3333,
+       "D": 0.1667,
+       "E": 0.1667
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.1667,
+      "chance_A": 0.2,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.3333,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 1.333,
+       "df": 4,
+       "p": 0.8556951983876534,
+       "by_k": {
+        "5": {
+         "n": 12,
+         "counts": [
+          2,
+          2,
+          4,
+          2,
+          2
+         ],
+         "chi2": 1.333,
+         "df": 4,
+         "p": 0.8556951983876534,
+         "min_expected": 2.4
+        }
+       }
+      }
+     }
+    },
+    "tradeoff": {
+     "choice": {
+      "n": 4,
+      "n_scored": 4,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 1,
+       "5": 3
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.5,
+       "C": 0.25,
+       "D": 0.0,
+       "E": 0.25
+      },
+      "uniform_share": {
+       "A": 0.2125,
+       "B": 0.2125,
+       "C": 0.2125,
+       "D": 0.2125,
+       "E": 0.15
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2125,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.2125,
+      "chi2_vs_uniform": {
+       "chi2": 5.0,
+       "df": 7,
+       "p": 0.6599632296942824,
+       "by_k": {
+        "4": {
+         "n": 1,
+         "counts": [
+          0,
+          1,
+          0,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        },
+        "5": {
+         "n": 3,
+         "counts": [
+          0,
+          1,
+          1,
+          0,
+          1
+         ],
+         "chi2": 2.0,
+         "df": 4,
+         "p": 0.7357588823428847,
+         "min_expected": 0.6
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 2,
+      "n_scored": 2,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 2
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 1.0
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 0.0,
+      "chance_A": 0.5,
+      "best_constant_letter": "B",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 2.0,
+       "df": 1,
+       "p": 0.15729920705028533,
+       "by_k": {
+        "2": {
+         "n": 2,
+         "counts": [
+          0,
+          2
+         ],
+         "chi2": 2.0,
+         "df": 1,
+         "p": 0.15729920705028533,
+         "min_expected": 1.0
+        }
+       }
+      }
+     }
+    },
+    "trap": {
+     "choice": {
+      "n": 3,
+      "n_scored": 3,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 3
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.6667,
+       "C": 0.3333,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.6667,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.667,
+       "df": 3,
+       "p": 0.2997805885957119,
+       "by_k": {
+        "4": {
+         "n": 3,
+         "counts": [
+          0,
+          2,
+          1,
+          0
+         ],
+         "chi2": 3.667,
+         "df": 3,
+         "p": 0.2997805885957119,
+         "min_expected": 0.75
+        }
+       }
+      }
+     },
+     "noul": {
+      "n": 4,
+      "n_scored": 4,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "2": 4
+      },
+      "letter_share": {
+       "A": 1.0,
+       "B": 0.0
+      },
+      "uniform_share": {
+       "A": 0.5,
+       "B": 0.5
+      },
+      "share_A": 1.0,
+      "chance_A": 0.5,
+      "best_constant_letter": "A",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.5,
+      "chi2_vs_uniform": {
+       "chi2": 4.0,
+       "df": 1,
+       "p": 0.04550026389635828,
+       "by_k": {
+        "2": {
+         "n": 4,
+         "counts": [
+          4,
+          0
+         ],
+         "chi2": 4.0,
+         "df": 1,
+         "p": 0.04550026389635828,
+         "min_expected": 2.0
+        }
+       }
+      }
+     },
+     "score": {
+      "n": 1,
+      "n_scored": 1,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 1
+      },
+      "letter_share": {
+       "A": 1.0,
+       "B": 0.0,
+       "C": 0.0,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 1.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "A",
+      "best_constant_acc": 1.0,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.0,
+       "df": 3,
+       "p": 0.39162517627108884,
+       "by_k": {
+        "4": {
+         "n": 1,
+         "counts": [
+          1,
+          0,
+          0,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "idsort": {
+   "ALL": {
+    "choice": {
+     "n": 139,
+     "n_scored": 139,
+     "n_gold_in_tie_set": 0,
+     "K_dist": {
+      "3": 15,
+      "4": 53,
+      "5": 55,
+      "6": 16
+     },
+     "letter_share": {
+      "A": 0.2158,
+      "B": 0.2158,
+      "C": 0.2446,
+      "D": 0.1942,
+      "E": 0.1151,
+      "F": 0.0144
+     },
+     "uniform_share": {
+      "A": 0.2296,
+      "B": 0.2296,
+      "C": 0.2296,
+      "D": 0.1936,
+      "E": 0.0983,
+      "F": 0.0192
+     },
+     "share_A": 0.2158,
+     "chance_A": 0.2296,
+     "best_constant_letter": "C",
+     "best_constant_acc": 0.2446,
+     "chance_acc": 0.2296,
+     "chi2_vs_uniform": {
+      "chi2": 8.255,
+      "df": 14,
+      "p": 0.8756285743332775,
+      "by_k": {
+       "3": {
+        "n": 15,
+        "counts": [
+         4,
+         2,
+         9
+        ],
+        "chi2": 5.2,
+        "df": 2,
+        "p": 0.07427357821433386,
+        "min_expected": 5.0
+       },
+       "4": {
+        "n": 53,
+        "counts": [
+         15,
+         12,
+         12,
+         14
+        ],
+        "chi2": 0.509,
+        "df": 3,
+        "p": 0.9168139764566549,
+        "min_expected": 13.25
+       },
+       "5": {
+        "n": 55,
+        "counts": [
+         9,
+         12,
+         11,
+         11,
+         12
+        ],
+        "chi2": 0.545,
+        "df": 4,
+        "p": 0.9689277648869302,
+        "min_expected": 11.0
+       },
+       "6": {
+        "n": 16,
+        "counts": [
+         2,
+         4,
+         2,
+         2,
+         4,
+         2
+        ],
+        "chi2": 2.0,
+        "df": 5,
+        "p": 0.8491450360846097,
+        "min_expected": 2.67
+       }
+      }
+     }
+    }
+   },
+   "by_family": {
+    "adequacy": {},
+    "adversarial": {
+     "choice": {
+      "n": 3,
+      "n_scored": 3,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 3
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.3333,
+       "C": 0.0,
+       "D": 0.6667
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "D",
+      "best_constant_acc": 0.6667,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 3.667,
+       "df": 3,
+       "p": 0.2997805885957119,
+       "by_k": {
+        "4": {
+         "n": 3,
+         "counts": [
+          0,
+          1,
+          0,
+          2
+         ],
+         "chi2": 3.667,
+         "df": 3,
+         "p": 0.2997805885957119,
+         "min_expected": 0.75
+        }
+       }
+      }
+     }
+    },
+    "ambiguous": {
+     "choice": {
+      "n": 7,
+      "n_scored": 7,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 6,
+       "4": 1
+      },
+      "letter_share": {
+       "A": 0.4286,
+       "B": 0.1429,
+       "C": 0.4286,
+       "D": 0.0
+      },
+      "uniform_share": {
+       "A": 0.3214,
+       "B": 0.3214,
+       "C": 0.3214,
+       "D": 0.0357
+      },
+      "share_A": 0.4286,
+      "chance_A": 0.3214,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.4286,
+      "chance_acc": 0.3214,
+      "chi2_vs_uniform": {
+       "chi2": 4.0,
+       "df": 5,
+       "p": 0.5494159513527805,
+       "by_k": {
+        "3": {
+         "n": 6,
+         "counts": [
+          2,
+          1,
+          3
+         ],
+         "chi2": 1.0,
+         "df": 2,
+         "p": 0.6065306597126334,
+         "min_expected": 2.0
+        },
+        "4": {
+         "n": 1,
+         "counts": [
+          1,
+          0,
+          0,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        }
+       }
+      }
+     }
+    },
+    "extraction": {
+     "choice": {
+      "n": 24,
+      "n_scored": 24,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 21,
+       "5": 3
+      },
+      "letter_share": {
+       "A": 0.2917,
+       "B": 0.25,
+       "C": 0.1667,
+       "D": 0.2917,
+       "E": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2437,
+       "B": 0.2437,
+       "C": 0.2437,
+       "D": 0.2437,
+       "E": 0.025
+      },
+      "share_A": 0.2917,
+      "chance_A": 0.2437,
+      "best_constant_letter": "D",
+      "best_constant_acc": 0.2917,
+      "chance_acc": 0.2437,
+      "chi2_vs_uniform": {
+       "chi2": 3.667,
+       "df": 7,
+       "p": 0.8172700277244709,
+       "by_k": {
+        "4": {
+         "n": 21,
+         "counts": [
+          6,
+          5,
+          3,
+          7
+         ],
+         "chi2": 1.667,
+         "df": 3,
+         "p": 0.6443698056370253,
+         "min_expected": 5.25
+        },
+        "5": {
+         "n": 3,
+         "counts": [
+          1,
+          1,
+          1,
+          0,
+          0
+         ],
+         "chi2": 2.0,
+         "df": 4,
+         "p": 0.7357588823428847,
+         "min_expected": 0.6
+        }
+       }
+      }
+     }
+    },
+    "fact": {},
+    "intent": {
+     "choice": {
+      "n": 24,
+      "n_scored": 24,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 24
+      },
+      "letter_share": {
+       "A": 0.1667,
+       "B": 0.1667,
+       "C": 0.2083,
+       "D": 0.1667,
+       "E": 0.2917
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.1667,
+      "chance_A": 0.2,
+      "best_constant_letter": "E",
+      "best_constant_acc": 0.2917,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 1.417,
+       "df": 4,
+       "p": 0.8412931581121582,
+       "by_k": {
+        "5": {
+         "n": 24,
+         "counts": [
+          4,
+          4,
+          5,
+          4,
+          7
+         ],
+         "chi2": 1.417,
+         "df": 4,
+         "p": 0.8412931581121582,
+         "min_expected": 4.8
+        }
+       }
+      }
+     }
+    },
+    "judge_hard": {},
+    "long_policy": {
+     "choice": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 7,
+       "5": 4,
+       "6": 1
+      },
+      "letter_share": {
+       "A": 0.25,
+       "B": 0.3333,
+       "C": 0.0833,
+       "D": 0.1667,
+       "E": 0.1667,
+       "F": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2264,
+       "B": 0.2264,
+       "C": 0.2264,
+       "D": 0.2264,
+       "E": 0.0806,
+       "F": 0.0139
+      },
+      "share_A": 0.25,
+      "chance_A": 0.2264,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.3333,
+      "chance_acc": 0.2264,
+      "chi2_vs_uniform": {
+       "chi2": 8.929,
+       "df": 12,
+       "p": 0.7090189844645809,
+       "by_k": {
+        "4": {
+         "n": 7,
+         "counts": [
+          2,
+          2,
+          1,
+          2
+         ],
+         "chi2": 0.429,
+         "df": 3,
+         "p": 0.9342790756242508,
+         "min_expected": 1.75
+        },
+        "5": {
+         "n": 4,
+         "counts": [
+          1,
+          2,
+          0,
+          0,
+          1
+         ],
+         "chi2": 3.5,
+         "df": 4,
+         "p": 0.477878344488724,
+         "min_expected": 0.8
+        },
+        "6": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+         ],
+         "chi2": 5.0,
+         "df": 5,
+         "p": 0.415880186995508,
+         "min_expected": 0.17
+        }
+       }
+      }
+     }
+    },
+    "multi_hop": {
+     "choice": {
+      "n": 16,
+      "n_scored": 16,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 14,
+       "6": 2
+      },
+      "letter_share": {
+       "A": 0.375,
+       "B": 0.25,
+       "C": 0.3125,
+       "D": 0.0625,
+       "E": 0.0,
+       "F": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2396,
+       "B": 0.2396,
+       "C": 0.2396,
+       "D": 0.2396,
+       "E": 0.0208,
+       "F": 0.0208
+      },
+      "share_A": 0.375,
+      "chance_A": 0.2396,
+      "best_constant_letter": "A",
+      "best_constant_acc": 0.375,
+      "chance_acc": 0.2396,
+      "chi2_vs_uniform": {
+       "chi2": 14.857,
+       "df": 8,
+       "p": 0.06198347971768325,
+       "by_k": {
+        "4": {
+         "n": 14,
+         "counts": [
+          6,
+          2,
+          5,
+          1
+         ],
+         "chi2": 4.857,
+         "df": 3,
+         "p": 0.1825617448869309,
+         "min_expected": 3.5
+        },
+        "6": {
+         "n": 2,
+         "counts": [
+          0,
+          2,
+          0,
+          0,
+          0,
+          0
+         ],
+         "chi2": 10.0,
+         "df": 5,
+         "p": 0.07523524614651199,
+         "min_expected": 0.33
+        }
+       }
+      }
+     }
+    },
+    "ordinal": {},
+    "policy": {},
+    "probability": {
+     "choice": {
+      "n": 7,
+      "n_scored": 7,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 7
+      },
+      "letter_share": {
+       "A": 0.2857,
+       "B": 0.1429,
+       "C": 0.5714
+      },
+      "uniform_share": {
+       "A": 0.3333,
+       "B": 0.3333,
+       "C": 0.3333
+      },
+      "share_A": 0.2857,
+      "chance_A": 0.3333,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.5714,
+      "chance_acc": 0.3333,
+      "chi2_vs_uniform": {
+       "chi2": 2.0,
+       "df": 2,
+       "p": 0.3678794411714422,
+       "by_k": {
+        "3": {
+         "n": 7,
+         "counts": [
+          2,
+          1,
+          4
+         ],
+         "chi2": 2.0,
+         "df": 2,
+         "p": 0.3678794411714422,
+         "min_expected": 2.33
+        }
+       }
+      }
+     }
+    },
+    "routing": {
+     "choice": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "6": 12
+      },
+      "letter_share": {
+       "A": 0.1667,
+       "B": 0.1667,
+       "C": 0.1667,
+       "D": 0.1667,
+       "E": 0.1667,
+       "F": 0.1667
+      },
+      "uniform_share": {
+       "A": 0.1667,
+       "B": 0.1667,
+       "C": 0.1667,
+       "D": 0.1667,
+       "E": 0.1667,
+       "F": 0.1667
+      },
+      "share_A": 0.1667,
+      "chance_A": 0.1667,
+      "best_constant_letter": "E",
+      "best_constant_acc": 0.1667,
+      "chance_acc": 0.1667,
+      "chi2_vs_uniform": {
+       "chi2": 0.0,
+       "df": 5,
+       "p": 1.0,
+       "by_k": {
+        "6": {
+         "n": 12,
+         "counts": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+         ],
+         "chi2": 0.0,
+         "df": 5,
+         "p": 1.0,
+         "min_expected": 2.0
+        }
+       }
+      }
+     }
+    },
+    "routing_hard": {
+     "choice": {
+      "n": 5,
+      "n_scored": 5,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 5
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.0,
+       "C": 0.2,
+       "D": 0.6,
+       "E": 0.2
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2,
+      "best_constant_letter": "D",
+      "best_constant_acc": 0.6,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 6.0,
+       "df": 4,
+       "p": 0.1991482734714558,
+       "by_k": {
+        "5": {
+         "n": 5,
+         "counts": [
+          0,
+          0,
+          1,
+          3,
+          1
+         ],
+         "chi2": 6.0,
+         "df": 4,
+         "p": 0.1991482734714558,
+         "min_expected": 1.0
+        }
+       }
+      }
+     }
+    },
+    "temporal_numeric": {
+     "choice": {
+      "n": 10,
+      "n_scored": 10,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "3": 2,
+       "4": 3,
+       "5": 4,
+       "6": 1
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.1,
+       "C": 0.6,
+       "D": 0.2,
+       "E": 0.1,
+       "F": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2383,
+       "B": 0.2383,
+       "C": 0.2383,
+       "D": 0.1717,
+       "E": 0.0967,
+       "F": 0.0167
+      },
+      "share_A": 0.0,
+      "chance_A": 0.2383,
+      "best_constant_letter": "C",
+      "best_constant_acc": 0.6,
+      "chance_acc": 0.2383,
+      "chi2_vs_uniform": {
+       "chi2": 16.167,
+       "df": 14,
+       "p": 0.30330246478477496,
+       "by_k": {
+        "3": {
+         "n": 2,
+         "counts": [
+          0,
+          0,
+          2
+         ],
+         "chi2": 4.0,
+         "df": 2,
+         "p": 0.13533528323661262,
+         "min_expected": 0.67
+        },
+        "4": {
+         "n": 3,
+         "counts": [
+          0,
+          0,
+          2,
+          1
+         ],
+         "chi2": 3.667,
+         "df": 3,
+         "p": 0.2997805885957119,
+         "min_expected": 0.75
+        },
+        "5": {
+         "n": 4,
+         "counts": [
+          0,
+          1,
+          2,
+          1,
+          0
+         ],
+         "chi2": 3.5,
+         "df": 4,
+         "p": 0.477878344488724,
+         "min_expected": 0.8
+        },
+        "6": {
+         "n": 1,
+         "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+         ],
+         "chi2": 5.0,
+         "df": 5,
+         "p": 0.415880186995508,
+         "min_expected": 0.17
+        }
+       }
+      }
+     }
+    },
+    "tool_selection": {
+     "choice": {
+      "n": 12,
+      "n_scored": 12,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "5": 12
+      },
+      "letter_share": {
+       "A": 0.1667,
+       "B": 0.25,
+       "C": 0.1667,
+       "D": 0.1667,
+       "E": 0.25
+      },
+      "uniform_share": {
+       "A": 0.2,
+       "B": 0.2,
+       "C": 0.2,
+       "D": 0.2,
+       "E": 0.2
+      },
+      "share_A": 0.1667,
+      "chance_A": 0.2,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.25,
+      "chance_acc": 0.2,
+      "chi2_vs_uniform": {
+       "chi2": 0.5,
+       "df": 4,
+       "p": 0.9735009788392561,
+       "by_k": {
+        "5": {
+         "n": 12,
+         "counts": [
+          2,
+          3,
+          2,
+          2,
+          3
+         ],
+         "chi2": 0.5,
+         "df": 4,
+         "p": 0.9735009788392561,
+         "min_expected": 2.4
+        }
+       }
+      }
+     }
+    },
+    "tradeoff": {
+     "choice": {
+      "n": 4,
+      "n_scored": 4,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 1,
+       "5": 3
+      },
+      "letter_share": {
+       "A": 0.25,
+       "B": 0.5,
+       "C": 0.0,
+       "D": 0.25,
+       "E": 0.0
+      },
+      "uniform_share": {
+       "A": 0.2125,
+       "B": 0.2125,
+       "C": 0.2125,
+       "D": 0.2125,
+       "E": 0.15
+      },
+      "share_A": 0.25,
+      "chance_A": 0.2125,
+      "best_constant_letter": "B",
+      "best_constant_acc": 0.5,
+      "chance_acc": 0.2125,
+      "chi2_vs_uniform": {
+       "chi2": 5.0,
+       "df": 7,
+       "p": 0.6599632296942824,
+       "by_k": {
+        "4": {
+         "n": 1,
+         "counts": [
+          0,
+          1,
+          0,
+          0
+         ],
+         "chi2": 3.0,
+         "df": 3,
+         "p": 0.39162517627108884,
+         "min_expected": 0.25
+        },
+        "5": {
+         "n": 3,
+         "counts": [
+          1,
+          1,
+          0,
+          1,
+          0
+         ],
+         "chi2": 2.0,
+         "df": 4,
+         "p": 0.7357588823428847,
+         "min_expected": 0.6
+        }
+       }
+      }
+     }
+    },
+    "trap": {
+     "choice": {
+      "n": 3,
+      "n_scored": 3,
+      "n_gold_in_tie_set": 0,
+      "K_dist": {
+       "4": 3
+      },
+      "letter_share": {
+       "A": 0.0,
+       "B": 0.3333,
+       "C": 0.3333,
+       "D": 0.3333
+      },
+      "uniform_share": {
+       "A": 0.25,
+       "B": 0.25,
+       "C": 0.25,
+       "D": 0.25
+      },
+      "share_A": 0.0,
+      "chance_A": 0.25,
+      "best_constant_letter": "D",
+      "best_constant_acc": 0.3333,
+      "chance_acc": 0.25,
+      "chi2_vs_uniform": {
+       "chi2": 1.0,
+       "df": 3,
+       "p": 0.8012519569012008,
+       "by_k": {
+        "4": {
+         "n": 3,
+         "counts": [
+          0,
+          1,
+          1,
+          1
+         ],
+         "chi2": 1.0,
+         "df": 3,
+         "p": 0.8012519569012008,
+         "min_expected": 0.75
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}
