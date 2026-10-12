@@ -1,0 +1,223 @@
+{
+ "SCORE": {
+  "n": 43,
+  "trained": 0.3721,
+  "stock": 0.4884,
+  "delta_pt": -11.63,
+  "ci95_pt": [
+   -30.23,
+   6.98
+  ]
+ },
+ "ORDINAL_ID": {
+  "n": 0
+ },
+ "NOMINAL_CHOICE": {
+  "n": 416,
+  "trained": 0.6442,
+  "stock": 0.5986,
+  "delta_pt": 4.57,
+  "ci95_pt": [
+   -0.72,
+   9.86
+  ]
+ },
+ "NOMINAL_NOUL": {
+  "n": 741,
+  "trained": 0.7152,
+  "stock": 0.7166,
+  "delta_pt": -0.13,
+  "ci95_pt": [
+   -4.18,
+   3.78
+  ]
+ },
+ "SCORE+ORDINAL": {
+  "n": 43,
+  "delta_pt": -11.63,
+  "ci95_pt": [
+   -30.23,
+   6.98
+  ]
+ },
+ "NOMINAL": {
+  "n": 1157,
+  "delta_pt": 1.56,
+  "ci95_pt": [
+   -1.64,
+   4.75
+  ]
+ },
+ "verdict": "SUPPORTED",
+ "family_x_class": {
+  "policy": {
+   "NOMINAL_NOUL": 200
+  },
+  "ambiguous": {
+   "NOMINAL_CHOICE": 200
+  },
+  "adequacy": {
+   "NOMINAL_NOUL": 200
+  },
+  "long_policy": {
+   "NOMINAL_NOUL": 71,
+   "NOMINAL_CHOICE": 101,
+   "SCORE": 28
+  },
+  "judge_hard": {
+   "NOMINAL_NOUL": 200
+  },
+  "temporal_numeric": {
+   "SCORE": 15,
+   "NOMINAL_NOUL": 70,
+   "NOMINAL_CHOICE": 115
+  }
+ },
+ "id_shapes_top": [
+  [
+   "choice",
+   [
+    "ask",
+    "answer",
+    "decline"
+   ],
+   105
+  ],
+  [
+   "score",
+   [
+    "0",
+    "1",
+    "2",
+    "3"
+   ],
+   28
+  ],
+  [
+   "choice",
+   [
+    "answer",
+    "ask",
+    "decline"
+   ],
+   25
+  ],
+  [
+   "choice",
+   [
+    "decline",
+    "ask",
+    "answer"
+   ],
+   18
+  ],
+  [
+   "score",
+   [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   15
+  ],
+  [
+   "choice",
+   [
+    "ask",
+    "decline",
+    "answer"
+   ],
+   13
+  ],
+  [
+   "choice",
+   [
+    "ask",
+    "answer_alt",
+    "answer",
+    "decline"
+   ],
+   8
+  ],
+  [
+   "choice",
+   [
+    "ask",
+    "answer",
+    "answer_alt",
+    "decline"
+   ],
+   7
+  ],
+  [
+   "choice",
+   [
+    "decline",
+    "answer",
+    "ask"
+   ],
+   7
+  ],
+  [
+   "choice",
+   [
+    "answer",
+    "ask",
+    "answer_alt",
+    "decline"
+   ],
+   4
+  ],
+  [
+   "choice",
+   [
+    "opt_c530ce69c1",
+    "opt_dab906d433",
+    "opt_70f1a997c3"
+   ],
+   3
+  ],
+  [
+   "choice",
+   [
+    "answer_alt",
+    "ask",
+    "answer",
+    "decline"
+   ],
+   2
+  ],
+  [
+   "choice",
+   [
+    "decline",
+    "answer_alt",
+    "ask",
+    "answer"
+   ],
+   2
+  ],
+  [
+   "choice",
+   [
+    "ask",
+    "decline",
+    "answer_alt",
+    "answer"
+   ],
+   2
+  ],
+  [
+   "choice",
+   [
+    "decline",
+    "ask",
+    "answer_alt",
+    "answer"
+   ],
+   2
+  ]
+ ]
+}
