@@ -132,6 +132,19 @@ def test_sym_fork_option_views_do_not_stop_the_cell():
             assert list(it.cview.row.option_ids) == list(it.row.option_ids) and it.cview.label == it.label
 
 
+def test_checkpoint_loaders_attach_consistency_views():
+    """job-5x4vr exit 10: the screen's load_child rebuilt the training items WITHOUT their consistency views and the
+    Trainer refused ("consistency is on but no training item carries a consistency view"). Every loader that rebuilds
+    a consistency cell's training items must attach them as run_cell did (same function, top ladder rung)."""
+    import re
+    for rel in ("jobs/m2_first_cell/fulldev_eval.py", "train/m2_gates.py"):
+        src = (ROOT / rel).read_text(encoding="utf-8")
+        assert re.search(r"attach_consistency_views\(cfg, train_items, train_recs, enc, guard, max\(cfg\[\"t_ladder\"\]\)\)",
+                         src), rel
+    rc = (ROOT / "train/run_cell.py").read_text(encoding="utf-8")
+    assert "attach_consistency_views(cfg, train_items, train_recs, enc, guard, t_cap)" in rc  # t_cap = max(t_ladder)
+
+
 def test_slice_first_runs_before_any_screen_row():
     src = (M / "screen.py").read_text(encoding="utf-8")
     i = src.index("def score(a)")

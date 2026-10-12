@@ -215,8 +215,8 @@ def load_child(a, temperature: bool = True, readout: tuple[str, str] | None = No
     from train import m2_gates as G
     from train.calibration import item_content
     from train.cohort import Cohort
-    from train.run_cell import (attach_order_views, attach_teacher, cell_items, load_cell_data, load_parent_backbone,
-                                parent_encoder, train_config)
+    from train.run_cell import (attach_consistency_views, attach_order_views, attach_teacher, cell_items,
+                                load_cell_data, load_parent_backbone, parent_encoder, train_config)
     from train.trainer import Trainer, with_execution
 
     cell = json.loads(Path(a.cell).read_text(encoding="utf-8"))
@@ -235,6 +235,9 @@ def load_child(a, temperature: bool = True, readout: tuple[str, str] | None = No
     train_items = [x for x in cell_items(train_recs, tr_ids, cfg, enc, guard, max(cfg["t_ladder"]))
                    if len(x.row.ids) <= t_max]
     attach_order_views(cfg, train_items, train_recs, enc, guard, t_max)
+    # job-5x4vr: a consistency cell's Trainer refuses items without their views (and the lineage covers them): attach
+    # them exactly as run_cell did (same function, same seed, run_cell's T cap = the top ladder rung)
+    attach_consistency_views(cfg, train_items, train_recs, enc, guard, max(cfg["t_ladder"]))
     attach_teacher(cfg, train_items, a.teacher_dir, tr_ids)
     bb = load_parent_backbone(parent, a.model_dir, cfg, getattr(a, "gdn_ckpt", None), device=a.device)
     cuda = torch.cuda.is_available() and str(a.device).startswith("cuda")
