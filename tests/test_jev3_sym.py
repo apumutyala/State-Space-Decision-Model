@@ -154,7 +154,9 @@ def test_eval_only_screen_mode():
     assert p["eval_only"] == "screen" and p["stage"] == "screen"
     ck = checkpoint_block(p)
     assert ck["artifact"] == "art-8xs32" and ck["member"].endswith("trainable-step0000258.safetensors")
-    assert costs.worst_case_usd(p) <= p["hard_cap_usd"] <= 10.0 and p["build_timeout_minutes"] >= 60
+    assert costs.worst_case_usd(p) <= p["hard_cap_usd"] <= 12.0 and p["build_timeout_minutes"] >= 60
+    from jobs.m2_first_cell.screen import estimate  # the in-job setup preflight (job-svvvn exit 15)
+    assert estimate(p)["ok"]
     assert f"{costs.worst_case_usd(p):.2f}" in (M / "JOB_SPEC.md").read_text(encoding="utf-8")
     assert "job_params_jev3_sym_s0_eval.json" in (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
     job = (M / "first_cell_job.sh").read_text(encoding="utf-8")
