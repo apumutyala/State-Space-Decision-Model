@@ -1,0 +1,350 @@
+{
+ "ops": [
+  "state_paraphrase",
+  "instruction_paraphrase",
+  "option_paraphrase",
+  "option_reverse",
+  "option_shuffle",
+  "key_relabel",
+  "whitespace_noise",
+  "markup_noise"
+ ],
+ "seeds": [
+  0
+ ],
+ "n_base": 231,
+ "n_perturbed": 1593,
+ "flip_report": {
+  "per_operator": {
+   "instruction_paraphrase": {
+    "n": 231,
+    "invalid": 0,
+    "flips": 10,
+    "flip_rate": 0.04329004329004329,
+    "mean_tv_shift": 0.02343859532158874,
+    "max_tv_shift": 0.252114163682,
+    "max_abs_dp": 0.252114163682
+   },
+   "key_relabel": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "markup_noise": {
+    "n": 231,
+    "invalid": 0,
+    "flips": 20,
+    "flip_rate": 0.08658008658008658,
+    "mean_tv_shift": 0.048412572420694806,
+    "max_tv_shift": 0.4668219957385,
+    "max_abs_dp": 0.46682199573800004
+   },
+   "option_paraphrase": {
+    "n": 231,
+    "invalid": 0,
+    "flips": 14,
+    "flip_rate": 0.06060606060606061,
+    "mean_tv_shift": 0.03783124469540909,
+    "max_tv_shift": 0.28372442589049995,
+    "max_abs_dp": 0.28372442589099994
+   },
+   "option_reverse": {
+    "n": 213,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_shuffle": {
+    "n": 213,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "state_paraphrase": {
+    "n": 104,
+    "invalid": 0,
+    "flips": 1,
+    "flip_rate": 0.009615384615384616,
+    "mean_tv_shift": 0.013688113798331732,
+    "max_tv_shift": 0.14119717861449999,
+    "max_abs_dp": 0.139499726198
+   },
+   "whitespace_noise": {
+    "n": 231,
+    "invalid": 0,
+    "flips": 21,
+    "flip_rate": 0.09090909090909091,
+    "mean_tv_shift": 0.06393748191889827,
+    "max_tv_shift": 0.6326939811255,
+    "max_abs_dp": 0.6265394234730001
+   }
+  },
+  "per_operator_type": {
+   "instruction_paraphrase|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 8,
+    "flip_rate": 0.05755395683453238,
+    "mean_tv_shift": 0.025710501964895684,
+    "max_tv_shift": 0.252114163682,
+    "max_abs_dp": 0.252114163682
+   },
+   "instruction_paraphrase|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 2,
+    "flip_rate": 0.02702702702702703,
+    "mean_tv_shift": 0.01909069951355405,
+    "max_tv_shift": 0.11049077865199998,
+    "max_abs_dp": 0.110490778652
+   },
+   "instruction_paraphrase|score": {
+    "n": 18,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.023769110120194444,
+    "max_tv_shift": 0.06797126239349999,
+    "max_abs_dp": 0.067971262393
+   },
+   "key_relabel|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "markup_noise|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 15,
+    "flip_rate": 0.1079136690647482,
+    "mean_tv_shift": 0.04731347966022302,
+    "max_tv_shift": 0.4668219957385,
+    "max_abs_dp": 0.46682199573800004
+   },
+   "markup_noise|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 5,
+    "flip_rate": 0.06756756756756757,
+    "mean_tv_shift": 0.05469649480332432,
+    "max_tv_shift": 0.2836125009839999,
+    "max_abs_dp": 0.2836125009839999
+   },
+   "markup_noise|score": {
+    "n": 18,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.031066107831305565,
+    "max_tv_shift": 0.1006024494725,
+    "max_abs_dp": 0.10060244947300001
+   },
+   "option_paraphrase|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 9,
+    "flip_rate": 0.06474820143884892,
+    "mean_tv_shift": 0.041289037292514395,
+    "max_tv_shift": 0.28372442589049995,
+    "max_abs_dp": 0.28372442589099994
+   },
+   "option_paraphrase|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 4,
+    "flip_rate": 0.05405405405405406,
+    "mean_tv_shift": 0.028317841060094596,
+    "max_tv_shift": 0.146739595286,
+    "max_abs_dp": 0.146739595286
+   },
+   "option_paraphrase|score": {
+    "n": 18,
+    "invalid": 0,
+    "flips": 1,
+    "flip_rate": 0.05555555555555555,
+    "mean_tv_shift": 0.050240061251833334,
+    "max_tv_shift": 0.138435610855,
+    "max_abs_dp": 0.130390511561
+   },
+   "option_reverse|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_reverse|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_shuffle|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_shuffle|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "state_paraphrase|choice": {
+    "n": 65,
+    "invalid": 0,
+    "flips": 1,
+    "flip_rate": 0.015384615384615385,
+    "mean_tv_shift": 0.015667450281861537,
+    "max_tv_shift": 0.14119717861449999,
+    "max_abs_dp": 0.139499726198
+   },
+   "state_paraphrase|noul": {
+    "n": 30,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.011540969504633337,
+    "max_tv_shift": 0.03981332719100006,
+    "max_abs_dp": 0.03981332719100006
+   },
+   "state_paraphrase|score": {
+    "n": 9,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0065500535073888914,
+    "max_tv_shift": 0.025540847833999986,
+    "max_abs_dp": 0.02554084783499999
+   },
+   "whitespace_noise|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 14,
+    "flip_rate": 0.10071942446043165,
+    "mean_tv_shift": 0.060863494971751794,
+    "max_tv_shift": 0.6326939811255,
+    "max_abs_dp": 0.6265394234730001
+   },
+   "whitespace_noise|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 6,
+    "flip_rate": 0.08108108108108109,
+    "mean_tv_shift": 0.07212427301362162,
+    "max_tv_shift": 0.484186595971,
+    "max_abs_dp": 0.48418659597100006
+   },
+   "whitespace_noise|score": {
+    "n": 18,
+    "invalid": 0,
+    "flips": 1,
+    "flip_rate": 0.05555555555555555,
+    "mean_tv_shift": 0.05401868439911111,
+    "max_tv_shift": 0.15193722089950001,
+    "max_abs_dp": 0.1519372209
+   }
+  },
+  "average_flip_rate": 0.03637508325008325,
+  "pooled": {
+   "n": 1593,
+   "invalid": 0,
+   "flips": 66,
+   "flip_rate": 0.04143126177024482,
+   "mean_tv_shift": 0.02607015657966039,
+   "max_tv_shift": 0.6326939811255,
+   "max_abs_dp": 0.6265394234730001
+  },
+  "reorder_flips": 0,
+  "note": "operators are jevkit's own; MD1's exact 8 operators are unpublished"
+ },
+ "duplicate_tie_items": [],
+ "max_dp_bound": 1.0,
+ "status": {
+  "base": {
+   "ok": 231
+  },
+  "perturbed": {
+   "ok": 1593
+  }
+ },
+ "presented_order": {
+  "instruction_paraphrase": {
+   "n": 231,
+   "request_changed": 0,
+   "model_order_changed": null
+  },
+  "option_paraphrase": {
+   "n": 231,
+   "request_changed": 0,
+   "model_order_changed": null
+  },
+  "option_reverse": {
+   "n": 213,
+   "request_changed": 213,
+   "model_order_changed": null
+  },
+  "option_shuffle": {
+   "n": 213,
+   "request_changed": 213,
+   "model_order_changed": null
+  },
+  "whitespace_noise": {
+   "n": 231,
+   "request_changed": 0,
+   "model_order_changed": null
+  },
+  "markup_noise": {
+   "n": 231,
+   "request_changed": 0,
+   "model_order_changed": null
+  },
+  "state_paraphrase": {
+   "n": 104,
+   "request_changed": 0,
+   "model_order_changed": null
+  },
+  "key_relabel": {
+   "n": 139,
+   "request_changed": 139,
+   "model_order_changed": null
+  }
+ },
+ "g1_pass": false,
+ "g1_failures": [
+  "state_paraphrase: 1 flips",
+  "instruction_paraphrase: 10 flips",
+  "option_paraphrase: 14 flips",
+  "whitespace_noise: 21 flips",
+  "markup_noise: 20 flips",
+  "rows not checked (row_fn missing)"
+ ],
+ "rows_all_identical": null,
+ "max_abs_dp_observed": 0.6265394234730001
+}

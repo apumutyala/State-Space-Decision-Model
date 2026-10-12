@@ -1,0 +1,78 @@
+{
+ "slice_first": {
+  "started_utc": "2026-10-12T23:04:00Z",
+  "done_utc": "2026-10-12T23:07:12Z"
+ },
+ "slice_state_disjoint": {
+  "slice_states": 1200,
+  "train_states": 5960,
+  "shared": 0
+ },
+ "tfit": {
+  "T": 1.0014694896309733,
+  "T_nll": 1.0921024146773004,
+  "constrained": true,
+  "band_T1": 0.39541160593792174,
+  "band_T": 0.39541160593792174,
+  "n": 1200,
+  "nll_1": 0.6166168207132842,
+  "at_bound": false,
+  "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078",
+  "per_type": {
+   "min_cell": 200,
+   "types": {
+    "choice": {
+     "T": 1.0238394420253498,
+     "n": 416,
+     "nll_T": 0.8324192780513378,
+     "nll_1": 0.8325573066430041,
+     "at_bound": false
+    },
+    "noul": {
+     "T": 0.2606436063705284,
+     "nll_T": 0.9973799985689121,
+     "band_T": 0.10661268556005399,
+     "feasible": false,
+     "threshold": 0.05,
+     "n": 741,
+     "nll_1": 0.470118610154607,
+     "band_T1": 0.39541160593792174,
+     "flag": "no T in [lo, hi] meets the band threshold: T with the lowest band rate"
+    },
+    "score": {
+     "T": 0.42890935622702814,
+     "n": 43,
+     "nll_T": 0.9276235664566908,
+     "nll_1": 1.0520570969276544,
+     "at_bound": false
+    }
+   },
+   "cells": {
+    "choice:3": {
+     "T": 0.9547516732567366,
+     "n": 209,
+     "at_bound": false
+    }
+   },
+   "rule": "T_noul is chosen to minimise slice NLL subject to slice yes/no band rate <= stock's + 0.05 (stock = the in-job stock + shim readout on the same slice); choice / score T = the slice-NLL minimiser (+ (type, K) cells with >= min_cell decisions)",
+   "stock_noul_band": 0.0
+  }
+ },
+ "slice_floor": {
+  "n_decisions": 1200,
+  "native_top1": 0.7116666666666667,
+  "step0_top1": 0.6666666666666666,
+  "delta": 0.04500000000000004,
+  "pass": true,
+  "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078",
+  "stock_noul_band": {
+   "rate": 0.0,
+   "in_band": 0,
+   "n": 741,
+   "band": [
+    0.2,
+    0.8
+   ]
+  }
+ }
+}

@@ -1,0 +1,194 @@
+{
+ "native": {
+  "decider": {
+   "revision_id": "decision_head:LMLabelHead@cb67f5fcd08f",
+   "model_id": "qwen3.5-4b-stock",
+   "backend": "decision_head",
+   "head": "LMLabelHead",
+   "backbone": {
+    "spec": "qwen3.5-4b-stock",
+    "class": "Qwen3_5TextModel",
+    "config_sha256": "5180a154a329b975ba7ee22354176b7c1b67cc5d8fb69f19d5880d3094b35959",
+    "name_or_path": "",
+    "commit_hash": null,
+    "capture": "hidden_states",
+    "layer": -1,
+    "provenance": {
+     "kind": "qwen35-stock",
+     "repo": "Qwen/Qwen3.5-4B",
+     "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+     "config_sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+     "attention_free": false
+    },
+    "weights_digest": "39b8384b37181392c08057820e4e4eab23a1aca362e3e743e4624b7c37fc2e7b",
+    "weights_digest_mode": "sampled"
+   },
+   "encoder": {
+    "kind": "hf",
+    "name_or_path": "/hfcache/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "vocab_sha256": "7ef6def600d70a2dbf3c4f35b73db100a74bf2936b7f4b805e91ad184b7aabce",
+    "untrusted": {
+     "id": "untrusted-split-special+cut-leaking-added-v1",
+     "n_control_ids": 33
+    }
+   },
+   "prompt_template": {
+    "id": "jrt-h2o-shim:qwen3.5-4b",
+    "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+   },
+   "layout": "g1v2-canon",
+   "checkpoint": {
+    "path": "ckpt-step0000150.pt",
+    "step": 150,
+    "sha256": "da7276b0b44ecbdd415844bfe442bbeeaaa33d327c585bd75dc0407eba12b126"
+   },
+   "adapter_version": "0.2.0"
+  },
+  "seconds": 18.74,
+  "n": 231,
+  "status": {
+   "ok": 231
+  }
+ },
+ "g1": {
+  "g1_pass": true,
+  "rows_all_identical": true,
+  "n_perturbed": 565,
+  "seconds": 61.77
+ },
+ "flip8": {
+  "n_perturbed": 1593,
+  "seconds": 146.12
+ },
+ "target_ref": {
+  "preds": "target_ref/h2o_4g6m8.preds.jsonl",
+  "sha256": "e00d5ac7bfcccac18fe526752871004133ebd0b598dc42224cf498496ff62fd2",
+  "status": "copied"
+ },
+ "slice_first": {
+  "started_utc": "2026-10-12T23:04:00Z",
+  "done_utc": "2026-10-12T23:07:12Z"
+ },
+ "slice_state_disjoint": {
+  "slice_states": 1200,
+  "train_states": 5960,
+  "shared": 0
+ },
+ "tfit": {
+  "T": 1.0014694896309733,
+  "T_nll": 1.0921024146773004,
+  "constrained": true,
+  "band_T1": 0.39541160593792174,
+  "band_T": 0.39541160593792174,
+  "n": 1200,
+  "nll_1": 0.6166168207132842,
+  "at_bound": false,
+  "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078",
+  "per_type": {
+   "min_cell": 200,
+   "types": {
+    "choice": {
+     "T": 1.0238394420253498,
+     "n": 416,
+     "nll_T": 0.8324192780513378,
+     "nll_1": 0.8325573066430041,
+     "at_bound": false
+    },
+    "noul": {
+     "T": 0.2606436063705284,
+     "nll_T": 0.9973799985689121,
+     "band_T": 0.10661268556005399,
+     "feasible": false,
+     "threshold": 0.05,
+     "n": 741,
+     "nll_1": 0.470118610154607,
+     "band_T1": 0.39541160593792174,
+     "flag": "no T in [lo, hi] meets the band threshold: T with the lowest band rate"
+    },
+    "score": {
+     "T": 0.42890935622702814,
+     "n": 43,
+     "nll_T": 0.9276235664566908,
+     "nll_1": 1.0520570969276544,
+     "at_bound": false
+    }
+   },
+   "cells": {
+    "choice:3": {
+     "T": 0.9547516732567366,
+     "n": 209,
+     "at_bound": false
+    }
+   },
+   "rule": "T_noul is chosen to minimise slice NLL subject to slice yes/no band rate <= stock's + 0.05 (stock = the in-job stock + shim readout on the same slice); choice / score T = the slice-NLL minimiser (+ (type, K) cells with >= min_cell decisions)",
+   "stock_noul_band": 0.0
+  }
+ },
+ "slice_floor": {
+  "n_decisions": 1200,
+  "native_top1": 0.7116666666666667,
+  "step0_top1": 0.6666666666666666,
+  "delta": 0.04500000000000004,
+  "pass": true,
+  "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078",
+  "stock_noul_band": {
+   "rate": 0.0,
+   "in_band": 0,
+   "n": 741,
+   "band": [
+    0.2,
+    0.8
+   ]
+  }
+ },
+ "stock_shim": {
+  "arm": "stock_shim",
+  "shim": "h2oai/h2o-lightning-4b@v1.1",
+  "temperature": 0.8,
+  "noul_floor": 0.801,
+  "template_identity": {
+   "id": "jrt-h2o-shim:qwen3.5-4b",
+   "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+  },
+  "lm_head": "tied embed_tokens, fp32 label rows",
+  "lora": "off (scaling 0)",
+  "seconds": 15.84,
+  "n": 231,
+  "status": {
+   "ok": 231
+  }
+ },
+ "g1_stock_shim": {
+  "n_perturbed": 565,
+  "seconds": 53.83
+ },
+ "canon_stock": {
+  "seconds": 17.94,
+  "n": 231,
+  "status": {
+   "ok": 231
+  },
+  "rule": "the native decider (canonical layout) with every LoRA off and the lm_label scale at its init 1.0 = the untrained host read canonically"
+ },
+ "score_inv": {
+  "perturb_rc": 0,
+  "perturb_stdout": "{\"n_items\": 231, \"n_score_items\": 18, \"k_hist\": {\"4\": 17, \"5\": 1}, \"per_op\": {\"score_reverse\": 18, \"score_shuffle\": 54, \"score_relabel\": 18, \"score_permute\": 18}}",
+  "scripts_sha256": {
+   "scripts/ev_score_perturb.py": "803eeb9019f45f8a077f289ab6eab4f930510cf3ee7e5f847bdd855cbcf3e1da",
+   "scripts/ev_score_flip.py": "b59f21655522187b3f8453e8092f41e3943c24d6c9fe6dc83beb16fb5961b6b2"
+  },
+  "native": {
+   "rc": 0,
+   "pass": true,
+   "verdict": "PASS"
+  },
+  "stock_shim": {
+   "rc": 3,
+   "pass": false,
+   "verdict": "FAIL"
+  },
+  "n_base": 18,
+  "n_perturbed": 108,
+  "seconds": 19.1
+ }
+}
