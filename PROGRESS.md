@@ -1,5 +1,10 @@
 # PROGRESS: rolling, 3–5 lines per session (did / learned / next). Older entries roll into history/.
 
+## 2026-10-12: evidence B-PREREG-GUAR-JEV3/a (guarantees on JEV3-LM-S job-zbmhc, $0)
+- Did: addendum state 64f0c3dc BEFORE reading zbmhc probs; claude/ev-guar-jev3 @36141c14 receipts/2026-10-12-ev-guar-jev3-zbmhc (unchanged driver imported; arms native_tfit primary / shimcal / raw; step 150, ids 844233f2, shim parity 0.0).
+- Learned: coverage HOLDS (tfit 0.916 @a0.10 / 0.955 @a0.05, better than 6zs79 0.888) but LTT certifies NOTHING on any arm -> abstention FALSIFIED again. The pre-registered tfit readout is the culprit for errors (T_noul 0.26 fallback: 187 confident acts / 19 err); raw and shimcal are near-miss (~75 acts / 1 err vs ~135 needed). Diagnostic (non-public): shimcal beats tfit on NLL (-0.28) and raw on slice I/CompA-like (+17 / +40), CIs paired B=1000 seed 16.
+- Next: future cells pre-register shimcal (no slice-fitted T_noul) as primary; ~2x confident-correct yes/no mass would certify with this exact pipeline.
+
 ## 2026-10-12: evidence B-PREREG-GUAR-JEV3 (guarantees on our own trained stack, $0)
 - Did: prereg state 745fc478 BEFORE reading any slice prob; claude/ev-guar-jev3 @77b8be9c receipts/2026-10-12-ev-guar-jev3 (driver on jevkit guarantees, unmodified; shim parity 0.0). JEV3-SYM s0 (6zs79, ckpt 5cb7da42) on the jev3 slice 844233f2.
 - Learned: conformal coverage HOLDS (TEST 0.888 @a0.10 / 0.935 @a0.05, sets 1.62/1.87) but LTT certifies NOTHING (act 0) in every arm/variant/secondary and on the clean dev-card remainder -> abstention certificate FALSIFIED for our stack: confident noul errs ~6% (band 49%), confident choice rare, score no singletons. H2O hybrid cells on jev2 DO certify (act 0.61 / 0.81).
