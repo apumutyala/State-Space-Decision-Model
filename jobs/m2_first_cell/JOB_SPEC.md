@@ -862,3 +862,7 @@ PRE-REGISTRATION TEXT (paste on origin/state before seed 0 is submitted):
     - Train-side drops via `train_set.exclude_files` (sha-pinned, fail closed): policy/aegis_reply (109 rows, gold FALSE in all) and adequacy/hs2_bar_coherence (27 rows, 26 true : 1 false; dropped rather than down-weighted). File sha256 e998376e..., 136 ids.
     - Pool 5,824; max_steps 728 = 1 epoch, still clock-bound at 35 min (floor 110); worst case unchanged at $21.67. The slice is unchanged (1,200, 844233f2).
     - Evidence re-gate CLEARED (claude/ev-jev2a-regate @688e8d7c, REGATE_JEV3.md 4b): exclusion list EMPTY, sha256 01ba4719... asserted. data_pins.status = final.
+
+## Mode `jev3_sym_s0_eval` (A-PREREG-JEV3-SYM Amendment 2: eval-only screen of job-5x4vr)
+
+This job does no training. It scores job-5x4vr's exported best checkpoint (step 200 of 258, trainable-step0000200.safetensors sha256 5cb7da42...), installed from artifact art-8xs32 (sha 933cc0ac...) with every byte sha-pinned (fail closed). The selection was frozen in job on the jev3 slice dev cards. It runs the stage-screen command exactly as pre-registered: the in-job stock control, the H2O target preds (e00d5ac7), bitwise G1 KEEP, the 8 flip ops, and slice_first (T-fit + step-0 floor) before any public row. Schedule: setup 7 + guard 2 + checkpoint 4 + screen 32 + report 2 + reserve 1 = 48 min, build_timeout 30. Quoted hold $3.02; **worst case** (30 + 2 x 48) x $0.063 = **$7.94** (hard cap $8).

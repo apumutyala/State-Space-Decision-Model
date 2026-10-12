@@ -169,8 +169,8 @@ td = p.get("train_dir", "m2-150k")
 if not isinstance(td, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*", td) or ".." in td.split("/"):
     sys.exit(f"mode {mode}: train_dir {td!r} must be a relative path under $DATA")
 ev = p.get("eval_only", "none")
-if ev not in ("none", "fulldev"):
-    sys.exit(f"mode {mode}: eval_only {ev!r} must be none or fulldev")
+if ev not in ("none", "fulldev", "screen"):
+    sys.exit(f"mode {mode}: eval_only {ev!r} must be none, fulldev or screen")
 if ev != "none":
     sys.path.insert(0, ".")
     from jobs.m2_first_cell.checkpoint_loader import CheckpointError, checkpoint_block
@@ -179,7 +179,7 @@ if ev != "none":
     except CheckpointError as e:
         sys.exit(f"mode {mode}: {e}")
 st = p.get("stage", "gates")
-if st not in ("gates", "screen") or (st == "screen" and ev != "none"):
+if st not in ("gates", "screen") or (st == "screen" and ev not in ("none", "screen")) or (ev == "screen" and st != "screen"):
     sys.exit(f"mode {mode}: stage {st!r} must be gates or screen (screen = a training mode's evals, not eval_only)")
 print(td, 1 if c.get("teacher") else 0, ev, st, (ch or {}).get("link", 0), (ch or {}).get("of", 0), cell)
 EOF
@@ -217,7 +217,9 @@ python -I -c 'import json,sys; d=json.load(open(sys.argv[1])).get("data_pins") o
 GDN_ARGS=()
 case "$PARENT" in rwkv7) ;; q9af) GDN_ARGS=(--gdn-ckpt "$DATA/gdn/gdn_converted.pt") ;; qwen35) ;;
   *) fail 5 "cell parent $PARENT: rwkv7, q9af or qwen35" ;; esac
-[ "$PARENT" != rwkv7 ] && [ "$EVAL_ONLY" != none ] && fail 5 "eval_only modes are rwkv7-only"
+[ "$PARENT" != rwkv7 ] && [ "$EVAL_ONLY" = fulldev ] && fail 5 "eval_only fulldev is rwkv7-only"
+# eval_only screen (JEV3-SYM seed 0 after job-5x4vr): a SAVED qwen35 checkpoint through the stage-screen phase only
+[ "$EVAL_ONLY" = screen ] && [ "$PARENT" != qwen35 ] && fail 5 "eval_only screen is qwen35-only"
 # params "parent_arm" (default in_job): "none" = no parent arm at all (A-PREREG-SIZECLIFF size-cliff arms, stage screen
 # only, screen_parent "none"): no arm seed, no parent g12 / index phases, the screen pairs child vs reference + comparators
 PARENT_ARM=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("parent_arm", "in_job"))' "$PARAMS") || fail 5 "job_params parent_arm"
@@ -403,6 +405,28 @@ timeout --kill-after=30s $(cap guard)m python -X utf8 -m jobs.m2_pilot.guard_rea
   --out-dir "$WORK/out/guard" > "$WORK/logs/guard.log" 2>&1; r=$?
 gate "guard" $r; export_phase guard
 case $r in 0) ;; 124|137) fail 7 "guard timeout" ;; 30|31|32) fail $r "guard not ready (see out/guard/readiness.json)" ;; *) fail 5 "guard rc=$r" ;; esac
+
+if [ "$EVAL_ONLY" = screen ]; then  # ----------------------------- eval-only: a SAVED checkpoint through the screen phase
+  say "phase checkpoint (shared loader: jobs.m2_first_cell.checkpoint_loader; pinned artifact + member + cell.json)"
+  timeout --kill-after=30s $(cap checkpoint)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS"     --cell-src "$DATA/checkpoint/cell.json" --cell-config "$CELL" --ck-dir "$CK/cell" --work "$WORK/art"     --cell-out "$WORK/out/cell.json" --out "$WORK/out/checkpoint.json" > "$WORK/logs/checkpoint.log" 2>&1; r=$?
+  gate "checkpoint" $r; export_phase checkpoint
+  case $r in 0) ;; 124|137) fail 7 "checkpoint timeout" ;; 10) fail 10 "checkpoint identity: $(tail -1 "$WORK/logs/checkpoint.log")" ;;
+    *) fail 5 "checkpoint rc=$r: $(tail -1 "$WORK/logs/checkpoint.log")" ;; esac
+  CKPT=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$WORK/out/checkpoint.json") || fail 5 "checkpoint.json"
+  ARM=$CK/parent_arm; ARM_SHA=none
+  say "phase screen (eval-only: the pinned checkpoint $(basename "$CKPT"); the stage-screen command of the training path)"
+  python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-screen.jsonl" --cap-min "$(cap screen)"     --report "$WORK/out/rate-screen.json" --     timeout --kill-after=30s $(cap screen)m python -X utf8 -m jobs.m2_first_cell.screen score --cell "$WORK/out/cell.json"     --ckpt-dir "$CK/cell" --ckpt "$CKPT" --model-dir "$SNAP" "${GDN_ARGS[@]}" --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}"     --guard-readiness "$WORK/out/guard/readiness.json" --index-rows "$WORK/index-rows.jsonl.gz" --resume-dir "$CK/screen"     --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --reference "$WORK/out/screen-reference.json"     --out-dir "$WORK/out/screen" --data "$DATA" --progress "$WORK/logs/progress-screen.jsonl" > "$WORK/logs/screen.log" 2>&1; r=$?
+  gate "screen" $r; export_phase screen
+  case $r in 0) ;; 124|137) fail 7 "screen timeout" ;; 15) fail 15 "screen: live rate past the cap" ;;
+    10) fail 10 "screen identity: $(grep -m1 identity "$WORK/logs/screen.log")" ;; *) fail 9 "screen rc=$r" ;; esac
+  say "phase report (screen.json)"
+  timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.screen report --params "$PARAMS"     --index-rows "$WORK/index-rows.jsonl.gz" --out-dir "$WORK/out/screen" --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA"     --reference "$WORK/out/screen-reference.json" --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$DECISION"     > "$WORK/logs/report.log" 2>&1; r=$?
+  gate "report" $r
+  [ $r -eq 0 ] || fail 9 "screen result missing or invalid (rc=$r): $(tail -1 "$WORK/logs/report.log")"
+  sample "$DECISION" "screen"
+  RC=0
+  exit 0
+fi
 
 if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a SAVED checkpoint on the FULL Index DEV
   say "phase checkpoint (shared loader: jobs.m2_first_cell.checkpoint_loader)"

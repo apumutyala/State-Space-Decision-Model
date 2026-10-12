@@ -145,6 +145,26 @@ def test_checkpoint_loaders_attach_consistency_views():
     assert "attach_consistency_views(cfg, train_items, train_recs, enc, guard, t_cap)" in rc  # t_cap = max(t_ladder)
 
 
+def test_eval_only_screen_mode():
+    """A-PREREG-JEV3-SYM Amendment 2: the eval-only screen of job-5x4vr's exported best checkpoint (no retraining)."""
+    from jobs.common import costs
+    from jobs.m2_first_cell.checkpoint_loader import checkpoint_block
+    p, c, c0 = params("jev3_sym_s0_eval"), cell("jev3_sym_s0_eval"), cell("jev3_sym_s0")
+    assert c == c0  # the trained cell's config (== the run's cell.json config, checked by the loader in job)
+    assert p["eval_only"] == "screen" and p["stage"] == "screen"
+    ck = checkpoint_block(p)
+    assert ck["artifact"] == "art-8xs32" and ck["member"].endswith("trainable-step0000258.safetensors")
+    assert costs.worst_case_usd(p) <= p["hard_cap_usd"] <= 8.0
+    assert f"{costs.worst_case_usd(p):.2f}" in (M / "JOB_SPEC.md").read_text(encoding="utf-8")
+    assert "job_params_jev3_sym_s0_eval.json" in (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
+    job = (M / "first_cell_job.sh").read_text(encoding="utf-8")
+    i = job.index('if [ "$EVAL_ONLY" = screen ]; then')
+    blk = job[i: job.index("exit 0", i)]
+    assert blk.index("checkpoint_loader install") < blk.index("screen score") < blk.index("screen report")
+    assert '--ckpt "$CKPT"' in blk and "--data \"$DATA\"" in blk
+    assert job.index('if [ "$EVAL_ONLY" = screen ]; then') < job.index("phase heldout")  # no training phases
+
+
 def test_slice_first_runs_before_any_screen_row():
     src = (M / "screen.py").read_text(encoding="utf-8")
     i = src.index("def score(a)")
