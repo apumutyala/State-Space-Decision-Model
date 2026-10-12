@@ -85,6 +85,13 @@ if [[ " $SUITES " == *" jev2 "* ]]; then
 J2_RC=$?
 log "jev2 rc=$J2_RC"
 fi
+J3_RC=0
+if [[ " $SUITES " == *" jev3 "* ]]; then
+# ---------------------------------------------------------------- 3d. jev3-sym (A-PREREG-JEV3-SYM package + sym + consistency)
+(cd "$T/jev3" && SSDM_BASE_TREE="$T/jev2" timeout 500 $PYT --junitxml="$OUT/junit-jev3.xml" tests/test_jev3_sym.py    tests/test_consistency.py tests/test_sym_invariance.py tests/test_sym_perturb_eval.py tests/test_backend_row_cache.py    > "$OUT/jev3.log" 2>&1)
+J3_RC=$?
+log "jev3 rc=$J3_RC"
+fi
 B_RC=0
 if [[ " $SUITES " == *" baseline "* ]]; then
 # ---------------------------------------------------------------- 3b. pre-fix shas, same tests (informational: env vs change)
@@ -105,13 +112,13 @@ log "symall rc=$A_RC (informational, not gating)"
 fi
 
 # ---------------------------------------------------------------- summary
-python - "$OUT" "$G_RC" "$N_RC" "$G16_RC" "$H_RC" "$S_RC" "$J2_RC" "$R_RC" "$RH_RC" <<'EOF' >> "$OUT/run.log" 2>&1
+python - "$OUT" "$G_RC" "$N_RC" "$G16_RC" "$H_RC" "$S_RC" "$J2_RC" "$R_RC" "$RH_RC" "$J3_RC" <<'EOF' >> "$OUT/run.log" 2>&1
 import hashlib, json, os, sys, xml.etree.ElementTree as ET
 out = sys.argv[1]
-rcs = dict(zip(["golden", "nupi", "g16", "g16_harness", "sym", "jev2", "rsc", "rsc_harness"], map(int, sys.argv[2:])))
+rcs = dict(zip(["golden", "nupi", "g16", "g16_harness", "sym", "jev2", "rsc", "rsc_harness", "jev3"], map(int, sys.argv[2:])))
 suites = {}
 want = os.environ.get("SUITES", "nupi g16 sym").split()
-for name in [n for n in ["nupi", "g16", "g16-harness", "sym", "jev2", "rsc", "rsc-harness", "baseline-g16old", "baseline-g16v2", "baseline-sym", "symall"]
+for name in [n for n in ["nupi", "g16", "g16-harness", "sym", "jev2", "rsc", "rsc-harness", "jev3", "baseline-g16old", "baseline-g16v2", "baseline-sym", "symall"]
              if os.path.isfile(os.path.join(out, f"junit-{n}.xml")) or n.split("-")[0] in want]:
     f = os.path.join(out, f"junit-{name}.xml")
     s = {"passed": 0, "failed": 0, "skipped": 0, "failures": [], "skips": []}

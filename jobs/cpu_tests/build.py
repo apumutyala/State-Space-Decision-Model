@@ -18,6 +18,9 @@ TREES = {"nupi": os.environ.get("NUPI_SHA", "c3f3a3f9"), "base": "5e159437",
 TREES.update(dict(x.split("=", 1) for x in os.environ.get("BASELINE", "").split()))
 # stack/rwkv7/sym-contractive (suite "rsc"): RSC_SHA = the branch tree, "d20" = its parent (OFF-path golden)
 TREES.update({"rsc": os.environ.get("RSC_SHA", "c6cc6a5e"), "d20": os.environ.get("D20_SHA", "9323085c")})
+# stack/qwen35/jev3-sym (suite "jev3", A-PREREG-JEV3-SYM): its package checks + the sym / consistency suites; the
+# consistency OFF-path golden runs against the "jev2" tree (a5b4cb33 = consistency's parent; SSDM_BASE_TREE)
+TREES.update({"jev3": os.environ.get("JEV3_SHA", "079d6eaa")})
 #: TREES_ONLY="rsc d20": package only these trees (low RAM on the laptop)
 if os.environ.get("TREES_ONLY"):
     TREES = {k: v for k, v in TREES.items() if k in os.environ["TREES_ONLY"].split()}
