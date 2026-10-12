@@ -1,5 +1,10 @@
 # PROGRESS: rolling, 3–5 lines per session (did / learned / next). Older entries roll into history/.
 
+## 2026-10-12: evidence independent rescore of JEV3-SYM seed 0 (job-6zs79, eval-only of job-5x4vr step 200)
+- Did: self-downloaded art-xkhwy (146a6996 = job record); streamed art-8xs32 (933cc0ac) without saving it, to pull 5x4vr's small cell files and the step-200 member sha; ran ev-cell-kit @ef25e482 (primary native, plus native_shimcal as a secondary); claude/ev-6zs79-rescore @f93eccfe.
+- Learned: AGREES on every lead number except the floor CI bounds (minor). PRIMARY NEGATIVE: -36.66 [-47.97,-19.19]; G1 bitwise PASS on real perturbations; lineage and order clean. The noul collapse (64.9% of yes/no answers in the 0.2-0.8 band) is a readout/calibration effect, since noul top-1 is +5.4pp, but score/routing/ordinal top-1 losses are real. Slice-to-public transfer: top-1 corr -0.50.
+- Next: shimcal (65.57, -1.07 n.s.) is a SECONDARY and was chosen after seeing the public results, so a readout fix needs a new prereg with selection on the jev3 slice or a fresh split. Single seed, replication pending (seed 1 unfunded).
+
 ## 2026-10-11: evidence independent rescore of JEV2-H2O-L (job-q668q)
 - Did: self-downloaded art-5si2g (91287177 = job record) + 4g6m8 + zbtbj artifacts; jevkit CLI rescore + scripts/ev_rescore_q668q.py (from the x7c42 script) + integrity / state-overlap checks; claude/ev-q668q-rescore @a100c3b9.
 - Learned: AGREES (max |d| 1e-14). PRIMARY flat: dCompA -0.97 [-3.38,+1.12] (97.5% [-3.73,+1.41], p 0.810); with x7c42 (p 0.565) Holm stops at the first test -> 'H2O v1.1 + SSDM jev2 data beats H2O v1.1' NOT CLAIMED. Floor beaten +8.97pp. Bigger slice gains than x7c42 (temporal_numeric now +12.5pp on the slice) but transfer corr -0.32: public loses tradeoff/probability items and the 26 control errors (temporal_numeric/judge_hard/long_policy) do not move net. The same-code H2O control is float-nondeterministic across jobs (x7c42 drifted; q668q = 4g6m8/zbtbj to 1e-6). 49 slice rows share a state with L train rows (glaive dupes, prob_dice).
