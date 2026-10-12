@@ -73,7 +73,20 @@ def main():
         rels = list(DATA) + [f"jevbench/{pub['commit']}/{n}" for n in pub["files"]] + \
             [f"{TOKENIZER}/{n}" for n in TOK_FILES if (data / TOKENIZER / n).is_file()]
         assert jdir.is_dir() and jev, "no public JevBench files under <data>/jevbench"
+        pf = os.environ.get("PREFLIGHT_PARAMS")
+        extra = {}
+        if pf:  # scripts/cell_preflight.py: the GPU job's OWN data entries at their in-job destinations
+            pp = json.loads((repo / pf).read_text(encoding="utf-8"))
+            extra = {d["dest"]: d["src"] for d in pp["context"]["data"]}
+        for dest, src in extra.items():
+            p = data / src
+            assert p.is_file(), f"missing {p}"
+            data_sha["@" + dest] = sha_file(p)
+            t.add(str(p), arcname=f"data/{dest}", recursive=False,
+                  filter=lambda ti: (setattr(ti, "mtime", MTIME), setattr(ti, "mode", 0o644), ti)[-1])
         for rel in rels:
+            if rel in extra:
+                continue
             p = data / rel
             assert p.is_file(), f"missing {p}"
             data_sha[rel] = sha_file(p)
@@ -83,7 +96,7 @@ def main():
             add_bytes(t, f"job/{fn}", (HERE / fn).read_bytes().replace(b"\r\n", b"\n"), 0o755)
         add_bytes(t, "Dockerfile", (HERE / "Dockerfile").read_bytes().replace(b"\r\n", b"\n"))
         man = {"job": "jev3_lm_cpu", "tree": full, "data_sha256": data_sha,
-               "env": {k: os.environ[k] for k in ("DRAW", "TESTS", "KEXPR") if k in os.environ}}
+               "env": {k: os.environ[k] for k in ("DRAW", "TESTS", "KEXPR", "PREFLIGHT_PARAMS") if k in os.environ}}
         add_bytes(t, "CONTEXT_MANIFEST.json", json.dumps(man, indent=1).encode() + b"\n")
     f_out = out / "jev3_lm_cpu.tar.zst"
     with open(tar_path, "rb") as src, open(f_out, "wb") as dst:
@@ -91,7 +104,7 @@ def main():
     tar_path.unlink()
     sha_blob, size = sha_file(f_out), f_out.stat().st_size
     max_min = int(os.environ.get("MAX_MIN", "30"))
-    env = {k: os.environ[k] for k in ("DRAW", "TESTS", "KEXPR") if k in os.environ}
+    env = {k: os.environ[k] for k in ("DRAW", "TESTS", "KEXPR", "PREFLIGHT_PARAMS") if k in os.environ}
     checks = {"success": {"check": {"all_of": [{"type": "file_exists", "path": "/output/JEV3_LM_CPU_DONE"},
                                                {"type": "file_exists", "path": "/output/MANIFEST.jsonl"}]}},
               "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"}, "interval_s": 300,
