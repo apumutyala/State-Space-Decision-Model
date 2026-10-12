@@ -93,6 +93,8 @@ def main(argv=None) -> int:
     ap.add_argument("--per-family", type=int, default=600)
     ap.add_argument("--seed", type=int, default=20261012)
     ap.add_argument("--out-name", default="bschema-draw-jev3-typed")
+    ap.add_argument("--out-dir", default=None, help="default: <data>/m2/build/<out-name>")
+    ap.add_argument("--public-dir", default=None, help="the pinned public JevBench files (default: jevkit's)")
     a = ap.parse_args(argv)
     data = Path(a.data)
     b3 = data / "m2/build/bschema-draw-jev3"
@@ -137,7 +139,7 @@ def main(argv=None) -> int:
         n_slice += 1
     from jevkit.items import load_public
 
-    pub = load_public()
+    pub = load_public(a.public_dir)
     for it in pub:  # public JevBench items: eval-only; their states must never appear in training
         taken_s.update(state_keys(it.state))
     # ---- candidates
@@ -178,7 +180,7 @@ def main(argv=None) -> int:
             per[f] += 1
     short = {f: per[f] for f in FAMILIES if per[f] < a.per_family}
     assert not short, f"not enough disjoint rows: {short}"
-    out = data / "m2/build" / a.out_name
+    out = Path(a.out_dir) if a.out_dir else data / "m2/build" / a.out_name
     out.mkdir(parents=True, exist_ok=True)
     m3 = list(lines(b3 / p3["manifest"]))
     cm3 = list(lines(b3 / p3["content_map"]))
