@@ -1,0 +1,10 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw-jev3-slice/records.jsonl.gz",
+ "records_sha256": "00fafdae46e77d39078f7a798d031f3c6f4fa2f4d07148fb706b8d8d034aadb6",
+ "rule": "normalised leaf >= 6 words, verbatim equal to a leaf of a JevBench public item or an Index suite row",
+ "n_rows": 0,
+ "rows_gold_is_matched_leaf": 0,
+ "by_family_source_evalside": {},
+ "ids_sha256": null,
+ "rows": {}
+}

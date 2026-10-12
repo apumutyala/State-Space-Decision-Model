@@ -1,0 +1,16 @@
+{
+ "records": [
+  "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw-jev3/records.jsonl.gz"
+ ],
+ "n": 5960,
+ "n_hit": 0,
+ "by_family_matcher": {},
+ "index_fingerprint": {
+  "version": "ssdm-dedup-v3",
+  "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+  "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+  "rows": 155390
+ },
+ "rule": "data.dedup.Fingerprint.check(state, questions) on the full row (all matchers: exact, ngram13, minhash, edit, contain)",
+ "hits": {}
+}

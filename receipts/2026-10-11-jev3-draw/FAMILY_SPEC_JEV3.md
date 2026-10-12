@@ -96,3 +96,47 @@ the shape gate's reference.
   - string share;
   - p90 length ≥ public.
 - Slice disjointness: id / source item / group / content / state, all 0.
+
+## Amendments (each written after the first candidate pool and before any gate ran; reasons are pool-level counts only)
+
+- **A0 (coordinator 2026-10-11).**
+  - **State dedupe:** normalised state text (whitespace collapsed, casefolded, dict states as canonical JSON) is unique
+    over train + slice, all families. The slice is disjoint from train by state text too. Dedupe counts are reported per
+    family.
+  - **PRM800K provenance:** the official MATH train / test files (EleutherAI/hendrycks_math @21a56338) are matched by
+    normalised problem text. A row whose problem is in MATH test (incl. MATH-500), or is not in MATH train, is dropped,
+    and both counts are reported. `scripts/jev3_prov_gate.py` also traces every row to its dataset's TRAIN file.
+- **A1 (adequacy label balance).** The first HelpSteer2 pool held 1,065 rows, 924 true / 141 false, at the 2,400-char
+  cap. That falls short of 1,200, and a 45–55 % noul balance is impossible from it. Two changes:
+  - The HelpSteer2 cap is raised to 4,000 chars. jev1 used 5,200.
+  - **HelpSteer3 feedback train** (nvidia/HelpSteer3 @f6d14577, CC-BY-4.0, streamed and never stored) is added.
+    - Gold is the human annotators' own verdict: each feedback opens "The response is {not | slightly | partially |
+      mostly | perfectly} helpful".
+    - A response is kept only on a consensus of ≥ 2 verdicts, a strict majority on one side and none on the other.
+      good = mostly / perfectly; bad = not / slightly; partially is neutral.
+    - Only English general / stem rows with context + response ≤ 2,400 chars are used.
+    - Both responses of a context may appear, since each is graded separately. They share one slice group.
+- **A2 (temporal_numeric / long_policy rendering).**
+  - TAT-QA numeric option texts drop "$" consistently, so the currency sign is never a tell between the gold and the
+    cell-value distractors.
+  - PrivacyQA gets up to 3 views per query. Each view has a different window and type, so the states differ.
+- **A3 (long_policy length calibration).** The first checked pool measured the shim tokens; no gate output was read. It
+  came out at p50 2,746, p90 3,249 and max 3,653. That is about 5.0 chars per token, against the 4.1 assumed. The
+  window char target is re-scaled to 4.85 chars per token: target tokens are U(2,250, 3,800), with 35 % at
+  U(3,650, 3,900). Policies are kept only if ≥ 10,500 chars. The draw p90 can then reach the public p90 (3,606) while
+  staying ≤ 4,096.
+- **A4 (template strings vs the strict full-row Index fingerprint).** On the first checked pool, the strict full-row
+  probe hit 748 rows. Attribution looked at our own segments only:
+  - 438 hits came from the long_policy score level "none of them";
+  - 117 from the temporal_numeric noul criterion "that is the right answer";
+  - 29 from the judge_hard instruction fragment "is it correct".
+
+  These short template strings are reworded, for example to "zero of the listed sentences", "the source gives exactly
+  this answer" and "is that step valid". The remaining hits are natural short phrases in source text, such as
+  "december 31 2019" in TAT-QA tables, or entity answers such as "united states". Those rows are dropped, not edited.
+- **A5 (coordinator 2026-10-11, + type mix).**
+  - HelpSteer3 rows whose user turn equals a HelpSteer2 train or preference prompt turn are dropped
+    (`scripts/jev3_hs3_dedupe.py`).
+  - For long_policy, `final` applies the spec's type-mix target (choice 0.60 / noul 0.28 / score 0.12). The rotation of
+    up to 3 views per query had over-supplied noul and score rows. Choice is capped by the pool, so any shortfall is
+    filled with choice first, then score.

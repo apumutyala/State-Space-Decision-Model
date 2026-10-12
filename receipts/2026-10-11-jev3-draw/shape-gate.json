@@ -1,0 +1,279 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw-jev3/records.jsonl.gz",
+ "fingerprint": "receipts/2026-10-10-jev2-draw/public-shape-fingerprint.json",
+ "families": {
+  "adequacy": {
+   "draw": {
+    "n": 1000,
+    "string_state_share": 1.0,
+    "types": {
+     "noul": 1000
+    },
+    "choice_K": {},
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 203,
+     "p50": 437,
+     "p90": 723,
+     "max": 1188
+    }
+   },
+   "public": {
+    "n": 12,
+    "string_state_share": 1.0,
+    "types": {
+     "noul": 12
+    },
+    "choice_K": {},
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 112,
+     "p50": 118,
+     "p90": 122,
+     "max": 129
+    }
+   },
+   "checks": {
+    "types": true,
+    "K": true,
+    "criteria": true,
+    "string": true,
+    "length_p90": true
+   },
+   "pass": true
+  },
+  "ambiguous": {
+   "draw": {
+    "n": 1000,
+    "string_state_share": 0.837,
+    "types": {
+     "choice": 1000
+    },
+    "choice_K": {
+     "3": 863,
+     "4": 137
+    },
+    "noul_criteria_filled_share": null,
+    "tokens": {
+     "p10": 363,
+     "p50": 603,
+     "p90": 846,
+     "max": 932
+    }
+   },
+   "public": {
+    "n": 7,
+    "string_state_share": 0.8571,
+    "types": {
+     "choice": 7
+    },
+    "choice_K": {
+     "3": 6,
+     "4": 1
+    },
+    "noul_criteria_filled_share": null,
+    "tokens": {
+     "p10": 423,
+     "p50": 518,
+     "p90": 624,
+     "max": 656
+    }
+   },
+   "checks": {
+    "types": true,
+    "K": true,
+    "criteria": true,
+    "string": true,
+    "length_p90": true
+   },
+   "pass": true
+  },
+  "judge_hard": {
+   "draw": {
+    "n": 1000,
+    "string_state_share": 0.0,
+    "types": {
+     "noul": 1000
+    },
+    "choice_K": {},
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 277,
+     "p50": 476,
+     "p90": 896,
+     "max": 1374
+    }
+   },
+   "public": {
+    "n": 17,
+    "string_state_share": 0.0,
+    "types": {
+     "noul": 17
+    },
+    "choice_K": {},
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 229,
+     "p50": 313,
+     "p90": 380,
+     "max": 418
+    }
+   },
+   "checks": {
+    "types": true,
+    "K": true,
+    "criteria": true,
+    "string": true,
+    "length_p90": true
+   },
+   "pass": true
+  },
+  "long_policy": {
+   "draw": {
+    "n": 960,
+    "string_state_share": 1.0,
+    "types": {
+     "choice": 503,
+     "noul": 346,
+     "score": 111
+    },
+    "choice_K": {
+     "4": 259,
+     "5": 164,
+     "6": 80
+    },
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 2432,
+     "p50": 3051,
+     "p90": 3704,
+     "max": 4091
+    }
+   },
+   "public": {
+    "n": 19,
+    "string_state_share": 1.0,
+    "types": {
+     "choice": 12,
+     "noul": 5,
+     "score": 2
+    },
+    "choice_K": {
+     "4": 7,
+     "5": 4,
+     "6": 1
+    },
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 2360,
+     "p50": 2658,
+     "p90": 3606,
+     "max": 3953
+    }
+   },
+   "checks": {
+    "types": true,
+    "K": true,
+    "criteria": true,
+    "string": true,
+    "length_p90": true
+   },
+   "pass": true
+  },
+  "policy": {
+   "draw": {
+    "n": 1000,
+    "string_state_share": 1.0,
+    "types": {
+     "noul": 1000
+    },
+    "choice_K": {},
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 146,
+     "p50": 175,
+     "p90": 301,
+     "max": 527
+    }
+   },
+   "public": {
+    "n": 12,
+    "string_state_share": 1.0,
+    "types": {
+     "noul": 12
+    },
+    "choice_K": {},
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 125,
+     "p50": 129,
+     "p90": 137,
+     "max": 139
+    }
+   },
+   "checks": {
+    "types": true,
+    "K": true,
+    "criteria": true,
+    "string": true,
+    "length_p90": true
+   },
+   "pass": true
+  },
+  "temporal_numeric": {
+   "draw": {
+    "n": 1000,
+    "string_state_share": 0.806,
+    "types": {
+     "choice": 591,
+     "noul": 324,
+     "score": 85
+    },
+    "choice_K": {
+     "3": 194,
+     "4": 191,
+     "5": 170,
+     "6": 36
+    },
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 382,
+     "p50": 720,
+     "p90": 1767,
+     "max": 2532
+    }
+   },
+   "public": {
+    "n": 15,
+    "string_state_share": 0.7333,
+    "types": {
+     "noul": 4,
+     "choice": 10,
+     "score": 1
+    },
+    "choice_K": {
+     "3": 2,
+     "4": 3,
+     "5": 4,
+     "6": 1
+    },
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 271,
+     "p50": 618,
+     "p90": 1009,
+     "max": 1326
+    }
+   },
+   "checks": {
+    "types": true,
+    "K": true,
+    "criteria": true,
+    "string": true,
+    "length_p90": true
+   },
+   "pass": true
+  }
+ },
+ "all_pass": true
+}
