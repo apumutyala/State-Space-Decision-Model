@@ -191,7 +191,8 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
         raise TrainSetMismatch(f"heldout_excluded ids not in the set: {unknown[:3]}")
     attack_ids, attack = attack_exclusion(cfg, fs["records"])
     doc_ids, doc = doc_exclusion(doc_clean_pin(cfg), fs["records"], excluded)
-    pool = sorted(set(man) - excluded - v3x["ids"] - attack_ids - doc_ids)
+    extra_ids, extra = exclude_files(cfg, set(man))
+    pool = sorted(set(man) - excluded - v3x["ids"] - attack_ids - doc_ids - extra_ids)
     n = int(cfg["n_train_records"])
     if n > len(pool):
         raise TrainSetMismatch(f"n_train_records {n} > pool {len(pool)}")
@@ -233,8 +234,30 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
                 "drawn_ids_sha256": hashlib.sha256("\n".join(tr).encode()).hexdigest(),
                 "lines_manifest_verified": ident["lines_read"], "cohort": co.identity(),
                 "cohort_v3_excluded": {"n": v3x["n"], "rule": v3x["rule"], "cohort": v3x["cohort"], "drawn_overlap": 0},
-                "attack_guard": attack, "doc_overlap_guard": doc}
+                "attack_guard": attack, "doc_overlap_guard": doc, **({"exclude_files": extra} if extra else {})}
     return {i: to_train_record(got[i]) for i in tr}, tr, identity
+
+
+def exclude_files(cfg: dict, man_ids: set) -> tuple[set, list]:
+    """``train_set.exclude_files`` (JEV3-SYM): [{file (repo-relative), sha256, n, reason}] id lists removed from the
+    training POOL (sampler drops, re-gate exclusions). Fail closed: the file sha256 must equal the pin, it must hold
+    exactly ``n`` distinct ids, and every id must be in the set. Absent = no change (older cells)."""
+    out, rec = set(), []
+    for spec in (cfg.get("train_set") or {}).get("exclude_files") or []:
+        p = ROOT / spec["file"]
+        b = p.read_bytes()
+        got = hashlib.sha256(b).hexdigest()
+        if got != spec["sha256"]:
+            raise TrainSetMismatch(f"exclude file {spec['file']} sha256 {got} != pinned {spec['sha256']}")
+        ids = {ln.strip() for ln in b.decode("utf-8").splitlines() if ln.strip()}
+        if len(ids) != int(spec["n"]):
+            raise TrainSetMismatch(f"exclude file {spec['file']}: {len(ids)} ids != pinned n {spec['n']}")
+        unknown = sorted(ids - man_ids)
+        if unknown:
+            raise TrainSetMismatch(f"exclude file {spec['file']}: ids not in the set, e.g. {unknown[:3]}")
+        out |= ids
+        rec.append({"file": spec["file"], "sha256": got, "n": len(ids), "reason": spec.get("reason")})
+    return out, rec
 
 
 def attack_clean_spec(cfg: dict, records_path: str | Path) -> dict:

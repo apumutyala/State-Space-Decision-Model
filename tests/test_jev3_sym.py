@@ -30,8 +30,8 @@ def test_jev3_sym_cells(seed):
     assert cons["view_frac"] == 0.25 and cons["families"] == ["format", "instruction", "option"]
     assert cons["controller"] is None and cons["lambda"] == 0.5
     assert c["label_smoothing_noul"] == 0.0 and max(c["t_ladder"]) == c["eval_max_t"] == 4096
-    assert c["assert_no_truncation"] and c["data_pins"]["status"] != "final"  # refused until the re-gate clears
-    assert c["min_train_items"] == c["n_train_records"] == 5960 and c["max_steps"] == 745 and c["min_steps"] == 110
+    assert c["assert_no_truncation"] and c["data_pins"]["status"] == "final"  # re-gate cleared (empty list)
+    assert c["min_train_items"] == c["n_train_records"] == 5824 and c["max_steps"] == 728 and c["min_steps"] == 110
     jk = p["jevkit"]
     assert jk["slice_first"] and jk["slice_floor"] and jk["stock_shim"] and jk["paired_primary"] == "native"
     assert jk["g1_keep_gate"] and jk["g1_max_dp"] == 0.0 and jk["flip_ops_all"]
@@ -78,6 +78,27 @@ def test_ids_sha_both_conventions(tmp_path, capsys):
     with pytest.raises(ValueError):
         check_ids_pin(["b", "a"], "1" * 64, "t")
     assert "no_trailing_nl=" + no_nl in capsys.readouterr().out  # both logged before the refusal
+
+
+def test_exclude_files_pinned_and_fail_closed(tmp_path, monkeypatch):
+    import hashlib
+    import train.train_set as TS
+    c = cell("jev3_sym_s0")
+    man = set()
+    with gzip.open(ROOT / "receipts/2026-10-11-jev3-sampler/jev3_train_exclude_subs.txt.gz", "rt") if False else \
+            open(ROOT / "receipts/2026-10-11-jev3-sampler/jev3_train_exclude_subs.txt", encoding="utf-8") as f:
+        man = {ln.strip() for ln in f if ln.strip()}
+    ids, rec = TS.exclude_files(c, man | {"other"})
+    assert len(ids) == 136 and [r["n"] for r in rec] == [136, 0]
+    assert c["n_train_records"] == 5960 - 136
+    monkeypatch.setattr(TS, "ROOT", tmp_path)
+    (tmp_path / "x.txt").write_bytes(b"a\nb\n")
+    good = hashlib.sha256(b"a\nb\n").hexdigest()
+    for spec, err in (({"file": "x.txt", "sha256": "0" * 64, "n": 2}, "sha256"),
+                      ({"file": "x.txt", "sha256": good, "n": 3}, "n"),
+                      ({"file": "x.txt", "sha256": good, "n": 2}, "not in the set")):
+        with pytest.raises(TS.TrainSetMismatch, match=err):
+            TS.exclude_files({"train_set": {"exclude_files": [spec]}}, {"a"})
 
 
 def test_slice_first_runs_before_any_screen_row():
