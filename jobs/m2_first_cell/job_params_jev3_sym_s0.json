@@ -297,7 +297,11 @@
    "data/manifests/bschema-draw-jev3.pointer.json",
    "train/consistency_views.py",
    "train/pi_control.py",
-   "data/manifests/bschema-draw-jev3-slice.pointer.json"
+   "data/manifests/bschema-draw-jev3-slice.pointer.json",
+   "receipts/2026-10-11-jev3-sampler/jev3_train_exclude_subs.txt",
+   "receipts/2026-10-11-jev3-regate/jev3_exclude_ids.txt",
+   "jobs/m2_first_cell/landing.py",
+   "scripts/verify_ids_sha.py"
   ]
  },
  "mode": "jev3_sym_s0",
