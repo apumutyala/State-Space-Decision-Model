@@ -645,8 +645,7 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: st
         try:
             ident["tfit"] = fit_native_temperature(decider.backend, Path(data_dir) / jk["tfit"]["records"],
                                                    out_dir / "tfit.json", float(jk["tfit"].get("lo", 0.25)),
-                                                   float(jk["tfit"].get("hi", 4.0)), jk["tfit"].get("ids_sha256"),
-                                               jk["tfit"].get("per_type"))
+                                                   float(jk["tfit"].get("hi", 4.0)), jk["tfit"].get("ids_sha256"))
         except (OSError, ValueError, KeyError) as e:
             print(f"identity: tfit: {type(e).__name__}: {e}", file=sys.stderr)
             return 10
@@ -942,11 +941,22 @@ def slice_first(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: str 
     try:
         ident["tfit"] = fit_native_temperature(decider.backend, Path(data_dir) / jk["tfit"]["records"],
                                                out_dir / "tfit.json", float(jk["tfit"].get("lo", 0.25)),
-                                               float(jk["tfit"].get("hi", 4.0)), jk["tfit"].get("ids_sha256"),
-                                               jk["tfit"].get("per_type"))
+                                               float(jk["tfit"].get("hi", 4.0)), jk["tfit"].get("ids_sha256"))
         eng = StockShimEngine(decider.backend, model_dir)
+        pt = jk["tfit"].get("per_type")
         ident["slice_floor"] = slice_floor(eng, Path(data_dir) / jk["tfit"]["records"], out_dir / "calib_probs.jsonl",
-                                           out_dir / "slice_floor.json", jk["tfit"].get("ids_sha256"))
+                                           out_dir / "slice_floor.json", jk["tfit"].get("ids_sha256"),
+                                           stock_band=pt is not None)
+        if pt is not None:  # JEV3-LM: T per type; T_noul = min slice NLL s.t. band <= stock's (shim readout) + margin
+            sb = ident["slice_floor"]["stock_noul_band"]["rate"]
+            res = fit_per_type_from_calib(out_dir / "calib_probs.jsonl", float(jk["tfit"].get("lo", 0.25)),
+                                          float(jk["tfit"].get("hi", 4.0)), int(pt.get("min_cell", 200)),
+                                          stock_band=sb, margin=float(pt.get("band_margin", 0.05)))
+            tf_path = out_dir / "tfit.json"
+            tf = json.loads(tf_path.read_text(encoding="utf-8"))
+            tf["per_type"] = res
+            tf_path.write_text(json.dumps(tf, indent=1), encoding="utf-8")
+            ident["tfit"]["per_type"] = res
     except (OSError, ValueError, KeyError) as e:
         print(f"identity: slice_first: {type(e).__name__}: {e}", file=sys.stderr)
         return 10
@@ -956,7 +966,7 @@ def slice_first(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: str 
 
 
 def slice_floor(eng: "StockShimEngine", records_path: Path, calib_probs: Path, out: Path,
-                expect_ids_sha256: str | None = None) -> dict:
+                expect_ids_sha256: str | None = None, stock_band: bool = False) -> dict:
     """A-PREREG-JEV2-H2O step-0 FLOOR on the fixed held-out jev2 slice (the calib slice; ids sha recorded): top-1 accuracy
     of the selected trained checkpoint (``calib_probs.jsonl``, written by ``fit_native_temperature``) vs the untrained
     host = step 0 (``eng`` with every LoRA off, the host's own shim prompt + tied LM head) on the SAME decisions. The
@@ -995,6 +1005,9 @@ def slice_floor(eng: "StockShimEngine", records_path: Path, calib_probs: Path, o
                 fam, typ, n_ok = native[key]
                 rows.append({"id": key, "family": fam, "type": typ, "native": bool(n_ok),
                              "step0": names[max(range(len(lp)), key=lp.__getitem__)] == gold})
+                if stock_band and typ == "noul" and len(lp) == 2:  # the shim's own scored P(yes): its T + commit floor
+                    rows[-1]["stock_p_shim"] = float(eng.mod.commit_noul(
+                        eng.mod.probabilities(lp, eng.c.temperature)[0], eng.c.noul_floor))
     if not rows:
         raise ValueError("slice floor: no decision matched between the trained arm and the host")
     with open(out.parent / "slice_floor_rows.jsonl", "w", encoding="utf-8", newline="\n") as g:
@@ -1016,8 +1029,12 @@ def slice_floor(eng: "StockShimEngine", records_path: Path, calib_probs: Path, o
                    "slice top-1; otherwise step 0 = no change and the run is NEGATIVE"}
     rep["delta"] = rep["native_top1"] - rep["step0_top1"]
     rep["pass"] = bool(rep["delta"] > 0)
+    if stock_band:
+        rep["stock_noul_band"] = noul_band_rate([r["stock_p_shim"] for r in rows if "stock_p_shim" in r])
     out.write_text(json.dumps(rep, indent=1), encoding="utf-8")
-    return {k: rep[k] for k in ("n_decisions", "native_top1", "step0_top1", "delta", "pass", "ids_sha256")}
+    keep = ("n_decisions", "native_top1", "step0_top1", "delta", "pass", "ids_sha256") + (("stock_noul_band",) if stock_band
+                                                                                          else ())
+    return {k: rep[k] for k in keep}
 
 
 # ------------------------------------------------------------------------------------------------ CPU: report
@@ -1241,7 +1258,7 @@ def slice_ids_sha256(record_ids) -> str:
 
 
 def fit_native_temperature(backend, records_path: Path, out: Path, lo: float, hi: float,
-                           expect_ids_sha256: str | None = None, per_type: dict | None = None) -> dict:
+                           expect_ids_sha256: str | None = None) -> dict:
     """GPU side of the tfit: the CALIB slice's rows (scripts/jev12_balanced_draw.py ``-calib``: >= 200 per family,
     hashed-id order, disjoint from the training draw by id AND content; never JevBench items) through the native
     backend (same template / layout / encoder as the jevkit native arm). Exports EVERY slice decision's per-option
@@ -1293,8 +1310,6 @@ def fit_native_temperature(backend, records_path: Path, out: Path, lo: float, hi
         m.train(was)
     fit = fit_temperature(logps, labels, lo, hi)
     band = constrain_t_by_band(fit, noul)  # the yes/no band rate on the slice may not rise above its T = 1 value
-    if per_type is not None:  # JEV3-LM: T per question type (+ per (type, K) cell with >= min_cell decisions)
-        band["per_type"] = fit_per_type(logps, labels, cells, noul, lo, hi, int(per_type.get("min_cell", 200)))
     rep = fit | band | {
         "nll_T_nll": fit["nll_T"], "n_noul": len(noul),
         "records": str(records_path), "records_gz_sha256": hashlib.sha256(raw).hexdigest(), "ids_sha256": sha,
@@ -1326,6 +1341,57 @@ def fit_per_type(logps, labels, cells, noul, lo: float, hi: float, min_cell: int
             if len(jdx) >= min_cell and t != "noul":
                 g = fit_temperature([logps[i] for i in jdx], [labels[i] for i in jdx], lo, hi)
                 out["cells"][f"{t}:{k}"] = {"T": float(g["T"]), "n": len(jdx), "at_bound": g.get("at_bound")}
+    return out
+
+
+def fit_noul_t_banded(noul: list, labels: list, lo: float, hi: float, thr: float, steps: int = 400) -> dict:
+    """T_noul = argmin slice NLL over a log grid of T in [lo, hi] SUBJECT TO the slice yes/no 0.2-0.8 band rate at T
+    <= ``thr`` (stock's shim-readout band + margin). ``noul`` = [(log-probs, index of 'true')], ``labels`` = gold index.
+    Infeasible everywhere -> the T with the lowest band rate (flagged)."""
+    import math
+
+    def nll(t):
+        tot = 0.0
+        for (lp, _), y in zip(noul, labels):
+            z = [x / t for x in lp]
+            m = max(z)
+            tot += -(z[y] - (m + math.log(sum(math.exp(v - m) for v in z))))
+        return tot / len(noul)
+
+    grid = [math.exp(math.log(lo) + (math.log(hi) - math.log(lo)) * i / (steps - 1)) for i in range(steps)]
+    cand = [(t, nll(t), noul_band_rate([_p_true(lp, i, t) for lp, i in noul])["rate"]) for t in grid]
+    feas = [c for c in cand if c[2] <= thr]
+    if feas:
+        t, v, b = min(feas, key=lambda c: (c[1], c[0]))
+        return {"T": t, "nll_T": v, "band_T": b, "feasible": True, "threshold": thr, "n": len(noul),
+                "nll_1": nll(1.0), "band_T1": noul_band_rate([_p_true(lp, i, 1.0) for lp, i in noul])["rate"]}
+    t, v, b = min(cand, key=lambda c: (c[2], c[1]))
+    return {"T": t, "nll_T": v, "band_T": b, "feasible": False, "threshold": thr, "n": len(noul), "nll_1": nll(1.0),
+            "band_T1": noul_band_rate([_p_true(lp, i, 1.0) for lp, i in noul])["rate"],
+            "flag": "no T in [lo, hi] meets the band threshold: T with the lowest band rate"}
+
+
+def fit_per_type_from_calib(calib_probs: Path, lo: float, hi: float, min_cell: int, stock_band: float,
+                            margin: float = 0.05) -> dict:
+    """A-PREREG-JEV3-LM per-type T from the slice's exported probabilities (calib_probs.jsonl, untempered): choice and
+    score T (+ (type, K) cells with >= min_cell decisions) = the bounded slice-NLL minimiser; T_noul = min slice NLL
+    subject to the slice yes/no band rate <= stock's (shim readout, on the same slice) + ``margin``."""
+    import math
+
+    rows = [json.loads(x) for x in calib_probs.read_text(encoding="utf-8").splitlines() if x.strip()]
+    logps = [[math.log(max(p, 1e-300)) for p in r["probs"]] for r in rows]
+    labels = [int(r["gold"]) for r in rows]
+    cells = [(r["type"], len(r["probs"])) for r in rows]
+    out = fit_per_type(logps, labels, cells, [], lo, hi, min_cell)
+    nidx = [i for i, r in enumerate(rows) if r["type"] == "noul" and "true" in r["option_ids"]]
+    if nidx:
+        noul = [(logps[i], rows[i]["option_ids"].index("true")) for i in nidx]
+        thr = float(stock_band) + margin
+        out["types"]["noul"] = fit_noul_t_banded(noul, [labels[i] for i in nidx], lo, hi, thr)
+    out["rule"] = ("T_noul is chosen to minimise slice NLL subject to slice yes/no band rate <= stock's + "
+                   f"{margin:g} (stock = the in-job stock + shim readout on the same slice); choice / score T = the "
+                   "slice-NLL minimiser (+ (type, K) cells with >= min_cell decisions)")
+    out["stock_noul_band"] = stock_band
     return out
 
 

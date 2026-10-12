@@ -293,3 +293,23 @@ def test_params_budget_gates_and_registration():
     assert jk["score_inv"]["keep_gate"] and jk["letter_prior"]["flag_pp"] == 5 and jk["slice_first"]
     blk = screen.jevkit_block(p, _cell()["template"])
     assert blk["score_inv"]["keep_gate"] and blk["canon_stock"]
+
+
+def test_t_noul_minimises_nll_subject_to_the_stock_band(tmp_path):
+    """T_noul = min slice NLL s.t. slice yes/no band rate <= stock's (shim readout) + margin (A-PREREG-JEV3-LM)."""
+    from jobs.m2_first_cell import screen as S
+
+    rng = random.Random(1)
+    rows = []
+    for i in range(300):
+        y = rng.random() < 0.5
+        z = rng.gauss(0.9 if y else -0.9, 0.5)  # a hedging native head: many P(true) in (0.2, 0.8)
+        pt = 1 / (1 + math.exp(-z))
+        rows.append({"id": f"r{i}/q", "family": "policy", "type": "noul", "option_ids": ["true", "false"],
+                     "probs": [pt, 1 - pt], "gold": 0 if y else 1})
+    f = tmp_path / "calib_probs.jsonl"
+    f.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    loose = S.fit_per_type_from_calib(f, 0.25, 4.0, 200, stock_band=0.0, margin=1.0)["types"]["noul"]
+    tight = S.fit_per_type_from_calib(f, 0.25, 4.0, 200, stock_band=0.0, margin=0.05)["types"]["noul"]
+    assert loose["feasible"] and tight["band_T"] <= 0.05 + 1e-12 and tight["T"] <= loose["T"]
+    assert tight["nll_T"] >= loose["nll_T"] - 1e-12  # the constraint can only cost NLL
