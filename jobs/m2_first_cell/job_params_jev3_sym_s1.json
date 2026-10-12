@@ -23,7 +23,7 @@
   "image": "jobs/probe9b/Dockerfile"
  },
  "job": "m2-first-cell-jev3-sym-s1",
- "status": "A-PREREG-JEV3-SYM seed 1: stock Qwen3.5-4B + sym-fork + consistency views, 220 steps",
+ "status": "A-PREREG-JEV3-SYM seed 1: stock Qwen3.5-4B + sym-fork + consistency views on jev3 (5,960 rows), max 745 steps, clock-bound (35 min)",
  "chip": "h100",
  "chip_count": 1,
  "max_duration_minutes": 142,
@@ -89,7 +89,7 @@
   },
   "key": "m2-first-cell-jev3-sym-s1-r1",
   "clock_lock": true,
-  "label": "A-PREREG-JEV3-SYM seed 1 jev3_sym_s1: stock Qwen3.5-4B + sym-fork + consistency views, 220 steps, clock 35 [paired vs stock + shim; bitwise G1 KEEP gate; slice first]",
+  "label": "A-PREREG-JEV3-SYM seed 1 jev3_sym_s1: stock Qwen3.5-4B + sym-fork + consistency views on jev3 5,960 rows, max 745 steps clock-bound 35 min [paired vs stock + shim; bitwise G1 KEEP; 8-op flips; slice first; H2O target]",
   "checks": {
    "success": {
     "check": {
@@ -332,7 +332,7 @@
    "records": "m2-jev3-calib/records.jsonl.gz",
    "lo": 0.25,
    "hi": 4.0,
-   "ids_sha256": "a6d117c76ce7925b7a590ac1c56eb09727612094e52fcc8ab034326b510ab1f8"
+   "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
   },
   "perturb_ops": [
    "option_reverse",

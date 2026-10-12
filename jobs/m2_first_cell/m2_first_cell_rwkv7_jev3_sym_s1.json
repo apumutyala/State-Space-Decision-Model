@@ -1,5 +1,5 @@
 {
- "_comment": "JEV3-SYM (A-PREREG-JEV3-SYM DRAFT, seed 1): STOCK Qwen3.5-4B (GDN hybrid) + the sym-fork head (reorder / relabel invariance by construction) + consistency views (view_frac 0.25, fixed lambda 0.5) on the jev3 draw (PLACEHOLDER pins, refused by the runner until final)",
+ "_comment": "JEV3-SYM (A-PREREG-JEV3-SYM DRAFT, seed 1): STOCK Qwen3.5-4B (GDN hybrid) + the sym-fork head (reorder / relabel invariance by construction) + consistency views (view_frac 0.25, fixed lambda 0.5) on the jev3 draw ONLY (5,960 train rows, 1 epoch max, clock-bound) (PLACEHOLDER pins, refused by the runner until final)",
  "seed": 1,
  "head": "fork",
  "head_kwargs": {},
@@ -19,10 +19,10 @@
   2048,
   4096
  ],
- "n_train_records": 1760,
+ "n_train_records": 5960,
  "n_eval_records": 0,
- "min_train_items": 1760,
- "max_steps": 220,
+ "min_train_items": 5960,
+ "max_steps": 745,
  "max_minutes": 35,
  "min_steps": 110,
  "ckpt_every": 100,
@@ -132,7 +132,7 @@
     "note": "jev2c-v2 (replaces jev2c): 1,500 synthetic long_policy rows, prose states, more score rows; shim tokens p99 3,892 / max 3,981, 0 over 4,096 (tokens-shim.json); the ONLY long_policy source"
    }
   },
-  "note": "PLACEHOLDER: the jev3 draw (scripts/jev12_balanced_draw.py; selection slice state-disjoint from the training rows, asserted at build and in job). STUB until final: bschema-draw-jev2-mix-s",
+  "note": "jev3 ONLY: 5,960 train rows (judge_hard / adequacy / policy / ambiguous / temporal_numeric 1,000 each, long_policy 960), train ids sha256 feb681f3...; held-out selection slice 1,200 (200 x 6), ids sha256 844233f2..., state-disjoint from training (asserted in job). PLACEHOLDER pointer until the jev3 pointer lands; stub = bschema-draw-jev2-mix-s for the package / dry run only.",
   "score_share": 0.25,
   "type_mix_note": "FINAL mix (18 families, 586/family, adequacy 293): choice 44.9% / noul 30.1% / score 25.1% (4599 / 3086 / 2570 of 10255)"
  },
@@ -142,7 +142,7 @@
  "row_plan": "min_cost",
  "cont_plan": "single",
  "compile_blocks": false,
- "min_steps_note": "floor 110 steps; continue with the affordable steps above it, exit 26 below",
+ "min_steps_note": "floor 110 steps; the clock decides the steps above it (up to 745 = 1 epoch)",
  "lora_rank_note": "r=64 on every arm (A-PREREG-SIZECLIFF: same LoRA rank); targets = every GDN in_proj_qkv / in_proj_z / out_proj, every attention q / k / v / o and every MLP projection (stock hybrid, heads.backbone.qwen35_spec from config.json)",
  "variant": "jev3_sym_s1",
  "train_max_k": 255,
@@ -175,7 +175,7 @@
   64
  ],
  "cont_chunk_peak_frac": 0.85,
- "budget_note": "A-PREREG-JEV3-SYM: worst-case hold <= $22. s/step 6.39 = 3.93 (MEASURED 4B shim, job-q668q; range 2.55-3.93) x 1.3 (sym-fork per-option forwards) x 1.25 (consistency views at view_frac 0.25); clock 35 = ceil(220 x 6.39 x 1.15 / 60) + 8 dev-card minutes; the step-10 rate check continues with the affordable steps down to 110.",
+ "budget_note": "A-PREREG-JEV3-SYM: worst-case hold <= $22 ($21.67). max_steps 745 = 1 epoch of the 5,960 jev3 train rows / 8; the CLOCK bounds it: max_minutes 35 (unchanged). At the step-10 rate check the planned final step = min(745, the clock-affordable steps at the MEASURED s/step) and the cosine horizon = lr_horizon_frac x that; floor 110 (below it exit 26). Estimate 6.39 s/step (3.93 measured x 1.3 sym-fork x 1.25 views) -> ~220 steps; a faster real rate trains more steps at the same cost.",
  "sym_reprice_note": "Clock re-price (CPU 2026-10-10, real Qwen3.5-4B tokenizer, systematic 1-in-24 sample of bschema-draw-jev1 = 4,000 items, all kept by train.run_cell.keep_item under both layouts; K mean 4.78, max 16): tokens the backbone RUNS per row (prefix + continuation calls right-padded per cont_chunk 64 chunk, MIN_CONT_WIDTH 2) g1v2 368.1 vs sym-fork 362.7, factor 0.985 (fed tokens without padding 363.3 vs 352.1, 0.969): the options move from the prefix into the continuations, about token-neutral. Projected 10.92 x 0.985 = 10.76 s/step -> ceil(1,121 x 10.76 x 1.3 / 60) = 262 min; max_minutes stays 270 (the measured g1v2 budget; the factor is a token model, not a measurement: the step-10 rate check (exit 26) re-measures it in-job). Script: scripts/sym_reprice_jev1.py 24 (receipt in docs/PROOF_INVARIANCE.md).",
  "require_t_max": 4096,
  "ladder_probe_longest": true,
@@ -203,19 +203,32 @@
  "consistency_note": "stack/qwen35/consistency @d517df9c: L = L_task(orig) + lambda_c symKL(orig || view); views from train/consistency_views.py (format / instruction / option; disjoint from the jevkit perturb operators); FIXED lambda 0.5 (the nuPI controller merge is not clean, docs/CONSISTENCY.md)",
  "dev_card_records": {
   "records": "m2-jev3-calib/records.jsonl.gz",
-  "ids_sha256": "a6d117c76ce7925b7a590ac1c56eb09727612094e52fcc8ab034326b510ab1f8"
+  "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
  },
  "data_pins": {
   "status": "PLACEHOLDER",
-  "draw": "bschema-draw-jev3 (evidence lane) + optionally the cleared jev2 mix at reduced weight",
+  "draw": "bschema-draw-jev3 ONLY (the jev2 component is dropped)",
   "fill": [
-   "train_set.pointer / pools / build note",
-   "data_jev3.sha256 + job_params context.data",
-   "n_train_records / min_train_items",
-   "selection slice: dev_card_records = jevkit.tfit (records + ids_sha256)",
-   "jevkit.target_ref sha256 (job-zbtbj H2O preds)",
+   "train_set.pointer + data_jev3.sha256 + job_params context.data (records / manifest / content + slice records)",
+   "assert the train ids sha256 == expected.train_ids_sha256 and the slice ids sha256 == expected.slice_ids_sha256",
+   "re-gate clearance (evidence lane)",
    "set status final"
   ],
-  "stub": "until then the pins point at bschema-draw-jev2-mix-s (the cleared jev2 small mix) so the package and sf_submit --dry validate; the runner refuses data_pins.status != final (exit 5)"
+  "stub": "until then the pins point at bschema-draw-jev2-mix-s (the cleared jev2 small mix) so the package and sf_submit --dry validate; the runner refuses data_pins.status != final (exit 5)",
+  "expected": {
+   "train_rows": 5960,
+   "train_ids_sha256": "feb681f3517c69863d7180dbbf3307dd7b6ded4b4a6411b2ae8f360af33f3120",
+   "train_per_family": {
+    "judge_hard": 1000,
+    "adequacy": 1000,
+    "policy": 1000,
+    "ambiguous": 1000,
+    "temporal_numeric": 1000,
+    "long_policy": 960
+   },
+   "slice_rows": 1200,
+   "slice_per_family": 200,
+   "slice_ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
+  }
  }
 }

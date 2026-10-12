@@ -31,7 +31,7 @@ def test_jev3_sym_cells(seed):
     assert cons["controller"] is None and cons["lambda"] == 0.5
     assert c["label_smoothing_noul"] == 0.0 and max(c["t_ladder"]) == c["eval_max_t"] == 4096
     assert c["assert_no_truncation"] and c["data_pins"]["status"] == "PLACEHOLDER"
-    assert c["min_train_items"] == c["n_train_records"] == c["max_steps"] * 8
+    assert c["min_train_items"] == c["n_train_records"] == 5960 and c["max_steps"] == 745 and c["min_steps"] == 110
     jk = p["jevkit"]
     assert jk["slice_first"] and jk["slice_floor"] and jk["stock_shim"] and jk["paired_primary"] == "native"
     assert jk["g1_keep_gate"] and jk["g1_max_dp"] == 0.0 and jk["flip_ops_all"]
