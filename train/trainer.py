@@ -544,6 +544,7 @@ class Trainer:
         self.collapse_events: list[dict[str, Any]] = []
         self.stopped: str | None = None
         self.guard_armed = False
+        self.guard_ref: float | None = None  # lm_label collapse guard: the first full window's mean loss
         self._guard_window: list[tuple[float, float]] = []  # (step loss, uniform-predictor loss) since the last reload
         self._step_uniform = 0.0
         self.sched = torch.optim.lr_scheduler.LambdaLR(self.opt, lambda s: self.lr_factor(s))
@@ -655,6 +656,16 @@ class Trainer:
             u = torch.log_softmax(u, dim=-1)
             return decision_loss(u, y, qtypes, self.cfg.loss, teacher).detach()
 
+    #: the loss trigger's reference per head (job-wm8b5): a fresh fork head starts AT the uniform loss, so "above
+    #: collapse_loss_frac x uniform" means it lost what it learned; the lm_label head starts as the HOST's own readout,
+    #: already near 0.8 x uniform (1.21 vs a 1.2 start loss), so that rule fired 3 times on healthy training and cut the
+    #: LR to 0.125x. lm_label: the reference is the mean of the FIRST full window of step losses, and the trigger is a
+    #: window mean above LM_LABEL_GUARD_FRAC x that reference.
+    LM_LABEL_GUARD_FRAC = 1.5
+
+    def guard_mode(self) -> str:
+        return "start" if getattr(self.model.head, "name", None) == "lm_label" else "uniform"
+
     def _guard_step(self, loss: float) -> None:
         if not self.cfg.collapse_guard or self.stopped:
             return
@@ -665,6 +676,15 @@ class Trainer:
             return
         ml = sum(x for x, _ in self._guard_window) / w
         mu = sum(u for _, u in self._guard_window) / w
+        if self.guard_mode() == "start":
+            if self.guard_ref is None:  # the first full window: the reference (the host's own starting loss)
+                self.guard_ref = ml
+                self.guard_armed = True
+                return
+            if ml > self.LM_LABEL_GUARD_FRAC * self.guard_ref:
+                self.collapse("train_loss", mean_loss=ml, reference=self.guard_ref, mode="start",
+                              frac=self.LM_LABEL_GUARD_FRAC)
+            return
         above = ml > self.cfg.collapse_loss_frac * mu
         if not self.guard_armed:
             # a fresh head starts AT the uniform loss: the loss trigger arms only once a full window is below the
@@ -936,6 +956,7 @@ class Trainer:
         return {"horizon": self.horizon, "horizon_fixed": self.horizon_fixed, "lr_scale": self.lr_scale, "dev_cards": list(self.dev_cards),
                 "best": None if self.best is None else dict(self.best), "collapse_events": list(self.collapse_events),
                 "stopped": self.stopped, "guard_armed": self.guard_armed,
+                **({"guard_mode": self.guard_mode(), "guard_ref": self.guard_ref} if self.guard_mode() == "start" else {}),
                 # the loss trigger's window (<= collapse_window pairs): a resume (or chain link) continues it exactly
                 **({"guard_window": [list(x) for x in self._guard_window]} if self.cfg.collapse_guard else {})}
 
@@ -1013,6 +1034,7 @@ class Trainer:
             self.dev_cards, self.best = list(ac["dev_cards"]), ac["best"]
             self.collapse_events, self.stopped = list(ac["collapse_events"]), ac.get("stopped")
             self.guard_armed = bool(ac.get("guard_armed"))
+            self.guard_ref = ac.get("guard_ref")
             self._guard_window[:] = [(float(x), float(u)) for x, u in ac.get("guard_window") or []]
         cs = st.get("consistency")
         if cs is not None and self.cons:  # the config hash already pins the block; this restores lambda_c's state

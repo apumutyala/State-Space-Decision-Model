@@ -547,6 +547,27 @@ def consistency_fields(cfg: dict) -> dict:
     return spec
 
 
+def export_best(tr, export_dir) -> dict:
+    """Inference export (train.ckpt_export) of the trainer's CURRENT best checkpoint into ``export_dir``; an older best
+    export in that dir is removed (this run's own file, reproducible from the .pt). Never fatal: a failed export is
+    recorded and training continues."""
+    try:
+        from train.ckpt_export import export_inference
+
+        d = Path(export_dir)
+        src = Path(tr.cfg.ckpt_dir) / tr.best["path"]
+        old = sorted(d.glob("trainable-step*.safetensors")) + sorted(d.glob("trainable-step*.json"))
+        rec = export_inference(src, d)
+        keep = {rec.get("file"), str(rec.get("file", "")).replace(".safetensors", ".json")}
+        for f in old:
+            if f.name not in keep:
+                f.unlink()
+        return {"step": tr.best["step"], "file": rec.get("file"), "sha256": rec.get("sha256")}
+    except Exception as e:  # noqa: BLE001
+        print(f"best export failed: {type(e).__name__}: {e}", flush=True)
+        return {"step": (tr.best or {}).get("step"), "error": f"{type(e).__name__}: {e}"}
+
+
 def attach_consistency_views(cfg: dict, train_items: list, train_records: dict, enc, guard, max_t: int) -> dict | None:
     """Attach consistency views to the filtered TRAINING list only (evaluation data is never passed here)."""
     spec = consistency_fields(cfg)
@@ -951,6 +972,8 @@ def _main(argv=None, ctx: dict | None = None):
     ap.add_argument("--chain-of", type=int, default=0)
     ap.add_argument("--train-deadline", type=float, default=None, help="train.chain: unix time the training loop "
                     "stops by (the job's deadline); an intermediate link then saves and ends as 'link_end'")
+    ap.add_argument("--export-dir", default=None, help="job-wm8b5: export the BEST checkpoint (inference format) here "
+                    "every time a dev card saves a new best, so a later timeout never loses the selected weights")
     a = ap.parse_args(argv)
     chain = None
     if a.chain_link or a.chain_of:
@@ -1377,6 +1400,8 @@ def _main(argv=None, ctx: dict | None = None):
             if tr.cfg.best_ckpt and tr.cfg.ckpt_dir and tr.dev_cards and tr.dev_cards[-1].get("best"):
                 ran = time.time() - clock["t_start"] if clock["t_start"] is not None else 0.0
                 cell["train_clock"] = {"step": tr.step, "used_s": used_before + ran}
+                if a.export_dir:  # job-wm8b5: the selected weights reach /output the moment they are selected
+                    cell["best_export"] = export_best(tr, a.export_dir)
                 log_anti_collapse()
                 _checkpoint_post()
             else:

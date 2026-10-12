@@ -872,7 +872,7 @@ This job does no training. It scores job-5x4vr's exported best checkpoint (step 
 - Params `job_params_jev3_lm.json`, cell `m2_first_cell_rwkv7_jev3_lm.json`: head lm_label (JEV2-H2O @63277ebd), LoRA
   r16 (lr_lora 4e-5, lr_head 3e-4), no consistency views, layout `g1v2-canon` (inference) / `train_layout`
   `g1v2-canon-shuffle` (training rows only), LS 0.05 (noul 0), t_ladder to 4,096 + assert_no_truncation, 1 epoch = 729
-  steps of 5,837 jev3 rows (exclude file 8056c7e7: aegis_reply 109 + half of hs2_bar_coherence 14), clock 42 min.
+  steps of 5,836 jev3 rows (exclude file be643f63: aegis_reply 109 + half of hs2_bar_coherence 14 + 1 overlength), clock 36 min (job-wm8b5 re-size; jobs/m2_first_cell/cell_budget.py).
 - Schedule: setup 6 + guard 2 + heldout 2 + cell 54 + screen 44 + report 2 + reserve 2 = 112 min; build_timeout 60.
   **Worst case (60 + 2 x 112) x 0.063 = $17.89** (hard cap $18.00; <= $15 would leave ~20 training minutes). Expected
   ~80 min = $5.04 + build.

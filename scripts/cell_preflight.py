@@ -62,6 +62,13 @@ def main(argv=None) -> int:
     except Exception as e:  # noqa: BLE001
         fail("load_cell_data", f"{type(e).__name__}: {e}")
         return finish(rep, a.out, t0)
+    from jobs.m2_first_cell.cell_budget import check as cell_budget_check
+
+    cb = cell_budget_check(p, cfg)  # job-wm8b5: the cell cap must cover the clock + the measured pre / post time
+    if cb["pass"]:
+        rep["checks"]["cell_budget"] = cb
+    else:
+        fail("cell_budget", cb)
     t_cap = max(cfg["t_ladder"])
     train_items = cell_items(train_recs, tr_ids, cfg, enc, guard, t_cap, workers=1, train=True)
     eval_items = cell_items(eval_recs, ev_ids, cfg, enc, guard, t_cap, workers=1, max_k=cfg["max_k"])

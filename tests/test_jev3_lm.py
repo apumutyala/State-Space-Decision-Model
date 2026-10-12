@@ -331,3 +331,68 @@ def test_overlength_canonical_row_is_excluded():
     assert "m2:privacyqa:290c5bc2b2~view:jev3-lp-score-r1" in ids and len(ids) == ex["n"] == 124
     assert c["n_train_records"] == c["min_train_items"] == 5836 and c["max_steps"] == 729
     assert (ROOT / "scripts/cell_preflight.py").is_file()
+
+
+# ------------------------------------------------------------------------------------------------ job-wm8b5 fixes
+def test_cell_budget_preflight_fails_the_wm8b5_sizing_and_passes_the_fix():
+    from jobs.m2_first_cell.cell_budget import check
+
+    p, c = _params(), _cell()
+    assert check(p, c)["pass"]
+    bad = check(p, {**c, "max_minutes": 42})  # job-wm8b5: clock 42 in a 54-min cap -> exit 7 cell timeout
+    assert not bad["pass"] and bad["need_min"] > 54 and bad["max_clock_for_cap"] < 42
+
+
+def test_lm_label_collapse_guard_is_relative_to_the_start_loss():
+    """job-wm8b5: the uniform-relative rule fired 3x on healthy lm_label training (start loss ~1.2 vs 0.8 x 1.51)."""
+    from types import SimpleNamespace
+
+    from train.trainer import Trainer
+
+    tr = Trainer.__new__(Trainer)
+    tr.cfg = SimpleNamespace(collapse_guard=True, collapse_window=3, collapse_loss_frac=0.8)
+    tr.model = SimpleNamespace(head=SimpleNamespace(name="lm_label"))
+    tr.stopped, tr.guard_armed, tr.guard_ref, tr._guard_window = None, False, None, []
+    events = []
+    tr.collapse = lambda trigger, **d: events.append((trigger, d))
+    for loss in (1.20, 1.22, 1.19, 1.25, 1.21, 1.30, 1.24, 1.28):  # healthy: near the host's own start loss
+        tr._step_uniform = 1.51
+        tr._guard_step(loss)
+    assert tr.guard_mode() == "start" and abs(tr.guard_ref - 1.2033) < 1e-3 and events == []
+    for loss in (2.0, 2.1, 2.2):  # a real blow-up: > 1.5 x the start reference
+        tr._step_uniform = 1.51
+        tr._guard_step(loss)
+    assert events and events[-1][1]["mode"] == "start"
+    fork = Trainer.__new__(Trainer)  # other heads keep the uniform-relative rule (unchanged)
+    fork.model = SimpleNamespace(head=SimpleNamespace(name="fork"))
+    assert fork.guard_mode() == "uniform"
+
+
+def test_best_checkpoint_is_exported_when_saved(tmp_path):
+    torch = pytest.importorskip("torch")
+    from heads import ByteEncoder, DecisionModel
+    from heads.backbone import tiny_backbone
+    from train.data import TOY_TEMPLATE, items_from_records
+    from train.guard import SplitGuard
+    from train.losses import LossConfig
+    from train.run_cell import export_best
+    from train.trainer import TrainConfig, Trainer
+
+    recs = [{"id": f"r{i}", "request": {"model": "toy", "state": f"case {i}", "questions": {"q": {
+        "type": "choice", "instructions": "pick", "criteria": {"a": "alpha", "b": "beta"}}}}, "labels": {"q": "a"}}
+        for i in range(6)]
+    items = items_from_records(recs, ByteEncoder(), template=TOY_TEMPLATE)
+    tr = Trainer(DecisionModel(tiny_backbone(seed=0, hidden=16), "integrator", seed=0),
+                 TrainConfig(head="integrator", lora_rank=4, batch_size=2, grad_accum=1, max_steps=2,
+                             loss=LossConfig(arm="clef"), ckpt_dir=str(tmp_path / "ck")),
+                 items, guard=SplitGuard.synthetic_only("unit tests: best export"))
+    out = tmp_path / "export"
+    for step in (1, 2):
+        tr.train_step()
+        p = tr.save()
+        tr.best = {"step": tr.step, "path": p.name}
+        rec = export_best(tr, out)
+        assert "error" not in rec and rec["step"] == step
+        files = sorted(x.name for x in out.glob("trainable-step*.safetensors"))
+        assert files == [rec["file"]]  # the previous best export is replaced, never accumulated
+    assert (out / "latest.json").is_file()

@@ -577,6 +577,9 @@ mkdir -p "$CK/cell"
 [ -f "$CK/cell/cell.json" ] && cp "$CK/cell/cell.json" "$WORK/out/cell.json"
 CELL_MIN=$(cap cell)
 CHAIN_ARGS=()
+EXPORT_ARGS=()
+# job-wm8b5: the best checkpoint is exported into $OUT/ckpt the moment a dev card selects it (a cell timeout kept none)
+[ "$STAGE" = screen ] && [ "$INTERMEDIATE" != 1 ] && mkdir -p "$OUT/ckpt" && EXPORT_ARGS=(--export-dir "$OUT/ckpt")
 if [ "$CHAIN_LINK" -gt 0 ]; then
   # a chain link trains until the JOB's deadline: max_duration - time used - the caps of the phases after the cell -
   # reserve (every minute the earlier phases left), stopping CELL_TAIL_MIN early for the last step / card / save
@@ -588,7 +591,7 @@ if [ "$CHAIN_LINK" -gt 0 ]; then
 fi
 timeout --kill-after=30s ${CELL_MIN}m python -m train.run_cell --config "$CELL" --model-dir "$SNAP" "${GDN_ARGS[@]}" --records "$RECORDS" \
   --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" --out "$WORK/out" --ckpt-dir "$CK/cell" --stage all \
-  --guard-readiness "$WORK/out/guard/readiness.json" "${CHAIN_ARGS[@]}" > "$WORK/logs/cell.log" 2>&1; r=$?
+  --guard-readiness "$WORK/out/guard/readiness.json" "${CHAIN_ARGS[@]}" "${EXPORT_ARGS[@]}" > "$WORK/logs/cell.log" 2>&1; r=$?
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
 case $r in 0) ;; 3) fail 33 "cell: eval attack template in the training rows (train.attack_guard)" ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|34|35|36) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
