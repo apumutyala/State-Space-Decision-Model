@@ -1,0 +1,56 @@
+{
+ "step": 200,
+ "n_items": 360,
+ "cohort": null,
+ "raw": {
+  "n": 360,
+  "accuracy": 0.7111111111111111,
+  "nll": 0.6150277999701741,
+  "brier": 0.3818171715894385,
+  "ece_binned15": 0.06553624611761835,
+  "ece_debiased": {
+   "debiased_l2": 0.04019734271834478,
+   "debiased_sq": 0.0016158263616160662,
+   "bins": 15
+  },
+  "mean_conf": 0.7242135757373439,
+  "by_length_bin": {
+   "[0,512)": {
+    "n": 199,
+    "accuracy": 0.6934673366834171,
+    "ece_debiased": {
+     "debiased_l2": 0.0,
+     "debiased_sq": -0.005422838126457122,
+     "bins": 15
+    }
+   },
+   "[2048,8192)": {
+    "n": 45,
+    "accuracy": 0.7333333333333333,
+    "ece_debiased": {
+     "debiased_l2": 0.18443580139492677,
+     "debiased_sq": 0.034016564836188874,
+     "bins": 15
+    }
+   },
+   "[512,2048)": {
+    "n": 116,
+    "accuracy": 0.7327586206896551,
+    "ece_debiased": {
+     "debiased_l2": 0.01714719607662746,
+     "debiased_sq": 0.0002940263332903082,
+     "bins": 15
+    }
+   }
+  }
+ },
+ "index_score": {
+  "status": "stub",
+  "reason": "no Index dev-slice rows/predictor passed"
+ },
+ "steer": {
+  "status": "stub",
+  "reason": "no steer variants/decider passed"
+ },
+ "seconds": 76.248
+}

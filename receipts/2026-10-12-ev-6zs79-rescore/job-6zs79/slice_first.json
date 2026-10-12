@@ -1,0 +1,30 @@
+{
+ "slice_first": {
+  "started_utc": "2026-10-12T08:55:06Z",
+  "done_utc": "2026-10-12T09:00:43Z"
+ },
+ "slice_state_disjoint": {
+  "slice_states": 1200,
+  "train_states": 5960,
+  "shared": 0
+ },
+ "tfit": {
+  "T": 1.0,
+  "T_nll": 1.2974940721218169,
+  "constrained": true,
+  "band_T1": 0.4979757085020243,
+  "band_T": 0.4979757085020243,
+  "n": 1200,
+  "nll_1": 0.6802116091640099,
+  "at_bound": false,
+  "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
+ },
+ "slice_floor": {
+  "n_decisions": 1200,
+  "native_top1": 0.6783333333333333,
+  "step0_top1": 0.6675,
+  "delta": 0.010833333333333361,
+  "pass": true,
+  "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
+ }
+}

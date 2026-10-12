@@ -1,0 +1,18 @@
+[2026-10-12T05:57:26Z +0m] mode jev3_sym_s0: cell jobs/m2_first_cell/m2_first_cell_rwkv7_jev3_sym_s0.json, params /opt/ssdm/m1/jobs/m2_first_cell/job_params_jev3_sym_s0.json, train dir /data/m2-jev3, KD teacher none, eval-only none
+[2026-10-12T05:57:26Z +0m] setup
+Fetching 14 files:   0%|          | 0/14 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Fetching 14 files:   7%|▋         | 1/14 [00:00<00:02,  5.37it/s]Fetching 14 files:  43%|████▎     | 6/14 [00:00<00:00, 19.83it/s]Fetching 14 files:  71%|███████▏  | 10/14 [00:00<00:00, 25.78it/s]Fetching 14 files:  93%|█████████▎| 13/14 [00:11<00:01,  1.30s/it]Fetching 14 files: 100%|██████████| 14/14 [00:18<00:00,  2.11s/it]Fetching 14 files: 100%|██████████| 14/14 [00:18<00:00,  1.31s/it]
+[2026-10-12T06:00:03Z +2m] parent: stock Qwen/Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+[2026-10-12T06:00:11Z +2m] export setup ok=true sha256=65db2e698228d7f17889a932fe0c1d56667b02f8150886a173c3207e874d661c
+[2026-10-12T06:00:11Z +2m] phase guard
+[2026-10-12T06:00:21Z +2m] export guard ok=true sha256=9889cd26da803ec580ccb975b42f600239b3ea6c4f034af042b5006a5c744c5e
+[2026-10-12T06:00:21Z +2m] phase heldout (hits must equal the pinned exclusions)
+[2026-10-12T06:00:41Z +3m] export heldout ok=true sha256=75535cee5338863a661c94a9342f471e61a70ca31617794a8abe3f11ef3da7d5
+[2026-10-12T06:00:41Z +3m] parent arm: none (params parent_arm none; the screen pairs the child with the reference and the comparators)
+[2026-10-12T06:00:41Z +3m] stage screen: child evals priced in setup (D1 measured proxy rate); no re-price
+[2026-10-12T06:00:41Z +3m] phase cell
+[2026-10-12T06:50:23Z +52m] export cell ok=true sha256=a6586e68ac48c8cab6acde5f3a94c60dfef44a2936667970a8571e5090377e3c
+[2026-10-12T06:50:29Z +53m] checkpoint exported after the cell (ckpt-step0000258.pt, best ckpt-step0000200.pt)
+[2026-10-12T06:50:29Z +53m] phase screen (child untempered arm on the 644 proxy600 rows; paired vs the parent arm and the reference cell)
+[2026-10-12T06:51:45Z +54m] export screen ok=true sha256=aa018ea07d283bd62d5950d8ce0774ecc656b484bda5cb70627fd4f81356d055
+[2026-10-12T06:51:45Z +54m] FAIL(10): screen identity (proxy / parent arm / checkpoint lineage / plan check)

@@ -1,0 +1,42 @@
+{
+ "job_id": "job-5x4vr",
+ "label": "A-PREREG-JEV3-SYM seed 0 jev3_sym_s0: stock Qwen3.5-4B + sym-fork + consistency views on jev3 5,960 rows, max 745 steps clock-bound 35 min [paired vs stock + shim; bitwise G1 KEEP; 8-op flips; slice first; H2O target]",
+ "finished_at": "2026-10-12T06:51:46.107852+00:00",
+ "exit_code": 10,
+ "failure_reason": "exit 10",
+ "attempt_history": [
+  {
+   "attempt": 1,
+   "end_cause": "process_exit",
+   "end_reason": null,
+   "ended_at": "2026-10-12T06:51:46.107852+00:00",
+   "outcome": "completed",
+   "started_at": "2026-10-12T05:57:26.759182+00:00"
+  }
+ ],
+ "chip": {
+  "count": 1,
+  "model": "h100"
+ },
+ "artifact": {
+  "artifact_id": "art-8xs32",
+  "sha256": "933cc0ac1748304b4a589e5baa099b937a1db034dc4fac342e888406476838af",
+  "size_bytes": 505600000,
+  "state": "ready"
+ },
+ "receipt": {
+  "attempts": [
+   {
+    "attempt": 1,
+    "billed_seconds": 3259,
+    "charged_usd_micros": 3421600,
+    "gpu_count": 1,
+    "rate_usd_micros_per_gpu_minute": 62993
+   }
+  ],
+  "billed_attempts": 1,
+  "billed_seconds": 3259,
+  "charged_usd_micros": 3421600,
+  "image_digest": "sha256:906bde449dc9d9065afc3f9b2a47733bee509717aaa76f44bf7ec2894c733233"
+ }
+}

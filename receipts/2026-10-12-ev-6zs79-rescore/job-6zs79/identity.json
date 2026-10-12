@@ -1,0 +1,118 @@
+{
+ "native": {
+  "decider": {
+   "revision_id": "decision_head:FinalStateFork@6a657ca57579",
+   "model_id": "qwen3.5-4b-stock",
+   "backend": "decision_head",
+   "head": "FinalStateFork",
+   "backbone": {
+    "spec": "qwen3.5-4b-stock",
+    "class": "Qwen3_5TextModel",
+    "config_sha256": "5180a154a329b975ba7ee22354176b7c1b67cc5d8fb69f19d5880d3094b35959",
+    "name_or_path": "",
+    "commit_hash": null,
+    "capture": "hidden_states",
+    "layer": -1,
+    "provenance": {
+     "kind": "qwen35-stock",
+     "repo": "Qwen/Qwen3.5-4B",
+     "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+     "config_sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+     "attention_free": false
+    },
+    "weights_digest": "39b8384b37181392c08057820e4e4eab23a1aca362e3e743e4624b7c37fc2e7b",
+    "weights_digest_mode": "sampled"
+   },
+   "encoder": {
+    "kind": "hf",
+    "name_or_path": "/hfcache/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "vocab_sha256": "7ef6def600d70a2dbf3c4f35b73db100a74bf2936b7f4b805e91ad184b7aabce",
+    "untrusted": {
+     "id": "untrusted-split-special+cut-leaking-added-v1",
+     "n_control_ids": 33
+    }
+   },
+   "prompt_template": {
+    "id": "jrt-h2o-shim:qwen3.5-4b",
+    "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+   },
+   "layout": "sym-fork",
+   "sym_version": "sym-fork-v3",
+   "checkpoint": {
+    "path": "trainable-step0000200.safetensors",
+    "step": 200,
+    "sha256": "5cb7da4246efce72c17d15cf5af9fc6b8137a7e76e371a970a67c89303835310"
+   },
+   "adapter_version": "0.2.0"
+  },
+  "seconds": 49.61,
+  "n": 231,
+  "status": {
+   "ok": 231
+  }
+ },
+ "g1": {
+  "g1_pass": true,
+  "rows_all_identical": true,
+  "n_perturbed": 565,
+  "seconds": 171.66
+ },
+ "flip8": {
+  "n_perturbed": 1593,
+  "seconds": 388.99
+ },
+ "target_ref": {
+  "preds": "target_ref/h2o_4g6m8.preds.jsonl",
+  "sha256": "e00d5ac7bfcccac18fe526752871004133ebd0b598dc42224cf498496ff62fd2",
+  "status": "copied"
+ },
+ "slice_first": {
+  "started_utc": "2026-10-12T08:55:06Z",
+  "done_utc": "2026-10-12T09:00:43Z"
+ },
+ "slice_state_disjoint": {
+  "slice_states": 1200,
+  "train_states": 5960,
+  "shared": 0
+ },
+ "tfit": {
+  "T": 1.0,
+  "T_nll": 1.2974940721218169,
+  "constrained": true,
+  "band_T1": 0.4979757085020243,
+  "band_T": 0.4979757085020243,
+  "n": 1200,
+  "nll_1": 0.6802116091640099,
+  "at_bound": false,
+  "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
+ },
+ "slice_floor": {
+  "n_decisions": 1200,
+  "native_top1": 0.6783333333333333,
+  "step0_top1": 0.6675,
+  "delta": 0.010833333333333361,
+  "pass": true,
+  "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
+ },
+ "stock_shim": {
+  "arm": "stock_shim",
+  "shim": "h2oai/h2o-lightning-4b@v1.1",
+  "temperature": 0.8,
+  "noul_floor": 0.801,
+  "template_identity": {
+   "id": "jrt-h2o-shim:qwen3.5-4b",
+   "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+  },
+  "lm_head": "tied embed_tokens, fp32 label rows",
+  "lora": "off (scaling 0)",
+  "seconds": 16.56,
+  "n": 231,
+  "status": {
+   "ok": 231
+  }
+ },
+ "g1_stock_shim": {
+  "n_perturbed": 565,
+  "seconds": 56.06
+ }
+}

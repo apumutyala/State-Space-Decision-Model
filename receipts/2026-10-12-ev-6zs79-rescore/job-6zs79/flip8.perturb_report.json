@@ -1,0 +1,350 @@
+{
+ "ops": [
+  "state_paraphrase",
+  "instruction_paraphrase",
+  "option_paraphrase",
+  "option_reverse",
+  "option_shuffle",
+  "key_relabel",
+  "whitespace_noise",
+  "markup_noise"
+ ],
+ "seeds": [
+  0
+ ],
+ "n_base": 231,
+ "n_perturbed": 1593,
+ "flip_report": {
+  "per_operator": {
+   "instruction_paraphrase": {
+    "n": 231,
+    "invalid": 0,
+    "flips": 12,
+    "flip_rate": 0.05194805194805195,
+    "mean_tv_shift": 0.025670490298344152,
+    "max_tv_shift": 0.128113918419,
+    "max_abs_dp": 0.128113918419
+   },
+   "key_relabel": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "markup_noise": {
+    "n": 231,
+    "invalid": 0,
+    "flips": 16,
+    "flip_rate": 0.06926406926406926,
+    "mean_tv_shift": 0.043798693335872295,
+    "max_tv_shift": 0.5150207054225,
+    "max_abs_dp": 0.5150207054220001
+   },
+   "option_paraphrase": {
+    "n": 231,
+    "invalid": 0,
+    "flips": 20,
+    "flip_rate": 0.08658008658008658,
+    "mean_tv_shift": 0.055494737259666665,
+    "max_tv_shift": 0.2591537689005,
+    "max_abs_dp": 0.2591537689
+   },
+   "option_reverse": {
+    "n": 213,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_shuffle": {
+    "n": 213,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "state_paraphrase": {
+    "n": 104,
+    "invalid": 0,
+    "flips": 2,
+    "flip_rate": 0.019230769230769232,
+    "mean_tv_shift": 0.014325394762043272,
+    "max_tv_shift": 0.11402080802049996,
+    "max_abs_dp": 0.07628746248699997
+   },
+   "whitespace_noise": {
+    "n": 231,
+    "invalid": 0,
+    "flips": 24,
+    "flip_rate": 0.1038961038961039,
+    "mean_tv_shift": 0.06250407445227489,
+    "max_tv_shift": 0.354484522523,
+    "max_abs_dp": 0.354484522523
+   }
+  },
+  "per_operator_type": {
+   "instruction_paraphrase|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 7,
+    "flip_rate": 0.050359712230215826,
+    "mean_tv_shift": 0.02672813754751079,
+    "max_tv_shift": 0.10743050040499999,
+    "max_abs_dp": 0.10743050040500002
+   },
+   "instruction_paraphrase|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 3,
+    "flip_rate": 0.04054054054054054,
+    "mean_tv_shift": 0.02647174067366216,
+    "max_tv_shift": 0.128113918419,
+    "max_abs_dp": 0.128113918419
+   },
+   "instruction_paraphrase|score": {
+    "n": 18,
+    "invalid": 0,
+    "flips": 2,
+    "flip_rate": 0.1111111111111111,
+    "mean_tv_shift": 0.014209073886805553,
+    "max_tv_shift": 0.04382381022800002,
+    "max_abs_dp": 0.04382381022700005
+   },
+   "key_relabel|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "markup_noise|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 10,
+    "flip_rate": 0.07194244604316546,
+    "mean_tv_shift": 0.051491517713169066,
+    "max_tv_shift": 0.5150207054225,
+    "max_abs_dp": 0.5150207054220001
+   },
+   "markup_noise|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 6,
+    "flip_rate": 0.08108108108108109,
+    "mean_tv_shift": 0.03721537934248649,
+    "max_tv_shift": 0.454982060054,
+    "max_abs_dp": 0.454982060054
+   },
+   "markup_noise|score": {
+    "n": 18,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.011457729284000006,
+    "max_tv_shift": 0.0485597161395,
+    "max_abs_dp": 0.04795378827399999
+   },
+   "option_paraphrase|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 10,
+    "flip_rate": 0.07194244604316546,
+    "mean_tv_shift": 0.058816759022978414,
+    "max_tv_shift": 0.2591537689005,
+    "max_abs_dp": 0.2591537689
+   },
+   "option_paraphrase|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 8,
+    "flip_rate": 0.10810810810810811,
+    "mean_tv_shift": 0.05696585423756757,
+    "max_tv_shift": 0.226897591108,
+    "max_abs_dp": 0.226897591108
+   },
+   "option_paraphrase|score": {
+    "n": 18,
+    "invalid": 0,
+    "flips": 2,
+    "flip_rate": 0.1111111111111111,
+    "mean_tv_shift": 0.02379342162272223,
+    "max_tv_shift": 0.09075795340900002,
+    "max_abs_dp": 0.09075795341000004
+   },
+   "option_reverse|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_reverse|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_shuffle|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_shuffle|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "state_paraphrase|choice": {
+    "n": 65,
+    "invalid": 0,
+    "flips": 2,
+    "flip_rate": 0.03076923076923077,
+    "mean_tv_shift": 0.018529959256600004,
+    "max_tv_shift": 0.11402080802049996,
+    "max_abs_dp": 0.07628746248699997
+   },
+   "state_paraphrase|noul": {
+    "n": 30,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.007106336290800004,
+    "max_tv_shift": 0.030211846894999922,
+    "max_abs_dp": 0.03021184689499995
+   },
+   "state_paraphrase|score": {
+    "n": 9,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.00802262387216667,
+    "max_tv_shift": 0.019462056225000003,
+    "max_abs_dp": 0.019462056225000024
+   },
+   "whitespace_noise|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 12,
+    "flip_rate": 0.08633093525179857,
+    "mean_tv_shift": 0.066471765907,
+    "max_tv_shift": 0.3466648295255,
+    "max_abs_dp": 0.34666482952600003
+   },
+   "whitespace_noise|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 10,
+    "flip_rate": 0.13513513513513514,
+    "mean_tv_shift": 0.06213698733475676,
+    "max_tv_shift": 0.354484522523,
+    "max_abs_dp": 0.354484522523
+   },
+   "whitespace_noise|score": {
+    "n": 18,
+    "invalid": 0,
+    "flips": 2,
+    "flip_rate": 0.1111111111111111,
+    "mean_tv_shift": 0.03337381525725,
+    "max_tv_shift": 0.09394823363350002,
+    "max_abs_dp": 0.09394823363400001
+   }
+  },
+  "average_flip_rate": 0.04136488511488512,
+  "pooled": {
+   "n": 1593,
+   "invalid": 0,
+   "flips": 74,
+   "flip_rate": 0.04645323289391086,
+   "mean_tv_shift": 0.02811986690534526,
+   "max_tv_shift": 0.5150207054225,
+   "max_abs_dp": 0.5150207054220001
+  },
+  "reorder_flips": 0,
+  "note": "operators are jevkit's own; MD1's exact 8 operators are unpublished"
+ },
+ "duplicate_tie_items": [],
+ "max_dp_bound": 1.0,
+ "status": {
+  "base": {
+   "ok": 231
+  },
+  "perturbed": {
+   "ok": 1593
+  }
+ },
+ "presented_order": {
+  "instruction_paraphrase": {
+   "n": 231,
+   "request_changed": 0,
+   "model_order_changed": null
+  },
+  "option_paraphrase": {
+   "n": 231,
+   "request_changed": 0,
+   "model_order_changed": null
+  },
+  "option_reverse": {
+   "n": 213,
+   "request_changed": 213,
+   "model_order_changed": null
+  },
+  "option_shuffle": {
+   "n": 213,
+   "request_changed": 213,
+   "model_order_changed": null
+  },
+  "whitespace_noise": {
+   "n": 231,
+   "request_changed": 0,
+   "model_order_changed": null
+  },
+  "markup_noise": {
+   "n": 231,
+   "request_changed": 0,
+   "model_order_changed": null
+  },
+  "state_paraphrase": {
+   "n": 104,
+   "request_changed": 0,
+   "model_order_changed": null
+  },
+  "key_relabel": {
+   "n": 139,
+   "request_changed": 139,
+   "model_order_changed": null
+  }
+ },
+ "g1_pass": false,
+ "g1_failures": [
+  "state_paraphrase: 2 flips",
+  "instruction_paraphrase: 12 flips",
+  "option_paraphrase: 20 flips",
+  "whitespace_noise: 24 flips",
+  "markup_noise: 16 flips",
+  "rows not checked (row_fn missing)"
+ ],
+ "rows_all_identical": null,
+ "max_abs_dp_observed": 0.5150207054220001
+}

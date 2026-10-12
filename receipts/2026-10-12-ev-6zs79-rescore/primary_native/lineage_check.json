@@ -1,0 +1,179 @@
+{
+ "consistency_views": {
+  "by_family": {
+   "format": 577,
+   "instruction": 599,
+   "option": 233
+  },
+  "families": [
+   "format",
+   "instruction",
+   "option"
+  ],
+  "no_transform": 0,
+  "not_sampled": 4360,
+  "seed": 0,
+  "version": "cv1",
+  "view_filtered": 0,
+  "view_frac": 0.25,
+  "view_reordered_filtered": 55,
+  "with_view": 1409
+ },
+ "g1_files": {
+  "native": {
+   "ops_in_file": {
+    "key_relabel": 139,
+    "option_reverse": 213,
+    "option_shuffle": 213
+   },
+   "perturbed_jsonl_sha256": "1fab827a50269adf99458e7e24bbc8ffdfbf341b84f6979e398bda0cd6f81f05",
+   "perturbed_rows": 565,
+   "report_keys": [
+    "duplicate_tie_items",
+    "flip_report",
+    "g1_failures",
+    "g1_pass",
+    "max_abs_dp_observed",
+    "max_dp_bound",
+    "n_base",
+    "n_perturbed",
+    "ops",
+    "presented_order",
+    "row_identity",
+    "rows_all_identical",
+    "seeds",
+    "status"
+   ]
+  },
+  "stock_shim": {
+   "ops_in_file": {
+    "key_relabel": 139,
+    "option_reverse": 213,
+    "option_shuffle": 213
+   },
+   "perturbed_jsonl_sha256": "1fab827a50269adf99458e7e24bbc8ffdfbf341b84f6979e398bda0cd6f81f05",
+   "perturbed_rows": 565,
+   "report_keys": [
+    "duplicate_tie_items",
+    "flip_report",
+    "g1_failures",
+    "g1_pass",
+    "max_abs_dp_observed",
+    "max_dp_bound",
+    "n_base",
+    "n_perturbed",
+    "ops",
+    "presented_order",
+    "rows_all_identical",
+    "seeds",
+    "status"
+   ]
+  }
+ },
+ "lineage": {
+  "5x4vr_cell_best": {
+   "accuracy": 0.7111111111111111,
+   "nll": 0.6150277999701741,
+   "path": "ckpt-step0000200.pt",
+   "step": 200
+  },
+  "5x4vr_cell_json_sha256": "03ff0ba0dec885540cf660a8fdc595c21305743db9ff6d5d94f637a8b30e7ec7",
+  "5x4vr_dev_cards": [
+   {
+    "accuracy": 0.41944444444444445,
+    "best": true,
+    "n_items": 360,
+    "nll": 0.9012689498198603,
+    "step": 0
+   },
+   {
+    "accuracy": 0.6944444444444444,
+    "best": true,
+    "n_items": 360,
+    "nll": 0.6909524267799934,
+    "step": 100
+   },
+   {
+    "accuracy": 0.7111111111111111,
+    "best": true,
+    "n_items": 360,
+    "nll": 0.6150277999701741,
+    "step": 200
+   }
+  ],
+  "5x4vr_latest_best": {
+   "path": "trainable-step0000200.safetensors",
+   "sha256": "5cb7da4246efce72c17d15cf5af9fc6b8137a7e76e371a970a67c89303835310",
+   "sidecar_sha256": "6dd4ae3b2c2c8701732f1d90ed1639159d76c345c00a69bb137d68692f7bd34b",
+   "step": 200
+  },
+  "5x4vr_sidecar_step200_sha256": "5cb7da4246efce72c17d15cf5af9fc6b8137a7e76e371a970a67c89303835310",
+  "5x4vr_tar_sha256_streamed": "933cc0ac1748304b4a589e5baa099b937a1db034dc4fac342e888406476838af",
+  "6zs79_cell_json_sha256": "03ff0ba0dec885540cf660a8fdc595c21305743db9ff6d5d94f637a8b30e7ec7",
+  "6zs79_checkpoint_json": {
+   "artifact": "art-8xs32",
+   "artifact_sha256": "933cc0ac1748304b4a589e5baa099b937a1db034dc4fac342e888406476838af",
+   "cell_json_sha256": "03ff0ba0dec885540cf660a8fdc595c21305743db9ff6d5d94f637a8b30e7ec7",
+   "file": "trainable-step0000200.safetensors",
+   "job": "job-5x4vr",
+   "member": "trainable-step0000258.safetensors",
+   "member_sha256": "b0cc27089620823d809844b7edc6f31340f55c88f2f0b0a8fcb8b290efd5e5a2",
+   "path": "/checkpoint/cell/trainable-step0000200.safetensors",
+   "reused": false,
+   "role": "best",
+   "sha256": "5cb7da4246efce72c17d15cf5af9fc6b8137a7e76e371a970a67c89303835310"
+  },
+  "6zs79_tar_sha256": "146a6996c675d6cd42ef907cbfe80ecb9f363e2a6e81f1ef74ca1660c296ef5a",
+  "collapse_events": [
+   {
+    "action": "reload_best",
+    "best_step": 100,
+    "lr_scale": 0.5,
+    "lrs": [
+     4.594390809430754e-05,
+     1.5314636031435848e-05
+    ],
+    "mean_loss": 1.2695626828353852,
+    "mean_uniform": 1.5612109231948852,
+    "step": 138,
+    "trigger": "train_loss"
+   }
+  ],
+  "dev_card_source": {
+   "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078",
+   "n_items": 1200,
+   "n_records": 1200,
+   "records": "m2-jev3-calib/records.jsonl.gz"
+  },
+  "identity_child_has_ckpt_sha": true,
+  "ok": true,
+  "step200_member_sha256_streamed_from_art-8xs32": "5cb7da4246efce72c17d15cf5af9fc6b8137a7e76e371a970a67c89303835310",
+  "train_steps": 258
+ },
+ "noul_band_note": "computed by the kit (2_secondary.noul_band); repeated in RESCORE_6ZS79.md",
+ "order": {
+  "5x4vr_gates": {
+   "cell": 0,
+   "guard": 0,
+   "heldout": 0,
+   "screen": 10,
+   "setup": 0
+  },
+  "5x4vr_public_preds": [],
+  "5x4vr_selection_files": {
+   "cell.json": "2026-10-12T06:50:21Z",
+   "dev_cards/card-step0000000.json": "2026-10-12T06:11:50Z",
+   "dev_cards/card-step0000100.json": "2026-10-12T06:25:45Z",
+   "dev_cards/card-step0000200.json": "2026-10-12T06:39:49Z"
+  },
+  "6zs79_first_public_pred": "screen/jevkit/native.preds.jsonl",
+  "6zs79_first_public_pred_utc": "2026-10-12T09:10:24Z",
+  "6zs79_landing_slice_first_before_public_preds": true,
+  "6zs79_slice_first": {
+   "done_utc": "2026-10-12T09:00:43Z",
+   "started_utc": "2026-10-12T08:55:06Z"
+  },
+  "selection_before_any_public": true,
+  "slice_first_before_public": true
+ }
+}

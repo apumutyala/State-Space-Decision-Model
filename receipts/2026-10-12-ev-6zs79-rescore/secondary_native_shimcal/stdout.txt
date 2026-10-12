@@ -1,0 +1,37 @@
+{
+ "verdict": "FLAGGED",
+ "flags": [
+  "core: target_ref: arm present in the preds but not in screen.json jevkit.arms",
+  "core: screen.json has no vs_stock_shim.target_ref",
+  "core: diff primary.delta_composite_A.point: rescore -1.0713 vs screen -36.6632 (|d| 35.5919 > 0.05)",
+  "scored checkpoint trainable-step0000200.safetensors (step 200) != selected {'step': 200, 'nll': 0.6150277999701741, 'accuracy': 0.7111111111111111, 'path': 'ckpt-step0000200.pt'}",
+  "step-0 floor NOT beaten: +1.08 pp [-1.8333333333333313, 4.08541666666667]"
+ ],
+ "warnings": [],
+ "primary": {
+  "point": -1.0712698583679554,
+  "ci95": [
+   -22.465234272316852,
+   7.46818082083953
+  ],
+  "ci975": [
+   -25.260890574467787,
+   11.383022283745131
+  ],
+  "p_one_sided_boot": 0.772,
+  "holm_claimable": false
+ },
+ "g1": {
+  "native": {
+   "g1_pass": true,
+   "bitwise": true,
+   "max_abs_dp_observed": 0.0
+  },
+  "stock_shim": {
+   "g1_pass": false,
+   "bitwise": false,
+   "max_abs_dp_observed": 0.8424278008753008
+  }
+ },
+ "out": "C:\\Users\\apumu\\AppData\\Local\\Temp\\claude\\C--Users-apumu-research-CHLabs\\8ba1e3cb-efb0-46e2-9fd6-7683f7008f8a\\scratchpad\\out2"
+}

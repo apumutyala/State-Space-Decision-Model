@@ -1,0 +1,12 @@
+[2026-10-12T08:50:55Z +0m] mode jev3_sym_s0_eval: cell jobs/m2_first_cell/m2_first_cell_rwkv7_jev3_sym_s0_eval.json, params /opt/ssdm/m1/jobs/m2_first_cell/job_params_jev3_sym_s0_eval.json, train dir /data/m2-jev3, KD teacher none, eval-only screen
+[2026-10-12T08:50:55Z +0m] setup
+Fetching 14 files:   0%|          | 0/14 [00:00<?, ?it/s]Fetching 14 files:   7%|▋         | 1/14 [00:00<00:03,  4.14it/s]Fetching 14 files: 100%|██████████| 14/14 [00:00<00:00, 49.56it/s]
+[2026-10-12T08:53:09Z +2m] parent: stock Qwen/Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+[2026-10-12T08:53:17Z +2m] export setup ok=true sha256=0c73a252b5c4d3c0f8f901d9e03a5de9f35f4517fe7ec45ad260b4654795e179
+[2026-10-12T08:53:17Z +2m] phase guard
+[2026-10-12T08:53:26Z +2m] export guard ok=true sha256=1b2dbe18b60d42d05ecd76bb25d67c000084503f0f4461a3acd29b6d28e9fab7
+[2026-10-12T08:53:26Z +2m] phase checkpoint (shared loader: jobs.m2_first_cell.checkpoint_loader; pinned artifact + member + cell.json)
+[2026-10-12T08:53:58Z +3m] export checkpoint ok=true sha256=fd9523dd8005e13e38b534aa649f5d2e1cffcf2b526cf13dac1dc17d38a8eb3d
+[2026-10-12T08:53:58Z +3m] phase screen (eval-only: the pinned checkpoint trainable-step0000200.safetensors; the stage-screen command of the training path)
+[2026-10-12T09:21:14Z +30m] export screen ok=true sha256=740da701aa0c90d912f36dd853d6d666ecd4706536daa9b6a9e5862d363799fd
+[2026-10-12T09:21:14Z +30m] phase report (screen.json)

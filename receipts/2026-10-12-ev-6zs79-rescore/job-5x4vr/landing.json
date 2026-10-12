@@ -1,0 +1,211 @@
+{
+ "schema": "ssdm-landing-v1",
+ "written_utc": "2026-10-12T06:51:45Z",
+ "gates": {
+  "setup": 0,
+  "guard": 0,
+  "heldout": 0,
+  "cell": 0,
+  "screen": 10
+ },
+ "phases": [
+  {
+   "phase": "setup",
+   "file": "phases/setup.tgz",
+   "sha256": "65db2e698228d7f17889a932fe0c1d56667b02f8150886a173c3207e874d661c",
+   "bytes": 7879,
+   "ok": true,
+   "t": "2026-10-12T06:00:11Z"
+  },
+  {
+   "phase": "guard",
+   "file": "phases/guard.tgz",
+   "sha256": "9889cd26da803ec580ccb975b42f600239b3ea6c4f034af042b5006a5c744c5e",
+   "bytes": 900266,
+   "ok": true,
+   "t": "2026-10-12T06:00:21Z"
+  },
+  {
+   "phase": "heldout",
+   "file": "phases/heldout.tgz",
+   "sha256": "75535cee5338863a661c94a9342f471e61a70ca31617794a8abe3f11ef3da7d5",
+   "bytes": 901716,
+   "ok": true,
+   "t": "2026-10-12T06:00:41Z"
+  },
+  {
+   "phase": "cell",
+   "file": "phases/cell.tgz",
+   "sha256": "a6586e68ac48c8cab6acde5f3a94c60dfef44a2936667970a8571e5090377e3c",
+   "bytes": 927131,
+   "ok": true,
+   "t": "2026-10-12T06:50:23Z"
+  },
+  {
+   "phase": "screen",
+   "file": "phases/screen.tgz",
+   "sha256": "aa018ea07d283bd62d5950d8ce0774ecc656b484bda5cb70627fd4f81356d055",
+   "bytes": 928399,
+   "ok": true,
+   "t": "2026-10-12T06:51:45Z"
+  }
+ ],
+ "files": [
+  {
+   "path": "CONTEXT_MANIFEST.json",
+   "bytes": 7736,
+   "mtime_utc": "2026-10-12T05:57:26Z",
+   "sha256": "288310d20a4aea4d96483c68498e95ea02e5587db30eddc5a3c170fc5890c364"
+  },
+  {
+   "path": "card-step0000000.json",
+   "bytes": 1173,
+   "mtime_utc": "2026-10-12T06:10:36Z",
+   "sha256": "eefc7c6865144f0f69123caf1647bddf9a240a42a9e1acc2badd6dab8c363afb"
+  },
+  {
+   "path": "card-step0000258.json",
+   "bytes": 1189,
+   "mtime_utc": "2026-10-12T06:50:20Z",
+   "sha256": "6a1530326cf7aa13244405b811223a3fe779be6a9379bcfe587a477c9fcde3b7"
+  },
+  {
+   "path": "cell.json",
+   "bytes": 57901,
+   "mtime_utc": "2026-10-12T06:50:21Z",
+   "sha256": "03ff0ba0dec885540cf660a8fdc595c21305743db9ff6d5d94f637a8b30e7ec7"
+  },
+  {
+   "path": "cohort-verify.json",
+   "bytes": 36,
+   "mtime_utc": "2026-10-12T05:59:34Z",
+   "sha256": "56293327f874fd0ad1aba6cce2fdf52f50806e7629973194903d8e8b8d7ab5cd"
+  },
+  {
+   "path": "data-verify.txt",
+   "bytes": 35,
+   "mtime_utc": "2026-10-12T06:00:09Z",
+   "sha256": "12eb8dff158c46dcd744ec1e9515fcc1d2accb00594d2b78c1dd81587f26c11f"
+  },
+  {
+   "path": "dev_cards/card-step0000000.json",
+   "bytes": 1162,
+   "mtime_utc": "2026-10-12T06:11:50Z",
+   "sha256": "ebc13c4b1d947fd1c24e1cbfc445f869061106d3c0b6b4cd0efa3f0799c003ff"
+  },
+  {
+   "path": "dev_cards/card-step0000100.json",
+   "bytes": 1174,
+   "mtime_utc": "2026-10-12T06:25:45Z",
+   "sha256": "55b636a8cf8d904adbf2764b344c435ce0c282e1367321af4ea1c925b9611ab4"
+  },
+  {
+   "path": "dev_cards/card-step0000200.json",
+   "bytes": 1176,
+   "mtime_utc": "2026-10-12T06:39:49Z",
+   "sha256": "09c1b80a6773445e76af60d5c1a852c991623f9d754e2f385345bfe44fdc5602"
+  },
+  {
+   "path": "env.json",
+   "bytes": 206,
+   "mtime_utc": "2026-10-12T05:57:31Z",
+   "sha256": "c3c336618c224860103de517db28bb30ad29a62eac50a3fc88d592dda3c03984"
+  },
+  {
+   "path": "fla_guard.json",
+   "bytes": 506,
+   "mtime_utc": "2026-10-12T05:59:32Z",
+   "sha256": "1b163df4b350134107e2aa0dd7875f0e0d76c52a8a63db9bb4b149004cb1fdc8"
+  },
+  {
+   "path": "guard/index-content-hashes.txt.gz",
+   "bytes": 889650,
+   "mtime_utc": "2026-10-12T06:00:20Z",
+   "sha256": "8f5d1e32182236da27399ac23c9933101160790dfaba823dc068ee1ea518fb3d"
+  },
+  {
+   "path": "guard/readiness.json",
+   "bytes": 1956,
+   "mtime_utc": "2026-10-12T06:00:20Z",
+   "sha256": "6df893315a9b8971af0cd4854f8ee6c1b919109b93144370db8b480b40db4ed4"
+  },
+  {
+   "path": "heldout.json",
+   "bytes": 2944,
+   "mtime_utc": "2026-10-12T06:00:41Z",
+   "sha256": "686a1a3a742e978044caad647f5bbb4c918453b3e617064bf8f25bf6e79f7e37"
+  },
+  {
+   "path": "index-proxy.json",
+   "bytes": 96,
+   "mtime_utc": "2026-10-12T06:00:11Z",
+   "sha256": "65cf02feb15999abc3bbe59cde188a7b860bd302137c1087d8d50a5912e66b89"
+  },
+  {
+   "path": "index-subset.json",
+   "bytes": 108,
+   "mtime_utc": "2026-10-12T06:00:10Z",
+   "sha256": "d4a16984ef62f05083fff46fca97a547ae87e3bab95c3f01b8f28ad3d4bf5269"
+  },
+  {
+   "path": "label.json",
+   "bytes": 218,
+   "mtime_utc": "2026-10-12T06:00:03Z",
+   "sha256": "23476e91b79d87ad9d2dcd9700800942194a164b28b5eed740f37a0390ebbdb9"
+  },
+  {
+   "path": "nvidia-smi.txt",
+   "bytes": 1689,
+   "mtime_utc": "2026-10-12T05:57:26Z",
+   "sha256": "6bf27d1f89680151ff470ec7fc5afa4e59de8d635676913b4ffbcced1fbe9559"
+  },
+  {
+   "path": "preflight-screen.json",
+   "bytes": 317,
+   "mtime_utc": "2026-10-12T06:00:11Z",
+   "sha256": "a595bd9da8f0158bcea04fd60046a77c9dd92adff398c966e08b45f327bd2785"
+  },
+  {
+   "path": "rate-screen.json",
+   "bytes": 1022,
+   "mtime_utc": "2026-10-12T06:51:44Z",
+   "sha256": "6c0facd08af21d78bb52717077e08fb7c6ca8d4be2c0f643047e92065f4d3d60"
+  },
+  {
+   "path": "readout-spec.json",
+   "bytes": 141,
+   "mtime_utc": "2026-10-12T06:00:09Z",
+   "sha256": "89ca1666e48328ccbc81307c58c0f48594835cd0f0e5fc808cef76d3ba6eb6a9"
+  },
+  {
+   "path": "records-verify.txt",
+   "bytes": 24,
+   "mtime_utc": "2026-10-12T05:59:33Z",
+   "sha256": "f20be233be8ec86caf2b04125168a784d4cc6bd66d442a37df4ad687ef575b15"
+  },
+  {
+   "path": "screen-reference.json",
+   "bytes": 4138,
+   "mtime_utc": "2026-10-12T06:00:11Z",
+   "sha256": "89e846b8d45b89a2c3a6db9b2d0e32bb4173ac50ca371ab5f06a9d92513cd305"
+  },
+  {
+   "path": "snapshot-verify.txt",
+   "bytes": 310,
+   "mtime_utc": "2026-10-12T06:00:02Z",
+   "sha256": "6852bd0a697ebaf13c83a73d8a164b6fa0cbd03811b3f26bb6a97f052ede4af5"
+  },
+  {
+   "path": "train-set-verify.json",
+   "bytes": 346,
+   "mtime_utc": "2026-10-12T05:59:34Z",
+   "sha256": "965b4eddd4173d4cef39935bd8c49f0b3b6a3b3bc6bb370f05981bf575ff78b3"
+  },
+  {
+   "path": "train_log.jsonl",
+   "bytes": 23491,
+   "mtime_utc": "2026-10-12T06:46:59Z",
+   "sha256": "80a30d4ed1bf69c578822f68685c492fd6900c56198bafc0268de750c8516dc4"
+  }
+ ]
+}

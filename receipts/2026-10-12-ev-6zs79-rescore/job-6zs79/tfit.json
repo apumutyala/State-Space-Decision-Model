@@ -1,0 +1,23 @@
+{
+ "T": 1.0,
+ "nll_T": 0.6692588732654516,
+ "nll_1": 0.6802116091640099,
+ "n": 1200,
+ "bounds": [
+  0.25,
+  4.0
+ ],
+ "at_bound": false,
+ "T_nll": 1.2974940721218169,
+ "band_T1": 0.4979757085020243,
+ "band_T_nll": 0.5870445344129555,
+ "constrained": true,
+ "band_T": 0.4979757085020243,
+ "nll_T_nll": 0.6692588732654516,
+ "n_noul": 741,
+ "records": "/data/m2-jev3-calib/records.jsonl.gz",
+ "records_gz_sha256": "00fafdae46e77d39078f7a798d031f3c6f4fa2f4d07148fb706b8d8d034aadb6",
+ "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078",
+ "calib_probs": "calib_probs.jsonl (per-option probabilities of every slice decision, untempered)",
+ "rule": "scalar T = the NLL minimiser over all calib questions (bounded), moved toward 1 if it would raise the slice's yes/no 0.2-0.8 band rate above T = 1's; fitted before any eval answer is tempered"
+}

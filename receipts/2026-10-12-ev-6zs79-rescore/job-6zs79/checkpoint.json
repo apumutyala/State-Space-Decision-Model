@@ -1,0 +1,13 @@
+{
+ "artifact": "art-8xs32",
+ "job": "job-5x4vr",
+ "artifact_sha256": "933cc0ac1748304b4a589e5baa099b937a1db034dc4fac342e888406476838af",
+ "file": "trainable-step0000200.safetensors",
+ "path": "/checkpoint/cell/trainable-step0000200.safetensors",
+ "sha256": "5cb7da4246efce72c17d15cf5af9fc6b8137a7e76e371a970a67c89303835310",
+ "role": "best",
+ "member": "trainable-step0000258.safetensors",
+ "member_sha256": "b0cc27089620823d809844b7edc6f31340f55c88f2f0b0a8fcb8b290efd5e5a2",
+ "cell_json_sha256": "03ff0ba0dec885540cf660a8fdc595c21305743db9ff6d5d94f637a8b30e7ec7",
+ "reused": false
+}

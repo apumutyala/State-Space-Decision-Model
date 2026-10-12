@@ -1,0 +1,1490 @@
+{
+ "config": {
+  "_comment": "JEV3-SYM (A-PREREG-JEV3-SYM DRAFT, seed 0): STOCK Qwen3.5-4B (GDN hybrid) + the sym-fork head (reorder / relabel invariance by construction) + consistency views (view_frac 0.25, fixed lambda 0.5) on the jev3 draw ONLY (5,960 train rows, 1 epoch max, clock-bound) (PLACEHOLDER pins, refused by the runner until final)",
+  "seed": 0,
+  "head": "fork",
+  "head_kwargs": {},
+  "layout": "sym-fork",
+  "template": "jrt-h2o-shim:qwen3.5-4b",
+  "loss_arm": "clef",
+  "lora_rank": 64,
+  "lr_head": 0.0003,
+  "lr_lora": 0.0001,
+  "warmup_steps": 50,
+  "batch_size": 1,
+  "grad_accum": 8,
+  "max_k": 16,
+  "t_ladder": [
+   512,
+   1024,
+   2048,
+   4096
+  ],
+  "n_train_records": 5824,
+  "n_eval_records": 0,
+  "min_train_items": 5824,
+  "max_steps": 728,
+  "max_minutes": 35,
+  "min_steps": 110,
+  "ckpt_every": 100,
+  "eval_every": 100000,
+  "tokenize_workers": 8,
+  "smoke": {
+   "rows": 2,
+   "max_k": 4,
+   "max_t": 512,
+   "lora_rank": 8,
+   "max_rel_feature_diff": 0.03,
+   "min_grad_cos": 0.99
+  },
+  "pass_rule": {
+   "window": 100,
+   "loss_drop_frac_min": 0.05,
+   "max_peak_gb": 76
+  },
+  "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+  "require_guard_readiness": true,
+  "calibration_role": "calibration",
+  "parent": "qwen35",
+  "eval_max_t": 4096,
+  "train_set": {
+   "pointer": "data/manifests/bschema-draw-jev3.pointer.json",
+   "heldout_excluded": {
+    "ids": [],
+    "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+    "reason": "the merged draw inherits each pool's gates (0 held-out D1-B hits each); the in-job heldout phase rescans the whole set"
+   },
+   "pools": {
+    "jev1": {
+     "dir": "m2/build/bschema-draw-jev1",
+     "pointer": "data/manifests/bschema-draw-jev1.pointer.json",
+     "pointer_sha256": "582ffe1cb34602473a847833758e06d69dbb6755594b4609e95f8fa39a2b464b",
+     "status": "gated",
+     "families": [
+      "adequacy",
+      "enum",
+      "intent",
+      "long_policy",
+      "policy",
+      "routing",
+      "severity",
+      "state_tracking"
+     ]
+    },
+    "jev2a": {
+     "dir": "m2/build/bschema-draw-jev2a",
+     "pointer": "data/manifests/bschema-draw-jev2a.pointer.json",
+     "pointer_sha256": "53416094f957a6aebb6514dceaaef11b18473da1a6a910c89057639865c24eda",
+     "status": "gated + re-gated (claude/ev-jev2a-regate @97d55f2e)",
+     "branch": "claude/ev-jev2-draw@77065b1c",
+     "families": [
+      "multi_hop",
+      "judge_hard",
+      "temporal_numeric",
+      "fact",
+      "tool_selection"
+     ],
+     "exclude": {
+      "file": "receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt",
+      "sha256": "aeb8027aaaebdb6fad2b24f8b5bee9d37c4e176fcc4e18ad0d366acf1b579705",
+      "n_ids": 105,
+      "rows_after": 29895,
+      "rule": "97 Glaive rows whose tool descriptions are verbatim in JevBench easy tool_selection items + 8 MuSiQue rows; asserted at build (sha + count)"
+     }
+    },
+    "jev2b": {
+     "dir": "m2/build/bschema-draw-jev2b",
+     "pointer": "data/manifests/bschema-draw-jev2b.pointer.json",
+     "pointer_sha256": "35620f5f47c6e48bb61de0a336ccfb54dad5bf11f606a15f30b32fe48fee4127",
+     "status": "gated + re-gated (claude/ev-jev2a-regate @7a742d6a: empty exclusion list)",
+     "branch": "claude/ev-jev2-draw@a4aaa7de",
+     "families": [
+      "probability",
+      "trap",
+      "ambiguous",
+      "tradeoff",
+      "adversarial"
+     ],
+     "exclude": {
+      "file": "receipts/2026-10-10-jev2b-regate/jev2b_exclude_ids.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "n_ids": 0,
+      "rows_after": 7500
+     },
+     "excluded_subs": {
+      "prob_indep": 124,
+      "why": "constant gold 'same' in all 124 rows"
+     }
+    },
+    "jev2c": {
+     "dir": "m2/build/bschema-draw-jev2c-v2",
+     "pointer": "data/manifests/bschema-draw-jev2c-v2.pointer.json",
+     "pointer_sha256": "86960d903d613bc88eca9ee131b486a749afa9a89c9cebca77744178721c5a99",
+     "status": "gated + re-gated (claude/ev-jev2a-regate @c76f150a: empty exclusion list)",
+     "families": [
+      "long_policy"
+     ],
+     "exclude": {
+      "file": "receipts/2026-10-11-jev2c-v2-regate/jev2c-v2_exclude_ids.txt",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "n_ids": 0,
+      "rows_after": 1500
+     },
+     "note": "jev2c-v2 (replaces jev2c): 1,500 synthetic long_policy rows, prose states, more score rows; shim tokens p99 3,892 / max 3,981, 0 over 4,096 (tokens-shim.json); the ONLY long_policy source"
+    }
+   },
+   "note": "jev3 ONLY: 5,960 train rows (judge_hard / adequacy / policy / ambiguous / temporal_numeric 1,000 each, long_policy 960), ids sha256 feb681f3... (verified locally); held-out selection slice 1,200 (200 x 6), ids sha256 844233f2... (verified), state-disjoint from training (pointer slice_disjoint counts 0; asserted in job). Pointers: claude/ev-jev3-draw @5c963b25. Sampler: policy/aegis_reply (109, constant gold) and adequacy/hs2_bar_coherence (27, 26:1) dropped via train_set.exclude_files (sha-pinned) -> pool 5,824; re-gate exclusion list empty (01ba4719).",
+   "score_share": 0.25,
+   "type_mix_note": "FINAL mix (18 families, 586/family, adequacy 293): choice 44.9% / noul 30.1% / score 25.1% (4599 / 3086 / 2570 of 10255)",
+   "exclude_files": [
+    {
+     "file": "receipts/2026-10-11-jev3-sampler/jev3_train_exclude_subs.txt",
+     "sha256": "e998376e3daf0c2d9e5fdc119b8fc7e61f0450bf5095596a8aa13954e15fd8d3",
+     "n": 136,
+     "reason": "sampler (lead 2026-10-11): drop policy/aegis_reply (gold FALSE in all 109 train rows) and adequacy/hs2_bar_coherence (26 true : 1 false; dropped rather than down-weighted)"
+    },
+    {
+     "file": "receipts/2026-10-11-jev3-regate/jev3_exclude_ids.txt",
+     "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+     "n": 0,
+     "reason": "evidence re-gate (claude/ev-jev2a-regate @688e8d7c, REGATE_JEV3.md 4b): CLEARED, empty list (sha asserted)"
+    }
+   ]
+  },
+  "act_ckpt": true,
+  "row_batch": 1,
+  "row_tokens": 0,
+  "row_plan": "min_cost",
+  "cont_plan": "single",
+  "compile_blocks": false,
+  "min_steps_note": "floor 110 steps; the clock decides the steps above it (up to 728 = 1 epoch)",
+  "lora_rank_note": "r=64 on every arm (A-PREREG-SIZECLIFF: same LoRA rank); targets = every GDN in_proj_qkv / in_proj_z / out_proj, every attention q / k / v / o and every MLP projection (stock hybrid, heads.backbone.qwen35_spec from config.json)",
+  "variant": "jev3_sym_s0",
+  "train_max_k": 255,
+  "row_options": 160,
+  "train_max_k_note": "D8 code (#221 on agent-main): K cap of the training items only (train.run_cell.train_max_k; cell_items default, also used by the m2_gates lineage rebuild); max_k 16 remains the eval cap (train.m2_gates.unit_spec, run_cell eval_items). B1 100k-v2 carries rows with > 16 options (BANKING77 77-option catalogs, Glaive catalog views K 17-27), which max_k 16 alone would drop.",
+  "row_options_note": "execution guard (train.trainer.row_groups / single_cont_fits): <= 160 forked continuations per backbone call; a row with K > 160 runs alone, and a step whose summed K exceeds 160 runs per group under cont_plan single. Worst call = 8,192 prefix tokens + 160 copies ~= 53.8 GB (tvuat ladder 1,024 rung) + 80 x <= 87 MB ~= 61 GB < 76 GB stop (D8 sizing). Not in the TrainConfig hash; never binds on K <= 16 steps (8 x 16 = 128).",
+  "lr_schedule": "cosine",
+  "lr_min_frac": 0.1,
+  "dev_card_every": 100,
+  "dev_card_rows": 360,
+  "best_ckpt": true,
+  "collapse_guard": true,
+  "anti_collapse_note": "train/trainer.py TrainConfig anti-collapse fields; each absent key = the old behaviour. lr_schedule and collapse_* are in the config hash; dev_card_* and best_ckpt are operational. Each dev card scores 200 rows (budget it inside max_minutes).",
+  "execution_note": "row_batch 1: one row per backbone call (8 rows / optimiser step via grad_accum 8); act_ckpt true (heads/act_ckpt.py covers Qwen3.5 decoders); the cache fork reads each row's prompt once and forks its K continuations. row_plan / cont_plan / row_options only act with row_batch > 1 (train/trainer.py). The clock binds (max_steps 20,000).",
+  "v3w_note": "generic v3w (decide/v3w_generic.py, PINNED_SPEC_SHA256 'jrt-v3w-generic:qwen3.5' 2e4907ee...; 255 single-token codes after the Qwen answer prefix, word ids by unique first token, Qwen3.5 chat template with enable_thinking=False -> empty think block, budget 16,383). Bound to the snapshot's own tokenizer files on the box (run_cell / score_parent / m2_gates / screen): any other tokenizer or template fails closed.",
+  "qwen35": {
+   "repo": "Qwen/Qwen3.5-4B",
+   "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+   "config_sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+   "snapshot_sha256_file": "jobs/m2_first_cell/qwen35_4b_snapshot.sha256",
+   "note": "heads.backbone.qwen35_pin_check (repo@revision in QWEN35_STOCK + config.json sha256) before the tokenizer or any weight; the runner checks the whole snapshot against the manifest"
+  },
+  "shim_note": "template jrt-h2o-shim:qwen3.5-4b (decide/shim_format.py, pinned identity): the vendored, unmodified H2O-Lightning-4B v1.1 shim prompt (third_party/h2o_lightning_shim, the host scan's replica that matched H2O's card 205/231): Qwen chat turn, thinking off, the shim system text, 'record: / question: / options: A) name: desc', 'Answer:' prefill; option k = shim label k (A, B, ...), its continuation the ONE token of ' <label>' (the shim's own probe); bound to the snapshot's tokenizer files, any other tokenizer fails closed. Train rows == the shim prompt ids (and == transformers' whole-string tokenization = vLLM /tokenize): scripts/check_sizecliff_cpu.py.",
+  "cont_chunk": "auto",
+  "cont_chunk_candidates": [
+   8,
+   16,
+   32,
+   48,
+   64
+  ],
+  "cont_chunk_peak_frac": 0.85,
+  "budget_note": "A-PREREG-JEV3-SYM: worst-case hold <= $22 ($21.67). max_steps 728 = 1 epoch of the 5,824 jev3 train rows after the sampler drops (5,960 - 136) / 8; the CLOCK bounds it: max_minutes 35 (unchanged). At the step-10 rate check the planned final step = min(728, the clock-affordable steps at the MEASURED s/step) and the cosine horizon = lr_horizon_frac x that; floor 110 (below it exit 26). Estimate 6.39 s/step (3.93 measured x 1.3 sym-fork x 1.25 views) -> ~220 steps; a faster real rate trains more steps at the same cost.",
+  "sym_reprice_note": "Clock re-price (CPU 2026-10-10, real Qwen3.5-4B tokenizer, systematic 1-in-24 sample of bschema-draw-jev1 = 4,000 items, all kept by train.run_cell.keep_item under both layouts; K mean 4.78, max 16): tokens the backbone RUNS per row (prefix + continuation calls right-padded per cont_chunk 64 chunk, MIN_CONT_WIDTH 2) g1v2 368.1 vs sym-fork 362.7, factor 0.985 (fed tokens without padding 363.3 vs 352.1, 0.969): the options move from the prefix into the continuations, about token-neutral. Projected 10.92 x 0.985 = 10.76 s/step -> ceil(1,121 x 10.76 x 1.3 / 60) = 262 min; max_minutes stays 270 (the measured g1v2 budget; the factor is a token model, not a measurement: the step-10 rate check (exit 26) re-measures it in-job). Script: scripts/sym_reprice_jev1.py 24 (receipt in docs/PROOF_INVARIANCE.md).",
+  "require_t_max": 4096,
+  "ladder_probe_longest": true,
+  "max_len_note": "public long_policy items are 2,350-3,952 tokens (r2 preds usage.input_tokens) vs jev1 long_policy train rows p50 935 / max 1,263 (build-report): the trained head never saw > 2k contexts. 4,096 for training (t_ladder top rung; require_t_max fails closed instead of silently dropping rows > T_max) and eval. Memory at 4k on H100 80 GB (4B, act_ckpt): the attention-layer KV copy per forked option grows ~0.7 GB at T 1,020 (cf3929b) -> ~2.8 GB at 4,096; long_policy rows carry K 4-6 -> <= ~17 GB of copies + ~8 GB weights + checkpointed activations; the cont_chunk probe (4b0fb1d) re-picks the chunk over the worst K x T rows <= 4,096 (candidates 8..64, peak <= 0.85 x 76 GB) and ladder_probe_longest steps the LONGEST rows of each rung (the max-K rung rows are short), so 4k is measured before training.",
+  "label_smoothing": 0.05,
+  "label_smoothing_noul": 0.0,
+  "label_smoothing_note": "yes/no (noul) rows: eps 0 (sharp targets). jevkit scores a noul answer with p in (0.2, 0.8) as WRONG; r2 put 10/74 noul items in that band (stock 0), the whole argmax-vs-jevkit gap (claude/ev-j1-rescore @a8ca3e7e), and smoothing pulls yes/no answers toward 0.5. choice / score rows: eps 0.05 (was the clef default 0.1 on every row; r2's head was under-confident, shim T 0.8 raised its Capability 57.93 -> 59.62). Per-row eps by question type (train.losses.arm_loss already receives qtypes).",
+  "noul_band_gate": "reported gate: the native arm's yes/no 0.2-0.8 band rate on the 231 items <= stock_shim's (screen.jevkit_report noul_band_gate); the calib-slice band rate at T = 1 and at the fitted T are reported, and T is moved toward 1 if it would raise the slice band rate (constrain_t_by_band)",
+  "lr_horizon_frac": 0.6717,
+  "lr_horizon_note": "lr_horizon_frac 0.6717 (= r2's 753 / 1,121): at the step-10 rate check the planned final step = min(max_steps 1281, step + the clock-affordable steps at the MEASURED s/step) and the cosine horizon = frac x that, fixed once. If the projection is short of max_steps the run CONTINUES (cell.json train_budget_shortened records it) down to min_steps 600; below that, exit 26. Planned (estimate holds): horizon 860.",
+  "assert_no_truncation": true,
+  "assert_no_truncation_note": "fail closed (run_cell exit 25 'data') if ANY drawn training question is dropped by the K / T filter at tokenization or by the measured T_max; jev2c has 1,448 / 1,500 rows > 2,048 tokens (max 3,347), all inside 4,096. The screen fails (9) if any JevBench item is refused for input length (jevkit.assert_no_truncation).",
+  "consistency": {
+   "view_frac": 0.25,
+   "lambda": 0.5,
+   "seed": 0,
+   "families": [
+    "format",
+    "instruction",
+    "option"
+   ],
+   "view_grad": true,
+   "controller": null
+  },
+  "consistency_note": "stack/qwen35/consistency @d517df9c: L = L_task(orig) + lambda_c symKL(orig || view); views from train/consistency_views.py (format / instruction / option; disjoint from the jevkit perturb operators); FIXED lambda 0.5 (the nuPI controller merge is not clean, docs/CONSISTENCY.md)",
+  "dev_card_records": {
+   "records": "m2-jev3-calib/records.jsonl.gz",
+   "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
+  },
+  "data_pins": {
+   "status": "final",
+   "draw": "bschema-draw-jev3 ONLY (the jev2 component is dropped)",
+   "fill": [],
+   "expected": {
+    "train_rows": 5960,
+    "train_ids_sha256": "feb681f3517c69863d7180dbbf3307dd7b6ded4b4a6411b2ae8f360af33f3120",
+    "train_per_family": {
+     "judge_hard": 1000,
+     "adequacy": 1000,
+     "policy": 1000,
+     "ambiguous": 1000,
+     "temporal_numeric": 1000,
+     "long_policy": 960
+    },
+    "slice_rows": 1200,
+    "slice_per_family": 200,
+    "slice_ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
+   },
+   "pinned": {
+    "train_pointer": "data/manifests/bschema-draw-jev3.pointer.json",
+    "train_pointer_sha256": "ce70500db28739ada3506a3db51888beca7ae3b1f58ee3ac999010dcbeaafdfd",
+    "slice_pointer": "data/manifests/bschema-draw-jev3-slice.pointer.json",
+    "slice_pointer_sha256": "4d1cbba60302402dca33a7d92ea68496b3bb526b7be34e1ced4c913ad652d514",
+    "branch": "claude/ev-jev3-draw@5c963b25",
+    "ids_check": "scripts/verify_ids_sha.py: train feb681f3 and slice 844233f2 both match the no-trailing-newline convention (2026-10-11)"
+   },
+   "exclusion": {
+    "status": "landed (empty)",
+    "file": "receipts/2026-10-11-jev3-regate/jev3_exclude_ids.txt",
+    "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "n": 0,
+    "regate": "claude/ev-jev2a-regate @688e8d7c REGATE_JEV3.md 4b"
+   },
+   "sampler": {
+    "dropped": {
+     "policy/aegis_reply": 109,
+     "adequacy/hs2_bar_coherence": 27
+    },
+    "pool_after": 5824
+   }
+  }
+ },
+ "dev_card_source": {
+  "records": "m2-jev3-calib/records.jsonl.gz",
+  "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078",
+  "n_records": 1200,
+  "n_items": 1200
+ },
+ "data_checks": {
+  "no_truncation_tokenize": {
+   "rows": 5824,
+   "max_row_tokens": 4064,
+   "t_cap": 4096
+  }
+ },
+ "data": {
+  "records_sha256": "824671c97070c0e61a40df8f0103ebeb6fddc557e0974a61226653887d57ceb7",
+  "n_train_records": 5824,
+  "tokenize_s": 39.0,
+  "n_train_items": 5824,
+  "n_eval_items": 1113,
+  "guard_manifests": {
+   "/opt/ssdm/m1/harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+   "/opt/ssdm/m1/harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+  },
+  "guard": {
+   "manifests": {
+    "/opt/ssdm/m1/harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+    "/opt/ssdm/m1/harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+   },
+   "n_ids": 47249,
+   "n_hashes": 48415,
+   "note": "",
+   "content_index": {
+    "path": "/tmp/m2-first-cell/out/guard/index-content-hashes.txt.gz",
+    "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+    "n": 24150
+   }
+  },
+  "max_k": 16,
+  "train_max_k": 255,
+  "cohort": {
+   "cohort": "m2-dev-cohort-v2",
+   "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 1670,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "train_set": {
+   "train_set": "bschema-draw-jev3 (data/jev3.py + scripts/jev3_build.py: HUMAN-labelled TRAIN-split rows for judge_hard, adequacy, policy, ambiguous, temporal_numeric, long_policy; role train)",
+   "pointer": "data/manifests/bschema-draw-jev3.pointer.json",
+   "pointer_sha256": "ce70500db28739ada3506a3db51888beca7ae3b1f58ee3ac999010dcbeaafdfd",
+   "files_uncompressed_sha256": {
+    "records": "368fd715d8c9290989da53927e2785c5802ee07e03490ca2bd8817ebb801e020",
+    "manifest": "4350f8a8db2024ddbb1cee2ddd7cc8d7479cafa7a80a562490fa54bf00261969",
+    "content_map": "9f77efe71c1c057da67e23fd434dc43a59906f71df871b84a3109fed8aab623e"
+   },
+   "n_pool": 5824,
+   "heldout_excluded": [],
+   "drawn_heldout_scan": {
+    "n_texts": 5824,
+    "hits": 0,
+    "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5"
+   },
+   "held_out_in_set": {
+    "by_id": 0,
+    "by_content": 0
+   },
+   "n_drawn": 5824,
+   "draw_seed": 0,
+   "drawn_ids_sha256": "196a7d34f90c659dfc47d02e529a8800a871f0495118d27af93b87160e24b90b",
+   "lines_manifest_verified": 5960,
+   "cohort": {
+    "cohort": "m2-dev-cohort-v2",
+    "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+    "n": {
+     "dev": 835,
+     "calibration": 1000,
+     "retention": 1670,
+     "steer_dev": 1800,
+     "steer_gate": 1000
+    }
+   },
+   "cohort_v3_excluded": {
+    "n": 0,
+    "rule": "id OR normalized content OR source item OR key-free text held out by the cohort (train.cohort_v3)",
+    "cohort": {
+     "cohort": "m2-dev-cohort-v3",
+     "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+     "n": {
+      "dev": 835,
+      "calibration": 1000,
+      "retention": 39872,
+      "steer_dev": 1800,
+      "steer_gate": 1000
+     }
+    },
+    "drawn_overlap": 0
+   },
+   "attack_guard": {
+    "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+    "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+    "n_records": 5960,
+    "n_excluded": 0,
+    "excluded_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "per_set": {},
+    "per_template": {},
+    "n_heldout_excluded_overlap": 0,
+    "per_counts_include_heldout_excluded": true,
+    "check": "no hit",
+    "drawn_hits": 0
+   },
+   "doc_overlap_guard": {
+    "n_records": 5960,
+    "n_fail": 0,
+    "per_source_fail": {},
+    "per_reason": {},
+    "eval_rows_attributed_by_split": {},
+    "eval_rows_union_covered_by_split": {},
+    "secs": 11.0,
+    "jevbench": {
+     "n_fail": 0,
+     "n_fail_doc": 0,
+     "n_fail_exact": 0,
+     "index_sha256": "0fe994c40dfc70fa3a0cd711fa88abb7f439cb8f2546ecffd53e5ca232d3934b"
+    },
+    "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+    "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+    "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
+    "excluded_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "n_excluded": 0,
+    "allowlist_saved": {},
+    "n_heldout_excluded_overlap": 0,
+    "check": "no fail",
+    "drawn_fails": 0,
+    "n_pool_removed": 0
+   },
+   "exclude_files": [
+    {
+     "file": "receipts/2026-10-11-jev3-sampler/jev3_train_exclude_subs.txt",
+     "sha256": "e998376e3daf0c2d9e5fdc119b8fc7e61f0450bf5095596a8aa13954e15fd8d3",
+     "n": 136,
+     "reason": "sampler (lead 2026-10-11): drop policy/aegis_reply (gold FALSE in all 109 train rows) and adequacy/hs2_bar_coherence (26 true : 1 false; dropped rather than down-weighted)"
+    },
+    {
+     "file": "receipts/2026-10-11-jev3-regate/jev3_exclude_ids.txt",
+     "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+     "n": 0,
+     "reason": "evidence re-gate (claude/ev-jev2a-regate @688e8d7c, REGATE_JEV3.md 4b): CLEARED, empty list (sha asserted)"
+    }
+   ]
+  },
+  "consistency_views": {
+   "version": "cv1",
+   "seed": 0,
+   "view_frac": 0.25,
+   "families": [
+    "format",
+    "instruction",
+    "option"
+   ],
+   "with_view": 1409,
+   "not_sampled": 4360,
+   "no_transform": 0,
+   "view_filtered": 0,
+   "view_reordered_filtered": 55,
+   "by_family": {
+    "format": 577,
+    "instruction": 599,
+    "option": 233
+   }
+  },
+  "consistency_t_max": {
+   "t_max": 4096,
+   "retained": 1409,
+   "dropped_for_length": 0
+  }
+ },
+ "weights_gb": 8.411531264,
+ "smoke": {
+  "rows": 2,
+  "rel_feature_diff": 0.02427184395492077,
+  "grad_cos": 0.9980972409248352,
+  "pass": true,
+  "peak_gb": 9.611812864,
+  "lora_modules": {
+   "gdn": 72,
+   "attn": 32,
+   "mlp": 96
+  },
+  "pass_rule": {
+   "rows": 2,
+   "max_k": 4,
+   "max_t": 512,
+   "lora_rank": 8,
+   "max_rel_feature_diff": 0.03,
+   "min_grad_cos": 0.99
+  },
+  "act_ckpt": true
+ },
+ "cont_chunk_probe": {
+  "limit_gb": 64.6,
+  "candidates": [
+   8,
+   16,
+   32,
+   48,
+   64
+  ],
+  "points": {
+   "8": {
+    "ok": true,
+    "peak_gb": 13.588089344,
+    "step_s": 29.402469873428345
+   },
+   "16": {
+    "ok": true,
+    "peak_gb": 13.588089344,
+    "step_s": 6.830928087234497
+   },
+   "32": {
+    "ok": true,
+    "peak_gb": 13.588089344,
+    "step_s": 6.825743913650513
+   },
+   "48": {
+    "ok": true,
+    "peak_gb": 13.588089344,
+    "step_s": 6.778127431869507
+   },
+   "64": {
+    "ok": true,
+    "peak_gb": 13.588089344,
+    "step_s": 6.74677848815918
+   }
+  },
+  "chosen": 64,
+  "rows": [
+   {
+    "k": 6,
+    "t": 3705
+   },
+   {
+    "k": 6,
+    "t": 3632
+   },
+   {
+    "k": 6,
+    "t": 3620
+   },
+   {
+    "k": 6,
+    "t": 3599
+   },
+   {
+    "k": 6,
+    "t": 3597
+   },
+   {
+    "k": 6,
+    "t": 3579
+   },
+   {
+    "k": 6,
+    "t": 3567
+   },
+   {
+    "k": 6,
+    "t": 3566
+   }
+  ]
+ },
+ "ladder": {
+  "points": {
+   "512": {
+    "ok": true,
+    "peak_gb": 11.092632576,
+    "step_s": 7.5401787757873535,
+    "row_len": 509,
+    "k": 6
+   },
+   "512_longest": {
+    "ok": true,
+    "peak_gb": 11.047360512,
+    "step_s": 13.36435055732727,
+    "row_len": 512,
+    "k": 5
+   },
+   "1024": {
+    "ok": true,
+    "peak_gb": 11.329043968,
+    "step_s": 7.1587746143341064,
+    "row_len": 782,
+    "k": 6
+   },
+   "1024_longest": {
+    "ok": true,
+    "peak_gb": 11.146187776,
+    "step_s": 7.706648826599121,
+    "row_len": 1023,
+    "k": 5
+   },
+   "2048": {
+    "ok": true,
+    "peak_gb": 12.568259584,
+    "step_s": 7.051069498062134,
+    "row_len": 2033,
+    "k": 6
+   },
+   "2048_longest": {
+    "ok": true,
+    "peak_gb": 12.568259584,
+    "step_s": 9.046571254730225,
+    "row_len": 2043,
+    "k": 3
+   },
+   "4096": {
+    "ok": true,
+    "peak_gb": 13.588089344,
+    "step_s": 6.672883749008179,
+    "row_len": 3705,
+    "k": 6
+   },
+   "4096_longest": {
+    "ok": true,
+    "peak_gb": 13.4644352,
+    "step_s": 10.308768033981323,
+    "row_len": 4065,
+    "k": 4
+   }
+  },
+  "T_max": 4096,
+  "rate_check": {
+   "step_s": 6.672883749008179,
+   "minutes_left": 35,
+   "affordable_steps": 314.70651655097885,
+   "need_steps": 200,
+   "too_slow": false
+  }
+ },
+ "dev_card_sample": {
+  "rows": 360,
+  "seed": 0,
+  "n": 360,
+  "n_pool": 1200,
+  "design": "hash-stratified by source: sha256(seed:id) within source, round-robin across sources",
+  "per_source": {
+   "aegis2": 45,
+   "ambignq": 45,
+   "helpsteer2": 45,
+   "helpsteer3": 45,
+   "privacyqa": 45,
+   "prm800k": 45,
+   "tatqa": 45,
+   "timeqa": 45
+  },
+  "ids": [
+   "m2:aegis2:c109d06528924fd0953e46f73ce80350~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-2639660647813019469~view:jev3-amb-k3/q",
+   "m2:helpsteer2:97~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:23977-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:c63ff5711c~view:jev3-lp-score-r1/q",
+   "m2:prm800k:train/number_theory/196.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:b23dff98-e801-4aa2-b8a5-b98596278647~view:jev3-tn-yn/q",
+   "m2:timeqa:894d5aaed1-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:8c5b26e20c674971bb0f4022871b866e~view:jev3-jev3pol-message/q",
+   "m2:ambignq:5872845962420620183~view:jev3-amb-k3/q",
+   "m2:helpsteer2:14491~view:jev3-jev3bar-coherence/q",
+   "m2:helpsteer3:18646-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:fedc1ddd57~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/counting_and_probability/712.json~view:jev3-jh-step/q",
+   "m2:tatqa:6009d8f4-a6c6-4f60-8638-2b5ca26c1d2f~view:jev3-tn-c4/q",
+   "m2:timeqa:63d7c15e81-2~view:jev3-tn-time-c3/q",
+   "m2:aegis2:37b7981bd2344411974936a54c672bd5~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:8815644747440292961~view:jev3-amb-k3/q",
+   "m2:helpsteer2:12876~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:10664-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:a1906f798c~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/860.json~view:jev3-jh-all/q",
+   "m2:tatqa:db13f896-ef54-4664-8e83-b1cd70a2b826~view:jev3-tn-yn/q",
+   "m2:timeqa:bfade7d7ba-0~view:jev3-tn-time-c3/q",
+   "m2:aegis2:42e2515e73e946eba4f707c4b2a9bfa3~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-3986112329531314493~view:jev3-amb-k3/q",
+   "m2:helpsteer2:3331~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:15625-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:35e9ee4e82~view:jev3-lp-choice-r1/q",
+   "m2:prm800k:train/algebra/984.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:9d05ca5e-63ce-47c0-8590-ce227ae34943~view:jev3-tn-c3/q",
+   "m2:timeqa:8ecafef578-2~view:jev3-tn-time-c4/q",
+   "m2:aegis2:98d2fd725b4f4556a3b900aa6ecacdb0~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-8845908040715607923~view:jev3-amb-k3/q",
+   "m2:helpsteer2:5586~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:18730-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:1ec1b9fab7~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/algebra/2170.json~view:jev3-jh-step/q",
+   "m2:tatqa:057082c7-09f7-47e3-87c1-3af14860a615~view:jev3-tn-c3/q",
+   "m2:timeqa:6277d83c3f-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:0fe157e8b58745f499b54997967d8d50~view:jev3-jev3pol-message/q",
+   "m2:ambignq:6999425735966102184~view:jev3-amb-k3/q",
+   "m2:helpsteer2:11340~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:15298-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:5990987b03~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/algebra/1217.json~view:jev3-jh-all/q",
+   "m2:tatqa:70b05eb3-abb5-4204-86d9-2ffce11f9171~view:jev3-tn-yn/q",
+   "m2:timeqa:e7e692a18d-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:3f9c822c2c9a4e8f85e0810232eb9b74~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-6838210957287403206~view:jev3-amb-k3/q",
+   "m2:helpsteer2:8903~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:11141-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:5f5c52bd53~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/algebra/1607.json~view:jev3-jh-all/q",
+   "m2:tatqa:b29f8e9b-790c-48fc-aede-96bc09bf8054~view:jev3-tn-c4/q",
+   "m2:timeqa:32e06dbb64-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:b45e620b40914b469ecdf16fbf9147d9~view:jev3-jev3pol-message/q",
+   "m2:ambignq:94169181720489886~view:jev3-amb-k4/q",
+   "m2:helpsteer2:334~view:jev3-jev3bar-coherence/q",
+   "m2:helpsteer3:17516-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:d33a46a50d~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/1116.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:50be65ba-d3de-47fb-b516-f6d8f2a6dd45~view:jev3-tn-c5/q",
+   "m2:timeqa:b42216fbd4-5~view:jev3-tn-time-c4/q",
+   "m2:aegis2:d0b5e63deb704869b09759fe29324eac~view:jev3-jev3pol-message/q",
+   "m2:ambignq:5464332172782532042~view:jev3-amb-k3/q",
+   "m2:helpsteer2:17785~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:25820-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:2af7658660~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/precalculus/795.json~view:jev3-jh-all/q",
+   "m2:tatqa:7005a9d6-50d9-43b0-9137-d5c1e25eef5d~view:jev3-tn-count/q",
+   "m2:timeqa:b5cc036f16-1~view:jev3-tn-time-yn/q",
+   "m2:aegis2:f8f2b24cc1024ace975d080f45298de5~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:8842376681553707657~view:jev3-amb-k3/q",
+   "m2:helpsteer2:3509~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:16362-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:968f35ea65~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/intermediate_algebra/1322.json~view:jev3-jh-all/q",
+   "m2:tatqa:5faaef41-36b4-48db-9466-44c397c7fede~view:jev3-tn-yn/q",
+   "m2:timeqa:63d7c15e81-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:31ec65cb939a439db06e87dd1251a60b~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:7418702283851051508~view:jev3-amb-k3/q",
+   "m2:helpsteer2:4537~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:15958-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:3f49cd8f4c~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/intermediate_algebra/65.json~view:jev3-jh-all/q",
+   "m2:tatqa:789a37d0-5d7f-422b-9bd4-46293cea01ca~view:jev3-tn-yn/q",
+   "m2:timeqa:6ec168346b-0~view:jev3-tn-time-c3/q",
+   "m2:aegis2:f4f147f8c35148969c4e94d2c15633ac~view:jev3-jev3pol-category/q",
+   "m2:ambignq:-2754699403432135938~view:jev3-amb-k3/q",
+   "m2:helpsteer2:810~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:11819-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:4b564f5f03~view:jev3-lp-score-r0/q",
+   "m2:prm800k:train/precalculus/136.json~view:jev3-jh-all/q",
+   "m2:tatqa:0a14f957-3f01-4c22-a12d-9ed74fa8ab29~view:jev3-tn-c5/q",
+   "m2:timeqa:88b35a2f19-4~view:jev3-tn-time-c5/q",
+   "m2:aegis2:d9a660f0a90e471a8f30b7f8f381b043~view:jev3-jev3pol-message/q",
+   "m2:ambignq:1732899639419747956~view:jev3-amb-k4/q",
+   "m2:helpsteer2:7589~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:15239-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:12f0414c62~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/algebra/1007.json~view:jev3-jh-step/q",
+   "m2:tatqa:863aed17-e535-4e2a-8c6f-6d1460945c7d~view:jev3-tn-c3/q",
+   "m2:timeqa:edf5c3b477-1~view:jev3-tn-time-c3/q",
+   "m2:aegis2:86f94e6dd7f7440185e9d141ea71bb1f~view:jev3-jev3pol-message/q",
+   "m2:ambignq:3240942651859718397~view:jev3-amb-k3/q",
+   "m2:helpsteer2:8023~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:23019-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:0d4a5be345~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/number_theory/305.json~view:jev3-jh-all/q",
+   "m2:tatqa:0c9a2926-b51b-4ecb-a73a-ba26236a7872~view:jev3-tn-c4/q",
+   "m2:timeqa:cf3fb9669e-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:3007378c46f54583ae7f5fc7e8024935~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-6888259864192677951~view:jev3-amb-k3/q",
+   "m2:helpsteer2:9368~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:21298-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:abd29b5995~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/98.json~view:jev3-jh-all/q",
+   "m2:tatqa:3ea8901f-fae5-4cf7-812e-a7ef2b27e089~view:jev3-tn-yn/q",
+   "m2:timeqa:32e06dbb64-2~view:jev3-tn-time-yn/q",
+   "m2:aegis2:4665ad9b76b5458cb8ab437a0d121538~view:jev3-jev3pol-message/q",
+   "m2:ambignq:5063898393705140943~view:jev3-amb-k4/q",
+   "m2:helpsteer2:14834~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:28810-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:aa1becb727~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/algebra/322.json~view:jev3-jh-all/q",
+   "m2:tatqa:7700bdc1-cea3-406f-8848-577ba195baff~view:jev3-tn-yn/q",
+   "m2:timeqa:afe39d69ce-3~view:jev3-tn-time-yn/q",
+   "m2:aegis2:f5266d51d61c4143a7fa88e07e15fd92~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-3912964809477172567~view:jev3-amb-k3/q",
+   "m2:helpsteer2:3119~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:17627-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:67d39eb058~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/algebra/1475.json~view:jev3-jh-all/q",
+   "m2:tatqa:15c366af-d696-466b-a7b4-d56928d13cae~view:jev3-tn-c6/q",
+   "m2:timeqa:88b35a2f19-1~view:jev3-tn-time-c5/q",
+   "m2:aegis2:f27cd5b3c0ae403680e3ee665bc0efa8~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-3082047270779824701~view:jev3-amb-k3/q",
+   "m2:helpsteer2:13174~view:jev3-jev3bar-coherence/q",
+   "m2:helpsteer3:30460-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:12896f2ee8~view:jev3-lp-choice-r1/q",
+   "m2:prm800k:train/number_theory/873.json~view:jev3-jh-all/q",
+   "m2:tatqa:91d5f3d0-c5f0-41dd-a12a-916ed52cf82e~view:jev3-tn-yn/q",
+   "m2:timeqa:be509a3bb2-2~view:jev3-tn-time-c3/q",
+   "m2:aegis2:0ea5d9f27e684d94bb53850ab4b12aae~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-5283919567456439969~view:jev3-amb-k3/q",
+   "m2:helpsteer2:11610~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:16682-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:a03985fe04~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/intermediate_algebra/349.json~view:jev3-jh-all/q",
+   "m2:tatqa:0142d0c2-3f8c-4d3c-b3a8-b3a7b8f8cf22~view:jev3-tn-count/q",
+   "m2:timeqa:afe39d69ce-1~view:jev3-tn-time-yn/q",
+   "m2:aegis2:f7fc27eb2ceb48fd966c1f6cddc25c3b~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:-6043912590688854854~view:jev3-amb-k3/q",
+   "m2:helpsteer2:6379~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:15370-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:09d6b74d92~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/precalculus/950.json~view:jev3-jh-all/q",
+   "m2:tatqa:2023a356-7496-4453-ba54-ed4733dedd0a~view:jev3-tn-yn/q",
+   "m2:timeqa:894d5aaed1-3~view:jev3-tn-time-c3/q",
+   "m2:aegis2:6910e19bf822434583d73a257dc08ec4~view:jev3-jev3pol-message/q",
+   "m2:ambignq:2054536745116975268~view:jev3-amb-k3/q",
+   "m2:helpsteer2:301~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:22277-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:94e475e0f8~view:jev3-lp-noul-r0/q",
+   "m2:prm800k:train/precalculus/85.json~view:jev3-jh-step/q",
+   "m2:tatqa:730956bf-1fe1-42a0-8230-1af5ed1284c9~view:jev3-tn-c5/q",
+   "m2:timeqa:bfade7d7ba-2~view:jev3-tn-time-yn/q",
+   "m2:aegis2:bac85ddd562b48edb9ec9dcb083e642e~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-9048779243079411399~view:jev3-amb-k3/q",
+   "m2:helpsteer2:8778~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:14101-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:4890dfde17~view:jev3-lp-score-r1/q",
+   "m2:prm800k:train/counting_and_probability/478.json~view:jev3-jh-step/q",
+   "m2:tatqa:e7b9e4e8-dd80-493d-8332-2e114b57686b~view:jev3-tn-yn/q",
+   "m2:timeqa:6e16102804-5~view:jev3-tn-time-c6/q",
+   "m2:aegis2:769dbc3ab78047e889771632b9050bb6~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:1470572608642113516~view:jev3-amb-k3/q",
+   "m2:helpsteer2:9373~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:27659-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:52df618026~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/algebra/770.json~view:jev3-jh-step/q",
+   "m2:tatqa:0d202966-b9dd-423e-b729-82d28501266f~view:jev3-tn-yn/q",
+   "m2:timeqa:ffd20961c1-1~view:jev3-tn-time-yn/q",
+   "m2:aegis2:0abb026ce40f4528b2a35c3160940ecb~view:jev3-jev3pol-message/q",
+   "m2:ambignq:3271670088178834297~view:jev3-amb-k3/q",
+   "m2:helpsteer2:18300~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:26645-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:0a0fb2c2c6~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/geometry/678.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:bd43aee5-91b4-46f2-b1a7-e91b3a6f9eb2~view:jev3-tn-yn/q",
+   "m2:timeqa:88b35a2f19-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:99635d50eec44e478af92a9c9637e0e0~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:-3652456346988708411~view:jev3-amb-k3/q",
+   "m2:helpsteer2:10016~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:27388-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:85ae6ef8ce~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/399.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:123811f4-c27e-4625-891c-7f863db389c7~view:jev3-tn-count/q",
+   "m2:timeqa:8ecafef578-1~view:jev3-tn-time-c3/q",
+   "m2:aegis2:e6a4a1f9a38244d2bc3f5e106e7c9149~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:-2279466021312477251~view:jev3-amb-k3/q",
+   "m2:helpsteer2:1949~view:jev3-jev3bar-coherence/q",
+   "m2:helpsteer3:18610-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:f6882a5091~view:jev3-lp-noul-r0/q",
+   "m2:prm800k:train/intermediate_algebra/19.json~view:jev3-jh-all/q",
+   "m2:tatqa:807f645e-a90c-44a1-858a-17ec90b5900b~view:jev3-tn-yn/q",
+   "m2:timeqa:6e16102804-0~view:jev3-tn-time-c4/q",
+   "m2:aegis2:bbda36089198446f9528fceb48e6f2f2~view:jev3-jev3pol-message/q",
+   "m2:ambignq:614103533538969407~view:jev3-amb-k3/q",
+   "m2:helpsteer2:11470~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:12744-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:483d017fbd~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/1629.json~view:jev3-jh-all/q",
+   "m2:tatqa:3be74b45-d80e-4b2b-9bcc-5bfe731036d4~view:jev3-tn-yn/q",
+   "m2:timeqa:b42216fbd4-2~view:jev3-tn-time-c5/q",
+   "m2:aegis2:8730082284a1422981e7d6b8c9bf0139~view:jev3-jev3pol-message/q",
+   "m2:ambignq:6682685195140867582~view:jev3-amb-k3/q",
+   "m2:helpsteer2:17526~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:12891-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:93a9da82d9~view:jev3-lp-noul-r0/q",
+   "m2:prm800k:train/algebra/2730.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:28c09b02-a5d8-4ecf-921d-b89a3be3e217~view:jev3-tn-yn/q",
+   "m2:timeqa:88b35a2f19-3~view:jev3-tn-time-c3/q",
+   "m2:aegis2:01fc46b70aff4619887e44464ed54c54~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-9151677412578049720~view:jev3-amb-k3/q",
+   "m2:helpsteer2:10281~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:30417-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:fc07a44589~view:jev3-lp-noul-r0/q",
+   "m2:prm800k:train/algebra/1330.json~view:jev3-jh-all/q",
+   "m2:tatqa:66210694-acb9-4386-b71e-930cb2ba0da0~view:jev3-tn-c4/q",
+   "m2:timeqa:8388bc2d54-1~view:jev3-tn-time-yn/q",
+   "m2:aegis2:7fa0beb0052b42d79da50239ca91b020~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:-1988657307358981823~view:jev3-amb-k4/q",
+   "m2:helpsteer2:11081~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:13187-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:898a0965b7~view:jev3-lp-noul-r0/q",
+   "m2:prm800k:train/algebra/2601.json~view:jev3-jh-all/q",
+   "m2:tatqa:18325315-ca12-42ec-9fe0-8da02420965f~view:jev3-tn-c3/q",
+   "m2:timeqa:6e16102804-7~view:jev3-tn-time-c5/q",
+   "m2:aegis2:d45192a582854fd69e49c142e8f269a5~view:jev3-jev3pol-message/q",
+   "m2:ambignq:3038488362368423274~view:jev3-amb-k4/q",
+   "m2:helpsteer2:14421~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:28752-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:0089d41d7f~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/intermediate_algebra/1362.json~view:jev3-jh-all/q",
+   "m2:tatqa:2c719108-1686-4600-8757-af143052fc8f~view:jev3-tn-c5/q",
+   "m2:timeqa:6bf7d33024-1~view:jev3-tn-time-yn/q",
+   "m2:aegis2:5cc75d9f7f27400ab78393daa85234d6~view:jev3-jev3pol-message/q",
+   "m2:ambignq:8171543720735333501~view:jev3-amb-k3/q",
+   "m2:helpsteer2:5808~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:29823-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:478d18575d~view:jev3-lp-noul-r0/q",
+   "m2:prm800k:train/intermediate_algebra/1469.json~view:jev3-jh-all/q",
+   "m2:tatqa:98e3a187-8947-41d6-a719-5e0573ece47c~view:jev3-tn-count/q",
+   "m2:timeqa:077899d308-0~view:jev3-tn-time-c3/q",
+   "m2:aegis2:0cc9750b420e43c9b16ea1109ce77574~view:jev3-jev3pol-message/q",
+   "m2:ambignq:2205307574948120843~view:jev3-amb-k3/q",
+   "m2:helpsteer2:17617~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:17197-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:3e2c626238~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/1882.json~view:jev3-jh-all/q",
+   "m2:tatqa:6b6bd6bb-7296-4c05-a358-a3f8de8342ec~view:jev3-tn-yn/q",
+   "m2:timeqa:b42216fbd4-3~view:jev3-tn-time-yn/q",
+   "m2:aegis2:796e0ac5a63341628833c8408a4b7e03~view:jev3-jev3pol-category/q",
+   "m2:ambignq:-3620308253862872969~view:jev3-amb-k3/q",
+   "m2:helpsteer2:18538~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:26206-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:1e799fcccf~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/intermediate_algebra/505.json~view:jev3-jh-all/q",
+   "m2:tatqa:a77e724f-fefb-435a-a591-ea44fcdaae1f~view:jev3-tn-yn/q",
+   "m2:timeqa:b0d7f6eebf-0~view:jev3-tn-time-c3/q",
+   "m2:aegis2:e6b249787eab4be583532923f1b5d2c0~view:jev3-jev3pol-message/q",
+   "m2:ambignq:8443066589371036269~view:jev3-amb-k3/q",
+   "m2:helpsteer2:4559~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:23176-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:0d0f65826c~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/number_theory/768.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:0aca3852-d17c-4ef4-8ef4-108bffbb8ea1~view:jev3-tn-c4/q",
+   "m2:timeqa:6ec168346b-1~view:jev3-tn-time-c3/q",
+   "m2:aegis2:bd0c7b54033e42198bc881c8c2fba384~view:jev3-jev3pol-message/q",
+   "m2:ambignq:4073422343565987327~view:jev3-amb-k4/q",
+   "m2:helpsteer2:6142~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:16032-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:44f64d3625~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/196.json~view:jev3-jh-step/q",
+   "m2:tatqa:dd47151a-e645-492f-af54-08e3e5b4254d~view:jev3-tn-c5/q",
+   "m2:timeqa:625b352839-0~view:jev3-tn-time-c3/q",
+   "m2:aegis2:6564d8c981394fa5af18a96eb2f2236e~view:jev3-jev3pol-message/q",
+   "m2:ambignq:5457626066017413026~view:jev3-amb-k3/q",
+   "m2:helpsteer2:1783~view:jev3-jev3bar-coherence/q",
+   "m2:helpsteer3:10020-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:ae4784d0ee~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/counting_and_probability/360.json~view:jev3-jh-step/q",
+   "m2:tatqa:d485759b-37c4-49a9-a33a-a39eb973b92a~view:jev3-tn-yn/q",
+   "m2:timeqa:b42216fbd4-1~view:jev3-tn-time-c5/q",
+   "m2:aegis2:44437c1ebff84468969d45ae1fa5abdb~view:jev3-jev3pol-message/q",
+   "m2:ambignq:1266845414956490286~view:jev3-amb-k3/q",
+   "m2:helpsteer2:10245~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:9501-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:d72c30c06c~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/counting_and_probability/597.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:02de36cb-deb6-4b83-acf0-79edca90c728~view:jev3-tn-yn/q",
+   "m2:timeqa:894d5aaed1-4~view:jev3-tn-time-c3/q",
+   "m2:aegis2:8541ed9dce39474eaf832561e9a7c256~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-2498431943961521881~view:jev3-amb-k3/q",
+   "m2:helpsteer2:13968~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:24940-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:555f5f7901~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/precalculus/129.json~view:jev3-jh-all/q",
+   "m2:tatqa:07a9c21a-55dd-4158-a16e-c401e13fd6da~view:jev3-tn-c6/q",
+   "m2:timeqa:be509a3bb2-0~view:jev3-tn-time-c3/q",
+   "m2:aegis2:2bce69d262ac4056a63c74afbd5f2bdd~view:jev3-jev3pol-message/q",
+   "m2:ambignq:1441682718751489437~view:jev3-amb-k4/q",
+   "m2:helpsteer2:5532~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:21676-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:bf6533564b~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/precalculus/1220.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:98a8a0aa-9063-467e-90e6-f11da642550e~view:jev3-tn-yn/q",
+   "m2:timeqa:63d7c15e81-1~view:jev3-tn-time-c5/q",
+   "m2:aegis2:4b932c9e4a3a40f992a8076250e895e5~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:-8314608371226617031~view:jev3-amb-k3/q",
+   "m2:helpsteer2:11313~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:27301-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:4590ea7916~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/number_theory/7034.json~view:jev3-jh-all/q",
+   "m2:tatqa:d4db58c4-659b-4350-9093-83f4f1ad72ae~view:jev3-tn-c5/q",
+   "m2:timeqa:625b352839-2~view:jev3-tn-time-c3/q",
+   "m2:aegis2:2a8043a5a5a9431795bd52572e61685a~view:jev3-jev3pol-message/q",
+   "m2:ambignq:-918354977905091656~view:jev3-amb-k4/q",
+   "m2:helpsteer2:2512~view:jev3-jev3bar-coherence/q",
+   "m2:helpsteer3:9071-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:fc677eefe9~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/number_theory/7033.json~view:jev3-jh-all/q",
+   "m2:tatqa:87717744-bc5f-45f1-b3ac-1b44f134da3c~view:jev3-tn-c4/q",
+   "m2:timeqa:6ec168346b-3~view:jev3-tn-time-yn/q",
+   "m2:aegis2:5dd4f34082a6437d8b8c287c0cb83685~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:-3122279817334284547~view:jev3-amb-k3/q",
+   "m2:helpsteer2:7970~view:jev3-jev3bar-coherence/q",
+   "m2:helpsteer3:22673-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:aeefcdd12b~view:jev3-lp-score-r1/q",
+   "m2:prm800k:train/geometry/596.json~view:jev3-jh-all/q",
+   "m2:tatqa:1dd5da67-e619-4117-8336-fe86baae0244~view:jev3-tn-yn/q",
+   "m2:timeqa:b5cc036f16-0~view:jev3-tn-time-yn/q",
+   "m2:aegis2:3cca2e0d470a4250ade2bdf5beffc72b~view:jev3-jev3pol-reply/q",
+   "m2:ambignq:-4518510921859807231~view:jev3-amb-k3/q",
+   "m2:helpsteer2:16147~view:jev3-jev3bar-correctness/q",
+   "m2:helpsteer3:15781-1~view:jev3-jev3hs3/q",
+   "m2:privacyqa:99388c3c36~view:jev3-lp-choice-r0/q",
+   "m2:prm800k:train/prealgebra/1996.json~view:jev3-jh-all/q",
+   "m2:tatqa:5065a4f0-0cc6-4693-a51a-dcfce2801211~view:jev3-tn-c4/q",
+   "m2:timeqa:06d254e71b-1~view:jev3-tn-time-c3/q",
+   "m2:aegis2:ec1aa8357b8547508aa5b060b7aee733~view:jev3-jev3pol-category/q",
+   "m2:ambignq:218459979141227855~view:jev3-amb-k3/q",
+   "m2:helpsteer2:6501~view:jev3-jev3bar-helpfulness/q",
+   "m2:helpsteer3:13205-2~view:jev3-jev3hs3/q",
+   "m2:privacyqa:187b45fdbb~view:jev3-lp-noul-r1/q",
+   "m2:prm800k:train/number_theory/331.json~view:jev3-jh-prefix/q",
+   "m2:tatqa:f440390f-d988-4765-b573-273d5e351be2~view:jev3-tn-c5/q",
+   "m2:timeqa:673c326fc2-1~view:jev3-tn-time-c4/q"
+  ],
+  "ids_sha256": "8f313487c8d6a92651e7213de1fe7b0e451d53cc518d14f17c561ee56a6cada6"
+ },
+ "train_clock": {
+  "step": 258,
+  "used_s": 2310.566329240799
+ },
+ "dev_cards": [
+  {
+   "step": 0,
+   "n_items": 360,
+   "nll": 0.9012689498198603,
+   "accuracy": 0.41944444444444445,
+   "best": true
+  },
+  {
+   "step": 100,
+   "n_items": 360,
+   "nll": 0.6909524267799934,
+   "accuracy": 0.6944444444444444,
+   "best": true
+  },
+  {
+   "step": 200,
+   "n_items": 360,
+   "nll": 0.6150277999701741,
+   "accuracy": 0.7111111111111111,
+   "best": true
+  }
+ ],
+ "collapse_events": [
+  {
+   "step": 138,
+   "trigger": "train_loss",
+   "mean_loss": 1.2695626828353852,
+   "mean_uniform": 1.5612109231948852,
+   "best_step": 100,
+   "action": "reload_best",
+   "lr_scale": 0.5,
+   "lrs": [
+    4.594390809430754e-05,
+    1.5314636031435848e-05
+   ]
+  }
+ ],
+ "best": {
+  "step": 200,
+  "nll": 0.6150277999701741,
+  "accuracy": 0.7111111111111111,
+  "path": "ckpt-step0000200.pt"
+ },
+ "train_clock_resume": {
+  "resumed": false,
+  "step": 0,
+  "used_s_before": 0.0,
+  "left_s": 2100.0
+ },
+ "train_rate_check": {
+  "step_s": 7.85298981666565,
+  "minutes_left": 33.69116833209991,
+  "affordable_steps": 257.414073762839,
+  "need_steps": 190,
+  "too_slow": false
+ },
+ "lr_horizon": {
+  "step": 179,
+  "fixed_at_step": 10,
+  "planned_final_step": 267,
+  "frac": 0.6717
+ },
+ "train_budget_shortened": {
+  "planned_final_step": 267,
+  "max_steps": 728,
+  "step_s": 7.85298981666565,
+  "minutes_left": 33.69116833209991,
+  "affordable_steps": 257.414073762839,
+  "need_steps": 190,
+  "too_slow": false
+ },
+ "train": {
+  "steps": 258,
+  "resumed": false,
+  "T_max": 4096,
+  "cards": [
+   {
+    "step": 0,
+    "n_items": 1113,
+    "cohort": null,
+    "raw": {
+     "n": 1113,
+     "accuracy": 0.3297394429469901,
+     "nll": 1.036896294507009,
+     "brier": 0.61648077392702,
+     "ece_binned15": 0.07862156328995377,
+     "ece_debiased": {
+      "debiased_l2": 0.08410250513852434,
+      "debiased_sq": 0.007073231370575512,
+      "bins": 15
+     },
+     "mean_conf": 0.3941167644346392,
+     "by_length_bin": {
+      "[0,512)": {
+       "n": 948,
+       "accuracy": 0.3090717299578059,
+       "ece_debiased": {
+        "debiased_l2": 0.10123979312324385,
+        "debiased_sq": 0.010249495711637214,
+        "bins": 15
+       }
+      },
+      "[2048,8192)": {
+       "n": 29,
+       "accuracy": 0.6206896551724138,
+       "ece_debiased": {
+        "debiased_l2": 0.17055862166983018,
+        "debiased_sq": 0.029090243425912266,
+        "bins": 14
+       }
+      },
+      "[512,2048)": {
+       "n": 136,
+       "accuracy": 0.4117647058823529,
+       "ece_debiased": {
+        "debiased_l2": 0.0,
+        "debiased_sq": -0.0054658711380611265,
+        "bins": 15
+       }
+      }
+     }
+    },
+    "index_score": {
+     "status": "stub",
+     "reason": "no Index dev-slice rows/predictor passed"
+    },
+    "steer": {
+     "status": "stub",
+     "reason": "no steer variants/decider passed"
+    },
+    "seconds": 201.283
+   },
+   {
+    "step": 258,
+    "n_items": 1113,
+    "cohort": null,
+    "raw": {
+     "n": 1113,
+     "accuracy": 0.7879604672057502,
+     "nll": 0.5815499423524766,
+     "brier": 0.30398475910907313,
+     "ece_binned15": 0.06651735372727559,
+     "ece_debiased": {
+      "debiased_l2": 0.07607466249643188,
+      "debiased_sq": 0.005787354273946019,
+      "bins": 15
+     },
+     "mean_conf": 0.7336401877538213,
+     "by_length_bin": {
+      "[0,512)": {
+       "n": 948,
+       "accuracy": 0.7816455696202531,
+       "ece_debiased": {
+        "debiased_l2": 0.07933781925090712,
+        "debiased_sq": 0.006294489563489609,
+        "bins": 15
+       }
+      },
+      "[2048,8192)": {
+       "n": 29,
+       "accuracy": 0.7931034482758621,
+       "ece_debiased": {
+        "debiased_l2": 0.27773016024299885,
+        "debiased_sq": 0.0771340419086018,
+        "bins": 14
+       }
+      },
+      "[512,2048)": {
+       "n": 136,
+       "accuracy": 0.8308823529411765,
+       "ece_debiased": {
+        "debiased_l2": 0.1109954935242593,
+        "debiased_sq": 0.01231999958269389,
+        "bins": 15
+       }
+      }
+     }
+    },
+    "index_score": {
+     "status": "stub",
+     "reason": "no Index dev-slice rows/predictor passed"
+    },
+    "steer": {
+     "status": "stub",
+     "reason": "no steer variants/decider passed"
+    },
+    "seconds": 201.132
+   }
+  ],
+  "lineage": {
+   "backbone": {
+    "spec": "qwen3.5-4b-stock",
+    "class": "Qwen3_5TextModel",
+    "config_sha256": "5180a154a329b975ba7ee22354176b7c1b67cc5d8fb69f19d5880d3094b35959",
+    "name_or_path": "",
+    "commit_hash": null,
+    "capture": "hidden_states",
+    "layer": -1,
+    "provenance": {
+     "kind": "qwen35-stock",
+     "repo": "Qwen/Qwen3.5-4B",
+     "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+     "config_sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+     "attention_free": false
+    },
+    "weights_digest": "39b8384b37181392c08057820e4e4eab23a1aca362e3e743e4624b7c37fc2e7b",
+    "weights_digest_mode": "sampled"
+   },
+   "tokenizer": [
+    "{\"kind\": \"hf\", \"name_or_path\": \"/hfcache/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a\", \"untrusted\": {\"id\": \"untrusted-split-special+cut-leaking-added-v1\", \"n_control_ids\": 33}, \"vocab_sha256\": \"7ef6def600d70a2dbf3c4f35b73db100a74bf2936b7f4b805e91ad184b7aabce\"}"
+   ],
+   "layout": {
+    "layouts": [
+     [
+      "sym-fork",
+      "jrt-h2o-shim:qwen3.5-4b"
+     ]
+    ],
+    "body_version": "jrt-body-v2-segmented",
+    "layout_version": "m2-layout-v2"
+   },
+   "data": {
+    "n": 5824,
+    "sha256": "b0fcb428a1ca58f76b4bb900ea6588fe5655063692cdcec4ea2a24a87d51ff4b",
+    "order_fn": "randperm(seed*100003+epoch); batches = consecutive bs-slices; partial tail dropped"
+   }
+  },
+  "verdict": {
+   "pass": true,
+   "checks": {
+    "finite": true,
+    "enough_steps": true,
+    "loss_drop": true,
+    "eval_nll_improves": true,
+    "memory": true
+   },
+   "loss_first": 1.3549826129095164,
+   "loss_last": 1.0681036953249714,
+   "loss_drop_frac": 0.21172147513283426,
+   "eval_nll_first": 1.036896294507009,
+   "eval_nll_last": 0.5815499423524766,
+   "peak_gb": 15.270976512
+  },
+  "anti_collapse": {
+   "horizon": 179,
+   "horizon_fixed": true,
+   "lr_scale": 0.5,
+   "dev_cards": [
+    {
+     "step": 0,
+     "n_items": 360,
+     "nll": 0.9012689498198603,
+     "accuracy": 0.41944444444444445,
+     "best": true
+    },
+    {
+     "step": 100,
+     "n_items": 360,
+     "nll": 0.6909524267799934,
+     "accuracy": 0.6944444444444444,
+     "best": true
+    },
+    {
+     "step": 200,
+     "n_items": 360,
+     "nll": 0.6150277999701741,
+     "accuracy": 0.7111111111111111,
+     "best": true
+    }
+   ],
+   "best": {
+    "step": 200,
+    "nll": 0.6150277999701741,
+    "accuracy": 0.7111111111111111,
+    "path": "ckpt-step0000200.pt"
+   },
+   "collapse_events": [
+    {
+     "step": 138,
+     "trigger": "train_loss",
+     "mean_loss": 1.2695626828353852,
+     "mean_uniform": 1.5612109231948852,
+     "best_step": 100,
+     "action": "reload_best",
+     "lr_scale": 0.5,
+     "lrs": [
+      4.594390809430754e-05,
+      1.5314636031435848e-05
+     ]
+    }
+   ],
+   "stopped": null,
+   "guard_armed": true,
+   "guard_window": [
+    [
+     0.3207751677837223,
+     1.4540734887123108
+    ],
+    [
+     0.4670027571846731,
+     1.5004504323005676
+    ],
+    [
+     1.0284518832922913,
+     1.2646636366844177
+    ],
+    [
+     0.6131528528640047,
+     1.5809703171253204
+    ],
+    [
+     0.960097249597311,
+     1.525589942932129
+    ],
+    [
+     1.385307202115655,
+     1.624859869480133
+    ],
+    [
+     0.5304658231325448,
+     1.652486801147461
+    ],
+    [
+     0.9428118319483474,
+     1.4882164299488068
+    ],
+    [
+     0.2778146498312708,
+     1.4436568319797516
+    ],
+    [
+     1.021155992988497,
+     1.3825570344924927
+    ],
+    [
+     0.4037039562826976,
+     1.3825570344924927
+    ],
+    [
+     0.3854299819795415,
+     1.416700005531311
+    ],
+    [
+     1.0179859802883584,
+     1.3825570344924927
+    ],
+    [
+     0.919968630594667,
+     1.2646636366844177
+    ],
+    [
+     0.9541383570467588,
+     1.7509600818157196
+    ],
+    [
+     1.6442127688787878,
+     1.6183438301086426
+    ],
+    [
+     0.8858103472739458,
+     1.5597329139709473
+    ],
+    [
+     0.5809684181585908,
+     1.5151732861995697
+    ],
+    [
+     1.107899445691146,
+     1.5719668865203857
+    ],
+    [
+     1.5041203921718989,
+     1.5004504323005676
+    ],
+    [
+     0.4117621516052168,
+     1.4166999757289886
+    ],
+    [
+     0.44204463134519756,
+     1.4882164299488068
+    ],
+    [
+     0.690660450636642,
+     1.479212999343872
+    ],
+    [
+     1.0965793773066252,
+     1.5597329139709473
+    ],
+    [
+     1.350115506153088,
+     1.5719668865203857
+    ],
+    [
+     1.4796330567914993,
+     1.4540734887123108
+    ],
+    [
+     0.6304837812203914,
+     1.724003255367279
+    ],
+    [
+     1.0919316010258626,
+     1.416700005531311
+    ],
+    [
+     1.0706883560342249,
+     1.3361800909042358
+    ],
+    [
+     0.8767651643138379,
+     1.5004504323005676
+    ],
+    [
+     1.3969292077235878,
+     1.4810173213481903
+    ],
+    [
+     1.6619315817952156,
+     1.4540734887123108
+    ],
+    [
+     2.364828024059534,
+     1.6463632881641388
+    ],
+    [
+     2.321574427187443,
+     1.4540734887123108
+    ],
+    [
+     1.2133070828858763,
+     1.525589942932129
+    ],
+    [
+     0.9576100829290226,
+     1.4696984887123108
+    ],
+    [
+     0.3069470906048082,
+     1.5719668865203857
+    ],
+    [
+     0.30283444200176746,
+     1.1931471824645996
+    ],
+    [
+     1.6045252289623022,
+     2.073537766933441
+    ],
+    [
+     1.0522485208930448,
+     1.87603959441185
+    ],
+    [
+     1.5578266149386764,
+     1.3361800909042358
+    ],
+    [
+     2.1904377820901573,
+     1.595693200826645
+    ],
+    [
+     0.8773462381213903,
+     1.7517566978931427
+    ],
+    [
+     0.49131690221838653,
+     1.4540734887123108
+    ],
+    [
+     2.1758910585194826,
+     1.652486801147461
+    ],
+    [
+     0.6588291861116886,
+     1.4540734887123108
+    ],
+    [
+     1.084620786132291,
+     1.8948951363563538
+    ],
+    [
+     1.2937699751928449,
+     1.479212999343872
+    ],
+    [
+     0.7824020255357027,
+     1.3110405802726746
+    ],
+    [
+     1.9421788529725745,
+     1.6434833407402039
+    ]
+   ]
+  }
+ }
+}

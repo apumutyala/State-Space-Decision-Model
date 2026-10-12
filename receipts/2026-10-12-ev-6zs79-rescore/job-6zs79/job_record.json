@@ -1,0 +1,42 @@
+{
+ "job_id": "job-6zs79",
+ "label": "A-PREREG-JEV3-SYM seed 0 EVAL-ONLY screen: job-5x4vr best ckpt (step 200) [paired vs in-job stock+shim; bitwise G1 KEEP; 8-op flips; slice_first; H2O target]",
+ "finished_at": "2026-10-12T09:21:23.507079+00:00",
+ "exit_code": null,
+ "failure_reason": null,
+ "attempt_history": [
+  {
+   "attempt": 1,
+   "end_cause": "process_exit",
+   "end_reason": null,
+   "ended_at": "2026-10-12T09:21:23.507079+00:00",
+   "outcome": "completed",
+   "started_at": "2026-10-12T08:50:55.732427+00:00"
+  }
+ ],
+ "chip": {
+  "count": 1,
+  "model": "h100"
+ },
+ "artifact": {
+  "artifact_id": "art-xkhwy",
+  "sha256": "146a6996c675d6cd42ef907cbfe80ecb9f363e2a6e81f1ef74ca1660c296ef5a",
+  "size_bytes": 6451200,
+  "state": "ready"
+ },
+ "receipt": {
+  "attempts": [
+   {
+    "attempt": 1,
+    "billed_seconds": 1827,
+    "charged_usd_micros": 1918000,
+    "gpu_count": 1,
+    "rate_usd_micros_per_gpu_minute": 62988
+   }
+  ],
+  "billed_attempts": 1,
+  "billed_seconds": 1827,
+  "charged_usd_micros": 1918000,
+  "image_digest": "sha256:47b05d6b8ab86a1b6396653b73f8fe122f063c4c23d368b34438a9b926c9dd36"
+ }
+}
