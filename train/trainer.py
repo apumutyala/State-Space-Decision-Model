@@ -824,6 +824,45 @@ class Trainer:
         self._cons_n += len(idx)
         return (len(idx) / len(batch)) * self.cons_lambda * kl.mean()
 
+    #: lineage parts a warm start must match (the frozen backbone and the tokenizer); the layout (JEV3-TYPED renders
+    #: score rows differently) and the training data (a new mix) are EXPECTED to differ and are recorded, not refused
+    WARM_STRICT = ("backbone", "tokenizer")
+
+    def warm_start(self, path: str | Path, sha256: str | None = None) -> dict[str, Any]:
+        """JEV3-TYPED: initialise the trainable weights (LoRA + head) from an INFERENCE export (``train.ckpt_export``)
+        of an earlier run on the same frozen backbone and tokenizer. Fails closed (ValueError) on a file sha256 other
+        than ``sha256``, a backbone / tokenizer lineage difference, or a trainable-parameter set that differs. The
+        optimiser, LR schedule (warmup + cosine of THIS run), data order and step counter start fresh (step 0); the
+        export's layout / data lineage differences are recorded in the returned identity."""
+        from .ckpt_export import _jsonable, read_inference, sha256_file
+
+        if self.step != 0 or self.history:
+            raise ValueError("warm_start: only before the first step of a fresh run")
+        got = sha256_file(path)
+        if sha256 is not None and got != sha256:
+            raise ValueError(f"warm_start: {Path(path).name} sha256 {got} != the pinned {sha256}")
+        tensors, side = read_inference(path)
+        src, cur = side.get("lineage") or {}, _jsonable(self.lineage)
+        bad = lineage_diff({k: src.get(k) for k in self.WARM_STRICT}, {k: cur.get(k) for k in self.WARM_STRICT})
+        if bad:
+            raise ValueError(f"warm_start: the export's backbone / tokenizer lineage differs from this run: {bad}")
+        params = dict(self.model.named_parameters())
+        trainable = {n for n, p in params.items() if p.requires_grad}
+        missing, uncovered = sorted(set(tensors) - set(params)), sorted(trainable - set(tensors))
+        if missing or uncovered:
+            raise ValueError(f"warm_start: export tensors not in the model {missing[:5]} / trainable parameters not in "
+                             f"the export {uncovered[:5]}")
+        with torch.no_grad():
+            for n, t in tensors.items():
+                params[n].copy_(t.to(params[n].dtype))
+        other = sorted(k for k in set(src) | set(cur) if k not in self.WARM_STRICT and src.get(k) != cur.get(k))
+        self.warm = {"file": Path(path).name, "sha256": got, "source_step": side.get("step"),
+                     "source_config_hash": side.get("config_hash"), "source_ckpt_sha256": side.get("source_ckpt_sha256"),
+                     "n_tensors": len(tensors), "dtype": side.get("dtype"), "lineage_checked": list(self.WARM_STRICT),
+                     "lineage_differs_expected": other,
+                     "optimizer": "fresh AdamW (the export has no moments); step 0; fresh data order"}
+        return self.warm
+
     def train_step(self) -> float:
         self.model.train()
         self.opt.zero_grad(set_to_none=True)

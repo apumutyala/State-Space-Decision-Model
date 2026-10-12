@@ -949,7 +949,13 @@ def _main(argv=None, ctx: dict | None = None):
     ap.add_argument("--chain-of", type=int, default=0)
     ap.add_argument("--train-deadline", type=float, default=None, help="train.chain: unix time the training loop "
                     "stops by (the job's deadline); an intermediate link then saves and ends as 'link_end'")
+    ap.add_argument("--warm-start", default=None, help="JEV3-TYPED: an inference export (trainable-stepN.safetensors + "
+                    "sidecar) on the same frozen backbone + tokenizer; a fresh run starts from its weights")
+    ap.add_argument("--warm-start-sha256", default=None, help="the pinned sha256 of --warm-start (required with it)")
     a = ap.parse_args(argv)
+    if bool(a.warm_start) != bool(a.warm_start_sha256):
+        print("config: --warm-start and --warm-start-sha256 go together", flush=True)
+        return EXIT["config"]
     chain = None
     if a.chain_link or a.chain_of:
         if not (a.chain_of >= 2 and 1 <= a.chain_link <= a.chain_of):
@@ -1352,6 +1358,20 @@ def _main(argv=None, ctx: dict | None = None):
                 tr.cards = list(cell.get("train_cards") or [])
             chain = {**chain, "chain_id": chain_id(cfg)}
             cell["chain"] = chain
+        if a.warm_start and chain is not None:
+            print("config: --warm-start is not supported on chain links", flush=True)
+            return EXIT["config"]
+        if a.warm_start and not resumed:  # JEV3-TYPED: the pinned export's weights, before the step-0 cards
+            try:
+                cell["warm_start"] = tr.warm_start(a.warm_start, a.warm_start_sha256)
+            except (OSError, ValueError, KeyError) as e:
+                print(f"warm start lineage: {e}", flush=True)
+                return EXIT["lineage"]
+            print(f"warm start: {json.dumps(cell['warm_start'])}", flush=True)
+            save()
+        elif a.warm_start:  # a restart resumes its own checkpoint (cell.json keeps the warm-start identity)
+            cell["warm_start_resumed"] = True
+            save()
         dev_out = out / "dev_cards"
         n_events = len(tr.collapse_events)
 

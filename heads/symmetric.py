@@ -22,6 +22,16 @@ Two extra measures make the property exact in floating point, not only up to red
 ``sym-fork-ids`` is the ablation that renders "<id>: <description>" in the continuation: still reorder-equivariant,
 NOT relabel-invariant (tests/test_sym_invariance.py shows both).
 
+``sym-fork-typed`` (JEV3-TYPED; docs/guarantees/REORDER_INVARIANCE.md section 2T): choice and noul rows are the
+``sym-fork`` rows byte for byte. A SCORE row renders each level's content as ``level v: <rubric>`` (the typed rendering
+R_score; byte for byte the evidence lane's ``level v of K: <rubric>``, TYPED_SCORE_RENDERING), the axis is sorted by the
+level value v PARSED FROM THAT CONTENT (never by handle, never by display order; an
+unparseable level value or a value set that is not exactly 0..K-1 fails closed), and the full scale (every level's
+content, in that level order) is appended to the question text in the shared prefix. So the prefix and every
+continuation are functions of the multiset of contents: a display permutation and a handle relabel give a bitwise
+identical row except ``option_ids`` (Theorem 2T (i), (ii)); renaming a level value changes the content (2T (iii), not a
+symmetry). ``build_row_sym(score_options=...)`` takes an explicit display list of (handle, content) for that check.
+
 Formats: a shim template (``jrt-h2o-shim:<family>``) gets the Qwen chat turn of the H2O shim with a symmetric user turn
 (``SHIM_SYM_SYSTEM``) tokenized by the shim spec (special tokens honoured, request text that encodes to a control token
 refused) segment by segment: template text and request text (state, question, each option) never share a token
@@ -40,7 +50,8 @@ from typing import Any, Callable, Sequence
 SYM_LAYOUT = "sym-fork"  # lean continuation: " <option>" + the turn terminator (<|im_end|> / G1 "\n\n")
 SYM_CHAT_LAYOUT = "sym-fork-chat"  # the full answer turn after each option (+10 tokens per option on Qwen)
 SYM_IDS_LAYOUT = "sym-fork-ids"  # ablation: "<id>: <option>" (lean tail)
-SYM_LAYOUTS = (SYM_LAYOUT, SYM_CHAT_LAYOUT, SYM_IDS_LAYOUT)
+SYM_TYPED_LAYOUT = "sym-fork-typed"  # JEV3-TYPED: sym-fork + score levels as content + the scale in the prefix (2T)
+SYM_LAYOUTS = (SYM_LAYOUT, SYM_CHAT_LAYOUT, SYM_IDS_LAYOUT, SYM_TYPED_LAYOUT)
 #: v2: lean (turn-terminated) continuation is the sym-fork default; G1 format. v3: trust-segment tokenization (the
 #: state, the question and each option text are tokenized apart from the template, so no BPE merge crosses a trust
 #: boundary: G15's trusted token list is independent of untrusted text; byte-level encoders give the same ids as v2)
@@ -71,6 +82,57 @@ def option_text(oid: str, desc: Any, with_id: bool) -> tuple[str, bool]:
     if with_id:
         return (f"{oid}: {body}" if has else str(oid)), not has
     return body, not has
+
+
+_LEVEL_RE = None
+
+
+#: the evidence lane's score-invariance rendering (claude/ev-score-inv @e3911819 scripts/ev_score_perturb.py RENDERING):
+#: training rows, the native public readout and the gate-2 requests must agree byte for byte
+TYPED_SCORE_RENDERING = ("ev-score-level-as-content/1: content = 'level v of K: <rubric>' (v = 0..K-1); scale canonical; "
+                         "no handles in scale")
+
+
+def level_content(v: int, k: int, rubric: Any) -> str:
+    """R_score: the content of score level ``v`` of ``k`` = ``ev_score_perturb.render_level`` exactly (the rubric text
+    verbatim, a non-string rubric as JSON with ensure_ascii False)."""
+    return f"level {int(v)} of {int(k)}: {rubric if isinstance(rubric, str) else json.dumps(rubric, ensure_ascii=False)}"
+
+
+def parse_level(content: str) -> tuple[int, int]:
+    """(level value v, number of levels K) of a typed score option, parsed from its CONTENT (ValueError if absent:
+    fail closed)."""
+    import re
+
+    global _LEVEL_RE
+    if _LEVEL_RE is None:
+        _LEVEL_RE = re.compile(r"level (0|[1-9][0-9]{0,3}) of ([1-9][0-9]{0,3}): ", re.S)
+    m = _LEVEL_RE.match(content if isinstance(content, str) else "")
+    if m is None:
+        raise ValueError(f"typed score: no level value in the option content {str(content)[:40]!r}")
+    return int(m.group(1)), int(m.group(2))
+
+
+def typed_score_axis(display: Sequence[tuple[str, str]], scale: Sequence[str] | None = None) -> list[tuple[str, str]]:
+    """(handle, content) pairs sorted by the level value parsed from each content: the canonical score axis. Fails
+    closed (ValueError) on an unparseable content, duplicate handles, a K that disagrees with the option count, a value
+    set that is not exactly 0..K-1, or a given ``scale`` that is not the contents in that order."""
+    items = [(str(h), str(c)) for h, c in display]
+    if len({h for h, _ in items}) != len(items):
+        raise ValueError("typed score: duplicate handles")
+    vk = [parse_level(c) for _, c in items]
+    if any(k != len(items) for _, k in vk) or sorted(v for v, _ in vk) != list(range(len(items))):
+        raise ValueError(f"typed score: level values {sorted(vk)} are not exactly 0..{len(items) - 1} of {len(items)}")
+    axis = [it for _, it in sorted(zip([v for v, _ in vk], items), key=lambda x: x[0])]
+    if scale is not None and list(scale) != [c for _, c in axis]:
+        raise ValueError("typed score: question.scale is not the option contents in level order")
+    return axis
+
+
+def score_scale_text(contents: Sequence[str]) -> str:
+    """The full ordered scale appended to the question text of a typed score row (contents in level order)."""
+    return (f"scale ({len(contents)} levels, level 0 lowest to level {len(contents) - 1} highest):\n"
+            + "\n".join(contents))
 
 
 def _instr_text(q: dict[str, Any]) -> str:
@@ -228,8 +290,11 @@ def _span(offs: list[tuple[int, int]], a: int, b: int) -> tuple[int, int]:
 
 
 def build_row_sym(request: dict[str, Any], qid: str, encode: Any, tpl: Any, layout: str,
-                  option_order: Sequence[int] | None = None, empty_state: str = "reread_instructions"):
-    """The ``sym-fork`` / ``sym-fork-ids`` row of one question (see the module docstring)."""
+                  option_order: Sequence[int] | None = None, empty_state: str = "reread_instructions",
+                  score_options: Sequence[tuple[str, str]] | None = None):
+    """The ``sym-fork`` / ``sym-fork-ids`` / ``sym-fork-typed`` row of one question (see the module docstring).
+    ``score_options`` (typed score rows only): an explicit DISPLAY list of (handle, content) replacing the wire
+    criteria (the score display-permutation / handle-relabel check); default = the wire levels ("i", R_score(i, rubric))."""
     from decide.provenance import instructions_path, state_path
     from decide.schema import canonical_options
     from decide.shim_format import is_shim_template
@@ -242,7 +307,21 @@ def build_row_sym(request: dict[str, Any], qid: str, encode: Any, tpl: Any, layo
     with_id = layout == SYM_IDS_LAYOUT
     chat_tail = layout == SYM_CHAT_LAYOUT
     q = request["questions"][qid]
-    opts = canonical_options(q)
+    typed_score = layout == SYM_TYPED_LAYOUT and q["type"] == "score"
+    if typed_score:
+        if score_options is not None:
+            disp = list(score_options)
+        elif isinstance(q.get("options"), dict):  # an ev_score_perturb request: {handle: content} in display order
+            disp = list(q["options"].items())
+        else:
+            wire = canonical_options(q)
+            disp = [(h, level_content(int(h), len(wire), d)) for h, d in wire]
+        opts = typed_score_axis(disp, q.get("scale"))  # sorted by the level parsed from content (fail closed)
+        q = {**q, "instructions": _instr_text(q) + "\n" + score_scale_text([c for _, c in opts])}
+    else:
+        if score_options is not None:
+            raise ValueError("score_options is for typed score rows only")
+        opts = canonical_options(q)
     n = len(opts)
     spec = None
     g1 = is_g1_template(tpl)
@@ -309,7 +388,8 @@ def build_row_sym(request: dict[str, Any], qid: str, encode: Any, tpl: Any, layo
               "caller_spans": caller, "field_spans": fields, "cont_spans": cont_spans, "option_seq_spans": [],
               "trusted_paths": declared_instruction_paths(request), "bos": None, "coded": False, "words": False,
               "catalog_chars": None, "id_agnostic": not with_id,
-              "id_as_content": [opts[k][0] for k in axis if as_content[k]]},
+              "id_as_content": [opts[k][0] for k in axis if as_content[k]],
+              **({"typed_score": True, "score_levels": [parse_level(opts[k][1])[0] for k in axis]} if typed_score else {})},
     )
 
 
