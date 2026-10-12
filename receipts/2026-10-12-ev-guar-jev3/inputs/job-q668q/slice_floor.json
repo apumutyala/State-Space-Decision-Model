@@ -1,0 +1,120 @@
+{
+ "ids_sha256": "142a593a1257d6729b5480fe67647b1af0c5678d2a929654f6325e128fce00be",
+ "n_decisions": 3600,
+ "unmatched_excluded": 0,
+ "native_top1": 0.8922222222222222,
+ "step0_top1": 0.8025,
+ "per_family": {
+  "adequacy": {
+   "n": 200,
+   "native": 0.84,
+   "step0": 0.705,
+   "delta": 0.135
+  },
+  "adversarial": {
+   "n": 200,
+   "native": 0.98,
+   "step0": 0.675,
+   "delta": 0.30499999999999994
+  },
+  "ambiguous": {
+   "n": 200,
+   "native": 0.995,
+   "step0": 0.915,
+   "delta": 0.07999999999999996
+  },
+  "enum": {
+   "n": 200,
+   "native": 0.995,
+   "step0": 0.995,
+   "delta": 0.0
+  },
+  "fact": {
+   "n": 200,
+   "native": 0.98,
+   "step0": 0.985,
+   "delta": -0.0050000000000000044
+  },
+  "intent": {
+   "n": 200,
+   "native": 0.96,
+   "step0": 0.975,
+   "delta": -0.015000000000000013
+  },
+  "judge_hard": {
+   "n": 200,
+   "native": 0.69,
+   "step0": 0.695,
+   "delta": -0.0050000000000000044
+  },
+  "long_policy": {
+   "n": 200,
+   "native": 0.89,
+   "step0": 0.86,
+   "delta": 0.030000000000000027
+  },
+  "multi_hop": {
+   "n": 200,
+   "native": 0.9,
+   "step0": 0.81,
+   "delta": 0.08999999999999997
+  },
+  "policy": {
+   "n": 200,
+   "native": 0.855,
+   "step0": 0.74,
+   "delta": 0.11499999999999999
+  },
+  "probability": {
+   "n": 200,
+   "native": 0.84,
+   "step0": 0.7,
+   "delta": 0.14
+  },
+  "routing": {
+   "n": 200,
+   "native": 0.875,
+   "step0": 0.84,
+   "delta": 0.03500000000000003
+  },
+  "severity": {
+   "n": 200,
+   "native": 0.915,
+   "step0": 0.745,
+   "delta": 0.17000000000000004
+  },
+  "state_tracking": {
+   "n": 200,
+   "native": 0.905,
+   "step0": 0.84,
+   "delta": 0.06500000000000006
+  },
+  "temporal_numeric": {
+   "n": 200,
+   "native": 0.705,
+   "step0": 0.58,
+   "delta": 0.125
+  },
+  "tool_selection": {
+   "n": 200,
+   "native": 1.0,
+   "step0": 0.995,
+   "delta": 0.0050000000000000044
+  },
+  "tradeoff": {
+   "n": 200,
+   "native": 0.75,
+   "step0": 0.55,
+   "delta": 0.19999999999999996
+  },
+  "trap": {
+   "n": 200,
+   "native": 0.985,
+   "step0": 0.84,
+   "delta": 0.14500000000000002
+  }
+ },
+ "rule": "A-PREREG-JEV2-H2O floor: the selected checkpoint must beat step 0 (the untrained host) on the held-out slice top-1; otherwise step 0 = no change and the run is NEGATIVE",
+ "delta": 0.08972222222222226,
+ "pass": true
+}
