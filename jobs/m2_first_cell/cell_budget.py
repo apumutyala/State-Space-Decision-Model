@@ -40,3 +40,24 @@ def check(params: dict, cfg: dict, m: dict = MEASURED) -> dict:
     cap = float(params["phase_caps_minutes"]["cell"])
     r.update({"cap_min": cap, "pass": cap >= r["need_min"], "max_clock_for_cap": round(cap - (r["need_min"] - r["clock_min"]), 2)})
     return r
+
+
+def main(argv=None) -> int:
+    """``python -X utf8 -m jobs.m2_first_cell.cell_budget --params P --cell-config C``: the job's SETUP gate (exit 15
+    before any training spend when the cell cap is below the measured budget); prints the check."""
+    import argparse
+    import json
+    from pathlib import Path
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--params", required=True)
+    ap.add_argument("--cell-config", required=True)
+    a = ap.parse_args(argv)
+    r = check(json.loads(Path(a.params).read_text(encoding="utf-8")),
+              json.loads(Path(a.cell_config).read_text(encoding="utf-8")))
+    print(json.dumps(r))
+    return 0 if r["pass"] else 15
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

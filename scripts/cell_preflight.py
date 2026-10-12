@@ -64,6 +64,13 @@ def main(argv=None) -> int:
         return finish(rep, a.out, t0)
     from jobs.m2_first_cell.cell_budget import check as cell_budget_check
 
+    from jobs.m2_first_cell.screen import estimate as screen_estimate
+
+    se = screen_estimate(p)  # the setup gate (exit 15): the screen projection must fit its cap
+    if se["ok"]:
+        rep["checks"]["screen_projection"] = {"pass": True, **se}
+    else:
+        fail("screen_projection", se)
     cb = cell_budget_check(p, cfg)  # job-wm8b5: the cell cap must cover the clock + the measured pre / post time
     if cb["pass"]:
         rep["checks"]["cell_budget"] = cb

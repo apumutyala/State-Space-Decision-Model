@@ -396,3 +396,36 @@ def test_best_checkpoint_is_exported_when_saved(tmp_path):
         files = sorted(x.name for x in out.glob("trainable-step*.safetensors"))
         assert files == [rec["file"]]  # the previous best export is replaced, never accumulated
     assert (out / "latest.json").is_file()
+
+
+def test_jev3_lm_s_budget_no_proxy_and_schedule():
+    from jobs.common import costs
+    from jobs.m2_first_cell import screen
+    from jobs.m2_first_cell.cell_budget import check
+
+    p = json.loads((ROOT / "jobs/m2_first_cell/job_params_jev3_lm_s.json").read_text(encoding="utf-8"))
+    c = json.loads((ROOT / "jobs/m2_first_cell/m2_first_cell_rwkv7_jev3_lm_s.json").read_text(encoding="utf-8"))
+    w = costs.worst_case_usd(p)
+    assert w <= 13.80 and f"{w:.2f}" in (ROOT / "jobs/m2_first_cell/JOB_SPEC.md").read_text(encoding="utf-8")
+    assert sum(p["phase_caps_minutes"].values()) + p["reserve_minutes"] == p["max_duration_minutes"] == 79
+    assert "job_params_jev3_lm_s.json" in (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
+    e = screen.estimate(p)
+    assert e["ok"] and e["proxy"] is False and p["screen_proxy"] is False and p["cell_budget_check"] is True
+    b = check(p, c)
+    assert b["pass"] and b["expected_steps"] == 200
+    assert c["max_steps"] == c["lr_horizon_steps"] == 200 and "lr_horizon_frac" not in c and c["dev_card_every"] == 50
+    base = _cell()
+    for k in ("head", "layout", "train_layout", "template", "lora_rank", "lr_head", "lr_lora", "warmup_steps",
+              "label_smoothing", "label_smoothing_noul", "train_set", "dev_card_records", "assert_no_truncation"):
+        assert c[k] == base[k], k
+    assert p["jevkit"] == _params()["jevkit"]  # every pre-registered screen arm / gate unchanged
+
+
+def test_no_proxy_screen_result_validator():
+    from jobs.m2_first_cell import screen
+
+    d = {"schema": screen.SCHEMA, "measured": True, "proxy": None, "verdict": "NO_PROXY",
+         "readout": {"template": "jrt-h2o-shim:qwen3.5-4b"},
+         "jevkit": {"primary": {"delta_composite_A": {"point": 1.0, "ci95": [-2.0, 3.0]}}}}
+    assert screen.valid_result(d)
+    assert not screen.valid_result({**d, "jevkit": {"primary": {"delta_composite_A": {"point": None}}}})

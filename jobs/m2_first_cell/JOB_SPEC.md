@@ -880,3 +880,13 @@ This job does no training. It scores job-5x4vr's exported best checkpoint (step 
   native_shimcal, the NON-canonical stock-shim control (primary comparator, also G1 / score-inv teeth), canon_stock
   (LoRA off, lm_label scale 1: the untrained host read canonically), G1 KEEP (bitwise), the 8 flip ops, score_inv KEEP
   (`scripts/ev_score_perturb.py` / `ev_score_flip.py`, sha-pinned), the letter-prior check, the H2O target arm.
+
+## Mode `jev3_lm_s` (A-PREREG-JEV3-LM Amendment 2: N = 200 steps, no proxy600)
+
+- Cell `m2_first_cell_rwkv7_jev3_lm_s.json` = jev3_lm with max_steps 200, lr_horizon_steps 200 (warmup 50, cosine to 0.1 x at
+  step 200), dev_card_every 50, pass_rule window 50, clock 22 min (a safety bound; 200 steps ~19.6 min measured).
+- Schedule: setup 6 + guard 2 + heldout 2 + cell 40 + screen 25 + report 2 + reserve 2 = 79 min. **Worst case
+  (60 + 2 x 79) x 0.063 = $13.73** (hard cap $13.80). Setup gates (exit 15): `screen estimate` (no proxy: 22.0 <= 0.95 x 25)
+  and `cell_budget` (need 39.3 <= cap 40).
+- Screen without proxy600 (`screen_proxy` false): slice_first, the jevkit arms (native, native_tfit = PRIMARY,
+  native_shimcal, stock_shim, canon_stock), G1, 8 flips, score_inv, letter prior, H2O target; screen.json verdict NO_PROXY.

@@ -385,6 +385,11 @@ if [ "$STAGE" = screen ]; then  # params "stage": "screen": the child evals are 
   python -X utf8 -m jobs.common.dev_proxy check --proxy proxy600 > "$WORK/out/index-proxy.json" || fail 10 "index proxy600 identity"
   python -X utf8 -m jobs.m2_first_cell.screen estimate --params "$PARAMS" > "$WORK/out/preflight-screen.json" \
     || fail 15 "screen projected past its cap at D1's measured proxy rate"
+  # job-wm8b5: the cell cap must cover the clock + the measured pre / post-training time (exit 15 before training)
+  if python -I -c 'import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get("cell_budget_check") else 1)' "$PARAMS"; then
+    python -X utf8 -m jobs.m2_first_cell.cell_budget --params "$PARAMS" --cell-config "$CELL" > "$WORK/out/preflight-cell.json" \
+      || fail 15 "cell cap below the measured cell budget (jobs/m2_first_cell/cell_budget.py)"
+  fi
   # the reference cell's child predictions (sha-pinned artifact chain), checked to cover every proxy row BEFORE training
   python -X utf8 -m jobs.m2_first_cell.screen reference --params "$PARAMS" --cell-config "$CELL" --data "$DATA" --work "$WORK/reference" \
     --out "$WORK/out/screen-reference.json" > "$WORK/logs/screen-reference.log" 2>&1 \

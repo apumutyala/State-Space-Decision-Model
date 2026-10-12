@@ -269,7 +269,19 @@ def _quote_usd_per_min() -> float:
     return QUOTE_USD_PER_MIN
 
 
+#: JEV3-LM-S no-proxy screen (params "screen_proxy": false): the job-6zs79 screen (27.25 min) minus its proxy600 child
+#: pass (8.8 min) = slice_first 5.6 + the jevkit arms (native 0.8, G1 2.9, flip8 6.5, stock 0.3, stock G1 0.9) + load
+#: ~1.5 = 18.4 min, + the JEV3-LM arms (canon_stock ~1, the score op on both arms ~2) = ~21.5 -> 22.0 (measured basis)
+NOPROXY_SCREEN_MIN = 22.0
+
+
 def estimate(params: dict) -> dict[str, Any]:
+    if params.get("screen_proxy") is False:  # no proxy600 Decision-Index pass: the jevkit / slice work only
+        cap = params["phase_caps_minutes"]["screen"]
+        usd = params["batch_usd_per_min"]
+        return {"rows": 0, "proxy": False, "minutes": NOPROXY_SCREEN_MIN, "cap": cap,
+                "ok": NOPROXY_SCREEN_MIN <= 0.95 * cap, "usd_batch": round(NOPROXY_SCREEN_MIN * usd, 2),
+                "source": "job-6zs79 screen minus its proxy600 child pass, + the JEV3-LM arms (NOPROXY_SCREEN_MIN)"}
     fixed = float(params.get("screen_fixed_minutes", DEFAULT_FIXED_MIN))
     minutes = fixed + D1_PROXY_CHILD_MIN
     cap = params["phase_caps_minutes"]["screen"]
@@ -411,7 +423,8 @@ def locate_all(params: dict, cfg: dict, data, work, in_job_template: str | None 
         else:
             par = {"source": "pinned", **locate_reference(pb, data, work)}
             restrict(read_predictions(par["path"]), ids, f"parent {par['artifact']}")
-    rec = {"readout": ro, "reference": ref, "parent": par, "proxy_rows_covered": len(ids)}
+    rec = {"readout": ro, "reference": ref, "parent": par, "proxy_rows_covered": len(ids),
+           "proxy_enabled": params.get("screen_proxy") is not False}
     comps = locate_comparators(params, data, ids)
     if comps:
         rec["comparators"] = comps
@@ -532,6 +545,11 @@ def score(a) -> int:
     (out / "identity-child.json").write_text(json.dumps({**ident, "readout": ro, "plan_check": plan,
                                                          "proxy": prox["ids_sha256"]}, indent=1, default=str),
                                              encoding="utf-8")
+    if not rec.get("proxy_enabled", True):  # JEV3-LM-S: no proxy600 Decision-Index pass (never part of the primary)
+        if rec.get("jevkit"):
+            return jevkit_answer(rec["jevkit"], decider, a.model_dir, out / "jevkit", data_dir=a.data)
+        print("identity: a no-proxy screen needs a jevkit block", file=sys.stderr)
+        return 5
     resume = Path(a.resume_dir) / f"screen-child.{ro['template']}.partial.jsonl"
     resume.parent.mkdir(parents=True, exist_ok=True)
     done = _read_partial(resume)
@@ -1103,6 +1121,24 @@ def _count(xs) -> dict:
 
 def report(a) -> int:
     params = json.loads(Path(a.params).read_text(encoding="utf-8"))
+    if params.get("screen_proxy") is False:  # JEV3-LM-S: the jevkit report only (no proxy600 / reference verdict)
+        try:
+            rec = json.loads(Path(a.reference).read_text(encoding="utf-8"))
+            out = {"schema": SCHEMA, "edition": EDITION, "stage": "screen", "readout": rec["readout"], "proxy": None,
+                   "verdict": "NO_PROXY", "measured": True,
+                   "proxy_note": "the proxy600 Decision-Index screen is dropped for budget; it was never part of the "
+                                 "primary; no DI claim from this cell",
+                   "cost": {"elapsed_min": a.elapsed_min, "usd_per_min": params["batch_usd_per_min"],
+                            "runtime_usd": round(a.elapsed_min * params["batch_usd_per_min"], 2),
+                            "build_minutes_not_included": True},
+                   "jevkit": jevkit_report(rec["jevkit"], Path(a.out_dir) / "jevkit")}
+        except (ScreenError, KeyError, OSError, ValueError) as e:
+            print(f"screen: {e}", file=sys.stderr)
+            return getattr(e, "code", 9)
+        Path(a.out).write_text(json.dumps(out, indent=1), encoding="utf-8")
+        pr = (out["jevkit"].get("primary") or {})
+        print(json.dumps({"verdict": "NO_PROXY", "primary": pr.get("delta_composite_A"), "success": pr.get("success")}))
+        return 0
     try:
         rows, prox = proxy_rows(a.index_rows)
         rec = json.loads(Path(a.reference).read_text(encoding="utf-8"))
@@ -1744,6 +1780,10 @@ def valid_result(d: Any) -> bool:
     try:
         fin = lambda x: isinstance(x, (int, float)) and math.isfinite(x)  # noqa: E731
         tpl = (d.get("readout") or {}).get("template")
+        if d.get("verdict") == "NO_PROXY":  # JEV3-LM-S: complete = the jevkit primary measured with a finite delta
+            dp = ((d.get("jevkit") or {}).get("primary") or {}).get("delta_composite_A") or {}
+            return (d.get("schema") == SCHEMA and d.get("measured") is True and d.get("proxy") is None and bool(tpl)
+                    and fin(dp.get("point")) and all(fin(x) for x in (dp.get("ci95") or [None, None])))
         return (d.get("schema") == SCHEMA and d.get("measured") is True and d.get("verdict") in ("DROP", "PROMOTE")
                 and all(fin(d[k][f]) for k in ("child", "reference", "child_minus_reference")
                         + (() if _no_parent(d) else ("parent_stock_readout", "child_minus_parent"))
