@@ -132,7 +132,7 @@
     "note": "jev2c-v2 (replaces jev2c): 1,500 synthetic long_policy rows, prose states, more score rows; shim tokens p99 3,892 / max 3,981, 0 over 4,096 (tokens-shim.json); the ONLY long_policy source"
    }
   },
-  "note": "jev3 ONLY: 5,960 train rows (judge_hard / adequacy / policy / ambiguous / temporal_numeric 1,000 each, long_policy 960), train ids sha256 feb681f3...; held-out selection slice 1,200 (200 x 6), ids sha256 844233f2..., state-disjoint from training (asserted in job). PLACEHOLDER pointer until the jev3 pointer lands; stub = bschema-draw-jev2-mix-s for the package / dry run only.",
+  "note": "jev3 ONLY: 5,960 train rows (judge_hard / adequacy / policy / ambiguous / temporal_numeric 1,000 each, long_policy 960), ids sha256 feb681f3... (verified locally); held-out selection slice 1,200 (200 x 6), ids sha256 844233f2... (verified), state-disjoint from training (pointer slice_disjoint counts 0; asserted in job). Pointers: claude/ev-jev3-draw @5c963b25.",
   "score_share": 0.25,
   "type_mix_note": "FINAL mix (18 families, 586/family, adequacy 293): choice 44.9% / noul 30.1% / score 25.1% (4599 / 3086 / 2570 of 10255)"
  },
@@ -206,15 +206,12 @@
   "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
  },
  "data_pins": {
-  "status": "PLACEHOLDER",
+  "status": "pinned; PENDING evidence re-gate (runner refuses until final)",
   "draw": "bschema-draw-jev3 ONLY (the jev2 component is dropped)",
   "fill": [
-   "train_set.pointer + data_jev3.sha256 + job_params context.data (records / manifest / content + slice records)",
-   "assert the train ids sha256 == expected.train_ids_sha256 and the slice ids sha256 == expected.slice_ids_sha256",
-   "re-gate clearance (evidence lane)",
+   "re-gate clearance + exclusion list sha",
    "set status final"
   ],
-  "stub": "until then the pins point at bschema-draw-jev2-mix-s (the cleared jev2 small mix) so the package and sf_submit --dry validate; the runner refuses data_pins.status != final (exit 5)",
   "expected": {
    "train_rows": 5960,
    "train_ids_sha256": "feb681f3517c69863d7180dbbf3307dd7b6ded4b4a6411b2ae8f360af33f3120",
@@ -229,6 +226,20 @@
    "slice_rows": 1200,
    "slice_per_family": 200,
    "slice_ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
+  },
+  "pinned": {
+   "train_pointer": "data/manifests/bschema-draw-jev3.pointer.json",
+   "train_pointer_sha256": "ce70500db28739ada3506a3db51888beca7ae3b1f58ee3ac999010dcbeaafdfd",
+   "slice_pointer": "data/manifests/bschema-draw-jev3-slice.pointer.json",
+   "slice_pointer_sha256": "4d1cbba60302402dca33a7d92ea68496b3bb526b7be34e1ced4c913ad652d514",
+   "branch": "claude/ev-jev3-draw@5c963b25",
+   "ids_check": "scripts/verify_ids_sha.py: train feb681f3 and slice 844233f2 both match the no-trailing-newline convention (2026-10-11)"
+  },
+  "exclusion": {
+   "status": "PENDING (the evidence re-gate may produce a list)",
+   "file": null,
+   "sha256": null,
+   "apply": "non-empty: train ids -> train_set.heldout_excluded.ids (pool exclusion) with n_train_records / min_train_items = 5,960 - n; slice ids -> a rebuilt slice + new slice ids sha; empty: record the file sha and set status final"
   }
  }
 }

@@ -1,23 +1,72 @@
 {
- "PLACEHOLDER": "the jev3 draw; STUB = bschema-draw-jev2-mix-s until it lands",
- "build": "bschema-draw-jev2-mix-s (scripts/jev12_balanced_draw.py over bschema-draw-jev1, bschema-draw-jev2a, bschema-draw-jev2c-v2, bschema-draw-jev2b)",
- "location": "ssdm-data/m2/build/bschema-draw-jev2-mix-s/ (outside git; deterministic)",
- "records_uncompressed_sha256": "2c7b954e79d93a4ebc0c21ce76e0ff807c97acc85230e55993da8bc1ba1c4753",
- "manifest": "bschema-draw-jev2-mix-s.manifest.jsonl.gz",
- "manifest_uncompressed_sha256": "30d1bb90a46e4098d846d561156f5184ffed724edf1ad9127302b982998d7e18",
- "content_map": "bschema-draw-jev2-mix-s.content.jsonl.gz",
- "content_map_uncompressed_sha256": "9db774c8151a37869a432bb4e02358fc889d01bf6c438b803f2707ea922b882f",
- "n_records": 2852,
+ "build": "bschema-draw-jev3 (data/jev3.py + scripts/jev3_build.py: HUMAN-labelled TRAIN-split rows for judge_hard, adequacy, policy, ambiguous, temporal_numeric, long_policy; role train)",
  "role": "train",
- "ids_sha256": "447ca54ec230709cb834869fbb6f89535511a3163b211e5c2291f797d0c8d6f7",
- "schema": "ssdm-train-v0, one question per row (qid 'q'), JevBench request shape",
- "excludes_cohort": "inherited from every source draw's own gates (each source pointer's excludes_cohort)",
- "builder": {
-  "module": "scripts/jev12_balanced_draw.py",
-  "seed": 20261010
+ "location": "ssdm-data/m2/build/bschema-draw-jev3/ (outside git; deterministic, a rerun reproduces it)",
+ "records_uncompressed_sha256": "368fd715d8c9290989da53927e2785c5802ee07e03490ca2bd8817ebb801e020",
+ "manifest": "bschema-draw-jev3.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "4350f8a8db2024ddbb1cee2ddd7cc8d7479cafa7a80a562490fa54bf00261969",
+ "content_map": "bschema-draw-jev3.content.jsonl.gz",
+ "content_map_uncompressed_sha256": "9f77efe71c1c057da67e23fd434dc43a59906f71df871b84a3109fed8aab623e",
+ "lens": "bschema-draw-jev3.lens.jsonl.gz",
+ "lens_uncompressed_sha256": "e13d707cb4a2f63dbc9d609bd8ef000d12381070c8edd5e3e1e187cc3c67af0f",
+ "ids_sha256": "feb681f3517c69863d7180dbbf3307dd7b6ded4b4a6411b2ae8f360af33f3120",
+ "ids_sha256_rule": "sha256 of the sorted record ids, newline-joined (no trailing newline)",
+ "n_records": 5960,
+ "families": {
+  "judge_hard": 1000,
+  "adequacy": 1000,
+  "policy": 1000,
+  "ambiguous": 1000,
+  "temporal_numeric": 1000,
+  "long_policy": 960
  },
+ "schema": "ssdm-train-v0, one question per row (qid 'q'), JevBench request shape; jev1 row layout (aug.jev1.family8; aug.jev1.prov = per-row dataset / revision / licence / train split / row key)",
+ "loader_contract": "option keys are NOT re-sorted (seeded per-row shuffle = presented order); no state text (normalised) is shared by any two rows of train + slice",
+ "slice_disjoint": {
+  "rule": "slice vs train: 0 shared ids, source items, groups, content hashes, normalised states",
+  "counts": {
+   "id": 0,
+   "source_item": 0,
+   "group": 0,
+   "content": 0,
+   "state": 0
+  },
+  "slice_ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
+ },
+ "excludes_cohort": "m2-dev-cohort-v2 be6efe2b... and m2-dev-cohort-v3 498efa61..., Index DEV/TEST rows, JevBench public items (eval-only), every jev1 source item of HelpSteer2 / HS2-preference / Aegis2, MATH test problems (PRM800K)",
+ "builder": {
+  "module": "scripts/jev3_build.py",
+  "generator": "data/jev3.py",
+  "commit": "f34e8413111cd1602de6625762ed3d61bca7ec8a"
+ },
+ "receipt": "receipts/2026-10-11-jev3-draw/",
  "templates_verified": [
   "jrt-h2o-shim:qwen3.5-4b"
  ],
- "build_command": "python -X utf8 -I scripts/jev12_balanced_draw.py --src <data>/m2/build/bschema-draw-jev1 --src <data>/m2/build/bschema-draw-jev2a --src <data>/m2/build/bschema-draw-jev2c-v2 --src <data>/m2/build/bschema-draw-jev2b --exclude long_policy=bschema-draw-jev1 --family-cap adequacy=81 --score-share 0.25 --pool-exclude bschema-draw-jev2a=receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt --pool-exclude-sha bschema-draw-jev2a=aeb8027aaaebdb6fad2b24f8b5bee9d37c4e176fcc4e18ad0d366acf1b579705 --pool-rows bschema-draw-jev2a=29895 --pool-exclude bschema-draw-jev2b=receipts/2026-10-10-jev2b-regate/jev2b_exclude_ids.txt --pool-exclude-sha bschema-draw-jev2b=01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b --pool-rows bschema-draw-jev2b=7500 --pool-exclude bschema-draw-jev2c-v2=receipts/2026-10-11-jev2c-v2-regate/jev2c-v2_exclude_ids.txt --pool-exclude-sha bschema-draw-jev2c-v2=01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b --pool-rows bschema-draw-jev2c-v2=1500 --exclude-sub prob_indep --dedupe-source glaive_fc --train-per-family 163 --calib-per-family 200 --name bschema-draw-jev2-mix-s --out <data>/m2/build"
+ "token_windows": {
+  "judge_hard": [
+   0,
+   4096
+  ],
+  "adequacy": [
+   0,
+   4096
+  ],
+  "policy": [
+   0,
+   4096
+  ],
+  "ambiguous": [
+   0,
+   4096
+  ],
+  "temporal_numeric": [
+   0,
+   4096
+  ],
+  "long_policy": [
+   2000,
+   4096
+  ]
+ }
 }

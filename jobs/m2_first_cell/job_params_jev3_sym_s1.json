@@ -241,29 +241,29 @@
     "pin_sha256": "1040e563da0ba5d7394cbb8c7de54f2e389bd068ade8ddea9546443e725388f8"
    },
    {
-    "src": "m2/build/bschema-draw-jev2-mix-s/bschema-draw-jev2-mix-s.content.jsonl.gz",
-    "dest": "m2-jev3/bschema-draw-jev2-mix-s.content.jsonl.gz",
+    "src": "target_ref/h2o_4g6m8.preds.jsonl",
+    "dest": "target_ref/h2o_4g6m8.preds.jsonl",
+    "pin_sha256": "e00d5ac7bfcccac18fe526752871004133ebd0b598dc42224cf498496ff62fd2"
+   },
+   {
+    "src": "m2/build/bschema-draw-jev3/bschema-draw-jev3.content.jsonl.gz",
+    "dest": "m2-jev3/bschema-draw-jev3.content.jsonl.gz",
     "pin": "jobs/m2_first_cell/data_jev3.sha256"
    },
    {
-    "src": "m2/build/bschema-draw-jev2-mix-s/bschema-draw-jev2-mix-s.manifest.jsonl.gz",
-    "dest": "m2-jev3/bschema-draw-jev2-mix-s.manifest.jsonl.gz",
+    "src": "m2/build/bschema-draw-jev3/bschema-draw-jev3.manifest.jsonl.gz",
+    "dest": "m2-jev3/bschema-draw-jev3.manifest.jsonl.gz",
     "pin": "jobs/m2_first_cell/data_jev3.sha256"
    },
    {
-    "src": "m2/build/bschema-draw-jev2-mix-s/records.jsonl.gz",
+    "src": "m2/build/bschema-draw-jev3/records.jsonl.gz",
     "dest": "m2-jev3/records.jsonl.gz",
     "pin": "jobs/m2_first_cell/data_jev3.sha256"
    },
    {
-    "src": "m2/build/bschema-draw-jev2-mix-s-calib/records.jsonl.gz",
+    "src": "m2/build/bschema-draw-jev3-slice/records.jsonl.gz",
     "dest": "m2-jev3-calib/records.jsonl.gz",
     "pin": "jobs/m2_first_cell/data_jev3.sha256"
-   },
-   {
-    "src": "target_ref/h2o_4g6m8.preds.jsonl",
-    "dest": "target_ref/h2o_4g6m8.preds.jsonl",
-    "pin_sha256": "e00d5ac7bfcccac18fe526752871004133ebd0b598dc42224cf498496ff62fd2"
    }
   ],
   "manifest_files": [
@@ -296,7 +296,8 @@
    "jobs/m2_first_cell/m2_first_cell_rwkv7_jev3_sym_s1.json",
    "data/manifests/bschema-draw-jev3.pointer.json",
    "train/consistency_views.py",
-   "train/pi_control.py"
+   "train/pi_control.py",
+   "data/manifests/bschema-draw-jev3-slice.pointer.json"
   ]
  },
  "mode": "jev3_sym_s1",
