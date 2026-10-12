@@ -319,3 +319,15 @@ def test_t_noul_minimises_nll_subject_to_the_stock_band(tmp_path):
     never = S.fit_per_type_from_calib(f, 0.25, 4.0, 200, stock_band=0.0, margin=0.0)["types"]["noul"]
     assert not never["feasible"] and "flag" in never  # infeasible: the lowest-band T, flagged
     assert tight["nll_T"] >= loose["nll_T"] - 1e-12  # the constraint can only cost NLL
+
+
+def test_overlength_canonical_row_is_excluded():
+    """job-79fki exit 25 regression: the one jev3 row the canonical shim renders past 4,096 tokens (prefix 4,118;
+    scripts/cell_preflight.py on the real draw, job-5rvm3) is in the sha-pinned exclude file, and the cell's counts
+    follow (Amendment 1)."""
+    c = _cell()
+    ex = c["train_set"]["exclude_files"][0]
+    ids = (ROOT / ex["file"]).read_text(encoding="utf-8").split()
+    assert "m2:privacyqa:290c5bc2b2~view:jev3-lp-score-r1" in ids and len(ids) == ex["n"] == 124
+    assert c["n_train_records"] == c["min_train_items"] == 5836 and c["max_steps"] == 729
+    assert (ROOT / "scripts/cell_preflight.py").is_file()

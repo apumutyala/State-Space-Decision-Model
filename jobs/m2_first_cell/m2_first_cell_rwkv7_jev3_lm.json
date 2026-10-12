@@ -19,9 +19,9 @@
   2048,
   4096
  ],
- "n_train_records": 5837,
+ "n_train_records": 5836,
  "n_eval_records": 0,
- "min_train_items": 5837,
+ "min_train_items": 5836,
  "max_steps": 729,
  "max_minutes": 42,
  "min_steps": 110,
@@ -138,9 +138,9 @@
   "exclude_files": [
    {
     "file": "receipts/2026-10-12-jev3-lm/jev3_lm_train_exclude.txt",
-    "sha256": "8056c7e7beffd573af1d6e56642a28ff21f34bf60164bfd0d40703a6279d61a9",
-    "n": 123,
-    "reason": "lead 2026-10-12: drop policy/aegis_reply (109, constant gold) and DOWN-WEIGHT adequacy/hs2_bar_coherence (26:1) by keeping half: 14 of its 27 rows dropped, ranked by sha256('jev3-lm-hs2-downweight:' + id)"
+    "sha256": "be643f632856ffcf27d3d29e425966372e8d10559db52a5bb226a00fa42bb06b",
+    "n": 124,
+    "reason": "lead 2026-10-12: drop policy/aegis_reply (109, constant gold) and DOWN-WEIGHT adequacy/hs2_bar_coherence (26:1) by keeping half: 14 of its 27 rows dropped, ranked by sha256('jev3-lm-hs2-downweight:' + id); + the ONE row the canonical shim renders past the 4,096-token cap (m2:privacyqa:290c5bc2b2~view:jev3-lp-score-r1, prefix 4,118 tokens under g1v2-canon-shuffle; scripts/cell_preflight.py, job-5rvm3; A-PREREG-JEV3-LM Amendment 1)"
    },
    {
     "file": "receipts/2026-10-11-jev3-regate/jev3_exclude_ids.txt",
@@ -235,9 +235,10 @@
   "sampler": {
    "dropped": {
     "policy/aegis_reply": 109,
-    "adequacy/hs2_bar_coherence": 14
+    "adequacy/hs2_bar_coherence": 14,
+    "long_policy/overlength_canonical": 1
    },
-   "pool_after": 5837
+   "pool_after": 5836
   }
  },
  "train_layout": "g1v2-canon-shuffle",
