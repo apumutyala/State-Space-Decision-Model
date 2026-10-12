@@ -866,3 +866,21 @@ PRE-REGISTRATION TEXT (paste on origin/state before seed 0 is submitted):
 ## Mode `jev3_sym_s0_eval` (A-PREREG-JEV3-SYM Amendment 2: eval-only screen of job-5x4vr)
 
 This job does no training. It scores job-5x4vr's exported best checkpoint (step 200 of 258, trainable-step0000200.safetensors sha256 5cb7da42...), installed from artifact art-8xs32 (sha 933cc0ac...) with every byte sha-pinned (fail closed). The selection was frozen in job on the jev3 slice dev cards. It runs the stage-screen command exactly as pre-registered: the in-job stock control, the H2O target preds (e00d5ac7), bitwise G1 KEEP, the 8 flip ops, and slice_first (T-fit + step-0 floor) before any public row. Schedule: setup 7 + guard 2 + checkpoint 4 + screen 32 + report 2 + reserve 1 = 48 min, build_timeout 60 (launcher lint minimum). Quoted hold $3.02; **worst case** (60 + 2 x 48) x $0.063 = **$9.83** (hard cap $10). The requested $8 cap would need a 33-min schedule (a ~18-min screen), which the full pre-registered screen does not fit.
+
+## Mode `jev3_typed` (A-PREREG-JEV3-TYPED: warm start + typed sym layout + coverage; the last funded GPU cell)
+
+- Params `job_params_jev3_typed.json`, cell `m2_first_cell_rwkv7_jev3_typed.json` (the jev3_sym_s0 stack; layout
+  `sym-fork-typed`; 33-min clock; pass_rule window 50 / min_steps 100; max_steps 953 = 1 epoch of 7,624).
+- Schedule: setup 6 + guard 2 + heldout 2 + warmstart 2 + cell 52 + screen 44 + report 2 + reserve 2 = 112 min;
+  build_timeout 60. **Worst case (60 + 2 x 112) x 0.063 = $17.89** (hard cap $18.00). Expected ~84 min = $5.29 + build.
+- Phase `warmstart` (exit 10 on identity): `checkpoint_loader install --block warm_start` (art-8xs32 from $CKPT_URL;
+  artifact / member / sidecar / latest.json / source cell.json pins; the source config = jev3_sym_s0's) into
+  `$WORK/warmck`; `run_cell --warm-start <member> --warm-start-sha256 b0cc2708...` loads the trainable weights after the
+  backbone + tokenizer lineage check (exit 29 otherwise), before the step-0 cards; fresh AdamW / schedule / data order.
+- Data: `m2-jev3-typed/` (bschema-draw-jev3-typed, pins `data_jev3_typed.sha256`), the jev3 slice `m2-jev3-calib/`, the
+  source run's `checkpoint/cell.json` (03ff0ba0).
+- Screen: as jev3_sym_s0 (slice_first, tfit, slice floor, G1 KEEP, 8-op flips, H2O target, stock-shim control) with
+  `paired_primary` native_shimcal and `score_inv` (KEEP gate 2): `scripts/ev_score_perturb.py --public --shuffle-seeds
+  0,1,2` -> both arms answer base.jsonl + perturbed.jsonl -> `scripts/ev_score_flip.py --max-dp 0` per arm (the trained
+  arm must exit 0). The vendored scripts' sha256 are pinned in the params and checked before they run.
+- submit env: TOK_S 22144, CALL_S 0.0595, CKPT_URL = the art-8xs32 get_artifact URL (filled at submit, never committed).

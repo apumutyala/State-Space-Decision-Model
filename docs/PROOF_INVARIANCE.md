@@ -221,3 +221,30 @@ to K×~12 tokens, still one call. The estimate is ±3 ms raw, below 0.2 S-points
   cost is now neutral).
 - **Keep if G1 ∧ G2. Claim "better" only if** the paired ΔComposite CI is > 0. Also report operators 1–3 and 7–8,
   and the JEV1-4B flip baseline (`--layout g1v2`).
+
+## Typed layout `sym-fork-typed` (JEV3-TYPED): the guarantee per question type
+
+Statement follows Theorem 2T of `docs/guarantees/REORDER_INVARIANCE.md` (claude/ev-guarantee-proofs @a06343b6). Notation:
+handle `h_i` (the id the request uses and the answer is reported in), content `c_i` (what the model reads).
+
+- **Rendering R_t.** choice: `c_i` = the description (sym-fork, byte for byte). noul: (true, false) as sym-fork.
+  score: `c_i` = `level v of K: <rubric>` with v the level value 0..K-1 and K the number of levels, exactly
+  `scripts/ev_score_perturb.py render_level` (claude/ev-score-inv @c47c0a46; TYPED_SCORE_RENDERING).
+- **Score axis and prefix.** The axis is sorted by the level value PARSED FROM `c_i` (never by handle, never by display
+  order); an unparseable value, a K that disagrees with the option count, a value set other than 0..K-1, duplicate
+  handles, or a given `question.scale` that is not the contents in level order raise (fail closed, `typed_score_axis`).
+  The full scale (the contents in level order) is appended to the question text in the shared prefix (the question's
+  request trust segment). Prefix and continuations are functions of the multiset of contents.
+- **Guarantee (exact; bitwise under the conditions of section 4 of the 2T doc).** For every question type, under (C1)-(C5)
+  as implemented here (canonical content-sorted choice axis; level-sorted score axis; handles never rendered):
+  (i) any display-order permutation of the options and (ii) any bijective relabel of the OPAQUE handles (fresh handles, or
+  the existing handles permuted among the levels) leave the row bitwise identical except `option_ids`, so the per-content
+  distribution, the argmax and (score) the expected level are unchanged: flip rate 0, max|dp| 0.
+- **Not claimed.** (iii) renaming a level VALUE changes the content (a different question; the model must be allowed to
+  change its answer); paraphrase / formatting / state rewording (no construction certifies these; the 8-op flips report
+  them); accuracy (the typed rendering restores the level value seed 0 dropped, an accuracy fix, not an invariance one).
+- **Measured.** G1 (jevkit option_reverse / option_shuffle / key_relabel, unchanged; n/a on score items by jevkit's design)
+  and the score-item op (score_reverse / score_shuffle / score_relabel / score_permute on every public score item,
+  `scripts/ev_score_flip.py --max-dp 0`) are the two KEEP gates of A-PREREG-JEV3-TYPED; CPU: `tests/test_jev3_typed.py`
+  (all K! display orders x three handle sets on K <= 4, bitwise rows; tiny-model distributions; the ev_score_flip PASS for
+  the typed head and FAIL for a handle-reading head).

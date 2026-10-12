@@ -181,7 +181,7 @@ def _gate2(tmp_path, head):
     items = T._items()
     base, pert = SP.make(items, SP.OPS, (0, 1, 2))
     d = tmp_path / "req"
-    d.mkdir()
+    d.mkdir(parents=True)
     SP.write_rows(base, d / "base.jsonl")
     SP.write_rows(pert, d / "perturbed.jsonl")
     for name, rows in (("base", SF.rj(d / "base.jsonl")), ("perturbed", SF.rj(d / "perturbed.jsonl"))):
@@ -242,7 +242,7 @@ def test_warm_start_copies_weights_checks_sha_and_lineage(tmp_path):
         m = DecisionModel(tiny_backbone(seed=0, hidden=16), "fork", seed=seed)  # same frozen backbone, new head init
         torch.manual_seed(seed)
         cfg = TrainConfig(head="fork", layout=layout, lora_rank=4, batch_size=2, grad_accum=1, max_steps=2,
-                          loss=LossConfig(arm="clef"), ckpt_dir=str(tmp_path / layout))
+                          loss=LossConfig(arm="clef"), ckpt_dir=str(tmp_path / layout), seed=seed)
         return Trainer(m, cfg, items, guard=guard)
 
     src = mk(SYM_LAYOUT)

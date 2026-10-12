@@ -1,0 +1,23 @@
+{
+ "build": "bschema-draw-jev3-typed (scripts/jev3_typed_draw.py @ff06d4c0, built remotely by jobs/jev3_typed_cpu as job-stbvu): bschema-draw-jev3 (5,960 rows, verbatim) + 600 each of jev1 (gated build) routing / intent / severity rows",
+ "role": "train",
+ "location": "ssdm-data/m2/build/bschema-draw-jev3-typed/ (outside git; deterministic, a rerun reproduces it)",
+ "records_uncompressed_sha256": "bd5c8f74c36cbc7e230989b0b84e8be3eb3480f47489d289666149ef1c5a5519",
+ "manifest": "bschema-draw-jev3-typed.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "653dacffe0be790a11b724e4e0dd4c6a1fe8efb9fe7a867bafaec39a5319db80",
+ "content_map": "bschema-draw-jev3-typed.content.jsonl.gz",
+ "content_map_uncompressed_sha256": "ae80bb6567280726663096ab9c0a68dfe10060b60c32d8cb2e02b1f12a547bd2",
+ "ids_sha256": "525236723d87ee4b67dd7b680824dc840ac2f88b68bf69812e9e2493c5c5a6cc",
+ "ids_sha256_rule": "sha256 of the sorted record ids, newline-joined (no trailing newline)",
+ "added_ids_sha256": "81d98696780a6439acb1a5988db7cfda5a25abd4e6126a11306d818837bddb52",
+ "n_records": 7760,
+ "families": {"adequacy": 1000, "ambiguous": 1000, "intent": 600, "judge_hard": 1000, "long_policy": 960, "policy": 1000,
+              "routing": 600, "severity": 600, "temporal_numeric": 1000},
+ "schema": "ssdm-train-v0, one question per row (qid 'q'), JevBench request shape",
+ "slice_disjoint": {"rule": "added rows vs the jev3 slice (1,200, ids 844233f2), the jev3 train rows, the 231 public JevBench items and each other: 0 shared ids, (source, source_id), content hashes, canonical-JSON or normalised-text states; the jev3 rows keep the jev3 pointer's slice_disjoint (all 0)", "dropped": {}, "slice_ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"},
+ "jev2_exclusions": [{"file": "receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt", "sha256": "c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad", "n": 23},
+                     {"file": "receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt", "sha256": "5cebf60bfa489d462a7e7d9b82e152a4968f30e1dc7ea50a2155e491a1ef37ab", "n": 104}],
+ "sources": {"jev3": "data/manifests/bschema-draw-jev3.pointer.json", "jev1": "data/manifests/bschema-draw-jev1.pointer.json"},
+ "excludes_cohort": "inherited: the jev3 rows (the jev3 pointer's excludes_cohort) and the jev1 gated build (its pointer's)",
+ "receipt": "job-stbvu draw/draw-report.json (scripts/jev3_typed_draw.py output, seed 20261012, per_family 600)"
+}

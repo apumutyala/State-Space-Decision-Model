@@ -1,5 +1,5 @@
 {
- "_comment": "Mode jev3_sym_s0 (A-PREREG-JEV3-SYM DRAFT, seed 0, NOT submitted; data pins PLACEHOLDER). Schedule: setup 15 + guard 5 + heldout 5 + cell 50 + screen 55 + report 5 + reserve 7 = 142. Quoted hold $8.95; worst case (60 + 2 x 142) x 0.063 = $21.67 <= $22. Expected ~89 min = $5.61. Seeds run SEQUENTIALLY (seed 1 only if the post-seed-0 balance covers its worst case).",
+ "_comment": "Mode jev3_typed (A-PREREG-JEV3-TYPED; the last funded GPU cell; NOT submitted until lead review). Schedule: setup 6 + guard 2 + heldout 2 + warmstart 2 + cell 52 + screen 44 + report 2 + reserve 2 = 112. Worst case (60 + 2 x 112) x 0.063 = $17.89 <= $18.00 (balance $19.10 before the CPU jobs). Expected ~84 min = $5.29 + build. Cell: 33-min training clock (about 220 steps at seed 0's 8.96 s/step inside the clock) + seed 0's measured ~15 min fixed (load, ladder, step-0 cards, export) + warm-start load; screen cap 44 = the setup preflight (screen.estimate 41.0 <= 0.95 x cap; job-svvvn exit 15 at 32); screen_fixed_minutes unchanged.",
  "test_env": {
   "transformers": "5.17.0",
   "with": [
@@ -22,11 +22,11 @@
   ],
   "image": "jobs/probe9b/Dockerfile"
  },
- "job": "m2-first-cell-jev3-sym-s0",
- "status": "A-PREREG-JEV3-SYM seed 0: stock Qwen3.5-4B + sym-fork + consistency views on jev3 (5,960 rows), max 745 steps, clock-bound (35 min)",
+ "job": "m2-first-cell-jev3-typed",
+ "status": "A-PREREG-JEV3-TYPED: job-5x4vr step-258 export warm start + typed sym layout (score levels as content, canonical scale prefix) on jev3 + jev1 routing / intent / severity (7,760 rows), 33-min clock",
  "chip": "h100",
  "chip_count": 1,
- "max_duration_minutes": 142,
+ "max_duration_minutes": 112,
  "build_timeout_minutes": 60,
  "max_restarts": 0,
  "assumed_restart_floor": 1,
@@ -34,23 +34,25 @@
  "resume": "checkpoint",
  "hf_cache": true,
  "batch_usd_per_min": 0.063,
- "hard_cap_usd": 22.0,
+ "hard_cap_usd": 18.0,
  "phase_caps_minutes": {
-  "setup": 15,
-  "guard": 5,
-  "heldout": 5,
-  "cell": 50,
-  "screen": 55,
-  "report": 5
+  "setup": 6,
+  "guard": 2,
+  "heldout": 2,
+  "warmstart": 2,
+  "cell": 52,
+  "screen": 44,
+  "report": 2
  },
- "reserve_minutes": 7,
+ "reserve_minutes": 2,
  "expected_minutes": {
-  "setup": 4,
+  "setup": 3,
   "guard": 1,
   "heldout": 1,
-  "cell": 41,
-  "screen": 40,
-  "report": 2
+  "warmstart": 1,
+  "cell": 49,
+  "screen": 28,
+  "report": 1
  },
  "evals_fixed_minutes": {
   "parent": 3,
@@ -63,9 +65,9 @@
  },
  "parent": "qwen35",
  "model": "Qwen/Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a (stock Qwen3.5 hybrid, LoRA r64 + fork head)",
- "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_jev3_sym_s0.json",
- "train_set_pointer": "data/manifests/bschema-draw-jev3.pointer.json",
- "train_dir": "m2-jev3",
+ "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_jev3_typed.json",
+ "train_set_pointer": "data/manifests/bschema-draw-jev3-typed.pointer.json",
+ "train_dir": "m2-jev3-typed",
  "cohort": "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
  "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
  "guard_pin": "jobs/m2_pilot/guard_pin.json",
@@ -82,14 +84,15 @@
  "runner": "jobs/m2_first_cell/first_cell_job.sh",
  "submit": {
   "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py, PR #93): identical to the JOB_SPEC submit block (tests/test_launch.py checks field by field). TOK_S / CALL_S = the job-tkfaj probe's measured rates (the runner exits 4 without them).",
-  "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh jev3_sym_s0",
+  "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh jev3_typed",
   "env": {
    "TOK_S": "22144",
-   "CALL_S": "0.0595"
+   "CALL_S": "0.0595",
+   "CKPT_URL": "<get_artifact art-8xs32 url: fill at submit>"
   },
-  "key": "m2-first-cell-jev3-sym-s0-r1",
+  "key": "m2-first-cell-jev3-typed-r1",
   "clock_lock": true,
-  "label": "A-PREREG-JEV3-SYM seed 0 jev3_sym_s0: stock Qwen3.5-4B + sym-fork + consistency views on jev3 5,960 rows, max 745 steps clock-bound 35 min [paired vs stock + shim; bitwise G1 KEEP; 8-op flips; slice first; H2O target]",
+  "label": "A-PREREG-JEV3-TYPED jev3_typed: 5x4vr step-258 warm start + typed sym layout on jev3 + routing / intent / severity (7,760), 33-min clock [primary native_shimcal vs stock + shim; G1 KEEP; score-inv KEEP (ev-score-inv @c47c0a46); 8-op flips; slice first; H2O target]",
   "checks": {
    "success": {
     "check": {
@@ -246,24 +249,29 @@
     "pin_sha256": "e00d5ac7bfcccac18fe526752871004133ebd0b598dc42224cf498496ff62fd2"
    },
    {
-    "src": "m2/build/bschema-draw-jev3/bschema-draw-jev3.content.jsonl.gz",
-    "dest": "m2-jev3/bschema-draw-jev3.content.jsonl.gz",
-    "pin": "jobs/m2_first_cell/data_jev3.sha256"
+    "src": "m2/build/bschema-draw-jev3-typed/bschema-draw-jev3-typed.content.jsonl.gz",
+    "dest": "m2-jev3-typed/bschema-draw-jev3-typed.content.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_jev3_typed.sha256"
    },
    {
-    "src": "m2/build/bschema-draw-jev3/bschema-draw-jev3.manifest.jsonl.gz",
-    "dest": "m2-jev3/bschema-draw-jev3.manifest.jsonl.gz",
-    "pin": "jobs/m2_first_cell/data_jev3.sha256"
+    "src": "m2/build/bschema-draw-jev3-typed/bschema-draw-jev3-typed.manifest.jsonl.gz",
+    "dest": "m2-jev3-typed/bschema-draw-jev3-typed.manifest.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_jev3_typed.sha256"
    },
    {
-    "src": "m2/build/bschema-draw-jev3/records.jsonl.gz",
-    "dest": "m2-jev3/records.jsonl.gz",
-    "pin": "jobs/m2_first_cell/data_jev3.sha256"
+    "src": "m2/build/bschema-draw-jev3-typed/records.jsonl.gz",
+    "dest": "m2-jev3-typed/records.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_jev3_typed.sha256"
    },
    {
     "src": "m2/build/bschema-draw-jev3-slice/records.jsonl.gz",
     "dest": "m2-jev3-calib/records.jsonl.gz",
-    "pin": "jobs/m2_first_cell/data_jev3.sha256"
+    "pin": "jobs/m2_first_cell/data_jev3_typed.sha256"
+   },
+   {
+    "src": "m2/checkpoint/jev3_s0_5x4vr/cell.json",
+    "dest": "checkpoint/cell.json",
+    "pin_sha256": "03ff0ba0dec885540cf660a8fdc595c21305743db9ff6d5d94f637a8b30e7ec7"
    }
   ],
   "manifest_files": [
@@ -292,19 +300,28 @@
    "data/manifests/bschema-draw-jev2b.pointer.json",
    "receipts/2026-10-11-jev2c-v2-regate/jev2c-v2_exclude_ids.txt",
    "data/manifests/bschema-draw-jev2c-v2.pointer.json",
-   "jobs/m2_first_cell/data_jev3.sha256",
-   "jobs/m2_first_cell/m2_first_cell_rwkv7_jev3_sym_s0.json",
-   "data/manifests/bschema-draw-jev3.pointer.json",
    "train/consistency_views.py",
    "train/pi_control.py",
    "data/manifests/bschema-draw-jev3-slice.pointer.json",
    "receipts/2026-10-11-jev3-sampler/jev3_train_exclude_subs.txt",
    "receipts/2026-10-11-jev3-regate/jev3_exclude_ids.txt",
    "jobs/m2_first_cell/landing.py",
-   "scripts/verify_ids_sha.py"
+   "scripts/verify_ids_sha.py",
+   "jobs/m2_first_cell/data_jev3_typed.sha256",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_jev3_typed.json",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_jev3_sym_s0.json",
+   "data/manifests/bschema-draw-jev3-typed.pointer.json",
+   "data/manifests/bschema-draw-jev3.pointer.json",
+   "data/manifests/bschema-draw-jev1.pointer.json",
+   "jobs/m2_first_cell/checkpoint_loader.py",
+   "scripts/ev_score_perturb.py",
+   "scripts/ev_score_flip.py",
+   "scripts/jev3_typed_draw.py",
+   "train/trainer.py",
+   "train/run_cell.py"
   ]
  },
- "mode": "jev3_sym_s0",
+ "mode": "jev3_typed",
  "stage": "screen",
  "screen_readout": "native",
  "screen_reference": "d1_v3w",
@@ -332,7 +349,7 @@
   "price": "kind=base_model_reference,in=0.03,out=0.15,source=JevBench v1.6.1 board api_v161.json deepinfra:Qwen/Qwen3.5-4B 0.03/0.15 per 1M (the price basis of the h2o-lightning-4b row; EV-PREREG-H2O-HOST),as_of=2026-10-09,model=Qwen/Qwen3.5-4B",
   "shim_calibration": true,
   "stock_shim": true,
-  "paired_primary": "native",
+  "paired_primary": "native_shimcal",
   "tfit": {
    "records": "m2-jev3-calib/records.jsonl.gz",
    "lo": 0.25,
@@ -361,9 +378,35 @@
   "slice_first": true,
   "by_family": true,
   "slice_state_disjoint": {
-   "train_records": "m2-jev3/records.jsonl.gz"
+   "train_records": "m2-jev3-typed/records.jsonl.gz"
+  },
+  "score_inv": {
+   "shuffle_seeds": [
+    0,
+    1,
+    2
+   ],
+   "max_dp": 0,
+   "keep_gate": true,
+   "scripts_sha256": {
+    "scripts/ev_score_perturb.py": "803eeb9019f45f8a077f289ab6eab4f930510cf3ee7e5f847bdd855cbcf3e1da",
+    "scripts/ev_score_flip.py": "b59f21655522187b3f8453e8092f41e3943c24d6c9fe6dc83beb16fb5961b6b2"
+   }
   }
  },
  "cohort_note": "pins cohort v2 deliberately (no G13 here); the training draw excludes cohort v3 regardless (#105). The G13 gate of this checkpoint is a separate job on v3 (~16-17 H100-h at job-tkfaj rates).",
- "jevkit_note": "covered_families = the jev1 families (r2's 120-item coverage); by_coverage reads jev1-covered vs the rest. native_shimcal kept. G1: 0 flips, 0 invalid, max |dp| <= 1e-3 per op (jobs.sym_eval.perturb_eval.run in the screen process, with the row bit-identity check)."
+ "jevkit_note": "A-PREREG-JEV3-TYPED: PRIMARY = native_shimcal (the shim's T 0.8 + yes/no commit floor 0.801 applied to the head's distribution, content-only) paired vs the in-job stock-shim control; raw native = secondary. KEEP 1 = G1 bitwise (unchanged); KEEP 2 = score_inv: scripts/ev_score_perturb.py + ev_score_flip.py (claude/ev-score-inv @c47c0a463936d8aff586ee69728291521bc31336, vendored, sha-pinned) on every public score item, the trained arm must PASS --max-dp 0; the stock-shim control reported for teeth.",
+ "warm_start": {
+  "artifact": "art-8xs32",
+  "job": "job-5x4vr",
+  "artifact_sha256": "933cc0ac1748304b4a589e5baa099b937a1db034dc4fac342e888406476838af",
+  "member": "./ckpt/trainable-step0000258.safetensors",
+  "ckpt_sha256": "b0cc27089620823d809844b7edc6f31340f55c88f2f0b0a8fcb8b290efd5e5a2",
+  "sidecar_sha256": "d0819d72c154e597a6f2ef360b991fd4a9c50e3caf192125dfefb47e61178127",
+  "latest_json_sha256": "87c5ba5b5fdb64fe14edd3af679585d61d7970cfd3e00666c7cff26e8447ca3e",
+  "cell_json_sha256": "03ff0ba0dec885540cf660a8fdc595c21305743db9ff6d5d94f637a8b30e7ec7",
+  "url_env": "CKPT_URL",
+  "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_jev3_sym_s0.json",
+  "_note": "JEV3-TYPED warm start: job-5x4vr's LAST step (258) inference export (art-8xs32; sha b0cc2708...), installed by jobs.m2_first_cell.checkpoint_loader --block warm_start against the SOURCE run's config (its cell.json 03ff0ba0 == jev3_sym_s0's config); run_cell --warm-start checks the backbone + tokenizer lineage and loads the trainable weights; fresh AdamW / schedule / data order. Step 258 (not the step-200 best) for the most training signal, and its public-231 result was never computed (the step-200 one was: job-6zs79)."
+ }
 }
