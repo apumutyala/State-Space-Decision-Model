@@ -194,9 +194,13 @@ def test_noncanonical_shim_is_not_invariant_teeth():
     raw = DecisionModelBackend(be.model, None, template=TEMPLATE, layout="g1v2")
     crit = {"a": "Billing and refunds", "b": "Technical problem", "c": "Buy a plan"}
     req = {"state": "charged twice", "questions": {"q": _choice(crit)}}
-    rev = {**req, "questions": {"q": _choice(dict(reversed(list(crit.items()))))}}
-    pa, pb = _probs(raw, req), _probs(raw, rev)
-    assert max(abs(pa[k] - pb[k]) for k in crit) > 0  # the stock shim reads display order: the gate has teeth
+    ren = {"a": "z", "b": "y", "c": "x"}  # a relabel that reverses the id sort (the shim lists options by id)
+    rel = {**req, "questions": {"q": _choice({ren[k]: v for k, v in crit.items()})}}
+    pa, pb = _probs(raw, req), _probs(raw, rel)
+    assert max(abs(pa[k] - pb[ren[k]]) for k in crit) > 0  # the stock shim reads the ids: the gate has teeth
+    cb = _probs(be, req)
+    cr = _probs(be, rel)
+    assert all(cb[k] == cr[ren[k]] for k in crit)  # the canonical shim does not
 
 
 @needs_tok
@@ -310,6 +314,8 @@ def test_t_noul_minimises_nll_subject_to_the_stock_band(tmp_path):
     f = tmp_path / "calib_probs.jsonl"
     f.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     loose = S.fit_per_type_from_calib(f, 0.25, 4.0, 200, stock_band=0.0, margin=1.0)["types"]["noul"]
-    tight = S.fit_per_type_from_calib(f, 0.25, 4.0, 200, stock_band=0.0, margin=0.05)["types"]["noul"]
-    assert loose["feasible"] and tight["band_T"] <= 0.05 + 1e-12 and tight["T"] <= loose["T"]
+    tight = S.fit_per_type_from_calib(f, 0.25, 4.0, 200, stock_band=0.0, margin=0.15)["types"]["noul"]
+    assert loose["feasible"] and tight["feasible"] and tight["band_T"] <= 0.15 + 1e-12 and tight["T"] <= loose["T"]
+    never = S.fit_per_type_from_calib(f, 0.25, 4.0, 200, stock_band=0.0, margin=0.0)["types"]["noul"]
+    assert not never["feasible"] and "flag" in never  # infeasible: the lowest-band T, flagged
     assert tight["nll_T"] >= loose["nll_T"] - 1e-12  # the constraint can only cost NLL
