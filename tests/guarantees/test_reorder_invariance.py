@@ -15,6 +15,7 @@ import itertools
 import math
 import os
 import random
+import re
 from typing import Any, Callable, Sequence
 
 import pytest
@@ -253,6 +254,170 @@ def test_harness_validates_score_fn_output():
         check_reorder(lambda s, o: {"zz": 1.0}, "s", [("a", "x"), ("b", "y")])
     r = check_reorder(lambda s, o: {i: (1.0 if c == "x" else 0.0) for i, c in o}, "s", [("a", "x"), ("b", "y")])
     assert r["max_abs_dp"] == 0.0
+
+
+# ------------------------------------------------------------------------------------------------ typed fixture
+# REORDER_INVARIANCE.md section 2T. An ORDINAL/SCORE question rendered with the level value as option CONTENT
+# ("level 2: <rubric>"), behind handles. Handles here are jevkit-style "0".."K-1": they coincide with the level value as
+# strings, which is exactly what makes a handle-reading head tempting. Symmetry (ii) permutes the handles among the
+# options with content fixed; symmetry (i) permutes the display order; (iii) renames the level VALUE (not a symmetry).
+_LEVEL = re.compile(r"^level (\d+): (.*)$", re.S)
+
+
+def _norm(text: str) -> str:
+    """(C5) whitespace normalisation: the content the head reads is a fixed function of the option text alone."""
+    return " ".join(text.split())
+
+
+def render_level(value: int, rubric: str) -> str:
+    return f"level {value}: {rubric}"
+
+
+def _target(state: str) -> int:
+    return int(re.search(r"target=(\d+)", state).group(1))
+
+
+def _ordinal_score(state: str, value: int, rubric: str) -> float:
+    # the level value dominates (1.5 per squared step); the rubric adds a small content term (|.| <= 0.32)
+    s = _feat("state|" + state)
+    return -1.5 * (value - _target(state)) ** 2 + 0.01 * sum(a * b for a, b in zip(s, _feat("rubric|" + rubric)))
+
+
+def _displayed(options: Sequence[Option]) -> list[str]:
+    """Render the option list as a prompt would: a separator after every option except the last displayed one (a
+    position leak through the raw text that (C5) removes)."""
+    return [c + ("\n" if k < len(options) - 1 else "") for k, (_h, c) in enumerate(options)]
+
+
+def ordinal_content_head(state: str, options: Sequence[Option]) -> list[float]:
+    """Typed rendering: level value and rubric both read from the normalised CONTENT; the handle is never read."""
+    z = []
+    for c in _displayed(options):
+        m = _LEVEL.match(_norm(c))
+        z.append(_ordinal_score(state, int(m.group(1)), m.group(2)))
+    return _softmax(z)
+
+
+def ordinal_unnormalised_head(state: str, options: Sequence[Option]) -> list[float]:
+    """Same, but reads the raw displayed text (no C5): the trailing separator differs by position."""
+    s = _feat("state|" + state)
+    z = []
+    for c in _displayed(options):
+        m = _LEVEL.match(c)
+        z.append(_ordinal_score(state, int(m.group(1)), m.group(2)) + 0.01 * sum(a * b for a, b in zip(s, _feat(c))))
+    return _softmax(z)
+
+
+def ordinal_handle_head(state: str, options: Sequence[Option]) -> list[float]:
+    """Reads the level value THROUGH THE HANDLE (int(handle)): display-order invariant, not handle-relabel invariant."""
+    z = []
+    for h, c in options:
+        m = _LEVEL.match(_norm(c))
+        z.append(_ordinal_score(state, int(h), m.group(2)))
+    return _softmax(z)
+
+
+def ordinal_value_dropping_head(state: str, options: Sequence[Option]) -> list[float]:
+    """Id-agnostic AND level-agnostic: reads only the rubric text. Invariant under (i) and (ii), but it has thrown the
+    level value away (the JEV3-SYM seed 0 failure mode: an accuracy cost, not an invariance failure)."""
+    s = _feat("state|" + state)
+    z = []
+    for c in _displayed(options):
+        m = _LEVEL.match(_norm(c))
+        z.append(0.01 * sum(a * b for a, b in zip(s, _feat("rubric|" + m.group(2)))))
+    return _softmax(z)
+
+
+def _ordinal_cases(n: int = 40, seed: int = 7) -> list[tuple[str, list[Option]]]:
+    """Rubric texts are deliberately uninformative about the level; the state names the target level."""
+    rng = random.Random(seed)
+    out = []
+    for i in range(n):
+        k = rng.choice([3, 4, 5])
+        t = rng.randrange(k)
+        rubrics = [f"rubric-{i}-{rng.randrange(10 ** 6)}  text" for _ in range(k)]  # double space: C5 matters
+        out.append((f"ordinal-{i} target={t}", [(str(v), render_level(v, rubrics[v])) for v in range(k)]))
+    return out
+
+
+def check_handle_permutation(score_fn: ScoreFn, state: Any, options: Sequence[Option], n_relabels: int = 8,
+                             seed: int = 0, tie_margin: float = 0.0) -> dict:
+    """Symmetry (ii) with the most adversarial sigma: permute the EXISTING handles among the options (content fixed),
+    so the new handles still look like level values. Maps back through sigma and compares per-content decisions."""
+    options = list(options)
+    content = dict(options)
+    base = _per_id(options, score_fn(state, options))
+    dec = _argmax_set(base, content, tie_margin)
+    rng = random.Random(f"handleperm|{seed}")
+    handles = [h for h, _c in options]
+    maxdp, flips, n = 0.0, 0, 0
+    for _ in range(n_relabels):
+        perm = handles[:]
+        while perm == handles:
+            rng.shuffle(perm)
+        sigma = dict(zip(handles, perm))
+        o2 = [(sigma[h], c) for h, c in options]
+        d2 = _per_id(o2, score_fn(state, o2))
+        back = {h: d2[sigma[h]] for h in base}
+        maxdp = max(maxdp, max(abs(back[h] - base[h]) for h in base))
+        flips += _argmax_set(back, content, tie_margin) != dec
+        n += 1
+    return {"kind": "handle_permutation", "n_checked": n, "max_abs_dp": maxdp, "flips": flips,
+            "argmax_equal": flips == 0}
+
+
+def test_typed_ordinal_level_as_content_is_bitwise_invariant_under_display_and_handle_symmetries():
+    for s, o in _ordinal_cases():
+        for r in assert_invariant(ordinal_content_head, s, o, tol=0.0):  # (i) all orders / shuffles; (ii) fresh ids
+            assert r["max_abs_dp"] == 0.0 and r["flips"] == 0
+        r = check_handle_permutation(ordinal_content_head, s, o)  # (ii) handles permuted among themselves
+        assert r["max_abs_dp"] == 0.0 and r["flips"] == 0
+
+
+def test_typed_ordinal_handle_reading_head_passes_display_order_but_fails_relabel():
+    for s, o in _ordinal_cases():
+        r = check_reorder(ordinal_handle_head, s, o)
+        assert r["max_abs_dp"] == 0.0 and r["flips"] == 0
+    rel = [check_handle_permutation(ordinal_handle_head, s, o) for s, o in _ordinal_cases()]
+    assert max(r["max_abs_dp"] for r in rel) > 0.5  # the level value moved with the handle
+    assert sum(r["flips"] for r in rel) > 0
+
+
+def test_typed_ordinal_needs_whitespace_normalisation():
+    reps = [check_reorder(ordinal_unnormalised_head, s, o) for s, o in _ordinal_cases()]
+    assert max(r["max_abs_dp"] for r in reps) > 0.0  # the last-displayed option's text differs: C5 violated
+
+
+def test_level_value_renaming_is_not_a_symmetry():
+    # (iii) tau swaps level values 0 <-> target in the CONTENT (rubric and handle kept): a different question
+    changed = 0
+    for s, o in _ordinal_cases():
+        t = _target(s)
+        if t == 0:
+            continue
+        tau = {v: v for v in range(len(o))}
+        tau[0], tau[t] = t, 0
+        o2 = [(h, render_level(tau[int(h)], _LEVEL.match(c).group(2))) for h, c in o]
+        p, p2 = _per_id(o, ordinal_content_head(s, o)), _per_id(o2, ordinal_content_head(s, o2))
+        changed += max(p, key=p.get) != max(p2, key=p2.get)
+    assert changed > 0  # the head follows the level value, as it must: invariance under tau would be a defect
+
+
+def test_dropping_level_values_keeps_invariance_but_costs_accuracy():
+    cases = _ordinal_cases()
+    for s, o in cases:
+        assert_invariant(ordinal_value_dropping_head, s, o, tol=0.0)
+        assert check_handle_permutation(ordinal_value_dropping_head, s, o)["flips"] == 0
+
+    def acc(head):
+        hits = 0
+        for s, o in cases:
+            p = _per_id(o, head(s, o))
+            hits += _LEVEL.match(_norm(dict(o)[max(p, key=p.get)])).group(1) == str(_target(s))
+        return hits / len(cases)
+
+    assert acc(ordinal_content_head) == 1.0
+    assert acc(ordinal_value_dropping_head) <= 0.6  # near chance (1/3 to 1/5): the information is gone
 
 
 @pytest.mark.skipif(not os.environ.get("SSDM_INV_HEAD"), reason="set SSDM_INV_HEAD=module:function to check a head")
