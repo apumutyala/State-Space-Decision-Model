@@ -278,6 +278,20 @@ def view_record(rec: dict[str, Any], qid: str, seed: int = 0, view_frac: float =
     return None
 
 
+def view_domain(base_ids, base_label, base_qtype, view_ids, view_label, view_qtype) -> str:
+    """"same" (identical option ids in order, same gold index, same type), "reordered" (same option SET and the same
+    gold OPTION, different order: a content-canonical layout after an option paraphrase), else "changed"."""
+    base_ids, view_ids = list(base_ids), list(view_ids)
+    if base_qtype != view_qtype:
+        return "changed"
+    if view_ids == base_ids and view_label == base_label:
+        return "same"
+    if (sorted(view_ids) == sorted(base_ids) and len(set(view_ids)) == len(view_ids)
+            and view_ids[view_label] == base_ids[base_label]):
+        return "reordered"
+    return "changed"
+
+
 def attach_views(items: list, records: dict[str, dict], enc, layout: str, template, guard, keep, seed: int = 0,
                  view_frac: float = 0.25, families: tuple[str, ...] = FAMILIES) -> dict:
     """Attach ``cview`` to the sampled TRAINING items in place (``keep(row) -> bool`` = the cell's K / T filter). The
@@ -292,7 +306,7 @@ def attach_views(items: list, records: dict[str, dict], enc, layout: str, templa
             if item_id in by_item:
                 raise ValueError(f"duplicate expanded Item id {item_id!r} in consistency-view records")
             by_item[item_id] = (rec, qid)
-    counts = {"with_view": 0, "not_sampled": 0, "no_transform": 0, "view_filtered": 0,
+    counts = {"with_view": 0, "not_sampled": 0, "no_transform": 0, "view_filtered": 0, "view_reordered_filtered": 0,
               "by_family": {f: 0 for f in families}}
     for it in items:
         rec, qid = by_item[it.id]
@@ -313,7 +327,14 @@ def attach_views(items: list, records: dict[str, dict], enc, layout: str, templa
             counts["view_filtered"] += 1
             continue
         v = vit[0]
-        if v.row.option_ids != it.row.option_ids or v.label != it.label or v.row.qtype != it.row.qtype:
+        dom = view_domain(it.row.option_ids, it.label, it.row.qtype, v.row.option_ids, v.label, v.row.qtype)
+        if dom == "reordered":
+            # sym-fork rows order options by CONTENT (canonical axis): an option-paraphrase view can reorder them while
+            # keeping the same option set and gold option. The symKL needs one shared option axis, so such a view is
+            # dropped (the base row stays single-view) and counted; a changed set / gold still fails closed below.
+            counts["view_reordered_filtered"] += 1
+            continue
+        if dom != "same":
             raise ValueError(f"{it.id}: consistency view does not keep the option domain and the gold option")
         it.cview = v
         counts["with_view"] += 1

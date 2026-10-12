@@ -101,6 +101,37 @@ def test_exclude_files_pinned_and_fail_closed(tmp_path, monkeypatch):
             TS.exclude_files({"train_set": {"exclude_files": [spec]}}, {"a"})
 
 
+def test_view_domain_reordered_vs_changed():
+    from train.consistency_views import view_domain
+    assert view_domain(["a", "b"], 0, "choice", ["a", "b"], 0, "choice") == "same"
+    assert view_domain(["a", "b"], 0, "choice", ["b", "a"], 1, "choice") == "reordered"  # same gold OPTION
+    assert view_domain(["a", "b"], 0, "choice", ["b", "a"], 0, "choice") == "changed"  # gold option moved
+    assert view_domain(["a", "b"], 0, "choice", ["a", "c"], 0, "choice") == "changed"
+    assert view_domain(["a", "b"], 0, "choice", ["a", "b"], 0, "noul") == "changed"
+
+
+def test_sym_fork_option_views_do_not_stop_the_cell():
+    """job-vra99 exit 35: an option-paraphrase view of a sym-fork row reordered the content-canonical options. It must
+    now be filtered (counted), never raise, while every other row keeps working."""
+    pytest.importorskip("torch")
+    from heads import ByteEncoder
+    from train.consistency_views import attach_views
+    from train.data import items_from_records
+    recs = {}
+    for i in range(24):  # option texts the OPTION_SYNONYMS table rewrites (issue/problem, buy/purchase, & / and)
+        crit = {"o1": f"an issue with buy order {i}", "o2": f"purchase & refund {i}", "o3": f"required step {i}"}
+        recs[f"r{i}"] = {"id": f"r{i}", "state": f"- note {i}\n- second line", "labels": {"q": "o2"},
+                         "questions": {"q": {"type": "choice", "instructions": "Choose the option.", "criteria": crit}}}
+    enc = ByteEncoder()
+    items = items_from_records(list(recs.values()), enc, layout="sym-fork", template="jrt-plain-v1")
+    cov = attach_views(items, recs, enc, layout="sym-fork", template="jrt-plain-v1", guard=None, keep=lambda r: True,
+                       seed=0, view_frac=1.0, families=("format", "instruction", "option"))
+    assert cov["with_view"] + cov["view_reordered_filtered"] + cov["view_filtered"] + cov["no_transform"] == 24
+    for it in items:  # an attached view always shares the base option axis and gold
+        if getattr(it, "cview", None) is not None:
+            assert list(it.cview.row.option_ids) == list(it.row.option_ids) and it.cview.label == it.label
+
+
 def test_slice_first_runs_before_any_screen_row():
     src = (M / "screen.py").read_text(encoding="utf-8")
     i = src.index("def score(a)")
