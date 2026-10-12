@@ -866,3 +866,17 @@ PRE-REGISTRATION TEXT (paste on origin/state before seed 0 is submitted):
 ## Mode `jev3_sym_s0_eval` (A-PREREG-JEV3-SYM Amendment 2: eval-only screen of job-5x4vr)
 
 This job does no training. It scores job-5x4vr's exported best checkpoint (step 200 of 258, trainable-step0000200.safetensors sha256 5cb7da42...), installed from artifact art-8xs32 (sha 933cc0ac...) with every byte sha-pinned (fail closed). The selection was frozen in job on the jev3 slice dev cards. It runs the stage-screen command exactly as pre-registered: the in-job stock control, the H2O target preds (e00d5ac7), bitwise G1 KEEP, the 8 flip ops, and slice_first (T-fit + step-0 floor) before any public row. Schedule: setup 7 + guard 2 + checkpoint 4 + screen 44 + report 2 + reserve 1 = 60 min, build_timeout 60 (launcher lint minimum). The screen cap is 44 because the setup preflight needs the D1-rate estimate (41.0 min) to be <= 0.95 x cap (job-svvvn stopped there at 32). Quoted hold $3.78; **worst case** (60 + 2 x 60) x $0.063 = **$11.34** (hard cap $12). The requested $8 cap would need a 33-min schedule (a ~18-min screen), which the full pre-registered screen does not fit.
+
+## Mode `jev3_lm` (A-PREREG-JEV3-LM: lm_label + canonicalised shim on stock Qwen3.5-4B; the last funded GPU cell)
+
+- Params `job_params_jev3_lm.json`, cell `m2_first_cell_rwkv7_jev3_lm.json`: head lm_label (JEV2-H2O @63277ebd), LoRA
+  r16 (lr_lora 4e-5, lr_head 3e-4), no consistency views, layout `g1v2-canon` (inference) / `train_layout`
+  `g1v2-canon-shuffle` (training rows only), LS 0.05 (noul 0), t_ladder to 4,096 + assert_no_truncation, 1 epoch = 729
+  steps of 5,837 jev3 rows (exclude file 8056c7e7: aegis_reply 109 + half of hs2_bar_coherence 14), clock 42 min.
+- Schedule: setup 6 + guard 2 + heldout 2 + cell 54 + screen 44 + report 2 + reserve 2 = 112 min; build_timeout 60.
+  **Worst case (60 + 2 x 112) x 0.063 = $17.89** (hard cap $18.00; <= $15 would leave ~20 training minutes). Expected
+  ~80 min = $5.04 + build.
+- Screen: slice_first (per-type T on the jev3 slice, step-0 floor), the native arm (canonical), native_tfit (PRIMARY),
+  native_shimcal, the NON-canonical stock-shim control (primary comparator, also G1 / score-inv teeth), canon_stock
+  (LoRA off, lm_label scale 1: the untrained host read canonically), G1 KEEP (bitwise), the 8 flip ops, score_inv KEEP
+  (`scripts/ev_score_perturb.py` / `ev_score_flip.py`, sha-pinned), the letter-prior check, the H2O target arm.

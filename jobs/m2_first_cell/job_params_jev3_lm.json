@@ -1,0 +1,392 @@
+{
+ "_comment": "Mode jev3_lm (A-PREREG-JEV3-LM; NOT submitted until lead go). Schedule: setup 6 + guard 2 + heldout 2 + cell 54 + screen 44 + report 2 + reserve 2 = 112. Worst case (60 + 2 x 112) x 0.063 = $17.89 <= $18. Expected ~80 min = $5.04 + build. Cell: 42-min clock (1 epoch = 729 steps at the measured 2.55-3.93 s/step; 641 at the slow end) + ~10 min fixed; screen cap 44 = the setup preflight (screen.estimate 41.0).",
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [
+   "flash-linear-attention==0.5.2",
+   "fla-core==0.5.2"
+  ],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo; checked on the PR that pins them"
+   },
+   {
+    "reason": "Decision Index kit",
+    "why": "the CPU dry run needs the pinned kit clone; the image ships the kit and setup imports it"
+   }
+  ],
+  "image": "jobs/probe9b/Dockerfile"
+ },
+ "job": "m2-first-cell-jev3-lm",
+ "status": "A-PREREG-JEV3-LM: stock Qwen3.5-4B + LoRA r16 + lm_label, canonicalised shim, 1 epoch jev3 (5,837), 42-min clock",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 112,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "checkpoint",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.063,
+ "hard_cap_usd": 18.0,
+ "phase_caps_minutes": {
+  "setup": 6,
+  "guard": 2,
+  "heldout": 2,
+  "cell": 54,
+  "screen": 44,
+  "report": 2
+ },
+ "reserve_minutes": 2,
+ "expected_minutes": {
+  "setup": 3,
+  "guard": 1,
+  "heldout": 1,
+  "cell": 46,
+  "screen": 28,
+  "report": 1
+ },
+ "evals_fixed_minutes": {
+  "parent": 3,
+  "child": 8
+ },
+ "measured_rates_reference": {
+  "TOK_S": 22144,
+  "CALL_S": 0.0595,
+  "source": "job-5cmat (same image, Qwen3.5-9B): only the runner's required env; with parent_arm none no parent phase is priced from it (the smaller arms prefill faster)"
+ },
+ "parent": "qwen35",
+ "model": "Qwen/Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a (stock Qwen3.5 hybrid, LoRA r16 + lm_label head)",
+ "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_jev3_lm.json",
+ "train_set_pointer": "data/manifests/bschema-draw-jev3.pointer.json",
+ "train_dir": "m2-jev3",
+ "cohort": "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "guard_pin": "jobs/m2_pilot/guard_pin.json",
+ "guard_content_index_sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+ "margins_from": "train.promotion.MARGINS",
+ "margins_status": "issue #36 margins approved in PR #102 (train.promotion.MARGINS); this cell runs G12 + the index measurement, not G13, so m2_gates exits 44 (partial) / 40 and it is never promotable; 43/44/45 are trained + measured outcomes",
+ "reference_results_sha256": {
+  "_note": "optional files shipped under /data/reference/ (same 2,008 subset rows); used only for the report's comparisons. null = not shipped / not used",
+  "rwkv7_stock_tkfaj": null,
+  "clef_flash": null
+ },
+ "mission": "m2-first-cell",
+ "decision_rule": "train/promotion.py",
+ "runner": "jobs/m2_first_cell/first_cell_job.sh",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py, PR #93): identical to the JOB_SPEC submit block (tests/test_launch.py checks field by field). TOK_S / CALL_S = the job-tkfaj probe's measured rates (the runner exits 4 without them).",
+  "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh jev3_lm",
+  "env": {
+   "TOK_S": "22144",
+   "CALL_S": "0.0595"
+  },
+  "key": "m2-first-cell-jev3-lm-r1",
+  "clock_lock": true,
+  "label": "A-PREREG-JEV3-LM jev3_lm: stock Qwen3.5-4B + LoRA r16 + lm_label, canonicalised shim (train shuffle), 1 epoch jev3 5,837 rows, 42-min clock [primary native_tfit (per-type T) vs non-canonical stock + shim; G1 KEEP; score-inv KEEP; canon-stock arm; letter prior; 8-op flips; slice first; H2O target]",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/M2_FIRST_CELL_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "the jev1 r2 context with m2-jev1/ replaced by the balanced jev2 mix (m2-jev2mix/) and its calib slice (m2-jev2mix-calib/, tfit only), pinned by data_jev2.sha256 (filled when the mix is built)",
+  "dockerfile": "jobs/probe9b/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/probe9b/probe_job.sh",
+   "jobs/m2_first_cell/first_cell_job.sh"
+  ],
+  "data": [
+   {
+    "src": "m2/build/sample-20000-seed20261006/records.jsonl.gz",
+    "dest": "m2/records.jsonl.gz",
+    "pin": "jobs/rwkv7/records.sha256"
+   },
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   },
+   {
+    "src": "suite-0.2/selected-rows.jsonl.gz",
+    "dest": "suite-0.2/selected-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_jev1.sha256"
+   },
+   {
+    "src": "suite-0.2/added-rows.jsonl.gz",
+    "dest": "suite-0.2/added-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_jev1.sha256"
+   },
+   {
+    "src": "suite-0.2/excluded-questions.json",
+    "dest": "suite-0.2/excluded-questions.json",
+    "pin": "jobs/m2_first_cell/data_jev1.sha256"
+   },
+   {
+    "src": "m2/screen_reference/art-zskmx/child.v3w.results.jsonl",
+    "dest": "screen_reference/art-zskmx/child.v3w.results.jsonl",
+    "pin_sha256": "941af29e4e6d427b300703d3a7d29bd959e8c16af82292eb04e87b73b4474f02"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/df.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/df.npy",
+    "pin_sha256": "ee411d5c067934e5f6bd3e2919ca98ce1fbc48830140f478f06b1f47f96bbe55"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/ent.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/ent.npy",
+    "pin_sha256": "02c60e18c646c91ebce8e26423ca8e75bf06e48584fd810f3ee8224a8f9989d3"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/fl.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/fl.npy",
+    "pin_sha256": "ba2f466ab74e51e04f3a9111017e31089b951691b72a405d0e80ebc9e23c5044"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/h.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/h.npy",
+    "pin_sha256": "ff1a0b35f1888b666f79029639618d0241046c9c235e23bc7402fc7fd55ef040"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/meta.json",
+    "dest": "m2/doc-overlap/0eaf89305948075a/meta.json",
+    "pin_sha256": "51bce25703df08ceae16785ade19294b70b97a458d488b8296343310b3732651"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/pcnt.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/pcnt.npy",
+    "pin_sha256": "c1eeccb3e574db7da3a8d1c3ac8f28311389282071df14606fdf94be2f68d752"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/post.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/post.npy",
+    "pin_sha256": "2da265e7ce19d5733cecb9bc53f2ab520d955f2061959beed87ab53a73cb761a"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/pstart.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/pstart.npy",
+    "pin_sha256": "f5b2fc433ed465334c087219e5323500303488aa85f5edef6fb2a48b132f5549"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_allow.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_allow.npy",
+    "pin_sha256": "09f4da80c85152221cd854f64168ef28cd98e6b9b445101ae7cf27b9f0da49e0"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_den.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_den.npy",
+    "pin_sha256": "03cc2ef0b3c39d8c395b7cf5e9c8b554cfb520b22111dd425d5ca353b71458ad"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_field.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_field.npy",
+    "pin_sha256": "294bb8ec9c9ca13a56e0fcd1f87043ca6514b279c35bf5aeab6f1ed72402fbf0"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_row.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_row.npy",
+    "pin_sha256": "806b6699f847e039018840b9cb5da57e94086addcd44416d02fedbc7a06848f0"
+   },
+   {
+    "src": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/original.jsonl",
+    "dest": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/original.jsonl",
+    "pin_sha256": "5c2414edb3006b8bfcb70fda433f0f9ca015759433849f8d3104328a1f7c4180"
+   },
+   {
+    "src": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/easy.jsonl",
+    "dest": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/easy.jsonl",
+    "pin_sha256": "231df3c2c8e88a1a8c137ebe85de96ba70fabd330849098ac7b3c52c70b7172b"
+   },
+   {
+    "src": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/hard.jsonl",
+    "dest": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/hard.jsonl",
+    "pin_sha256": "89e9e6becb33ed88c1de7d42dcc87531b2fb64cfaef4e1986faf7c37b3f80ebb"
+   },
+   {
+    "src": "m2/screen_comparators/clef_flash_t5yg2.proxy600.results.jsonl",
+    "dest": "screen_comparators/clef_flash_t5yg2.proxy600.results.jsonl",
+    "pin_sha256": "ac320b08c722f23b5662c85f19b32aaa9cb1554cf5424f1d9e7fc29df005dc94"
+   },
+   {
+    "src": "m2/screen_comparators/clef27b_zfexa.proxy600.results.jsonl",
+    "dest": "screen_comparators/clef27b_zfexa.proxy600.results.jsonl",
+    "pin_sha256": "1040e563da0ba5d7394cbb8c7de54f2e389bd068ade8ddea9546443e725388f8"
+   },
+   {
+    "src": "target_ref/h2o_4g6m8.preds.jsonl",
+    "dest": "target_ref/h2o_4g6m8.preds.jsonl",
+    "pin_sha256": "e00d5ac7bfcccac18fe526752871004133ebd0b598dc42224cf498496ff62fd2"
+   },
+   {
+    "src": "m2/build/bschema-draw-jev3/bschema-draw-jev3.content.jsonl.gz",
+    "dest": "m2-jev3/bschema-draw-jev3.content.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_jev3.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw-jev3/bschema-draw-jev3.manifest.jsonl.gz",
+    "dest": "m2-jev3/bschema-draw-jev3.manifest.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_jev3.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw-jev3/records.jsonl.gz",
+    "dest": "m2-jev3/records.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_jev3.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw-jev3-slice/records.jsonl.gz",
+    "dest": "m2-jev3-calib/records.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_jev3.sha256"
+   }
+  ],
+  "manifest_files": [
+   "jobs/m2_first_cell/first_cell_job.sh",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7.json",
+   "jobs/m2_pilot/guard_pin.json",
+   "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+   "decide/v3w_generic.py",
+   "decide/backends/v3w_generic.py",
+   "jobs/m2_first_cell/qwen35_4b_snapshot.sha256",
+   "jevkit/data/jevbench_public_pin.json",
+   "heads/backbone.py",
+   "heads/layout.py",
+   "decide/shim_format.py",
+   "third_party/h2o_lightning_shim/h2o_lightning_shim.py",
+   "third_party/h2o_lightning_shim/serve_config.json",
+   "train/jevbench_guard.py",
+   "jobs/m2_first_cell/screen.py",
+   "data/manifests/bschema-draw-jev2a.pointer.json",
+   "heads/symmetric.py",
+   "heads/decide_backend.py",
+   "jobs/sym_eval/perturb_eval.py",
+   "receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt",
+   "data/manifests/bschema-draw-jev2c.pointer.json",
+   "receipts/2026-10-10-jev2b-regate/jev2b_exclude_ids.txt",
+   "data/manifests/bschema-draw-jev2b.pointer.json",
+   "receipts/2026-10-11-jev2c-v2-regate/jev2c-v2_exclude_ids.txt",
+   "data/manifests/bschema-draw-jev2c-v2.pointer.json",
+   "jobs/m2_first_cell/data_jev3.sha256",
+   "data/manifests/bschema-draw-jev3.pointer.json",
+   "data/manifests/bschema-draw-jev3-slice.pointer.json",
+   "receipts/2026-10-11-jev3-regate/jev3_exclude_ids.txt",
+   "jobs/m2_first_cell/landing.py",
+   "scripts/verify_ids_sha.py",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_jev3_lm.json",
+   "decide/canon_shim.py",
+   "receipts/2026-10-12-jev3-lm/jev3_lm_train_exclude.txt",
+   "scripts/ev_score_perturb.py",
+   "scripts/ev_score_flip.py",
+   "train/run_cell.py",
+   "train/m2_gates.py"
+  ]
+ },
+ "mode": "jev3_lm",
+ "stage": "screen",
+ "screen_readout": "native",
+ "screen_reference": "d1_v3w",
+ "screen_parent": "none",
+ "screen_fixed_minutes": 15,
+ "screen_reference_match": "cross",
+ "parent_arm": "none",
+ "screen_comparators": [
+  {
+   "name": "clef_flash",
+   "shipped": "screen_comparators/clef_flash_t5yg2.proxy600.results.jsonl",
+   "units_sha256": "ac320b08c722f23b5662c85f19b32aaa9cb1554cf5424f1d9e7fc29df005dc94",
+   "readout_template": "clef-native (decide_32k_substituted)",
+   "source": "Clef-flash job-t5yg2 art-7pyk2 index/decide_32k_substituted/results.jsonl (sha256 2cb2e961...) restricted to the 644 proxy600 rows (59.03 on the proxy)"
+  },
+  {
+   "name": "clef_27b",
+   "shipped": "screen_comparators/clef27b_zfexa.proxy600.results.jsonl",
+   "units_sha256": "1040e563da0ba5d7394cbb8c7de54f2e389bd068ade8ddea9546443e725388f8",
+   "readout_template": "clef-native (decide_32k_substituted)",
+   "source": "Clef 27B job-zfexa art-p93d4 index/decide_32k_substituted/results.jsonl (sha256 f5ad788b...) restricted to the 644 proxy600 rows (64.56 on the proxy)"
+  }
+ ],
+ "jevkit": {
+  "price": "kind=base_model_reference,in=0.03,out=0.15,source=JevBench v1.6.1 board api_v161.json deepinfra:Qwen/Qwen3.5-4B 0.03/0.15 per 1M (the price basis of the h2o-lightning-4b row; EV-PREREG-H2O-HOST),as_of=2026-10-09,model=Qwen/Qwen3.5-4B",
+  "shim_calibration": true,
+  "stock_shim": true,
+  "paired_primary": "native_tfit",
+  "tfit": {
+   "records": "m2-jev3-calib/records.jsonl.gz",
+   "lo": 0.25,
+   "hi": 4.0,
+   "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078",
+   "per_type": {
+    "min_cell": 200
+   }
+  },
+  "perturb_ops": [
+   "option_reverse",
+   "option_shuffle",
+   "key_relabel"
+  ],
+  "assert_no_truncation": true,
+  "g1_max_dp": 0.0,
+  "g1_keep_gate": true,
+  "flip_ops_all": true,
+  "g1_per_arm": true,
+  "flip_reference": "stock Qwen3.5-4B + shim: 7.55% average flip rate over the jevkit operators (evidence receipt)",
+  "target_ref": {
+   "name": "H2O-Lightning-4B v1.1 (job-4g6m8 control preds; identical answers to job-zbtbj)",
+   "preds": "target_ref/h2o_4g6m8.preds.jsonl",
+   "sha256": "e00d5ac7bfcccac18fe526752871004133ebd0b598dc42224cf498496ff62fd2",
+   "source": "claude/lead-h2o-eval @f5615683 receipts/2026-10-11-h2o-host-eval/arms/h2o/preds.jsonl (SHA256SUMS)",
+   "caveat": "TARGET only (76.6 local): S / K come from a different job (~2.7 S-pt cross-job noise) and H2O ran through the vendored-shim path; paired on the same 231 ids and the same bootstrap draws (screen.paired_vs B 1000 seed 16); a missing / changed file fails closed (exit 10)"
+  },
+  "slice_floor": true,
+  "slice_first": true,
+  "by_family": true,
+  "slice_state_disjoint": {
+   "train_records": "m2-jev3/records.jsonl.gz"
+  },
+  "canon_stock": true,
+  "letter_prior": {
+   "flag_pp": 5
+  },
+  "score_inv": {
+   "shuffle_seeds": [
+    0,
+    1,
+    2
+   ],
+   "max_dp": 0,
+   "keep_gate": true,
+   "scripts_sha256": {
+    "scripts/ev_score_perturb.py": "803eeb9019f45f8a077f289ab6eab4f930510cf3ee7e5f847bdd855cbcf3e1da",
+    "scripts/ev_score_flip.py": "b59f21655522187b3f8453e8092f41e3943c24d6c9fe6dc83beb16fb5961b6b2"
+   }
+  }
+ },
+ "cohort_note": "pins cohort v2 deliberately (no G13 here); the training draw excludes cohort v3 regardless (#105). The G13 gate of this checkpoint is a separate job on v3 (~16-17 H100-h at job-tkfaj rates).",
+ "jevkit_note": "A-PREREG-JEV3-LM: PRIMARY = native_tfit (the canonicalised lm_label readout with per-type T, + per (type, K) cell T where the slice has >= 200 decisions, fitted ONLY on the jev3 slice) paired vs the NON-canonical in-job stock + shim control; secondaries: raw native, native_shimcal, canon_stock (canonical layout, untrained host). KEEP 1 = G1 bitwise (also a canonicaliser regression test; the stock shim on the same files = teeth); KEEP 2 = scripts/ev_score_flip.py --max-dp 0 (claude/ev-score-inv @c47c0a46). Letter-prior check: FLAG if predicted-A exceeds gold-A by > 5 pp (slice and public choice)."
+}

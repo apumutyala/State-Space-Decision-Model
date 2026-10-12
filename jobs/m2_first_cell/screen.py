@@ -482,9 +482,19 @@ def jevkit_block(params: dict, template: str) -> dict | None:
                   | ({"slice_first": True} if jk.get("slice_first") else {})
                   # JEV3-SYM: bitwise G1 KEEP gate, the 8-op flip battery, the H2O target reference, slice/train disjointness
                   | {k: jk[k] for k in ("g1_max_dp", "g1_keep_gate", "flip_ops_all", "flip_reference", "target_ref",
-                                        "slice_state_disjoint", "g1_per_arm") if k in jk})
+                                        "slice_state_disjoint", "g1_per_arm", "score_inv", "canon_stock",
+                                        "letter_prior") if k in jk})
     if jk.get("slice_floor") and not (stock and tfit):
         raise ScreenError("jevkit.slice_floor needs stock_shim (step 0 = the untrained host) and tfit (the slice)", 5)
+    si = jk.get("score_inv")  # JEV3-TYPED KEEP gate 2: the evidence lane's score-item invariance op (vendored, pinned)
+    if si is not None:
+        if not (isinstance(si, dict) and set(si) == {"shuffle_seeds", "max_dp", "keep_gate", "scripts_sha256"}
+                and stock and si["max_dp"] == 0 and list(si["shuffle_seeds"]) == [0, 1, 2]):
+            raise ScreenError("jevkit.score_inv: {shuffle_seeds [0,1,2], max_dp 0, keep_gate, scripts_sha256}; "
+                              "needs stock_shim (the control)", 5)
+        bad = score_inv_scripts_check(si["scripts_sha256"])
+        if bad:
+            raise ScreenError(f"jevkit.score_inv: vendored scripts differ from the pin: {bad}", 5)
     return {**extra_keys, "price": jk["price"], "price_parsed": price, "lean_template": lean, "extra_templates": extra,
             "shim_calibration": bool(jk.get("shim_calibration")), "stock_shim": bool(stock),
             "paired_primary": jk.get("paired_primary"),
@@ -635,7 +645,8 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: st
         try:
             ident["tfit"] = fit_native_temperature(decider.backend, Path(data_dir) / jk["tfit"]["records"],
                                                    out_dir / "tfit.json", float(jk["tfit"].get("lo", 0.25)),
-                                                   float(jk["tfit"].get("hi", 4.0)), jk["tfit"].get("ids_sha256"))
+                                                   float(jk["tfit"].get("hi", 4.0)), jk["tfit"].get("ids_sha256"),
+                                               jk["tfit"].get("per_type"))
         except (OSError, ValueError, KeyError) as e:
             print(f"identity: tfit: {type(e).__name__}: {e}", file=sys.stderr)
             return 10
@@ -659,6 +670,20 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: st
                 g1s = perturb_run(eng, items, out_dir / "g1" / "stock_shim", ops=jk["perturb_ops"], seeds=(0,),
                                   max_dp=1.0, kind="request")
             ident["g1_stock_shim"] = {"n_perturbed": g1s["n_perturbed"], "seconds": round(time.perf_counter() - t0, 2)}
+        if jk.get("canon_stock"):  # JEV3-LM secondary: the canonical layout on the UNTRAINED host (LoRA off, scale 1)
+            t0 = time.perf_counter()
+            recs = canon_stock_answers(decider, eng, items)
+            with open(out_dir / "canon_stock.preds.jsonl", "w", encoding="utf-8", newline="\n") as f:
+                for r in recs:
+                    f.write(json.dumps(r, separators=(",", ":"), default=str) + "\n")
+            ident["canon_stock"] = {"seconds": round(time.perf_counter() - t0, 2), "n": len(recs),
+                                    "status": _count(r["status"] for r in recs),
+                                    "rule": "the native decider (canonical layout) with every LoRA off and the "
+                                            "lm_label scale at its init 1.0 = the untrained host read canonically"}
+        if jk.get("score_inv"):  # JEV3-TYPED KEEP gate 2 (trained arm) + its control (stock shim): ev_score_* scripts
+            t0 = time.perf_counter()
+            ident["score_inv"] = score_inv_run(jk["score_inv"], decider, eng, out_dir / "score_inv")
+            ident["score_inv"]["seconds"] = round(time.perf_counter() - t0, 2)
         if jk.get("slice_floor") and jk.get("tfit") and first is None:  # A-PREREG-JEV2-H2O: step 0 on the slice
             t0 = time.perf_counter()
             try:
@@ -758,6 +783,122 @@ class StockShimEngine:
         return [str(n) for n in names], lp
 
 
+#: the evidence lane's score-item invariance scripts (claude/ev-score-inv @c47c0a463936d8aff586ee69728291521bc31336),
+#: vendored byte-identical; the job params pin their sha256 and the screen refuses to run them if they differ
+SCORE_INV_SCRIPTS = ("scripts/ev_score_perturb.py", "scripts/ev_score_flip.py")
+
+
+def score_inv_scripts_check(pins: dict) -> list[str]:
+    root = Path(__file__).resolve().parents[2]
+    bad = []
+    for f in SCORE_INV_SCRIPTS:
+        q = root / f
+        got = hashlib.sha256(q.read_bytes()).hexdigest() if q.is_file() else None
+        if pins.get(f) != got:
+            bad.append(f"{f}: {got} != {pins.get(f)}")
+    return bad
+
+
+def _score_inv_request(row: dict) -> dict:
+    """An ev_score_perturb row as a decide request (the typed layout reads question.options / question.scale)."""
+    q = row["question"]
+    return {"state": row["state"], "questions": {"q": {"type": "score", "instructions": q.get("instructions"),
+                                                       "scale": list(q["scale"]), "options": dict(q["options"])}}}
+
+
+def score_inv_native(decider, row: dict) -> dict:
+    """The trained arm's untempered head distribution over the row's handles (exp of the head log-probs)."""
+    import math
+
+    lg = decider.backend.score(_score_inv_request(row), lambda: None).logits["q"]
+    return {"type": "score", "probabilities": {h: math.exp(lg[h]) for h in row["labels"]}}
+
+
+def score_inv_stock(eng: "StockShimEngine", row: dict) -> dict:
+    """The control: stock Qwen3.5 under the shim prompt reading the same contents as a CHOICE over the row's handles
+    (in display order). It reads handles and positions, so it is expected to fail the gate (the check has teeth)."""
+    q = row["question"]
+    req = {"state": row["state"], "questions": {"q": {"type": "choice", "instructions": q.get("instructions"),
+                                                      "criteria": dict(q["options"])}}}
+    names, lp = eng.label_logps(req, "q")
+    pr = eng.mod.probabilities(lp, 1.0)
+    d = dict(zip(names, pr))
+    return {"type": "score", "probabilities": {h: float(d[h]) for h in row["labels"]}}
+
+
+def score_inv_run(spec: dict, decider, eng: "StockShimEngine", d: Path) -> dict:
+    """KEEP gate 2: ``scripts/ev_score_perturb.py --public --out d --shuffle-seeds 0,1,2`` (base.jsonl, perturbed.jsonl,
+    manifest.json), then BOTH arms answer BOTH files (the base readout comes from base.jsonl), then
+    ``scripts/ev_score_flip.py --public --dir d --out d/<arm> --base-preds .. --pert-preds .. --max-dp 0`` per arm
+    (exit 0 PASS / 3 FAIL / 2 missing). Preds and reports ship in the artifact (the evidence rescore re-runs the check)."""
+    import subprocess
+
+    root = Path(__file__).resolve().parents[2]
+    d.mkdir(parents=True, exist_ok=True)
+    seeds = ",".join(str(x) for x in spec["shuffle_seeds"])
+    g = subprocess.run([sys.executable, "-I", "-X", "utf8", "scripts/ev_score_perturb.py", "--public", "--out", str(d),
+                        "--shuffle-seeds", seeds], cwd=root, capture_output=True, text=True)
+    rec: dict = {"perturb_rc": g.returncode, "perturb_stdout": g.stdout.strip()[-2000:],
+                 "scripts_sha256": spec["scripts_sha256"]}
+    if g.returncode != 0:
+        rec["error"] = g.stderr.strip()[-2000:]
+        return rec
+    rows = {n: [json.loads(x) for x in (d / f"{n}.jsonl").read_text(encoding="utf-8").splitlines() if x.strip()]
+            for n in ("base", "perturbed")}
+    arms = {"native": lambda r: score_inv_native(decider, r)}
+    for nm, fn in arms.items():
+        _score_inv_arm(nm, fn, rows, d)
+    with eng.lora_off():
+        _score_inv_arm("stock_shim", lambda r: score_inv_stock(eng, r), rows, d)
+    for nm in ("native", "stock_shim"):
+        f = subprocess.run([sys.executable, "-I", "-X", "utf8", "scripts/ev_score_flip.py", "--public", "--dir", str(d),
+                            "--out", str(d / nm), "--base-preds", str(d / nm / "base.preds.jsonl"),
+                            "--pert-preds", str(d / nm / "perturbed.preds.jsonl"), "--max-dp", str(spec["max_dp"])],
+                           cwd=root, capture_output=True, text=True)
+        rec[nm] = {"rc": f.returncode, "pass": f.returncode == 0,
+                   "verdict": {0: "PASS", 3: "FAIL", 2: "MISSING"}.get(f.returncode, f"rc {f.returncode}")}
+        if f.returncode not in (0, 3):
+            rec[nm]["stderr"] = f.stderr.strip()[-2000:]
+    rec["n_base"], rec["n_perturbed"] = len(rows["base"]), len(rows["perturbed"])
+    return rec
+
+
+def _score_inv_arm(nm: str, fn, rows: dict, d: Path) -> None:
+    (d / nm).mkdir(parents=True, exist_ok=True)
+    for part, rs in rows.items():
+        with open(d / nm / f"{part}.preds.jsonl", "w", encoding="utf-8", newline="\n") as f:
+            for r in rs:
+                try:
+                    out = {"id": r["id"], "answer": fn(r), "status": "ok"}
+                except Exception as e:  # noqa: BLE001  an arm that cannot answer is INVALID (the flip check fails closed)
+                    out = {"id": r["id"], "answer": None, "status": f"error: {type(e).__name__}: {e}"[:300]}
+                f.write(json.dumps(out, separators=(",", ":"), ensure_ascii=False) + "\n")
+
+
+def canon_stock_answers(decider, eng: "StockShimEngine", items) -> list:
+    """The canonical-layout answers of the UNTRAINED host: LoRA off (``eng.lora_off``) and the lm_label head's scalar
+    ``scale`` at its init value 1.0 (restored after), through the SAME decider (canonical rows, tie handling)."""
+    import torch
+
+    from jevkit.systemone import SystemOneAdapter, run_items
+
+    head = decider.backend.model.head
+    keep = head.scale.detach().clone() if hasattr(head, "scale") else None
+    ad = SystemOneAdapter(decider, kind="decider", model_name="canon-stock")
+    with eng.lora_off():
+        try:
+            if keep is not None:
+                with torch.no_grad():
+                    head.scale.fill_(1.0)
+            for it in items[:JEVKIT_WARMUP]:
+                ad.answer_item(it)
+            return run_items(ad, items)
+        finally:
+            if keep is not None:
+                with torch.no_grad():
+                    head.scale.copy_(keep)
+
+
 def _state_key(r: dict) -> str:
     """The state text key (== scripts/jev12_balanced_draw._request_key: sha256 of the canonical JSON of ``state``)."""
     s = json.dumps(r.get("state"), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
@@ -801,7 +942,8 @@ def slice_first(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: str 
     try:
         ident["tfit"] = fit_native_temperature(decider.backend, Path(data_dir) / jk["tfit"]["records"],
                                                out_dir / "tfit.json", float(jk["tfit"].get("lo", 0.25)),
-                                               float(jk["tfit"].get("hi", 4.0)), jk["tfit"].get("ids_sha256"))
+                                               float(jk["tfit"].get("hi", 4.0)), jk["tfit"].get("ids_sha256"),
+                                               jk["tfit"].get("per_type"))
         eng = StockShimEngine(decider.backend, model_dir)
         ident["slice_floor"] = slice_floor(eng, Path(data_dir) / jk["tfit"]["records"], out_dir / "calib_probs.jsonl",
                                            out_dir / "slice_floor.json", jk["tfit"].get("ids_sha256"))
@@ -1099,7 +1241,7 @@ def slice_ids_sha256(record_ids) -> str:
 
 
 def fit_native_temperature(backend, records_path: Path, out: Path, lo: float, hi: float,
-                           expect_ids_sha256: str | None = None) -> dict:
+                           expect_ids_sha256: str | None = None, per_type: dict | None = None) -> dict:
     """GPU side of the tfit: the CALIB slice's rows (scripts/jev12_balanced_draw.py ``-calib``: >= 200 per family,
     hashed-id order, disjoint from the training draw by id AND content; never JevBench items) through the native
     backend (same template / layout / encoder as the jevkit native arm). Exports EVERY slice decision's per-option
@@ -1125,7 +1267,7 @@ def fit_native_temperature(backend, records_path: Path, out: Path, lo: float, hi
               for r in raws}
     items = items_from_records([to_train_record(r) for r in raws], backend.encode, layout=backend.layout,
                                template=backend.template)
-    logps, labels, noul = [], [], []
+    logps, labels, noul, cells = [], [], [], []
     m = backend.model
     was = m.training
     m.eval()
@@ -1138,6 +1280,7 @@ def fit_native_temperature(backend, records_path: Path, out: Path, lo: float, hi
                 v = lp.tolist()
                 logps.append(v)
                 labels.append(int(it.label))
+                cells.append((it.row.qtype, it.row.n_options))
                 if it.row.qtype == "noul" and "true" in list(it.row.option_ids):
                     noul.append((v, list(it.row.option_ids).index("true")))
                 mx = max(v)
@@ -1150,6 +1293,8 @@ def fit_native_temperature(backend, records_path: Path, out: Path, lo: float, hi
         m.train(was)
     fit = fit_temperature(logps, labels, lo, hi)
     band = constrain_t_by_band(fit, noul)  # the yes/no band rate on the slice may not rise above its T = 1 value
+    if per_type is not None:  # JEV3-LM: T per question type (+ per (type, K) cell with >= min_cell decisions)
+        band["per_type"] = fit_per_type(logps, labels, cells, noul, lo, hi, int(per_type.get("min_cell", 200)))
     rep = fit | band | {
         "nll_T_nll": fit["nll_T"], "n_noul": len(noul),
         "records": str(records_path), "records_gz_sha256": hashlib.sha256(raw).hexdigest(), "ids_sha256": sha,
@@ -1161,8 +1306,42 @@ def fit_native_temperature(backend, records_path: Path, out: Path, lo: float, hi
                                 "ids_sha256")}
 
 
-def tfit_preds(src: Path, dst: Path, items, t: float) -> None:
-    """native.preds.jsonl -> native_tfit.preds.jsonl with every ok answer re-tempered by the frozen T (score-only)."""
+def fit_per_type(logps, labels, cells, noul, lo: float, hi: float, min_cell: int = 200) -> dict:
+    """T per question type (choice / noul / score) and per (type, K) cell with >= ``min_cell`` slice decisions, each
+    the bounded NLL minimiser on its own decisions; the noul T is moved toward 1 if it would raise the slice's yes/no
+    0.2-0.8 band rate (``constrain_t_by_band``). A type with no slice decisions keeps T = 1."""
+    out: dict = {"min_cell": min_cell, "types": {}, "cells": {}}
+    for t in ("choice", "noul", "score"):
+        idx = [i for i, (q, _) in enumerate(cells) if q == t]
+        if not idx:
+            out["types"][t] = {"T": 1.0, "n": 0}
+            continue
+        f = fit_temperature([logps[i] for i in idx], [labels[i] for i in idx], lo, hi)
+        if t == "noul":
+            f = f | constrain_t_by_band(f, noul)
+        out["types"][t] = {"T": float(f["T"]), "n": len(idx), "nll_T": f.get("nll_T"), "nll_1": f.get("nll_1"),
+                           "at_bound": f.get("at_bound")}
+        for k in sorted({kk for q, kk in cells if q == t}):
+            jdx = [i for i in idx if cells[i][1] == k]
+            if len(jdx) >= min_cell and t != "noul":
+                g = fit_temperature([logps[i] for i in jdx], [labels[i] for i in jdx], lo, hi)
+                out["cells"][f"{t}:{k}"] = {"T": float(g["T"]), "n": len(jdx), "at_bound": g.get("at_bound")}
+    return out
+
+
+def t_for(question: dict, t) -> float:
+    """The frozen T of a question: a scalar, or a per_type map (its (type, K) cell if fitted, else its type)."""
+    if isinstance(t, (int, float)):
+        return float(t)
+    typ = question["type"]
+    k = 2 if typ == "noul" else len(question["criteria"])
+    c = (t.get("cells") or {}).get(f"{typ}:{k}")
+    return float(c["T"]) if c else float(((t.get("types") or {}).get(typ) or {}).get("T", 1.0))
+
+
+def tfit_preds(src: Path, dst: Path, items, t) -> None:
+    """native.preds.jsonl -> native_tfit.preds.jsonl with every ok answer re-tempered by the frozen T (score-only);
+    ``t`` a scalar or the per_type map (``t_for``)."""
     by_id = {it.id: it for it in items}
     with open(src, encoding="utf-8") as f, open(dst, "w", encoding="utf-8", newline="\n") as g:
         for line in f:
@@ -1171,7 +1350,7 @@ def tfit_preds(src: Path, dst: Path, items, t: float) -> None:
             r = json.loads(line)
             a, it = r.get("answer"), by_id.get(r.get("id"))
             if r.get("status") == "ok" and isinstance(a, dict) and it is not None:
-                r["answer"] = retemper_answer(it.question, a, t)
+                r["answer"] = retemper_answer(it.question, a, t_for(it.question, t))
             g.write(json.dumps(r, separators=(",", ":")) + "\n")
 
 
@@ -1203,14 +1382,15 @@ def jevkit_report(jk: dict, d: Path) -> dict:
     items = load_public()
     arms, tables, axes, answers_by = {}, {}, {}, {}
     names = (["native"] + (["lean"] if jk.get("lean_template") else []) + sorted(jk.get("extra_templates") or {})
-             + (["stock_shim"] if jk.get("stock_shim") else []))
+             + (["stock_shim"] if jk.get("stock_shim") else []) + (["canon_stock"] if jk.get("canon_stock") else []))
     if jk.get("shim_calibration"):  # score-only: the shim's own post-processing on the native answers (no GPU)
         shim_calibrate(d / "native.preds.jsonl", d / "native_shimcal.preds.jsonl", items)
         names.append("native_shimcal")
     tfit = None
     if jk.get("tfit"):  # JEV2-4B: the frozen calib-draw T applied to the native answers (score-only)
         tfit = json.loads((d / "tfit.json").read_text(encoding="utf-8"))
-        tfit_preds(d / "native.preds.jsonl", d / "native_tfit.preds.jsonl", items, float(tfit["T"]))
+        tfit_preds(d / "native.preds.jsonl", d / "native_tfit.preds.jsonl", items,
+                   tfit.get("per_type") or float(tfit["T"]))
         names.append("native_tfit")
     for name in names:
         pf = d / f"{name}.preds.jsonl"
@@ -1361,6 +1541,98 @@ def jevkit_report(jk: dict, d: Path) -> dict:
                 out["primary"]["floor_verdict"] = ("NEGATIVE: no trained checkpoint beats step 0 (H2O untrained) on the "
                                                    "held-out slice; reported as step 0 = no change"
                                                    if fl is not None else "NEGATIVE: the step-0 floor was not evaluated")
+    if jk.get("letter_prior"):  # JEV3-LM: the gold-letter shortcut check (canonical letters = canonical positions)
+        out["letter_prior"] = letter_prior_report(d, items, answers_by.get(jk.get("paired_primary") or "native"),
+                                                  jk["letter_prior"])
+    if jk.get("score_inv"):  # JEV3-TYPED KEEP gate 2: the trained arm must PASS ev_score_flip (bitwise, every op n > 0)
+        out["score_inv"] = score_inv_report(d / "score_inv")
+        keep = bool(out["score_inv"].get("native", {}).get("score_inv_pass"))
+        out["score_inv"]["keep_gate_pass"] = keep
+        if "primary" in out:
+            out["primary"]["score_inv_keep_gate_pass"] = keep
+            if not keep:
+                out["primary"]["success"] = False
+                out["primary"]["candidate"] = False
+                out["primary"]["score_inv_verdict"] = ("NOT A CANDIDATE: the trained checkpoint fails the score-item "
+                                                       "invariance gate (ev_score_flip, bitwise)")
+    return out
+
+
+def _canon_pos(question: dict, oid: str) -> int | None:
+    from decide.canon_shim import canonical_question
+
+    try:
+        return canonical_question(question)["ids"].index(str(oid))
+    except (ValueError, KeyError):
+        return None
+
+
+def letter_prior_report(d: Path, items, answers: dict | None, spec: dict) -> dict:
+    """Gold-letter shortcut check (A-PREREG-JEV3-LM): under the CANONICAL order, the gold letter's distribution vs the
+    model's predicted-letter distribution (a) on the jev3 slice (calib_probs.jsonl: option_ids are the canonical
+    order) and (b) on the public CHOICE items (format-level: the canonical position of the gold and of the primary
+    arm's choice); FLAG when the model's A share exceeds the gold A share by more than ``flag_pp``; slice choice
+    accuracy with and without the ``ambiguous`` family."""
+    flag_pp = float(spec.get("flag_pp", 5.0))
+
+    def dist(xs, k=8):
+        xs = [x for x in xs if x is not None]
+        n = len(xs)
+        return {"n": n, **{chr(65 + i): (sum(1 for x in xs if x == i) / n if n else None) for i in range(k)}}
+
+    out: dict = {"rule": f"FLAG if the model's predicted-A share exceeds the gold-A share by > {flag_pp:g} pp (choice)"}
+    cp = d / "calib_probs.jsonl"
+    if cp.is_file():
+        rows = [json.loads(x) for x in cp.read_text(encoding="utf-8").splitlines() if x.strip()]
+        ch = [r for r in rows if r.get("type") == "choice"]
+        gold = [r["gold"] for r in ch]
+        pred = [max(range(len(r["probs"])), key=r["probs"].__getitem__) for r in ch]
+        sl = {"gold": dist(gold), "pred": dist(pred)}
+        ga, pa = sl["gold"].get("A"), sl["pred"].get("A")
+        sl["A_excess_pp"] = None if ga is None or pa is None else 100 * (pa - ga)
+        sl["flag"] = bool(sl["A_excess_pp"] is not None and sl["A_excess_pp"] > flag_pp)
+        acc = lambda rs: (sum(1 for r in rs if max(range(len(r["probs"])), key=r["probs"].__getitem__) == r["gold"])  # noqa: E731
+                          / len(rs)) if rs else None
+        sl["choice_acc"] = acc(ch)
+        sl["choice_acc_without_ambiguous"] = acc([r for r in ch if r.get("family") != "ambiguous"])
+        sl["n_choice_ambiguous"] = sum(1 for r in ch if r.get("family") == "ambiguous")
+        out["slice"] = sl
+    else:
+        out["slice"] = {"status": "UNEVALUATED (no calib_probs.jsonl)"}
+    if answers is not None:
+        gold, pred = [], []
+        for it in items:
+            if it.type != "choice" or it.expected is None:
+                continue
+            a = answers.get(it.id)
+            gold.append(_canon_pos(it.question, it.expected))
+            pred.append(_canon_pos(it.question, a.get("choice")) if isinstance(a, dict) and a.get("choice") is not None
+                        else None)
+        pub = {"gold": dist(gold), "pred": dist(pred)}
+        ga, pa = pub["gold"].get("A"), pub["pred"].get("A")
+        pub["A_excess_pp"] = None if ga is None or pa is None else 100 * (pa - ga)
+        pub["flag"] = bool(pub["A_excess_pp"] is not None and pub["A_excess_pp"] > flag_pp)
+        out["public_choice"] = pub
+    out["flag"] = bool((out.get("slice") or {}).get("flag") or (out.get("public_choice") or {}).get("flag"))
+    return out
+
+
+def score_inv_report(d: Path) -> dict:
+    """Per arm: ev_score_flip's score_inv.json (pass, bitwise, per op n / invalid / flips / max|dp| / |dE[level]|).
+    A missing report = FAIL (fail closed)."""
+    out: dict = {"rule": "KEEP gate 2 (A-PREREG-JEV3-TYPED): the trained (native) arm PASSES scripts/ev_score_flip.py "
+                         "--max-dp 0 on every public score item under score_reverse / score_shuffle (seeds 0,1,2) / "
+                         "score_relabel / score_permute (claude/ev-score-inv @c47c0a46); the stock-shim control is "
+                         "reported for teeth; the evidence rescore re-runs the check from the shipped preds"}
+    for nm in ("native", "stock_shim"):
+        f = d / nm / "score_inv.json"
+        if not f.is_file():
+            out[nm] = {"score_inv_pass": False, "status": "MISSING (fail closed)"}
+            continue
+        r = json.loads(f.read_text(encoding="utf-8"))
+        out[nm] = {"score_inv_pass": r["score_inv_pass"], "bitwise": r["bitwise"], "failures": r["failures"],
+                   "per_operator": {op: {k: v.get(k) for k in ("n", "invalid", "flips", "max_abs_dp", "max_abs_dE",
+                                                                "mean_abs_dE")} for op, v in r["per_operator"].items()}}
     return out
 
 

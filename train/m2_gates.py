@@ -931,7 +931,7 @@ def main(argv=None) -> int:
         print(f"cohort: {e}", file=sys.stderr)
         return EXIT["identity"]
     t_max = cell["ladder"]["T_max"]
-    train_items = [x for x in cell_items(train_recs, tr_ids, cfg, enc, guard, max(cfg["t_ladder"]))
+    train_items = [x for x in cell_items(train_recs, tr_ids, cfg, enc, guard, max(cfg["t_ladder"]), train=True)
                    if len(x.row.ids) <= t_max]
     try:
         order_views = attach_order_views(cfg, train_items, train_recs, enc, guard, t_max)

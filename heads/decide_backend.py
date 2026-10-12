@@ -186,6 +186,11 @@ class DecisionModelBackend:
                 if not torch.isfinite(lp).all():
                     raise FloatingPointError(f"{row.qid}: non-finite head log-probabilities {lp.tolist()}")
                 logits[row.qid] = {oid: float(lp[k]) for k, oid in enumerate(row.option_ids)}
+                canon = (row.meta or {}).get("canon")
+                if canon and canon.get("tie_sets"):  # JEV3-LM: duplicates of one content share their probability
+                    from decide.canon_shim import equalize_ties
+
+                    logits[row.qid] = equalize_ties(logits[row.qid], canon["tie_sets"])
         finally:
             self.model.train(was_training)
         extras: dict[str, Any] = {"head": type(self.model.head).__name__}

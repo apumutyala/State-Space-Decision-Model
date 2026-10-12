@@ -345,6 +345,34 @@ def build_row(
         from .symmetric import build_row_sym
 
         return build_row_sym(request, qid, encode, tpl, layout, option_order, empty_state)
+    from decide.canon_shim import CANON_LAYOUT, CANON_LAYOUTS
+
+    if layout in CANON_LAYOUTS:  # JEV3-LM: the shim row of the CANONICALISED question (decide.canon_shim)
+        if not is_shim_template(tpl):
+            raise ValueError(f"layout {CANON_LAYOUT!r} needs a shim template, got {tpl.id!r}")
+        if option_order is not None:
+            raise ValueError(f"layout {CANON_LAYOUT!r}: the option axis is canonical (option_order is not allowed)")
+        from decide.canon_shim import CANON_VERSION, canonical_request, content_key
+        from decide.shim_format import spec_for_template as shim_spec
+
+        req2, rec = canonical_request(request, qid, shuffle=layout != CANON_LAYOUT)
+        row = shim_spec(tpl.id).row(req2, qid, None, empty_state)
+        name_to_id = ({f"{k + 1:03d}": oid for k, oid in enumerate(rec["ids"])} if rec["question"]["type"] == "choice"
+                      else {str(k): oid for k, oid in enumerate(rec["ids"])} if rec["question"]["type"] == "score"
+                      else {o: o for o in rec["ids"]})
+        if sorted(name_to_id) != sorted(row.option_ids):
+            raise ValueError("canon: the shim row's options are not the canonical names")
+        cont_of = {name_to_id[n]: c for n, c in zip(sorted(name_to_id), [None] * len(name_to_id))}
+        for oid, c in zip(rec["ids"], rec["contents"]):
+            cont_of[oid] = c
+        row.option_ids = [name_to_id[n] for n in row.option_ids]
+        if row.option_ids != rec["ids"]:
+            raise ValueError("canon: the row axis is not the canonical order")
+        row.meta["canon_layout"] = layout
+        row.meta["canon"] = {"version": CANON_VERSION, "tie_sets": rec["tie_sets"],
+                             "id_as_content": rec["id_as_content"],
+                             "content_key": {o: content_key(cont_of[o]) for o in row.option_ids}}
+        return row
     if is_shim_template(tpl):  # the trainable H2O shim format (decide.shim_format): ids == the shim's prompt ids
         if layout != G1V2_LAYOUT:
             raise ValueError(f"template {tpl.id} needs layout {G1V2_LAYOUT!r}, got {layout!r}")

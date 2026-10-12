@@ -232,7 +232,7 @@ def load_child(a, temperature: bool = True, readout: tuple[str, str] | None = No
     role_recs = ({role: G.role_records(cohort, a.records, role, recs, pools) for role in ("dev", "calibration", "retention")}
                  if temperature else None)
     t_max = cell["ladder"]["T_max"]
-    train_items = [x for x in cell_items(train_recs, tr_ids, cfg, enc, guard, max(cfg["t_ladder"]))
+    train_items = [x for x in cell_items(train_recs, tr_ids, cfg, enc, guard, max(cfg["t_ladder"]), train=True)
                    if len(x.row.ids) <= t_max]
     attach_order_views(cfg, train_items, train_recs, enc, guard, t_max)
     # job-5x4vr: a consistency cell's Trainer refuses items without their views (and the lineage covers them): attach

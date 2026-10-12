@@ -325,13 +325,15 @@ def train_max_k(cfg: dict) -> int:
 
 
 def cell_items(recs: dict, ids, cfg: dict, enc, guard, max_t: int, workers: int | None = None,
-               max_k: int | None = None) -> list:
+               max_k: int | None = None, train: bool = False) -> list:
     """Guarded rows of ``ids`` kept by the cell's K / T filter (``keep_item``). ``train.m2_gates`` rebuilds the
     training items with this exact function, so a trained checkpoint's lineage (data hash) can be re-verified.
     ``max_k`` defaults to the TRAINING cap (``train_max_k``); eval items pass ``cfg["max_k"]`` explicitly.
     ``workers`` (default ``cfg["tokenize_workers"]``, else 1) tokenizes contiguous chunks in worker processes; the
     output is the same list in the same order as the serial path (``tests/test_m2_first_cell.py``)."""
     max_k = train_max_k(cfg) if max_k is None else int(max_k)
+    if train and cfg.get("train_layout"):  # JEV3-LM: training rows in their own layout (g1v2-canon-shuffle)
+        cfg = {**cfg, "layout": cfg["train_layout"]}
     ids = list(ids)
     workers = int(workers if workers is not None else (cfg.get("tokenize_workers") or 1))
     workers = max(1, min(workers, os.cpu_count() or 1))
@@ -1055,7 +1057,7 @@ def _main(argv=None, ctx: dict | None = None):
             print(f"lm_label: config.json: {e}", flush=True)
             return EXIT["config"]
         tied = mc.get("tie_word_embeddings", (mc.get("text_config") or {}).get("tie_word_embeddings"))
-        if tied is not True or cfg.get("layout") != "g1v2":
+        if tied is not True or cfg.get("layout") not in ("g1v2", "g1v2-canon"):
             print(f"lm_label head needs a tied LM head (config tie_word_embeddings={tied!r}) and layout g1v2 "
                   f"(got {cfg.get('layout')!r})", flush=True)
             return EXIT["config"]
@@ -1100,7 +1102,7 @@ def _main(argv=None, ctx: dict | None = None):
         return EXIT["cohort"]
     t_cap = max(cfg["t_ladder"])
     t_tok = time.time()
-    train_items = cell_items(train_recs, tr_ids, cfg, enc, guard, t_cap)
+    train_items = cell_items(train_recs, tr_ids, cfg, enc, guard, t_cap, train=True)
     eval_items = cell_items(eval_recs, ev_ids, cfg, enc, guard, t_cap, max_k=cfg["max_k"])  # eval cap unchanged
     try:  # JEV2-H2O: the dev cards select on a held-out jev2 slice (never public-231); absent = the cohort eval items
         dsrc = dev_card_source(cfg, a.train_dir)

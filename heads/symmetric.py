@@ -329,6 +329,11 @@ def sym_tie_info(row: Any) -> dict[str, Any] | None:
     """For a sym row: the option ids in content order (the order every option-axis reduction uses, so softmax sums are
     order-free), each option's content hash, and the groups of exact duplicates (equal continuations: equal content,
     hence equal probability; a single-id decision among them is impossible under relabel invariance). None otherwise."""
+    canon = (getattr(row, "meta", None) or {}).get("canon")
+    if canon is not None:  # JEV3-LM g1v2-canon rows (decide.canon_shim): content keys / tie sets from the canonicaliser
+        keys = dict(canon["content_key"])
+        return {"content_order": sorted(row.option_ids, key=lambda o: (keys[o], o)), "content_key": keys,
+                "dup_groups": [sorted(g) for g in canon["tie_sets"]], "digits": SYM_WIRE_DIGITS}
     if getattr(row, "layout", None) not in SYM_LAYOUTS:
         return None
     keys = {o: content_key(c) for o, c in zip(row.option_ids, row.continuations)}

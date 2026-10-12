@@ -1,0 +1,245 @@
+{
+ "_comment": "JEV3-LM (A-PREREG-JEV3-LM): STOCK Qwen3.5-4B @851bf6e8 + LoRA r16 + the lm_label head (train == score: the shim's label token at the Answer: slot) under the CANONICALISED shim (layout g1v2-canon at inference; training rows g1v2-canon-shuffle), 1 epoch of jev3 (5,837 rows), max_len 4,096, 0 truncation",
+ "seed": 0,
+ "head": "lm_label",
+ "head_kwargs": {},
+ "layout": "g1v2-canon",
+ "template": "jrt-h2o-shim:qwen3.5-4b",
+ "loss_arm": "clef",
+ "lora_rank": 16,
+ "lr_head": 0.0003,
+ "lr_lora": 4e-05,
+ "warmup_steps": 50,
+ "batch_size": 1,
+ "grad_accum": 8,
+ "max_k": 16,
+ "t_ladder": [
+  512,
+  1024,
+  2048,
+  4096
+ ],
+ "n_train_records": 5837,
+ "n_eval_records": 0,
+ "min_train_items": 5837,
+ "max_steps": 729,
+ "max_minutes": 42,
+ "min_steps": 110,
+ "ckpt_every": 100,
+ "eval_every": 100000,
+ "tokenize_workers": 8,
+ "smoke": {
+  "rows": 2,
+  "max_k": 4,
+  "max_t": 512,
+  "lora_rank": 8,
+  "max_rel_feature_diff": 0.03,
+  "min_grad_cos": 0.99
+ },
+ "pass_rule": {
+  "window": 100,
+  "loss_drop_frac_min": 0.05,
+  "max_peak_gb": 76
+ },
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "require_guard_readiness": true,
+ "calibration_role": "calibration",
+ "parent": "qwen35",
+ "eval_max_t": 4096,
+ "train_set": {
+  "pointer": "data/manifests/bschema-draw-jev3.pointer.json",
+  "heldout_excluded": {
+   "ids": [],
+   "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+   "reason": "the merged draw inherits each pool's gates (0 held-out D1-B hits each); the in-job heldout phase rescans the whole set"
+  },
+  "pools": {
+   "jev1": {
+    "dir": "m2/build/bschema-draw-jev1",
+    "pointer": "data/manifests/bschema-draw-jev1.pointer.json",
+    "pointer_sha256": "582ffe1cb34602473a847833758e06d69dbb6755594b4609e95f8fa39a2b464b",
+    "status": "gated",
+    "families": [
+     "adequacy",
+     "enum",
+     "intent",
+     "long_policy",
+     "policy",
+     "routing",
+     "severity",
+     "state_tracking"
+    ]
+   },
+   "jev2a": {
+    "dir": "m2/build/bschema-draw-jev2a",
+    "pointer": "data/manifests/bschema-draw-jev2a.pointer.json",
+    "pointer_sha256": "53416094f957a6aebb6514dceaaef11b18473da1a6a910c89057639865c24eda",
+    "status": "gated + re-gated (claude/ev-jev2a-regate @97d55f2e)",
+    "branch": "claude/ev-jev2-draw@77065b1c",
+    "families": [
+     "multi_hop",
+     "judge_hard",
+     "temporal_numeric",
+     "fact",
+     "tool_selection"
+    ],
+    "exclude": {
+     "file": "receipts/2026-10-10-jev2a-regate/jev2a_exclude_ids.txt",
+     "sha256": "aeb8027aaaebdb6fad2b24f8b5bee9d37c4e176fcc4e18ad0d366acf1b579705",
+     "n_ids": 105,
+     "rows_after": 29895,
+     "rule": "97 Glaive rows whose tool descriptions are verbatim in JevBench easy tool_selection items + 8 MuSiQue rows; asserted at build (sha + count)"
+    }
+   },
+   "jev2b": {
+    "dir": "m2/build/bschema-draw-jev2b",
+    "pointer": "data/manifests/bschema-draw-jev2b.pointer.json",
+    "pointer_sha256": "35620f5f47c6e48bb61de0a336ccfb54dad5bf11f606a15f30b32fe48fee4127",
+    "status": "gated + re-gated (claude/ev-jev2a-regate @7a742d6a: empty exclusion list)",
+    "branch": "claude/ev-jev2-draw@a4aaa7de",
+    "families": [
+     "probability",
+     "trap",
+     "ambiguous",
+     "tradeoff",
+     "adversarial"
+    ],
+    "exclude": {
+     "file": "receipts/2026-10-10-jev2b-regate/jev2b_exclude_ids.txt",
+     "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+     "n_ids": 0,
+     "rows_after": 7500
+    },
+    "excluded_subs": {
+     "prob_indep": 124,
+     "why": "constant gold 'same' in all 124 rows"
+    }
+   },
+   "jev2c": {
+    "dir": "m2/build/bschema-draw-jev2c-v2",
+    "pointer": "data/manifests/bschema-draw-jev2c-v2.pointer.json",
+    "pointer_sha256": "86960d903d613bc88eca9ee131b486a749afa9a89c9cebca77744178721c5a99",
+    "status": "gated + re-gated (claude/ev-jev2a-regate @c76f150a: empty exclusion list)",
+    "families": [
+     "long_policy"
+    ],
+    "exclude": {
+     "file": "receipts/2026-10-11-jev2c-v2-regate/jev2c-v2_exclude_ids.txt",
+     "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+     "n_ids": 0,
+     "rows_after": 1500
+    },
+    "note": "jev2c-v2 (replaces jev2c): 1,500 synthetic long_policy rows, prose states, more score rows; shim tokens p99 3,892 / max 3,981, 0 over 4,096 (tokens-shim.json); the ONLY long_policy source"
+   }
+  },
+  "note": "jev3 ONLY: 5,960 train rows (judge_hard / adequacy / policy / ambiguous / temporal_numeric 1,000 each, long_policy 960), ids sha256 feb681f3... (verified locally); held-out selection slice 1,200 (200 x 6), ids sha256 844233f2... (verified), state-disjoint from training (pointer slice_disjoint counts 0; asserted in job). Pointers: claude/ev-jev3-draw @5c963b25. Sampler: policy/aegis_reply (109, constant gold) and adequacy/hs2_bar_coherence (27, 26:1) dropped via train_set.exclude_files (sha-pinned) -> pool 5,824; re-gate exclusion list empty (01ba4719).",
+  "score_share": 0.25,
+  "type_mix_note": "FINAL mix (18 families, 586/family, adequacy 293): choice 44.9% / noul 30.1% / score 25.1% (4599 / 3086 / 2570 of 10255)",
+  "exclude_files": [
+   {
+    "file": "receipts/2026-10-12-jev3-lm/jev3_lm_train_exclude.txt",
+    "sha256": "8056c7e7beffd573af1d6e56642a28ff21f34bf60164bfd0d40703a6279d61a9",
+    "n": 123,
+    "reason": "lead 2026-10-12: drop policy/aegis_reply (109, constant gold) and DOWN-WEIGHT adequacy/hs2_bar_coherence (26:1) by keeping half: 14 of its 27 rows dropped, ranked by sha256('jev3-lm-hs2-downweight:' + id)"
+   },
+   {
+    "file": "receipts/2026-10-11-jev3-regate/jev3_exclude_ids.txt",
+    "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "n": 0,
+    "reason": "evidence re-gate (claude/ev-jev2a-regate @688e8d7c, REGATE_JEV3.md 4b): CLEARED, empty list (sha asserted)"
+   }
+  ]
+ },
+ "act_ckpt": true,
+ "row_batch": 1,
+ "row_tokens": 0,
+ "row_plan": "min_cost",
+ "cont_plan": "single",
+ "compile_blocks": false,
+ "min_steps_note": "1 epoch = 729 steps (5,837 / 8); clock 42 min (measured lm_label shim 2.55-3.93 s/step -> 641-729 steps)",
+ "lora_rank_note": "r=16 (the JEV2-H2O lm_label recipe), every GDN / attention / MLP projection",
+ "variant": "jev3_lm",
+ "train_max_k": 255,
+ "row_options": 160,
+ "train_max_k_note": "D8 code (#221 on agent-main): K cap of the training items only (train.run_cell.train_max_k; cell_items default, also used by the m2_gates lineage rebuild); max_k 16 remains the eval cap (train.m2_gates.unit_spec, run_cell eval_items). B1 100k-v2 carries rows with > 16 options (BANKING77 77-option catalogs, Glaive catalog views K 17-27), which max_k 16 alone would drop.",
+ "row_options_note": "execution guard (train.trainer.row_groups / single_cont_fits): <= 160 forked continuations per backbone call; a row with K > 160 runs alone, and a step whose summed K exceeds 160 runs per group under cont_plan single. Worst call = 8,192 prefix tokens + 160 copies ~= 53.8 GB (tvuat ladder 1,024 rung) + 80 x <= 87 MB ~= 61 GB < 76 GB stop (D8 sizing). Not in the TrainConfig hash; never binds on K <= 16 steps (8 x 16 = 128).",
+ "lr_schedule": "cosine",
+ "lr_min_frac": 0.1,
+ "dev_card_every": 100,
+ "dev_card_rows": 360,
+ "best_ckpt": true,
+ "collapse_guard": true,
+ "anti_collapse_note": "train/trainer.py TrainConfig anti-collapse fields; each absent key = the old behaviour. lr_schedule and collapse_* are in the config hash; dev_card_* and best_ckpt are operational. Each dev card scores 200 rows (budget it inside max_minutes).",
+ "execution_note": "row_batch 1: one row per backbone call (8 rows / optimiser step via grad_accum 8); act_ckpt true (heads/act_ckpt.py covers Qwen3.5 decoders); the cache fork reads each row's prompt once and forks its K continuations. row_plan / cont_plan / row_options only act with row_batch > 1 (train/trainer.py). The clock binds (max_steps 20,000).",
+ "v3w_note": "generic v3w (decide/v3w_generic.py, PINNED_SPEC_SHA256 'jrt-v3w-generic:qwen3.5' 2e4907ee...; 255 single-token codes after the Qwen answer prefix, word ids by unique first token, Qwen3.5 chat template with enable_thinking=False -> empty think block, budget 16,383). Bound to the snapshot's own tokenizer files on the box (run_cell / score_parent / m2_gates / screen): any other tokenizer or template fails closed.",
+ "qwen35": {
+  "repo": "Qwen/Qwen3.5-4B",
+  "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "config_sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+  "snapshot_sha256_file": "jobs/m2_first_cell/qwen35_4b_snapshot.sha256",
+  "note": "heads.backbone.qwen35_pin_check (repo@revision in QWEN35_STOCK + config.json sha256) before the tokenizer or any weight; the runner checks the whole snapshot against the manifest"
+ },
+ "shim_note": "template jrt-h2o-shim:qwen3.5-4b (decide/shim_format.py, pinned identity): the vendored, unmodified H2O-Lightning-4B v1.1 shim prompt (third_party/h2o_lightning_shim, the host scan's replica that matched H2O's card 205/231): Qwen chat turn, thinking off, the shim system text, 'record: / question: / options: A) name: desc', 'Answer:' prefill; option k = shim label k (A, B, ...), its continuation the ONE token of ' <label>' (the shim's own probe); bound to the snapshot's tokenizer files, any other tokenizer fails closed. Train rows == the shim prompt ids (and == transformers' whole-string tokenization = vLLM /tokenize): scripts/check_sizecliff_cpu.py.",
+ "cont_chunk": 0,
+ "budget_note": "A-PREREG-JEV3-LM: worst case $17.89 <= $18 (<= $15 is not reachable for 1 epoch: the screen cap 44 is the setup preflight's, so a 89-min job leaves ~20 training minutes)",
+ "sym_reprice_note": "Clock re-price (CPU 2026-10-10, real Qwen3.5-4B tokenizer, systematic 1-in-24 sample of bschema-draw-jev1 = 4,000 items, all kept by train.run_cell.keep_item under both layouts; K mean 4.78, max 16): tokens the backbone RUNS per row (prefix + continuation calls right-padded per cont_chunk 64 chunk, MIN_CONT_WIDTH 2) g1v2 368.1 vs sym-fork 362.7, factor 0.985 (fed tokens without padding 363.3 vs 352.1, 0.969): the options move from the prefix into the continuations, about token-neutral. Projected 10.92 x 0.985 = 10.76 s/step -> ceil(1,121 x 10.76 x 1.3 / 60) = 262 min; max_minutes stays 270 (the measured g1v2 budget; the factor is a token model, not a measurement: the step-10 rate check (exit 26) re-measures it in-job). Script: scripts/sym_reprice_jev1.py 24 (receipt in docs/PROOF_INVARIANCE.md).",
+ "require_t_max": 4096,
+ "ladder_probe_longest": true,
+ "max_len_note": "public long_policy items are 2,350-3,952 tokens (r2 preds usage.input_tokens) vs jev1 long_policy train rows p50 935 / max 1,263 (build-report): the trained head never saw > 2k contexts. 4,096 for training (t_ladder top rung; require_t_max fails closed instead of silently dropping rows > T_max) and eval. Memory at 4k on H100 80 GB (4B, act_ckpt): the attention-layer KV copy per forked option grows ~0.7 GB at T 1,020 (cf3929b) -> ~2.8 GB at 4,096; long_policy rows carry K 4-6 -> <= ~17 GB of copies + ~8 GB weights + checkpointed activations; the cont_chunk probe (4b0fb1d) re-picks the chunk over the worst K x T rows <= 4,096 (candidates 8..64, peak <= 0.85 x 76 GB) and ladder_probe_longest steps the LONGEST rows of each rung (the max-K rung rows are short), so 4k is measured before training.",
+ "label_smoothing": 0.05,
+ "label_smoothing_noul": 0.0,
+ "label_smoothing_note": "yes/no (noul) rows: eps 0 (sharp targets). jevkit scores a noul answer with p in (0.2, 0.8) as WRONG; r2 put 10/74 noul items in that band (stock 0), the whole argmax-vs-jevkit gap (claude/ev-j1-rescore @a8ca3e7e), and smoothing pulls yes/no answers toward 0.5. choice / score rows: eps 0.05 (was the clef default 0.1 on every row; r2's head was under-confident, shim T 0.8 raised its Capability 57.93 -> 59.62). Per-row eps by question type (train.losses.arm_loss already receives qtypes).",
+ "noul_band_gate": "reported gate: the native arm's yes/no 0.2-0.8 band rate on the 231 items <= stock_shim's (screen.jevkit_report noul_band_gate); the calib-slice band rate at T = 1 and at the fitted T are reported, and T is moved toward 1 if it would raise the slice band rate (constrain_t_by_band)",
+ "lr_horizon_frac": 0.6717,
+ "lr_horizon_note": "lr_horizon_frac 0.6717 (= r2's 753 / 1,121): at the step-10 rate check the planned final step = min(max_steps 1281, step + the clock-affordable steps at the MEASURED s/step) and the cosine horizon = frac x that, fixed once. If the projection is short of max_steps the run CONTINUES (cell.json train_budget_shortened records it) down to min_steps 600; below that, exit 26. Planned (estimate holds): horizon 860.",
+ "assert_no_truncation": true,
+ "assert_no_truncation_note": "fail closed (run_cell exit 25 'data') if ANY drawn training question is dropped by the K / T filter at tokenization or by the measured T_max; jev2c has 1,448 / 1,500 rows > 2,048 tokens (max 3,347), all inside 4,096. The screen fails (9) if any JevBench item is refused for input length (jevkit.assert_no_truncation).",
+ "dev_card_records": {
+  "records": "m2-jev3-calib/records.jsonl.gz",
+  "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
+ },
+ "data_pins": {
+  "status": "final",
+  "draw": "bschema-draw-jev3 ONLY (the jev2 component is dropped)",
+  "fill": [],
+  "expected": {
+   "train_rows": 5960,
+   "train_ids_sha256": "feb681f3517c69863d7180dbbf3307dd7b6ded4b4a6411b2ae8f360af33f3120",
+   "train_per_family": {
+    "judge_hard": 1000,
+    "adequacy": 1000,
+    "policy": 1000,
+    "ambiguous": 1000,
+    "temporal_numeric": 1000,
+    "long_policy": 960
+   },
+   "slice_rows": 1200,
+   "slice_per_family": 200,
+   "slice_ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
+  },
+  "pinned": {
+   "train_pointer": "data/manifests/bschema-draw-jev3.pointer.json",
+   "train_pointer_sha256": "ce70500db28739ada3506a3db51888beca7ae3b1f58ee3ac999010dcbeaafdfd",
+   "slice_pointer": "data/manifests/bschema-draw-jev3-slice.pointer.json",
+   "slice_pointer_sha256": "4d1cbba60302402dca33a7d92ea68496b3bb526b7be34e1ced4c913ad652d514",
+   "branch": "claude/ev-jev3-draw@5c963b25",
+   "ids_check": "scripts/verify_ids_sha.py: train feb681f3 and slice 844233f2 both match the no-trailing-newline convention (2026-10-11)"
+  },
+  "exclusion": {
+   "status": "landed (empty)",
+   "file": "receipts/2026-10-11-jev3-regate/jev3_exclude_ids.txt",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "n": 0,
+   "regate": "claude/ev-jev2a-regate @688e8d7c REGATE_JEV3.md 4b"
+  },
+  "sampler": {
+   "dropped": {
+    "policy/aegis_reply": 109,
+    "adequacy/hs2_bar_coherence": 14
+   },
+   "pool_after": 5837
+  }
+ },
+ "train_layout": "g1v2-canon-shuffle",
+ "layout_note": "decide.canon_shim: inference rows (g1v2-canon) render every choice option in the canonical order (NFC + whitespace-collapse + casefold key, sha256 tie-break), lettered A, B, ... in that order, ids never rendered (names 001..K), mapped back outside the model; noul (true, false); score = 'level v of K: <rubric>' in level order. TRAINING rows (train_layout g1v2-canon-shuffle): choice options in a seeded random order (seed = the row's content hash; one shuffle per row, 1 epoch), so the model learns no canonical-letter prior (evidence claude/ev-canonical-prior @1ccdc676: canonical train gold = A 35% vs 28% chance); score / noul as at inference"
+}
