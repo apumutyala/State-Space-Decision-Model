@@ -327,3 +327,55 @@ def test_cell_config_is_the_seed0_stack_with_the_typed_layout():
     assert {"routing", "intent", "severity"} <= set(ptr["families"])
     pins = (ROOT / "jobs/m2_first_cell/data_jev3_typed.sha256").read_text(encoding="utf-8")
     assert "m2-jev3-typed/records.jsonl.gz" in pins and "m2-jev3-calib/records.jsonl.gz" in pins
+
+
+# ------------------------------------------------------------------------------------------------ fit (real tokenizer)
+def test_typed_rows_fit_the_cell_caps_with_the_real_tokenizer():
+    """assert_no_truncation (run_cell exit 25) pre-mortem: the typed rendering lengthens SCORE rows (the scale in the
+    prefix, 'level v of K: ' in each continuation). Every question of the typed draw (train caps) and of the jev3 slice
+    (eval caps) is rendered with the real Qwen3.5-4B tokenizer under sym-fork and sym-fork-typed: typed must keep every
+    row sym-fork keeps. Runs where the job ships the data + tokenizer (jobs/jev3_typed_cpu); skipped elsewhere."""
+    import gzip
+    import os
+
+    data = Path(os.environ.get("SSDM_DATA", "/nonexistent"))
+    recs = {"train": data / "m2/build/bschema-draw-jev3-typed/records.jsonl.gz",
+            "slice": data / "m2/build/bschema-draw-jev3-slice/records.jsonl.gz"}
+    tokdir = os.environ.get("SSDM_BPE_TOKENIZER")
+    if not (all(p.is_file() for p in recs.values()) and tokdir and Path(tokdir).is_dir()):
+        pytest.skip("typed draw / slice records or SSDM_BPE_TOKENIZER not present (jobs/jev3_typed_cpu ships them)")
+    from decide.shim_format import bind_template
+    from heads.layout import resolve_template
+    from train.guard import record_request
+    from train.run_cell import keep_item
+
+    cell = _cell()
+    bind_template(cell["template"], tokdir)
+    tpl = resolve_template(cell["template"])
+    caps = {"train": (int(cell["train_max_k"]), int(cell["t_ladder"][-1])), "slice": (int(cell["max_k"]),
+                                                                                        int(cell["eval_max_t"]))}
+    rep = {}
+    for part, p in recs.items():
+        mk, mt = caps[part]
+        n = lost = kept_both = 0
+        grow, worst = [], 0
+        with gzip.open(p, "rt", encoding="utf-8") as fh:
+            for line in fh:
+                rec = json.loads(line)
+                req = record_request(rec)
+                for qid in rec["labels"]:
+                    a = build_row(req, qid, None, template=tpl, layout=SYM_LAYOUT)
+                    b = build_row(req, qid, None, template=tpl, layout=SYM_TYPED_LAYOUT)
+                    n += 1
+                    ka, kb = keep_item(a, mk, mt), keep_item(b, mk, mt)
+                    lost += int(ka and not kb)
+                    kept_both += int(ka and kb)
+                    if b.qtype == "score":
+                        grow.append(len(b.ids) - len(a.ids))
+                        worst = max(worst, len(b.ids))
+                    else:
+                        assert (a.ids, a.continuations) == (b.ids, b.continuations)
+        rep[part] = {"n": n, "lost_by_typed": lost, "kept_both": kept_both, "score_rows": len(grow),
+                     "prefix_growth_max": max(grow) if grow else 0, "longest_score_prefix": worst, "cap_t": mt}
+    print(json.dumps(rep))
+    assert all(r["lost_by_typed"] == 0 for r in rep.values()), rep

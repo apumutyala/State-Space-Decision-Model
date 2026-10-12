@@ -29,6 +29,9 @@ DATA = ("m2/build/bschema-draw-jev1/records.jsonl.gz", "m2/build/bschema-draw-je
         "m2/build/bschema-draw-jev3-slice/records.jsonl.gz",
         "m2/build/bschema-draw-jev3-slice/bschema-draw-jev3-slice.manifest.jsonl.gz",
         "m2/build/bschema-draw-jev3-slice/bschema-draw-jev3-slice.content.jsonl.gz")
+DATA_TYPED = ("m2/build/bschema-draw-jev3-typed/records.jsonl.gz",
+              "m2/build/bschema-draw-jev3-typed/bschema-draw-jev3-typed.manifest.jsonl.gz",
+              "m2/build/bschema-draw-jev3-typed/bschema-draw-jev3-typed.content.jsonl.gz")
 TOKENIZER = "tokenizers/Qwen--Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a"
 TOK_FILES = ("tokenizer.json", "tokenizer_config.json", "vocab.json", "merges.txt", "config.json", "chat_template.jinja",
              "special_tokens_map.json", "generation_config.json")
@@ -68,7 +71,7 @@ def main():
         jev = sorted((data / "jevbench").iterdir())
         pub = json.loads((repo / "jevkit/data/jevbench_public_pin.json").read_text(encoding="utf-8"))
         jdir = data / "jevbench" / pub["commit"]
-        rels = list(DATA) + [f"jevbench/{pub['commit']}/{n}" for n in pub["files"]] + \
+        rels = list(DATA) + (list(DATA_TYPED) if os.environ.get("DRAW", "1") == "0" else []) + [f"jevbench/{pub['commit']}/{n}" for n in pub["files"]] + \
             [f"{TOKENIZER}/{n}" for n in TOK_FILES if (data / TOKENIZER / n).is_file()]
         assert jdir.is_dir() and jev, "no public JevBench files under <data>/jevbench"
         for rel in rels:
