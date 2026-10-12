@@ -358,7 +358,7 @@ def test_typed_rows_fit_the_cell_caps_with_the_real_tokenizer():
     for part, p in recs.items():
         mk, mt = caps[part]
         n = lost = kept_both = 0
-        grow, worst = [], 0
+        grow, worst, lost_ids = [], 0, []
         with gzip.open(p, "rt", encoding="utf-8") as fh:
             for line in fh:
                 rec = json.loads(line)
@@ -369,13 +369,22 @@ def test_typed_rows_fit_the_cell_caps_with_the_real_tokenizer():
                     n += 1
                     ka, kb = keep_item(a, mk, mt), keep_item(b, mk, mt)
                     lost += int(ka and not kb)
+                    if ka and not kb:
+                        lost_ids.append(rec["id"])
                     kept_both += int(ka and kb)
                     if b.qtype == "score":
                         grow.append(len(b.ids) - len(a.ids))
                         worst = max(worst, len(b.ids))
                     else:
                         assert (a.ids, a.continuations) == (b.ids, b.continuations)
-        rep[part] = {"n": n, "lost_by_typed": lost, "kept_both": kept_both, "score_rows": len(grow),
+        rep[part] = {"n": n, "lost_by_typed": lost, "lost_ids": sorted(lost_ids), "kept_both": kept_both,
+                     "score_rows": len(grow),
                      "prefix_growth_max": max(grow) if grow else 0, "longest_score_prefix": worst, "cap_t": mt}
-    print(json.dumps(rep))
-    assert all(r["lost_by_typed"] == 0 for r in rep.values()), rep
+    print("TYPED_FIT " + json.dumps(rep))
+    # train rows the typed rendering pushes over the cap must be in the cell's sha-pinned exclude_files (removed from
+    # the pool before the draw, so assert_no_truncation never sees them); the slice must lose nothing
+    excl = set()
+    for spec in cell["train_set"].get("exclude_files") or []:
+        excl |= {x.strip() for x in (ROOT / spec["file"]).read_text(encoding="utf-8").splitlines() if x.strip()}
+    assert rep["slice"]["lost_by_typed"] == 0, rep
+    assert set(rep["train"]["lost_ids"]) <= excl, rep
