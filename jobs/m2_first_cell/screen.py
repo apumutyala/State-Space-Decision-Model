@@ -824,13 +824,11 @@ def slice_floor(eng: "StockShimEngine", records_path: Path, calib_probs: Path, o
     excluded from both arms and counted."""
     import gzip
 
-    from train.run_cell import to_train_record
+    from train.run_cell import check_ids_pin, to_train_record
 
     with gzip.open(records_path, "rt", encoding="utf-8") as f:
         raws = [json.loads(x) for x in f if x.strip()]
-    sha = slice_ids_sha256(r["id"] for r in raws)
-    if expect_ids_sha256 and len(expect_ids_sha256) == 64 and sha != expect_ids_sha256:
-        raise ValueError(f"slice floor: slice ids sha256 {sha} != the pinned {expect_ids_sha256}")
+    sha = check_ids_pin([r["id"] for r in raws], expect_ids_sha256, "slice floor")["sha"]  # both conventions logged
     native = {}
     for line in calib_probs.read_text(encoding="utf-8").splitlines():
         if line.strip():
@@ -1119,9 +1117,9 @@ def fit_native_temperature(backend, records_path: Path, out: Path, lo: float, hi
     raw = records_path.read_bytes()
     with gzip.open(records_path, "rt", encoding="utf-8") as f:
         raws = [json.loads(x) for x in f if x.strip()]
-    sha = slice_ids_sha256(r["id"] for r in raws)
-    if expect_ids_sha256 and len(expect_ids_sha256) == 64 and sha != expect_ids_sha256:
-        raise ValueError(f"tfit: calib slice ids sha256 {sha} != the pinned {expect_ids_sha256}")
+    from train.run_cell import check_ids_pin
+
+    sha = check_ids_pin([r["id"] for r in raws], expect_ids_sha256, "tfit slice")["sha"]  # both conventions logged
     fam_of = {r["id"]: next((v.get("family8") or v.get("family") for v in (r.get("aug") or {}).values()
                              if isinstance(v, dict) and (v.get("family8") or v.get("family"))), r.get("family"))
               for r in raws}

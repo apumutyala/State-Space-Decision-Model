@@ -64,6 +64,22 @@ def test_artifacts_landing_and_g1_per_arm(tmp_path):
     assert rec["slice_first_before_public_preds"] is True and all("sha256" in f for f in rec["files"])
 
 
+def test_ids_sha_both_conventions(tmp_path, capsys):
+    import hashlib
+    from scripts.verify_ids_sha import main as verify
+    _gz(tmp_path / "r.gz", [{"id": "b"}, {"id": "a"}])
+    no_nl, nl = hashlib.sha256(b"a\nb").hexdigest(), hashlib.sha256(b"a\nb\n").hexdigest()
+    assert verify(["--records", str(tmp_path / "r.gz"), "--expect", nl]) == 0
+    assert verify(["--records", str(tmp_path / "r.gz"), "--expect", no_nl]) == 0
+    assert verify(["--records", str(tmp_path / "r.gz"), "--expect", "0" * 64]) == 1
+    pytest.importorskip("torch")  # train.run_cell imports torch
+    from train.run_cell import check_ids_pin
+    assert check_ids_pin(["b", "a"], nl, "t")["convention"] == "trailing_nl"
+    with pytest.raises(ValueError):
+        check_ids_pin(["b", "a"], "1" * 64, "t")
+    assert "no_trailing_nl=" + no_nl in capsys.readouterr().out  # both logged before the refusal
+
+
 def test_slice_first_runs_before_any_screen_row():
     src = (M / "screen.py").read_text(encoding="utf-8")
     i = src.index("def score(a)")

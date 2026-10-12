@@ -649,6 +649,31 @@ def validate_head(cfg: dict) -> None:
         raise ValueError(f"head_kwargs.c (evidence bound) must be > 0, got {c!r}")
 
 
+def ids_sha_conventions(ids) -> dict:
+    """sha256 of the sorted ids, newline-joined, under BOTH conventions (no trailing newline / one trailing newline):
+    the builder's convention is not confirmed, so every in-job pin check logs both before any refusal."""
+    s = "\n".join(sorted(ids))
+    return {"no_trailing_nl": hashlib.sha256(s.encode()).hexdigest(),
+            "trailing_nl": hashlib.sha256((s + "\n").encode()).hexdigest()}
+
+
+def check_ids_pin(ids, pinned: str | None, what: str) -> dict:
+    """Compare a pinned ids sha256 with both conventions; print both (stderr + stdout) BEFORE any refusal; accept a
+    match under either. Returns {sha (the matching one, else no_trailing), convention, both}. Raises ValueError."""
+    import sys
+
+    both = ids_sha_conventions(ids)
+    line = f"{what}: ids sha256 no_trailing_nl={both['no_trailing_nl']} trailing_nl={both['trailing_nl']} pinned={pinned}"
+    print(line, flush=True)
+    print(line, file=sys.stderr, flush=True)
+    if not pinned or len(pinned) != 64:  # an unpinned check is recorded, not enforced
+        return {"sha": both["no_trailing_nl"], "convention": None, "both": both}
+    for conv, v in both.items():
+        if v == pinned:
+            return {"sha": v, "convention": conv, "both": both}
+    raise ValueError(f"{what}: ids sha256 matches neither convention ({both}) != pinned {pinned}")
+
+
 def dev_card_source(cfg: dict, train_dir) -> tuple[dict, list] | None:
     """``dev_card_records`` (JEV2-H2O): the dev cards (best-checkpoint selection + collapse guard) read a held-out
     JevBench-format slice instead of the cohort eval items: ``{"records": <path relative to the train dir's parent>,
@@ -660,9 +685,9 @@ def dev_card_source(cfg: dict, train_dir) -> tuple[dict, list] | None:
         return None
     recs = _cell_records(str(Path(train_dir).parent / spec["records"]), development=False)  # validated, train format
     ids = sorted(recs)
-    got = hashlib.sha256("\n".join(ids).encode()).hexdigest()
-    if got != spec.get("ids_sha256"):
-        raise ValueError(f"dev_card_records ids sha256 {got} != pinned {spec.get('ids_sha256')}")
+    got = ids_sha_conventions(ids)
+    if spec.get("ids_sha256") not in got.values():  # logs both conventions, then refuses (fail closed)
+        check_ids_pin(ids, spec.get("ids_sha256") or "0" * 64, "dev_card_records")
     return recs, ids
 
 
