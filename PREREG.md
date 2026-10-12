@@ -77,3 +77,34 @@ Moved verbatim from BOARD.md on 2026-10-09 ~23:00Z (full old BOARD: archive/BOAR
   - **A-PREREG-JEV2-H2O amendment 2 (lead, 2026-10-11, BEFORE any public-231 answer of a trained JEV2-H2O checkpoint exists): rerun after a screen crash; checkpoint not exported; pins unchanged.** job-ivm8w stopped at the cell (min_train_items 5,000 > the 2,664-row draw; fixed to 2,664). job-9fy9p trained to the end (selected step 200 by dev-card NLL on the held-out slice: 0.4559 vs step-0 0.4908) but its screen crashed (screen score had no --data) after the proxy600 Index rows and before any jevkit public-231 arm; its weights were not exported (the runner exported only at the end), so it is RE-RUN from stack/qwen35/jev2-h2o @48069603 (the --data fix + an inference checkpoint export right after the cell). Data, exclusions, selection slice 142a593a, guards, LR 4e-5, LoRA r16, head lm_label, 333 steps, clock, PRIMARY / floor / secondaries: all unchanged. The 9fy9p selection record (cell.json, dev cards) is kept as a receipt; the rerun's own selection governs.
   - **A-PREREG-JEV2-H2O amendment 3 (lead + evidence, 2026-10-11, BEFORE job-x7c42 lands): MULTIPLICITY.** JEV2-H2O (job-x7c42) and JEV2-H2O-L (below) are both claimable for "H2O-Lightning-4B v1.1 + SSDM beats H2O" under HOLM over the 2 arms: the arm with the smaller p must have p < 0.025 (its 97.5% paired CI on delta Composite A vs the in-job H2O control excludes 0); only then is the other arm tested at 0.05 (95% CI). Each arm must also pass its own step-0 floor.
 - **A-PREREG-JEV2-H2O-L (lead, 2026-10-11, registered BEFORE job-x7c42 lands and before any public-231 answer of a trained JEV2-H2O checkpoint exists).** Package: stack/qwen35/jev2-h2o @1e12ec12, jobs/m2_first_cell/job_params_jev2_h2o_shim_l.json (mode `jev2_h2o_shim_l`). JUSTIFICATION (cost, not results): job-9fy9p measured 2.55 s/step for this cell (6.6x faster than the 16.9 s/step estimate that sized JEV2-H2O at 333 steps), so ~1 epoch of a 1,000-per-family draw costs about $9. CELL: identical to A-PREREG-JEV2-H2O + amendments 1-2 (host H2O-Lightning-4B v1.1 @193ad740 fail-closed, head lm_label, LoRA r16, lr_lora 4e-5, LS 0.05 / noul 0, max_len 4,096 with 0 truncation, the same cleared bschema-mix-jev1-jev2 components and exclusion lists c0c175f5 + 5cebf60b, prob_indep dropped, score rows ~25 %). DATA: bschema-draw-jev2h-L, 1,000 train rows per family x 18 (tool_selection 959 after the Glaive dedupe) = 17,959 rows; 2,244 steps (the draw once), min 1,000, the step-10 measured-rate plan. SELECTION: ONLY on the SAME held-out slice 142a593a (3,600 ids, forced into the calib role, never trained; records byte-identical to JEV2-H2O's); public-231 is untouched until L's selection is frozen (the screen runs after the cell). PRIMARY / step-0 floor / secondaries: identical to A-PREREG-JEV2-H2O (native_shimcal vs the in-job H2O v1.1 control on public-231, B = 1,000 seed 16). MULTIPLICITY: Holm over JEV2-H2O and JEV2-H2O-L (amendment 3 above). BUDGET: worst-case hold $33.64 (max_duration 237 min), expected ~$9; submitted only after job-x7c42 lands. Label "H2O-Lightning-4B v1.1 + SSDM jev2 data (L)". CAVEAT: open-split Intelligence only; never a board score.
+
+- **A-PREREG-JEV3-SYM (lead, 2026-10-11, registered BEFORE any JEV3-SYM run; package stack/qwen35/jev3-sym, modes jev3_sym_s0 / jev3_sym_s1).**
+  - **Cell (our stack only):**
+    - STOCK Qwen/Qwen3.5-4B (GDN hybrid) with the sym-fork head: layout sym-fork, reorder / relabel invariance by construction.
+    - Consistency-view training (stack/qwen35/consistency @d517df9c): view_frac 0.25, families format / instruction / option, FIXED lambda 0.5.
+    - LoRA r64, fork head, clef loss: label smoothing 0 on yes/no rows, 0.05 on choice / score.
+    - max_len 4,096 with 0-truncation asserts on training and eval.
+  - **Data:** jev3 ONLY (claude/ev-jev3-draw @5c963b25).
+    - Train pointer ce70500d: 5,960 rows, ids sha256 feb681f3 (sorted, newline-joined, no trailing newline; verified locally).
+    - Sampler drops via `train_set.exclude_files` (sha-pinned, fail closed): policy/aegis_reply (109 rows, constant gold FALSE) and adequacy/hs2_bar_coherence (27 rows, 26 : 1), file e998376e. Pool 5,824.
+    - Held-out selection slice pointer 4d1cbba6: 1,200 rows (200 x 6), ids sha256 844233f2, state-disjoint from training (pointer counts 0; asserted at build and in job).
+    - Evidence re-gate CLEARED (claude/ev-jev2a-regate @688e8d7c, REGATE_JEV3.md 4b): exclusion list EMPTY, sha256 01ba4719 asserted.
+  - **Steps rule:** max_steps 728 (1 epoch of 5,824 / 8), bounded by the 35-min train clock.
+    - At the step-10 rate check the planned final step = min(728, the clock-affordable steps at the MEASURED s/step), and the cosine horizon = lr_horizon_frac x that.
+    - Floor 110 (below it exit 26).
+    - Estimate 6.39 s/step (3.93 measured 4B shim x 1.3 sym-fork x 1.25 views), about 220 steps.
+  - **Budget per seed:** max_duration 142 min, worst-case hold $21.67 (<= $22), expected ~$5.6.
+  - **Arms (in job, paired on the 231 public JevBench items):** native = the trained sym-fork model; the IN-JOB control = STOCK Qwen3.5-4B + the H2O shim (same weights, LoRA off).
+  - **PRIMARY (new claim family, alpha 0.05):** the SEED-0 paired delta Composite A, native minus the in-job stock control (`screen.paired_vs`: same items, same bootstrap draws, B = 1,000, seed 16).
+  - **Seeds:** seed 0 and seed 1 are pre-registered and run SEQUENTIALLY.
+    - Seed 1 runs only if the post-seed-0 balance covers its worst-case hold. Until then the result is "single seed, replication pending", NOT a claim.
+    - CLAIM iff seed 0's 95% CI > 0 AND both seeds' point estimates > 0.
+  - **G1 KEEP gate (both seeds' trained checkpoints):** `jobs.sym_eval.perturb_eval` with option_reverse / option_shuffle / key_relabel.
+    - Bitwise 0 flips: every op n > 0, 0 invalid, max |dp| = 0, rows bit-identical, file order asserted.
+    - A checkpoint that loses invariance is not a candidate.
+  - **Selection:** only on the jev3 held-out slice, with the step-0 floor on that slice. `slice_first`: the T-fit and floor run BEFORE the first public-231 row; slice_first.json and landing.json carry the UTC times and file mtimes.
+  - **SECONDARY (reported, not gates):**
+    - Gap to TARGET (H2O-Lightning-4B v1.1, 76.6 locally), paired against H2O's EXISTING preds: job-4g6m8 control preds = job-zbtbj answers, claude/lead-h2o-eval @f5615683, sha256 e00d5ac7 pinned, fail closed. Same 231 ids and bootstrap draws; NO new H2O run. Caveat: S / K come from different jobs (~2.7 S-pt cross-job noise) and the vendored-shim path.
+    - All 8 jevkit flip ops on the trained arm vs the stock-shim receipt (7.55%).
+    - delta I / C / Capability; native_shimcal / native_tfit; the yes/no band rate (native <= stock); per-family deltas; the consistency traces.
+  - **Caveat:** open-split Intelligence only, never claimed as a board score.
