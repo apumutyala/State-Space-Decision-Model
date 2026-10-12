@@ -1,5 +1,10 @@
 # PROGRESS: rolling, 3–5 lines per session (did / learned / next). Older entries roll into history/.
 
+## 2026-10-12: evidence B-PREREG-GUAR-JEV3 (guarantees on our own trained stack, $0)
+- Did: prereg state 745fc478 BEFORE reading any slice prob; claude/ev-guar-jev3 @77b8be9c receipts/2026-10-12-ev-guar-jev3 (driver on jevkit guarantees, unmodified; shim parity 0.0). JEV3-SYM s0 (6zs79, ckpt 5cb7da42) on the jev3 slice 844233f2.
+- Learned: conformal coverage HOLDS (TEST 0.888 @a0.10 / 0.935 @a0.05, sets 1.62/1.87) but LTT certifies NOTHING (act 0) in every arm/variant/secondary and on the clean dev-card remainder -> abstention certificate FALSIFIED for our stack: confident noul errs ~6% (band 49%), confident choice rare, score no singletons. H2O hybrid cells on jev2 DO certify (act 0.61 / 0.81).
+- Next: model-side fix (confident yes/no error << 5%); rerun this exact CPU pipeline on any new cell's slice calib_probs.
+
 ## 2026-10-12: evidence EVIDENCE_REPORT v2 (target-by-target final status)
 - Did: claude/ev-evidence-report-v2 @e4d4913f docs/EVIDENCE_REPORT_V2.md (+8 charts): PROVEN kit parity (public-231), invariance (incl. JEV3-SYM GPU G1 0/565), conformal + injection-robust machinery (G15 real-BPE 1000/1000), leak-free data, rescores; FALSIFIED Composite/Capability/Clef/'D19 more actionable' with attribution; MD1 not met/not comparable; OPEN FS-CRR ~$35, trained G16 ~$6 (hold $21.67), nuPI ON/OFF ~$12 (hold $43.34) vs balance $19.10; 11 mismatch notes.
 
