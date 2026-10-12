@@ -30,6 +30,11 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
 FAMILIES = ("routing", "intent", "severity")
+#: evidence review (2026-10-12): the jev1 choice rows of these families carry larger option sets than the public items;
+#: subsample to the public K at SCHEMA level (gold kept; the other options ranked by sha256("<seed>:<id>:<option>");
+#: the kept options stay in their presented order). States are untouched (JSON states vs public short prose is a
+#: known limitation, stated in the prereg).
+PUBLIC_K = {"intent": 5, "routing": 6}
 JEV2_EXCLUDES = (("receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt",
                   "c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad", 23),
                  ("receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt",
@@ -73,6 +78,26 @@ def empty_levels(q: dict) -> bool:  # == scripts/jev12_balanced_draw._empty_leve
     crit = q.get("criteria")
     vals = list(crit.values()) if isinstance(crit, dict) else list(crit or [])
     return q.get("type") == "score" and not any(str(v).strip() for v in vals if v is not None)
+
+
+def canonical_line(obj) -> str:  # == scripts/jev12_balanced_draw.canonical (manifest / content map lines)
+    return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def subsample_options(r: dict, k: int, seed: int) -> bool:
+    """Cut a choice question's criteria to k options keeping the gold label; True if the row changed."""
+    (qid, q), = r["questions"].items()
+    crit = q.get("criteria")
+    if q.get("type") != "choice" or not isinstance(crit, dict) or len(crit) <= k:
+        return False
+    gold = str(r["labels"][qid])
+    if gold not in crit:
+        raise ValueError(f"{r['id']}: gold {gold!r} not among the options")
+    others = sorted((o for o in crit if o != gold),
+                    key=lambda o: hashlib.sha256(f"{seed}:{r['id']}:{o}".encode()).hexdigest())[: k - 1]
+    keep = {gold, *others}
+    q["criteria"] = {o: d for o, d in crit.items() if o in keep}
+    return True
 
 
 def state_keys(state) -> tuple[str, str]:
@@ -156,6 +181,7 @@ def main(argv=None) -> int:
         if f in cand:
             cand[f].append((hashlib.sha256(f"{a.seed}:{r['id']}".encode()).hexdigest(), r["id"], x))
     drop = Counter()
+    subsampled = Counter()
     added: list[tuple[str, str]] = []
     per = Counter()
     for f in FAMILIES:
@@ -175,6 +201,19 @@ def main(argv=None) -> int:
             if why:
                 drop[f"{f}:{why}"] += 1
                 continue
+            if f in PUBLIC_K and subsample_options(r, PUBLIC_K[f], a.seed):
+                from train.cohort import record_content_hash
+
+                x = json.dumps(r, ensure_ascii=False)
+                content2 = record_content_hash(r)
+                m1[rid] = canonical_line({"family": r["family"], "id": rid,
+                                          "sha256": hashlib.sha256(x.encode()).hexdigest(), "source": r["source"]})
+                cm1[rid] = canonical_line({"content_sha256": content2, "id": rid})
+                if content2 in taken_c:
+                    drop[f"{f}:content_after_subsample"] += 1
+                    continue
+                taken_c.add(content2)
+                subsampled[f] += 1
             take(r, content)
             added.append((rid, x))
             per[f] += 1
@@ -199,6 +238,7 @@ def main(argv=None) -> int:
     rep = {"name": a.out_name, "seed": a.seed, "per_family": a.per_family, "n_records": len(rec),
            "n_jev3": len(j3_lines), "n_added": len(added), "added_per_family": dict(per),
            "added_ids_sha256": ids_sha([rid for rid, _ in added]), "ids_sha256": ids_sha(ids),
+           "subsampled_to_public_k": {"k": PUBLIC_K, "rows": dict(subsampled)},
            "dropped": dict(sorted(drop.items())), "slice_rows_checked": n_slice, "public_items_checked": len(pub),
            "jev2_exclusions": [{"file": f, "sha256": s, "n": n} for f, s, n in JEV2_EXCLUDES],
            "disjoint_rule": "added rows vs jev3 slice + jev3 train + public items + each other: 0 shared ids, "
