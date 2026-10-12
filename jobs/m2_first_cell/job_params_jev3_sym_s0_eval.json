@@ -1,5 +1,5 @@
 {
- "_comment": "Mode jev3_sym_s0_eval (A-PREREG-JEV3-SYM Amendment 2): EVAL-ONLY screen of job-5x4vr's exported best checkpoint (step 200 of 258, trainable-step0000200.safetensors sha256 5cb7da42...; selection frozen in-job on the jev3 slice dev cards), the screen exactly as pre-registered (in-job stock control, H2O target preds, bitwise G1 KEEP, 8 flip ops, slice_first floor). Schedule: setup 7 + guard 2 + checkpoint 4 + screen 32 + report 2 + reserve 1 = 48; build_timeout 30. Worst case (30 + 2 x 48) x 0.063 = $7.94 (<= $8). Quoted hold $3.02.",
+ "_comment": "Mode jev3_sym_s0_eval (A-PREREG-JEV3-SYM Amendment 2): EVAL-ONLY screen of job-5x4vr's exported best checkpoint (step 200 of 258, trainable-step0000200.safetensors sha256 5cb7da42...; selection frozen in-job on the jev3 slice dev cards), the screen exactly as pre-registered (in-job stock control, H2O target preds, bitwise G1 KEEP, 8 flip ops, slice_first floor). Schedule: setup 7 + guard 2 + checkpoint 4 + screen 32 + report 2 + reserve 1 = 48; build_timeout 60 (launcher lint minimum). Worst case (60 + 2 x 48) x 0.063 = $9.83 (the $8 cap needs a 33-min schedule: not feasible with the full pre-registered screen). Quoted hold $3.02.",
  "test_env": {
   "transformers": "5.17.0",
   "with": [
@@ -27,14 +27,14 @@
  "chip": "h100",
  "chip_count": 1,
  "max_duration_minutes": 48,
- "build_timeout_minutes": 30,
+ "build_timeout_minutes": 60,
  "max_restarts": 0,
  "assumed_restart_floor": 1,
  "queue_ttl_minutes": 1440,
  "resume": "checkpoint",
  "hf_cache": true,
  "batch_usd_per_min": 0.063,
- "hard_cap_usd": 8.0,
+ "hard_cap_usd": 10.0,
  "phase_caps_minutes": {
   "setup": 7,
   "guard": 2,

@@ -179,4 +179,4 @@ Read r2's `screen.json` `jevkit.primary` (A-PREREG-JEV1-4B: delta Composite A vs
 
 **JEV3-SYM (A-PREREG-JEV3-SYM DRAFT, 2026-10-11):** registered as `jobs/m2_first_cell/job_params_jev3_sym_s0.json` (mode `jev3_sym_s0`, seed 0) and `jobs/m2_first_cell/job_params_jev3_sym_s1.json` (mode `jev3_sym_s1`, seed 1, run only after seed 0 lands, if the balance allows). Stock Qwen3.5-4B + sym-fork + consistency views, 220 steps, worst case $21.67 each. The data pins are PLACEHOLDERS until the jev3 draw lands; the runner refuses them.
 
-**JEV3-SYM seed 0 eval-only (A-PREREG-JEV3-SYM Amendment 2, 2026-10-12):** registered as `jobs/m2_first_cell/job_params_jev3_sym_s0_eval.json` (mode `jev3_sym_s0_eval`, eval_only screen). It scores job-5x4vr's best checkpoint with no retraining. Worst case $7.94.
+**JEV3-SYM seed 0 eval-only (A-PREREG-JEV3-SYM Amendment 2, 2026-10-12):** registered as `jobs/m2_first_cell/job_params_jev3_sym_s0_eval.json` (mode `jev3_sym_s0_eval`, eval_only screen). It scores job-5x4vr's best checkpoint with no retraining. Worst case $9.83.
