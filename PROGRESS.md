@@ -1,5 +1,10 @@
 # PROGRESS: rolling, 3–5 lines per session (did / learned / next). Older entries roll into history/.
 
+## 2026-10-13: evidence data worker, jev-heldout (sealed secondary confirmation set, $0)
+- Did: PREREG EV-PREREG-JEV-HELDOUT (state d48e500c) first; claude/ev-jev-heldout @668b7472: data/jev_heldout.py + scripts/jevho_*.py, FAMILY_SPEC_HELDOUT.md (H1-H6), GATES.json all_pass; sealed ssdm-data/m2/build/jev-heldout/ (records 09b5d22b, ids c175d8a0, pointer 34b176fa, ACCESS.log).
+- Learned: 26 % of non-train candidates fail Index/jev leak gates (multi_hop/fact Wikipedia overlap, Glaive duplicates, MATH-test fingerprint); HS2 validation alone cannot balance adequacy (HS3 val fallback used); jev2b engine states need neutral padding to reach public lengths.
+- Next: future cells name jev-heldout in their prereg and score it once with `jevkit score --items items.jsonl` (projected Capability CI +-2.7, Comp A near-H2O +-1.1); log each read in ACCESS.log.
+
 ## 2026-10-12: evidence independent rescore of job-zbmhc (JEV3-LM-S, $0)
 - Did: claude/ev-zbmhc-rescore @e03b1d42 receipts/2026-10-12-ev-zbmhc-rescore/RESCORE_ZBMHC.md: art-mddiz self-downloaded (6b69fc5c), kit @c47c0a46 + my score-op re-run + canonical key @1ccdc676.
 - Learned: AGREES on every lead number (floor CI upper +7.0 vs +7.1); primary -0.78 [-16.36,+3.47] NOT CLAIMED; both KEEP gates pass bitwise; no letter shortcut. T_noul infeasible confirmed (stock band 0 is an artefact of the shim floor); the fallback was pre-specified only in code, and it HELPED (T_noul=1 diagnostic is -29.36 CompA), so the loss is not the fallback.
