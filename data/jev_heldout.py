@@ -55,11 +55,11 @@ TARGET = {"adequacy": 114, "adversarial": 57, "ambiguous": 67, "extraction": 229
           "routing": 114, "routing_hard": 48, "temporal_numeric": 143, "tool_selection": 114, "tradeoff": 57,
           "trap": 76}
 #: candidates generated per family (gates drop some; the builder keeps TARGET)
-PLAN = {"adequacy": 400, "adversarial": 200, "ambiguous": 400, "extraction": 650, "fact": 700, "intent": 650,
+PLAN = {"adequacy": {"hs2": 400, "hs3": 400}, "adversarial": 200, "ambiguous": 400, "extraction": 650, "fact": 700, "intent": 650,
         "judge_hard": 800, "long_policy": 900, "multi_hop": 1100, "ordinal": 360, "policy": 700, "probability": 300,
         "routing": 360, "routing_hard": 170, "temporal_numeric": {"tatqa": 600, "timeqa": 450}, "tool_selection": 700,
         "tradeoff": 200, "trap": 260}
-LIC = {"helpsteer2": "CC-BY-4.0", "aegis2": "CC-BY-4.0", "prm800k": "MIT", "ambignq": "CC-BY-SA-3.0",
+LIC = {"helpsteer2": "CC-BY-4.0", "helpsteer3": "CC-BY-4.0", "aegis2": "CC-BY-4.0", "prm800k": "MIT", "ambignq": "CC-BY-SA-3.0",
        "tatqa": "CC-BY-4.0 (data)", "timeqa": "BSD-3-Clause", "privacyqa": "MIT", "boolq": "CC-BY-SA-3.0",
        "musique": "CC-BY-4.0", "massive": "CC-BY-4.0", "sst5": "SST research release (SetFit/sst5 mirror; card "
        "unspecified)", "glaive_fc": "Apache-2.0", "jevho_synth": "own generator (repo)"}
@@ -67,6 +67,8 @@ LIC = {"helpsteer2": "CC-BY-4.0", "aegis2": "CC-BY-4.0", "prm800k": "MIT", "ambi
 SRC = {
     "helpsteer2": ("nvidia/HelpSteer2 validation.jsonl.gz", "hf 990b2711a36180dd19d9c94b8627844866f8982a; sha256 "
                    "610eeb528949 (fetch-log)", "validation"),
+    "helpsteer3": ("nvidia/HelpSteer3 feedback/validation.jsonl.gz", f"hf f6d145777bcbde96137596340fab89793acd1031; "
+                   f"sha256 b86f71581a83", "validation"),
     "aegis2": ("nvidia/Aegis-AI-Content-Safety-Dataset-2.0 validation.json + test.json", "hf "
                "d86bb8bedff51d25ac834ab7838f1cc61acb7a2c; sha256 a97200e226ad / b0a6d6022605", "validation|test"),
     "prm800k": ("openai/prm800k phase1_test.jsonl + phase2_test.jsonl", "git 7ecc794703b2877f63226f2477a49b34f9b25163; "
@@ -211,6 +213,64 @@ def gen_adequacy(n: int) -> Iterator[dict]:
         yield record("adequacy", f"hs2_{attr}", "helpsteer2", f"m2:helpsteer2val:{i}", f"ad-{attr}", state, q, v >= 3,
                      {"prompt": x["prompt"], "response": x["response"]}, f"validation.jsonl.gz row {i}", x,
                      f"helpsteer2val:{p[:200]}", attribute=attr, rating=v)
+
+
+HS3_V = re.compile(r"the response is (not|slightly|partially|mostly|perfectly) helpful", re.I)
+HS3_SIDE = {"not": -1, "slightly": -1, "partially": 0, "mostly": 1, "perfectly": 1}
+HS3_BAR = ["mostly or perfectly helpful to the person who asked", "a reply that largely or fully meets the request",
+           "helpful enough to send as it is (mostly or perfectly helpful)", "at least mostly helpful overall"]
+
+
+def _hs3_verdict(fb) -> tuple[int | None, list]:
+    """Human consensus as jev3 (spec A1): >= 2 parsed verdicts, a strict majority on one side, none on the other."""
+    if isinstance(fb, str):
+        try:
+            fb = json.loads(fb)
+        except ValueError:
+            fb = [fb]
+    vs = [m.group(1).lower() for t in fb or [] for m in [HS3_V.search(str(t)[:200])] if m]
+    side = [HS3_SIDE[v] for v in vs]
+    pos, neg = side.count(1), side.count(-1)
+    if len(vs) >= 2 and pos > len(vs) / 2 and neg == 0:
+        return 1, vs
+    if len(vs) >= 2 and neg > len(vs) / 2 and pos == 0:
+        return 0, vs
+    return None, vs
+
+
+def gen_hs3(n: int) -> Iterator[dict]:
+    """HelpSteer3 feedback VALIDATION (pre-registered adequacy fallback: HS2 validation alone cannot balance noul)."""
+    rows = []
+    with gzip.open(RAW / "helpsteer3" / "feedback_validation.jsonl.gz", "rt", encoding="utf-8") as fh:
+        for ln, raw in enumerate(fh):
+            d = json.loads(raw)
+            if d.get("domain") not in ("general", "stem") or (d.get("language") or "english") != "english":
+                continue
+            ctx = d["context"] if isinstance(d["context"], list) else json.loads(d["context"])
+            clen = sum(len(t.get("content") or "") for t in ctx)
+            for k in (1, 2):
+                resp = d[f"response{k}"]
+                if clen + len(resp) > 2400:
+                    continue
+                v, vs = _hs3_verdict(d[f"feedback{k}"])
+                if v is None:
+                    continue
+                rows.append({"line": ln, "k": k, "line_sha256": hashlib.sha256(raw.rstrip("\n").encode()).hexdigest(),
+                             "context": ctx, "response": resp, "good": v, "verdicts": vs})
+    rows.sort(key=lambda d: rank("hs3", d["line"], d["k"]))
+    for d in rows[:n]:
+        r = rng("hs3", d["line"], d["k"])
+        turns = d["context"]
+        ctx = "\n".join(f"{t.get('role', 'user').capitalize()}: {(t.get('content') or '').strip()}" for t in turns) \
+            if len(turns) > 1 else (turns[0].get("content") or "").strip()
+        h1, h2 = P(r, AD_HEAD)
+        state = f"{h1}\n{ctx}\n\n{h2}\n{d['response'].strip()}"
+        q = noul_q(P(r, AD_Q).format(bar=P(r, HS3_BAR)), *P(r, AD_CRIT))
+        g = hashlib.sha256(canon(turns).encode()).hexdigest()[:20]
+        yield record("adequacy", "hs3_helpful", "helpsteer3", f"m2:helpsteer3val:{d['line']}-{d['k']}", "ad-hs3", state,
+                     q, bool(d["good"]), {"context": ctx, "response": d["response"]},
+                     f"feedback/validation.jsonl.gz line {d['line']} response{d['k']}", {"line_sha256": d["line_sha256"],
+                     "k": d["k"]}, f"helpsteer3val:{g}", verdicts=d["verdicts"])
 
 
 # ================================================================================================ policy (Aegis 2.0 val/test)
@@ -1301,7 +1361,7 @@ def gen_b(fam: str, n: int) -> Iterator[dict]:
 
 
 # ================================================================================================ the pool
-GEN = {"adequacy": gen_adequacy, "policy": gen_policy, "judge_hard": gen_judge, "ambiguous": gen_ambiguous,
+GEN = {"policy": gen_policy, "judge_hard": gen_judge, "ambiguous": gen_ambiguous,
        "long_policy": gen_long_policy, "fact": gen_fact, "multi_hop": gen_multi_hop, "intent": gen_intent,
        "extraction": gen_extraction, "routing": gen_routing, "ordinal": gen_ordinal, "tool_selection": gen_tools,
        "routing_hard": gen_routing_hard}
@@ -1309,7 +1369,10 @@ GEN = {"adequacy": gen_adequacy, "policy": gen_policy, "judge_hard": gen_judge, 
 
 def generate(families=FAMILIES) -> Iterator[dict]:
     for f in families:
-        if f == "temporal_numeric":
+        if f == "adequacy":
+            yield from gen_adequacy(PLAN[f]["hs2"])
+            yield from gen_hs3(PLAN[f]["hs3"])
+        elif f == "temporal_numeric":
             yield from gen_tatqa(PLAN[f]["tatqa"])
             yield from gen_timeqa(PLAN[f]["timeqa"])
         elif f in GEN:

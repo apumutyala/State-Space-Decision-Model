@@ -47,6 +47,9 @@ def main(argv=None) -> int:
     if need["helpsteer2"]:
         idx["helpsteer2"] = {i: sha(json.loads(l)) for i, l in
                              enumerate(gzip.open(R / "helpsteer2" / "validation.jsonl.gz", "rt", encoding="utf-8"))}
+    if need["helpsteer3"]:
+        idx["helpsteer3"] = {ln: hashlib.sha256(raw.rstrip("\n").encode()).hexdigest() for ln, raw in
+                             enumerate(gzip.open(R / "helpsteer3" / "feedback_validation.jsonl.gz", "rt", encoding="utf-8"))}
     if need["aegis2"]:
         idx["aegis2"] = {(s, str(x["id"])): sha(x) for s in ("validation", "test")
                          for x in json.load(open(R / "aegis2" / f"{s}.json", encoding="utf-8"))}
@@ -112,6 +115,10 @@ def main(argv=None) -> int:
         elif s == "helpsteer2":
             i = int(re.search(r"row (\d+)", rk).group(1))
             why = None if idx[s].get(i) == rs else "unresolved_or_sha"
+        elif s == "helpsteer3":
+            ln, k = map(int, re.search(r"line (\d+) response(\d)", rk).groups())
+            src_sha = idx[s].get(ln)
+            why = None if src_sha and sha({"line_sha256": src_sha, "k": k}) == rs else "unresolved_or_sha"
         elif s == "aegis2":
             sp, i = re.match(r"(\w+)\.json id (.+)$", rk).groups()
             why = None if idx[s].get((sp, i)) == rs and sp == r["source_split"] else "unresolved_or_sha"

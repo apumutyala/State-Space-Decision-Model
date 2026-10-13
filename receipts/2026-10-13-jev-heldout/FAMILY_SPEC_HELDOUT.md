@@ -129,3 +129,10 @@ The builder prints counts, never item text. If the build cannot finish on the la
   duplicates; judge_hard 172). Plans are raised (multi_hop 1,100; judge_hard 800; fact 700; policy 700; tool_selection
   700; ambiguous 400; TAT-QA 600; TimeQA 450 with <= 5 questions per article) so the build-check stage still leaves
   each family at its target. Selection stays label-blind rank order; a larger plan only extends the same ranked list.
+- **H6 (adequacy fallback, as pre-registered).** After the gates, HelpSteer2 validation left too few "false" rows for
+  the 45-55 % noul balance (first final: 58.8 % true). The pre-registered fallback is used: HelpSteer3 feedback
+  VALIDATION (nvidia/HelpSteer3 @f6d14577, CC-BY-4.0), human consensus verdicts exactly as jev3 A1 (>= 2 verdicts,
+  strict majority on one side, none on the other; good = mostly / perfectly, bad = not / slightly), English general /
+  stem, context + response <= 2,400 chars. Its rows join the adequacy candidate pool under the same label-blind rank;
+  every gate is re-run on the whole pool. The first final (records sha 3a43fee9...) was superseded before any post gate
+  or scoring read it.

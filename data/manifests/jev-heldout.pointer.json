@@ -1,0 +1,171 @@
+{
+ "build": "jev-heldout (data/jev_heldout.py + scripts/jevho_build.py; PREREG EV-PREREG-JEV-HELDOUT)",
+ "role": "SEALED secondary confirmation set (score at most once per pre-registered cell; never train / select / tune)",
+ "location": "ssdm-data/m2/build/jev-heldout/ (outside git; deterministic from the pinned sources and this commit)",
+ "n_records": 2199,
+ "families": {
+  "adequacy": 114,
+  "adversarial": 57,
+  "ambiguous": 67,
+  "extraction": 229,
+  "fact": 114,
+  "intent": 229,
+  "judge_hard": 162,
+  "long_policy": 181,
+  "multi_hop": 171,
+  "ordinal": 114,
+  "policy": 114,
+  "probability": 95,
+  "routing": 114,
+  "routing_hard": 48,
+  "temporal_numeric": 143,
+  "tool_selection": 114,
+  "tradeoff": 57,
+  "trap": 76
+ },
+ "types": {
+  "adequacy": {
+   "noul": 114
+  },
+  "adversarial": {
+   "noul": 19,
+   "choice": 28,
+   "score": 10
+  },
+  "ambiguous": {
+   "choice": 67
+  },
+  "extraction": {
+   "choice": 229
+  },
+  "fact": {
+   "noul": 114
+  },
+  "intent": {
+   "choice": 229
+  },
+  "judge_hard": {
+   "noul": 162
+  },
+  "long_policy": {
+   "choice": 114,
+   "score": 19,
+   "noul": 48
+  },
+  "multi_hop": {
+   "choice": 151,
+   "noul": 10,
+   "score": 10
+  },
+  "ordinal": {
+   "score": 114
+  },
+  "policy": {
+   "noul": 114
+  },
+  "probability": {
+   "choice": 67,
+   "noul": 28
+  },
+  "routing": {
+   "choice": 114
+  },
+  "routing_hard": {
+   "choice": 48
+  },
+  "temporal_numeric": {
+   "noul": 46,
+   "choice": 95,
+   "score": 2
+  },
+  "tool_selection": {
+   "choice": 114
+  },
+  "tradeoff": {
+   "noul": 19,
+   "choice": 38
+  },
+  "trap": {
+   "choice": 28,
+   "noul": 38,
+   "score": 10
+  }
+ },
+ "choice_K": {
+  "adequacy": {},
+  "adversarial": {
+   "4": 28
+  },
+  "ambiguous": {
+   "3": 51,
+   "4": 16
+  },
+  "extraction": {
+   "4": 208,
+   "5": 21
+  },
+  "fact": {},
+  "intent": {
+   "5": 229
+  },
+  "judge_hard": {},
+  "long_policy": {
+   "4": 73,
+   "5": 31,
+   "6": 10
+  },
+  "multi_hop": {
+   "4": 134,
+   "6": 17
+  },
+  "ordinal": {},
+  "policy": {},
+  "probability": {
+   "3": 67
+  },
+  "routing": {
+   "6": 114
+  },
+  "routing_hard": {
+   "5": 48
+  },
+  "temporal_numeric": {
+   "3": 43,
+   "4": 25,
+   "5": 19,
+   "6": 8
+  },
+  "tool_selection": {
+   "5": 114
+  },
+  "tradeoff": {
+   "4": 7,
+   "5": 31
+  },
+  "trap": {
+   "4": 28
+  }
+ },
+ "tiers": {
+  "easy": 458,
+  "hard": 1109,
+  "standard": 632
+ },
+ "records_uncompressed_sha256": "3a43fee9aab5e2d927b370eb29f8aafb195fb13757fa31545e8dca5ed6130ff3",
+ "items_jsonl_sha256": "661d581e9ac796f8a59756895bbfde2c0839c8bcd4f79963718a4e43186a89ef",
+ "manifest": "jev-heldout.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "b8d0ed8e112955462be813d7223d4696cb9ac47e90271ec3aab3060376d84986",
+ "lens": "jev-heldout.lens.jsonl.gz",
+ "lens_uncompressed_sha256": "e6223b1c35c80fed23360d356f40fcb523bee99f44fe582ad60753e1bc848c96",
+ "ids_sha256": "d6937f138d2046549a01a7fc898153c5db9510d6278731b8f3c47684d208ebae",
+ "ids_sha256_rule": "sha256 of the sorted record ids, newline-joined, no trailing newline",
+ "seal_file": "SEAL.json",
+ "access_log": "ACCESS.log",
+ "use_rule": "secondary confirmation only; scored at most once per pre-registered cell with jevkit score --items items.jsonl; never training, checkpoint selection, temperature / calibration fit or tuning; every read is appended to ACCESS.log",
+ "builder": {
+  "generator": "data/jev_heldout.py",
+  "builder": "scripts/jevho_build.py",
+  "commit": "37325abaf3b218610f601d56ff2dc229bcaa6e77"
+ },
+ "receipt": "receipts/2026-10-13-jev-heldout/"
+}

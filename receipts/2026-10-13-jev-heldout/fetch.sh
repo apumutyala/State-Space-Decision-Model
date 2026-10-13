@@ -21,3 +21,4 @@ f $HF/google/boolq/resolve/35b264d03638db9f4ce671b711558bf7ff0f80d5/data/validat
 f $HF/bdsaglam/musique/resolve/22873a405dd809893b22ada0b499299fb612d2df/musique_ans_v1.0_dev.jsonl musique/musique_ans_v1.0_dev.jsonl 30
 f $HF/SetFit/sst5/resolve/e51bdcd8cd3a30da231967c1a249ba59361279a3/test.jsonl sst5/test.jsonl 1
 f $HF/SetFit/sst5/resolve/e51bdcd8cd3a30da231967c1a249ba59361279a3/dev.jsonl sst5/dev.jsonl 1
+f $HF/nvidia/HelpSteer3/resolve/f6d145777bcbde96137596340fab89793acd1031/feedback/validation.jsonl.gz helpsteer3/feedback_validation.jsonl.gz 6  # spec fallback (adequacy balance), added after the first final
