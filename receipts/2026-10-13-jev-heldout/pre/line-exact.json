@@ -1,12 +1,12 @@
 {
  "rule": "normalised line / sentence >= 4 words, exact",
- "n_train_rows_hit": 571,
+ "n_train_rows_hit": 600,
  "by_source_evalside": {
+  "boolq <- INDEX_HELDOUT:VAST": 163,
   "boolq <- INDEX_HELDOUT:BRIGHT-retrieval": 163,
-  "boolq <- INDEX_HELDOUT:Habermas-consensus": 163,
   "boolq <- INDEX_TEST:SATA-Bench": 163,
   "boolq <- INDEX_HELDOUT:SATA-Bench": 163,
-  "boolq <- INDEX_HELDOUT:VAST": 163,
+  "boolq <- INDEX_HELDOUT:Habermas-consensus": 163,
   "musique <- INDEX_HELDOUT:HoVer claim verification": 85,
   "prm800k <- INDEX_DEV:BRIGHT-retrieval": 50,
   "glaive_fc <- INDEX_TEST:ToolRet-retrieval": 49,
@@ -25,8 +25,8 @@
   "helpsteer2 <- INDEX_HELDOUT:When2Call MCQ": 10,
   "musique <- INDEX_TEST:HoVer claim verification": 10,
   "aegis2 <- INDEX_HELDOUT:SGD-service-given-intent": 9,
-  "helpsteer2 <- INDEX_TEST:API-Bank-tool-selection": 9,
   "helpsteer2 <- INDEX_HELDOUT:SGD-service-given-intent": 9,
+  "helpsteer2 <- INDEX_TEST:API-Bank-tool-selection": 9,
   "prm800k <- INDEX_HELDOUT:BRIGHT-retrieval": 9,
   "helpsteer2 <- INDEX_DEV:API-Bank-tool-selection": 8,
   "glaive_fc <- INDEX_HELDOUT:SGD-service-given-intent": 8,
@@ -36,32 +36,32 @@
   "helpsteer2 <- INDEX_HELDOUT:BRIGHT-retrieval": 7,
   "musique <- INDEX_HELDOUT:RAGTruth response-level hallucination": 6,
   "musique <- INDEX_HELDOUT:SATA-Bench": 6,
+  "helpsteer3 <- INDEX_HELDOUT:When2Call MCQ": 6,
   "musique <- INDEX_HELDOUT:BBH fixed-option tasks": 6,
   "musique <- INDEX_DEV:HoVer claim verification": 6,
   "glaive_fc <- INDEX_DEV:When2Call MCQ": 5,
   "aegis2 <- INDEX_HELDOUT:HellaSwag": 5,
-  "aegis2 <- INDEX_TEST:ToolRet-retrieval": 5,
   "aegis2 <- INDEX_TEST:BANKING77": 5,
   "aegis2 <- INDEX_HELDOUT:ToolRet-retrieval": 5,
+  "aegis2 <- INDEX_TEST:ToolRet-retrieval": 5,
   "helpsteer2 <- INDEX_HELDOUT:API-Bank-tool-selection": 5,
+  "helpsteer3 <- INDEX_DEV:API-Bank-tool-selection": 5,
+  "helpsteer3 <- INDEX_HELDOUT:BRIGHT-retrieval": 5,
+  "helpsteer3 <- INDEX_TEST:BRIGHT-retrieval": 5,
   "aegis2 <- INDEX_DEV:BANKING77": 5,
   "glaive_fc <- INDEX_TEST:API-Bank-tool-selection": 4,
   "helpsteer2 <- INDEX_HELDOUT:Amazon-ESCI": 4,
   "helpsteer2 <- INDEX_DEV:RAGTruth response-level hallucination": 4,
   "helpsteer2 <- INDEX_DEV:When2Call MCQ": 4,
-  "helpsteer2 <- INDEX_HELDOUT:PhishNChips phishing decisions": 4,
   "helpsteer2 <- INDEX_DEV:PhishNChips phishing decisions": 4,
-  "glaive_fc <- INDEX_HELDOUT:When2Call MCQ": 3,
+  "helpsteer2 <- INDEX_HELDOUT:PhishNChips phishing decisions": 4,
+  "helpsteer3 <- INDEX_TEST:When2Call MCQ": 4,
   "glaive_fc <- INDEX_TEST:When2Call MCQ": 3,
+  "glaive_fc <- INDEX_HELDOUT:When2Call MCQ": 3,
+  "helpsteer3 <- INDEX_DEV:BRIGHT-retrieval": 3,
   "helpsteer2 <- INDEX_HELDOUT:BANKING77": 3,
-  "aegis2 <- INDEX_HELDOUT:MMLU-Pro": 3,
-  "musique <- INDEX_TEST:ANLI": 3,
-  "prm800k <- INDEX_DEV:MMLU-Pro": 3,
-  "timeqa <- INDEX_DEV:SATA-Bench": 3,
-  "boolq <- INDEX_HELDOUT:HoVer claim verification": 3,
-  "timeqa <- INDEX_HELDOUT:HoVer claim verification": 3,
-  "glaive_fc <- INDEX_TEST:BFCL-tool-selection": 2,
-  "glaive_fc <- INDEX_DEV:BFCL-tool-selection": 2
+  "helpsteer3 <- INDEX_HELDOUT:SGD-service-given-intent": 3,
+  "aegis2 <- INDEX_HELDOUT:MMLU-Pro": 3
  },
  "rows": {
   "m2:aegis2test:155044161f7e4b30af9afcee7cc799ba~view:jevho-pol-category": [
@@ -1804,6 +1804,131 @@
    "INDEX_HELDOUT:SGD-service-given-intent",
    "INDEX_TEST:API-Bank-tool-selection"
   ],
+  "m2:helpsteer3val:1039-2~view:jevho-ad-hs3": [
+   "INDEX_DEV:API-Bank-tool-selection",
+   "INDEX_HELDOUT:API-Bank-tool-selection",
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:CLINC150+OOS"
+  ],
+  "m2:helpsteer3val:1108-1~view:jevho-ad-hs3": [
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:helpsteer3val:1138-2~view:jevho-ad-hs3": [
+   "INDEX_HELDOUT:MuSR"
+  ],
+  "m2:helpsteer3val:1151-1~view:jevho-ad-hs3": [
+   "INDEX_DEV:PhishNChips phishing decisions",
+   "INDEX_HELDOUT:PhishNChips phishing decisions",
+   "INDEX_HELDOUT:RAGTruth response-level hallucination",
+   "INDEX_HELDOUT:When2Call MCQ"
+  ],
+  "m2:helpsteer3val:1174-2~view:jevho-ad-hs3": [
+   "INDEX_DEV:PhishNChips phishing decisions"
+  ],
+  "m2:helpsteer3val:1421-2~view:jevho-ad-hs3": [
+   "INDEX_DEV:When2Call MCQ",
+   "INDEX_HELDOUT:When2Call MCQ",
+   "INDEX_TEST:When2Call MCQ"
+  ],
+  "m2:helpsteer3val:1432-1~view:jevho-ad-hs3": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_DEV:HLE-text-MC",
+   "INDEX_DEV:MMLU-Pro",
+   "INDEX_HELDOUT:HLE-text-MC",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_TEST:HLE-text-MC",
+   "INDEX_TEST:MMLU-Pro"
+  ],
+  "m2:helpsteer3val:1432-2~view:jevho-ad-hs3": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_DEV:HLE-text-MC",
+   "INDEX_DEV:MMLU-Pro",
+   "INDEX_HELDOUT:HLE-text-MC",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RAGTruth response-level hallucination",
+   "INDEX_TEST:HLE-text-MC",
+   "INDEX_TEST:MMLU-Pro"
+  ],
+  "m2:helpsteer3val:1448-2~view:jevho-ad-hs3": [
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:helpsteer3val:1543-1~view:jevho-ad-hs3": [
+   "INDEX_DEV:API-Bank-tool-selection"
+  ],
+  "m2:helpsteer3val:1550-2~view:jevho-ad-hs3": [
+   "INDEX_HELDOUT:BRIGHT-retrieval"
+  ],
+  "m2:helpsteer3val:1553-1~view:jevho-ad-hs3": [
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:helpsteer3val:1553-2~view:jevho-ad-hs3": [
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:helpsteer3val:1555-1~view:jevho-ad-hs3": [
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:helpsteer3val:1555-2~view:jevho-ad-hs3": [
+   "INDEX_DEV:RAGTruth response-level hallucination",
+   "INDEX_HELDOUT:Amazon-ESCI",
+   "INDEX_HELDOUT:RAGTruth response-level hallucination",
+   "INDEX_TEST:RAGTruth response-level hallucination"
+  ],
+  "m2:helpsteer3val:1571-2~view:jevho-ad-hs3": [
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:helpsteer3val:1584-1~view:jevho-ad-hs3": [
+   "INDEX_DEV:API-Bank-tool-selection",
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:helpsteer3val:1595-1~view:jevho-ad-hs3": [
+   "INDEX_DEV:When2Call MCQ",
+   "INDEX_HELDOUT:When2Call MCQ",
+   "INDEX_TEST:When2Call MCQ"
+  ],
+  "m2:helpsteer3val:1595-2~view:jevho-ad-hs3": [
+   "INDEX_DEV:When2Call MCQ",
+   "INDEX_HELDOUT:When2Call MCQ",
+   "INDEX_TEST:When2Call MCQ"
+  ],
+  "m2:helpsteer3val:1612-2~view:jevho-ad-hs3": [
+   "INDEX_HELDOUT:When2Call MCQ"
+  ],
+  "m2:helpsteer3val:1631-1~view:jevho-ad-hs3": [
+   "INDEX_DEV:API-Bank-tool-selection"
+  ],
+  "m2:helpsteer3val:535-2~view:jevho-ad-hs3": [
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:helpsteer3val:538-1~view:jevho-ad-hs3": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:CLINC150+OOS",
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:helpsteer3val:851-1~view:jevho-ad-hs3": [
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:helpsteer3val:926-2~view:jevho-ad-hs3": [
+   "INDEX_DEV:API-Bank-tool-selection"
+  ],
+  "m2:helpsteer3val:953-1~view:jevho-ad-hs3": [
+   "INDEX_HELDOUT:PhishNChips phishing decisions"
+  ],
+  "m2:helpsteer3val:953-2~view:jevho-ad-hs3": [
+   "INDEX_HELDOUT:PhishNChips phishing decisions"
+  ],
+  "m2:helpsteer3val:966-2~view:jevho-ad-hs3": [
+   "INDEX_HELDOUT:MMLU"
+  ],
+  "m2:helpsteer3val:978-1~view:jevho-ad-hs3": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:When2Call MCQ",
+   "INDEX_TEST:When2Call MCQ"
+  ],
   "m2:massive-test:12182~view:jevho-ex-k4": [
    "INDEX_TEST:BRIGHT-retrieval"
   ],
@@ -2867,6 +2992,7 @@
   134,
   134,
   130,
+  58,
   49,
   45,
   44,
@@ -2874,10 +3000,13 @@
   27,
   26,
   26,
+  19,
   17,
+  16,
   15,
   14,
   14,
+  14,
   12,
   12,
   12,
@@ -2885,10 +3014,6 @@
   11,
   11,
   11,
-  11,
-  11,
-  10,
-  10,
-  10
+  11
  ]
 }

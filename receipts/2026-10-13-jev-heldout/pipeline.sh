@@ -25,7 +25,7 @@ step() { name=$1; need=$2; shift 2; waitram $need; echo "[$(date +%T)] start $na
 gates() {  # $1 = records, $2 = receipt dir, $3 = ids prefix ("" = no drop files)
   local REC=$1 RD=$2 X=$3 D=$S/draw-$(basename $RD)
   mkdir -p $D && cp $REC $D/records.jsonl.gz
-  step disjoint 400 timeout 5400 $P -X utf8 -I scripts/jevho_disjoint.py --records $REC --out $RD/disjoint-jev.json ${X:+--ids-out ${X}disjoint.txt}
+  step disjoint 400 timeout 5400 $P -X utf8 -I scripts/jevho_disjoint.py --records $REC --out $RD/disjoint-jev.json ${X:+--ids-out ${X}disjoint.txt --template-out ${W}/disjoint-template.json} ${X:---template-in ${W}/disjoint-template.json}
   step prov 400 timeout 3600 $P -X utf8 -I scripts/jevho_prov_gate.py --records $REC --out $RD/prov-gate.json ${X:+--drop-ids-out ${X}prov.txt}
   step strictfp 700 timeout 5400 $P -X utf8 -I scripts/jev3_strict_fp.py --records $REC --out $RD/strict-fp.json ${X:+--ids-out ${X}strictfp.txt}
   step leaves 700 timeout 5400 $P -X utf8 scripts/regate_exact_leaves.py --records $REC --out $RD/exact-leaves.json ${X:+--ids-out ${X}leaves.txt}

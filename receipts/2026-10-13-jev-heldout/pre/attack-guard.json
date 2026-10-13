@@ -9,7 +9,7 @@
   "path": "analysis/safety_heldout/heldout_v1_templates.json",
   "git_blob": "1af1d82ba81b663ee24a1e8f654dec5bc0ef00ff"
  },
- "n_records": 9484,
+ "n_records": 9884,
  "n_hit": 5,
  "hit_ids_sha256": "bf4e1dfb36ab9c3674f4ce8bcdce647d0f31e6e1fa1ba7def0bf1f7b02bbacc4",
  "per_set": {

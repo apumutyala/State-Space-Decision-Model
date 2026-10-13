@@ -1,0 +1,8 @@
+{
+ "rule": "normalised line / sentence >= 4 words, exact",
+ "n_train_rows_hit": 0,
+ "by_source_evalside": {},
+ "rows": {},
+ "hit_line_train_df": [],
+ "hit_line_eval_df": []
+}

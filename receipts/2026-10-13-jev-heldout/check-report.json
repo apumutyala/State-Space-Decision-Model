@@ -1,0 +1,450 @@
+{
+ "n_pool": 9884,
+ "n_kept": 8785,
+ "checked_uncompressed_sha256": "4c405f7c44d4ea3d9dcadbfa4fc39c3b1fce385ca3f47e12c1889a6a9ba349ef",
+ "reasons": {
+  "adequacy": {
+   "kept": 657,
+   "index_fingerprint": 83,
+   "checker:index_item_text": 6,
+   "checker:frozen_family": 3
+  },
+  "adversarial": {
+   "kept": 200
+  },
+  "ambiguous": {
+   "kept": 400,
+   "index_fingerprint": 2
+  },
+  "extraction": {
+   "kept": 639,
+   "index_fingerprint": 11
+  },
+  "fact": {
+   "kept": 685,
+   "index_fingerprint": 13,
+   "checker:frozen_family": 2
+  },
+  "intent": {
+   "kept": 633,
+   "index_fingerprint": 16,
+   "jevbench_fingerprint": 1
+  },
+  "judge_hard": {
+   "kept": 619,
+   "index_fingerprint": 166,
+   "checker:index_item_text": 15
+  },
+  "long_policy": {
+   "kept": 889,
+   "index_fingerprint": 9,
+   "checker:dup_content": 2
+  },
+  "multi_hop": {
+   "kept": 781,
+   "index_fingerprint": 317,
+   "attack_template": 2
+  },
+  "ordinal": {
+   "kept": 358,
+   "checker:frozen_family": 2
+  },
+  "policy": {
+   "kept": 532,
+   "jevbench_fingerprint": 166,
+   "index_fingerprint": 1,
+   "checker:index_item_text": 1
+  },
+  "probability": {
+   "kept": 300
+  },
+  "routing": {
+   "kept": 351,
+   "index_fingerprint": 9
+  },
+  "routing_hard": {
+   "kept": 170
+  },
+  "temporal_numeric": {
+   "kept": 485,
+   "index_fingerprint": 198
+  },
+  "tool_selection": {
+   "kept": 635,
+   "index_fingerprint": 64,
+   "checker:index_item_text": 1
+  },
+  "tradeoff": {
+   "kept": 200
+  },
+  "trap": {
+   "kept": 251,
+   "jevbench_fingerprint": 9
+  }
+ },
+ "index_fingerprint": {
+  "identity": {
+   "version": "ssdm-dedup-v3",
+   "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+   "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+   "rows": 155390
+  },
+  "hits_by_family_matcher": {
+   "adequacy": {
+    "minhash": 47,
+    "edit": 33,
+    "exact": 29,
+    "contain": 28,
+    "ngram13": 10
+   },
+   "ambiguous": {
+    "edit": 2
+   },
+   "extraction": {
+    "edit": 10,
+    "contain": 1,
+    "minhash": 2
+   },
+   "fact": {
+    "ngram13": 9,
+    "contain": 5,
+    "minhash": 3,
+    "exact": 1
+   },
+   "intent": {
+    "edit": 11,
+    "exact": 5,
+    "minhash": 6,
+    "contain": 3
+   },
+   "judge_hard": {
+    "ngram13": 66,
+    "minhash": 108,
+    "exact": 69,
+    "edit": 86,
+    "contain": 65
+   },
+   "long_policy": {
+    "edit": 9,
+    "exact": 3,
+    "minhash": 3
+   },
+   "multi_hop": {
+    "minhash": 274,
+    "edit": 59,
+    "exact": 230,
+    "ngram13": 89,
+    "contain": 14
+   },
+   "policy": {
+    "contain": 1
+   },
+   "routing": {
+    "edit": 9,
+    "minhash": 1
+   },
+   "temporal_numeric": {
+    "exact": 165,
+    "minhash": 191,
+    "edit": 30,
+    "contain": 4,
+    "ngram13": 7
+   },
+   "tool_selection": {
+    "contain": 26,
+    "edit": 30,
+    "minhash": 13,
+    "exact": 7,
+    "ngram13": 2
+   }
+  }
+ },
+ "jevbench_fingerprint": {
+  "identity": {
+   "enabled": true,
+   "index_sha256": "0fe994c40dfc70fa3a0cd711fa88abb7f439cb8f2546ecffd53e5ca232d3934b",
+   "fingerprint_arrays_sha256": "211da3f1d3c68fbfc48fc3dbdd72cfd0c6dcf723f47e4628a7f6f5f506c2c55c",
+   "exact_segments_sha256": "f9b94122d36e8b730cc18dc122d4fe65ff789a42072ca86ecebee207fdb5049d",
+   "pin_sha256": "e317bbb6aa541f5b9c26e038359036dc9d3f7039b410060fafa3bfe1bf2db49f",
+   "source_commit": "b6b8fff7e345b98c060ad26c13308860ddc67004"
+  },
+  "hits_by_matcher": {
+   "jevbench_edit": 1,
+   "jevbench_minhash": 175,
+   "jevbench_exact": 1
+  },
+  "examples": [
+   {
+    "id": "m2:massive-test:533~view:jevho-intent-k5",
+    "matchers": [
+     "jevbench_edit"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:15b251a70e074e978e47d93c531ca04c~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:4ca45e09244e4a10b232bd76f8bf6a9c~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:2300137170a54a40b91f2fd77e126f36~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2validation:6abc06e963c54ff68c36cb8f16dacc54~view:jevho-pol-reply",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2validation:62ab67abc33b43d2ae7d6597be67edb4~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:e0872303a6804836bc168c2e604aead7~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2validation:b553f91f35dd436280898f4ffbe6b869~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:0beef33068c446ca8da115d57fd49854~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2validation:7e7e9b622c9f4e768987451f54f9b3d9~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:dca96f0661a349fe9571cf4c2656198d~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:1419718584184c509f37ddab1874db2c~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:70dff21f28c34319a9c786adabb2ecf8~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2validation:5bb75e1850c84a38b4c690a7631176b3~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2validation:3c52f4f48b964cfd99218781714441b9~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:37b9bda7e21d4a66b13b5b4e8b3422bd~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2validation:57d1e99ccf37416b9b8395b92a2a9464~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2validation:8ad3179fbb6c4492891c6140d97783f6~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2validation:b9598e747f8845d4aacc3ec550df0bec~view:jevho-pol-reply",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:7472114c79a44a9d90f52cc01fae5786~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2validation:ee165a647de54b3fa9a08904afad9e5a~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:841883a684f548f980729cbaed964d32~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:e56aad0d95ef412e8fb52ee838d312ed~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2validation:e8c9b7e37e154e18aade65dd6242710e~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:adca3c40b82549238457c12e96b01abb~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2validation:9fb62a31eb924f428bc786ddc8a14c54~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:e3bd736b158c4f138b2ee53a2f0fa13b~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2validation:0075dbe566664ee5850cbbcfab5cb127~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2test:17f6317fe9bb49a0bdb016d1c1702534~view:jevho-pol-reply",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   },
+   {
+    "id": "m2:aegis2validation:07d16fdec2c1443ba0ba8a7a3c6400aa~view:jevho-pol-message",
+    "matchers": [
+     "jevbench_minhash"
+    ]
+   }
+  ]
+ },
+ "attack_guard": {
+  "examples": [
+   {
+    "id": "m2:musique-dev:4hop2__5206_14670_8987_8529~view:jevho-mh-c4",
+    "hits": [
+     "d1b_steer:soft_framing"
+    ]
+   },
+   {
+    "id": "m2:musique-dev:4hop2__160585_14670_8987_8529~view:jevho-mh-c4",
+    "hits": [
+     "d1b_steer:soft_framing"
+    ]
+   }
+  ]
+ },
+ "checker": {
+  "guard_identity": "{'manifests': {'harness/manifests/dev-manifest.jsonl.gz': '26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a', 'harness/manifests/test-manifest.jsonl.gz': '8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a'}, 'n_ids': 47249, 'n_hashes': 48415, 'note': '', 'content_index",
+  "hit_examples": [
+   [
+    "m2:helpsteer2val:428~view:jevho-ad-helpfulness",
+    "state"
+   ],
+   [
+    "m2:helpsteer2val:691~view:jevho-ad-helpfulness",
+    "state"
+   ],
+   [
+    "m2:helpsteer2val:725~view:jevho-ad-correctness",
+    "state"
+   ],
+   [
+    "m2:helpsteer2val:526~view:jevho-ad-helpfulness",
+    "state"
+   ],
+   [
+    "m2:helpsteer3val:966-2~view:jevho-ad-hs3",
+    "state"
+   ],
+   [
+    "m2:helpsteer3val:1421-2~view:jevho-ad-hs3",
+    "state"
+   ],
+   [
+    "m2:prm800k-test:phase2-1618~view:jevho-jh-all",
+    "state/request"
+   ],
+   [
+    "m2:prm800k-test:phase2-672~view:jevho-jh-all",
+    "state/request"
+   ],
+   [
+    "m2:prm800k-test:phase2-2394~view:jevho-jh-all",
+    "state/request"
+   ],
+   [
+    "m2:prm800k-test:phase2-2568~view:jevho-jh-prefix",
+    "state/request"
+   ]
+  ],
+  "exclusion_identity": {
+   "v2": {
+    "cohort": "m2-dev-cohort-v2",
+    "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+    "n": {
+     "dev": 835,
+     "calibration": 1000,
+     "retention": 1670,
+     "steer_dev": 1800,
+     "steer_gate": 1000
+    }
+   },
+   "v3": {
+    "cohort": "m2-dev-cohort-v3",
+    "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+    "n": {
+     "dev": 835,
+     "calibration": 1000,
+     "retention": 39872,
+     "steer_dev": 1800,
+     "steer_gate": 1000
+    }
+   },
+   "heldout_150k_dropped": [
+    "m2:mmlu_aux:21118",
+    "m2:mmlu_aux:39640",
+    "m2:mmlu_aux:39643"
+   ]
+  }
+ },
+ "seconds": 273
+}

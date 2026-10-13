@@ -1,8 +1,9 @@
 {
  "gate": "jev-heldout split provenance (non-train split file + row sha; PRM800K MATH-test; AmbigNQ dev not in train; MASSIVE partition; Glaive unused; engine index offset)",
- "n": 9484,
+ "n": 9884,
  "ok_by_source_split": {
   "helpsteer2:validation": 349,
+  "helpsteer3:validation": 400,
   "jevho_synth:synthetic": 1130,
   "ambignq:dev": 402,
   "massive:test": 1300,
@@ -21,5 +22,5 @@
  "fails_by_family": {},
  "n_fail": 0,
  "pass": true,
- "records_sha256": "2e99c71f715a97114d4f79cf5da61355450d738c561fef80ec72133610c34339"
+ "records_sha256": "a733273b4d5ff4eb3c4039a7c55c327ccd4ea71b07506450e0eb231d50aaf2cb"
 }

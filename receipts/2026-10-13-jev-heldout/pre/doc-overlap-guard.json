@@ -3,8 +3,8 @@
  "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
  "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
  "n_eval_rows": 153397,
- "n_records": 9484,
- "n_rows_any_eval_gram": 223,
+ "n_records": 9884,
+ "n_rows_any_eval_gram": 228,
  "n_fail": 8,
  "fail_ids_sha256": "1dff41e90304e4f6aec4a088c50d555a81532c4b437d9e8720d814e47ce4c2c8",
  "per_source_rows": {
@@ -13,6 +13,7 @@
   "boolq": 700,
   "glaive_fc": 700,
   "helpsteer2": 349,
+  "helpsteer3": 400,
   "jevho_synth": 1130,
   "massive": 1660,
   "musique": 1100,
@@ -1055,7 +1056,7 @@
    "train_df": 0
   }
  ],
- "secs": 11.6,
+ "secs": 11.9,
  "fail_ids": [
   "m2:prm800k-test:phase2-1353~view:jevho-jh-prefix",
   "m2:prm800k-test:phase2-1360~view:jevho-jh-prefix",

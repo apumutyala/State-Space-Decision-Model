@@ -57,7 +57,7 @@ def cmd_dropids(a) -> int:
     d, w = Path(a.pre), Path(a.work)
     ids = gate_ids(d)
     extra = {}
-    for name in ("drop-disjoint.txt", "drop-prov.txt", "drop-strictfp.txt", "drop-leaves.txt"):
+    for name in ("drop-disjoint.txt", "drop-disjoint-final1.txt", "drop-prov.txt", "drop-strictfp.txt", "drop-leaves.txt"):
         p = w / name
         if p.exists():
             extra[name] = sorted({x.strip() for x in p.read_text(encoding="utf-8").split() if x.strip()})

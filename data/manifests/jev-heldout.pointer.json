@@ -54,8 +54,8 @@
   },
   "multi_hop": {
    "choice": 151,
-   "noul": 10,
-   "score": 10
+   "score": 10,
+   "noul": 10
   },
   "ordinal": {
    "score": 114
@@ -74,9 +74,9 @@
    "choice": 48
   },
   "temporal_numeric": {
-   "noul": 46,
+   "noul": 47,
    "choice": 95,
-   "score": 2
+   "score": 1
   },
   "tool_selection": {
    "choice": 114
@@ -115,8 +115,8 @@
    "6": 10
   },
   "multi_hop": {
-   "4": 134,
-   "6": 17
+   "4": 135,
+   "6": 16
   },
   "ordinal": {},
   "policy": {},
@@ -130,8 +130,8 @@
    "5": 48
   },
   "temporal_numeric": {
-   "3": 43,
-   "4": 25,
+   "3": 42,
+   "4": 26,
    "5": 19,
    "6": 8
   },
@@ -147,17 +147,17 @@
   }
  },
  "tiers": {
-  "easy": 458,
-  "hard": 1109,
-  "standard": 632
+  "easy": 460,
+  "hard": 1108,
+  "standard": 631
  },
- "records_uncompressed_sha256": "3a43fee9aab5e2d927b370eb29f8aafb195fb13757fa31545e8dca5ed6130ff3",
- "items_jsonl_sha256": "661d581e9ac796f8a59756895bbfde2c0839c8bcd4f79963718a4e43186a89ef",
+ "records_uncompressed_sha256": "09b5d22b8d116bbc3586d5bd0381ffdca53f3d57eb44636eb47bcc80bf445008",
+ "items_jsonl_sha256": "17a40d43b13b0cfc66342fd54e6b5d20a6dbc797aa1942069b3d79046375dade",
  "manifest": "jev-heldout.manifest.jsonl.gz",
- "manifest_uncompressed_sha256": "b8d0ed8e112955462be813d7223d4696cb9ac47e90271ec3aab3060376d84986",
+ "manifest_uncompressed_sha256": "fe278e4b76198f475adb21fbbbdd65fe8bb549c09cdda76130ee2986fa98d76c",
  "lens": "jev-heldout.lens.jsonl.gz",
- "lens_uncompressed_sha256": "e6223b1c35c80fed23360d356f40fcb523bee99f44fe582ad60753e1bc848c96",
- "ids_sha256": "d6937f138d2046549a01a7fc898153c5db9510d6278731b8f3c47684d208ebae",
+ "lens_uncompressed_sha256": "22d05503bc92c66b61835bb3f1a9925728db8136c6ef1a8806536364ee5bf775",
+ "ids_sha256": "c175d8a0a7e28a120af8ed3a00d6c5b99371f83b3fc5dd8c31864b17cd8cfd5d",
  "ids_sha256_rule": "sha256 of the sorted record ids, newline-joined, no trailing newline",
  "seal_file": "SEAL.json",
  "access_log": "ACCESS.log",
@@ -165,7 +165,7 @@
  "builder": {
   "generator": "data/jev_heldout.py",
   "builder": "scripts/jevho_build.py",
-  "commit": "37325abaf3b218610f601d56ff2dc229bcaa6e77"
+  "commit": "125e17c9582803c5216eac36e2e38edfa964b1dc"
  },
  "receipt": "receipts/2026-10-13-jev-heldout/"
 }

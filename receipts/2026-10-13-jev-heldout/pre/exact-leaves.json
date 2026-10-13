@@ -1,12 +1,12 @@
 {
  "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/jev-heldout-work/pool.jsonl.gz",
- "records_sha256": "9ba61fdc95685ebb3042c01a9aa2020063be0a216e3e17e54faf82b53a841964",
+ "records_sha256": "94b2c50fc3a5b38d8848bc21c4ace93c72b3ee76be587071c7731ec6ed5173de",
  "rule": "normalised leaf >= 6 words, verbatim equal to a leaf of a JevBench public item or an Index suite row",
  "n_rows": 26,
  "rows_gold_is_matched_leaf": 0,
  "by_family_source_evalside": {
-  "judge_hard/prm800k <- INDEX_HELDOUT:MMLU": 12,
   "judge_hard/prm800k <- INDEX_HELDOUT:MMLU-Pro": 8,
+  "judge_hard/prm800k <- INDEX_HELDOUT:MMLU": 12,
   "judge_hard/prm800k <- INDEX_DEV:MMLU-Pro": 2,
   "multi_hop/musique <- INDEX_HELDOUT:HoVer claim verification": 14,
   "multi_hop/musique <- INDEX_HELDOUT:BBH fixed-option tasks": 1

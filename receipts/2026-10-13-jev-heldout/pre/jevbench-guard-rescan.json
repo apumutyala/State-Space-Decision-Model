@@ -9,21 +9,29 @@
  },
  "draws": {
   "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\jev-heldout-work\\pool.jsonl.gz": {
-   "n_records": 9484,
-   "records_sha256": "9ba61fdc95685ebb3042c01a9aa2020063be0a216e3e17e54faf82b53a841964",
+   "n_records": 9884,
+   "records_sha256": "94b2c50fc3a5b38d8848bc21c4ace93c72b3ee76be587071c7731ec6ed5173de",
    "jevbench_doc_fail": 0,
    "jevbench_doc_fails": [],
    "jevbench_exact_segment_rows": 0,
    "jevbench_training_gate_fail": 0,
    "jevbench_training_gate_fail_ids": [],
    "jevbench_exact_segment_ids": [],
-   "jevbench_fingerprint_rows_hit": 176,
+   "jevbench_fingerprint_rows_hit": 177,
    "jevbench_fingerprint_hits_by_matcher": {
-    "jevbench_edit": 1,
-    "jevbench_minhash": 175,
-    "jevbench_exact": 1
+    "jevbench_exact": 2,
+    "jevbench_minhash": 176,
+    "jevbench_edit": 1
    },
    "jevbench_fingerprint_examples": [
+    {
+     "id": "m2:helpsteer3val:1550-1~view:jevho-ad-hs3",
+     "source": "helpsteer3",
+     "matchers": [
+      "jevbench_exact",
+      "jevbench_minhash"
+     ]
+    },
     {
      "id": "m2:massive-test:533~view:jevho-intent-k5",
      "source": "massive",
@@ -1258,7 +1266,7 @@
      ]
     }
    ],
-   "fingerprint_records_checked": 9484,
+   "fingerprint_records_checked": 9884,
    "n_boilerplate": 0,
    "n_template_grams": 0
   }

@@ -73,7 +73,7 @@ def shingles(st) -> set[int]:
     for leaf in leaves(st):
         w = words(leaf)
         for i in range(len(w) - N + 1):
-            out.add(hash(" ".join(w[i:i + N])))
+            out.add(int.from_bytes(hashlib.blake2b(" ".join(w[i:i + N]).encode(), digest_size=8).digest(), "big"))
     return out
 
 
@@ -90,6 +90,8 @@ def main(argv=None) -> int:
     ap.add_argument("--records", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--ids-out")
+    ap.add_argument("--template-out", help="write the template line / shingle set (computed on THIS records file)")
+    ap.add_argument("--template-in", help="use a stored template set (the candidate pool's) instead of recomputing")
     a = ap.parse_args(argv)
     H = []  # heldout rows: (id, family, source)
     k_id, k_parent, k_rowkey, k_content, k_state = {}, {}, {}, {}, {}
@@ -119,6 +121,12 @@ def main(argv=None) -> int:
             row_sh.append(sh)
     tmpl_l = {x for x, gs in line_groups.items() if len(gs) >= 3}
     tmpl_s = {x for x, gs in sh_groups.items() if len(gs) >= 3}
+    if a.template_out:  # stable definition: the template set of the candidate POOL is reused on the final set
+        Path(a.template_out).write_text(json.dumps({"lines": sorted(tmpl_l), "shingles": sorted(tmpl_s)}) + "\n",
+                                        encoding="utf-8")
+    if a.template_in:
+        t = json.loads(Path(a.template_in).read_text(encoding="utf-8"))
+        tmpl_l, tmpl_s = set(t["lines"]), set(t["shingles"])
     line_map, sh_map = collections.defaultdict(list), collections.defaultdict(list)
     for i, (lk, sh) in enumerate(zip(row_lines, row_sh)):
         for x in lk - tmpl_l:

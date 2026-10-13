@@ -1,0 +1,1020 @@
+{
+ "set": "jev-heldout",
+ "n": 2199,
+ "seal": {
+  "set": "jev-heldout",
+  "sealed_utc": "2026-10-13T04:58:56Z",
+  "prereg": "EV-PREREG-JEV-HELDOUT (state d48e500c)",
+  "role": "SEALED secondary confirmation set (score at most once per pre-registered cell; never train / select / tune)",
+  "n_items": 2199,
+  "records_uncompressed_sha256": "09b5d22b8d116bbc3586d5bd0381ffdca53f3d57eb44636eb47bcc80bf445008",
+  "items_jsonl_sha256": "17a40d43b13b0cfc66342fd54e6b5d20a6dbc797aa1942069b3d79046375dade",
+  "manifest_uncompressed_sha256": "fe278e4b76198f475adb21fbbbdd65fe8bb549c09cdda76130ee2986fa98d76c",
+  "lens_uncompressed_sha256": "22d05503bc92c66b61835bb3f1a9925728db8136c6ef1a8806536364ee5bf775",
+  "ids_sha256": "c175d8a0a7e28a120af8ed3a00d6c5b99371f83b3fc5dd8c31864b17cd8cfd5d",
+  "ids_sha256_rule": "sha256 of the sorted record ids, newline-joined, no trailing newline",
+  "builder_commit": "125e17c9582803c5216eac36e2e38edfa964b1dc"
+ },
+ "families": {
+  "adequacy": 114,
+  "adversarial": 57,
+  "ambiguous": 67,
+  "extraction": 229,
+  "fact": 114,
+  "intent": 229,
+  "judge_hard": 162,
+  "long_policy": 181,
+  "multi_hop": 171,
+  "ordinal": 114,
+  "policy": 114,
+  "probability": 95,
+  "routing": 114,
+  "routing_hard": 48,
+  "temporal_numeric": 143,
+  "tool_selection": 114,
+  "tradeoff": 57,
+  "trap": 76
+ },
+ "types": {
+  "adequacy": {
+   "noul": 114
+  },
+  "adversarial": {
+   "noul": 19,
+   "choice": 28,
+   "score": 10
+  },
+  "ambiguous": {
+   "choice": 67
+  },
+  "extraction": {
+   "choice": 229
+  },
+  "fact": {
+   "noul": 114
+  },
+  "intent": {
+   "choice": 229
+  },
+  "judge_hard": {
+   "noul": 162
+  },
+  "long_policy": {
+   "choice": 114,
+   "score": 19,
+   "noul": 48
+  },
+  "multi_hop": {
+   "choice": 151,
+   "score": 10,
+   "noul": 10
+  },
+  "ordinal": {
+   "score": 114
+  },
+  "policy": {
+   "noul": 114
+  },
+  "probability": {
+   "choice": 67,
+   "noul": 28
+  },
+  "routing": {
+   "choice": 114
+  },
+  "routing_hard": {
+   "choice": 48
+  },
+  "temporal_numeric": {
+   "noul": 47,
+   "choice": 95,
+   "score": 1
+  },
+  "tool_selection": {
+   "choice": 114
+  },
+  "tradeoff": {
+   "noul": 19,
+   "choice": 38
+  },
+  "trap": {
+   "choice": 28,
+   "noul": 38,
+   "score": 10
+  }
+ },
+ "choice_K": {
+  "adequacy": {},
+  "adversarial": {
+   "4": 28
+  },
+  "ambiguous": {
+   "3": 51,
+   "4": 16
+  },
+  "extraction": {
+   "4": 208,
+   "5": 21
+  },
+  "fact": {},
+  "intent": {
+   "5": 229
+  },
+  "judge_hard": {},
+  "long_policy": {
+   "4": 73,
+   "5": 31,
+   "6": 10
+  },
+  "multi_hop": {
+   "4": 135,
+   "6": 16
+  },
+  "ordinal": {},
+  "policy": {},
+  "probability": {
+   "3": 67
+  },
+  "routing": {
+   "6": 114
+  },
+  "routing_hard": {
+   "5": 48
+  },
+  "temporal_numeric": {
+   "3": 42,
+   "4": 26,
+   "5": 19,
+   "6": 8
+  },
+  "tool_selection": {
+   "5": 114
+  },
+  "tradeoff": {
+   "4": 7,
+   "5": 31
+  },
+  "trap": {
+   "4": 28
+  }
+ },
+ "sources": {
+  "adequacy": {
+   "helpsteer3:validation": 62,
+   "helpsteer2:validation": 52
+  },
+  "adversarial": {
+   "jevho_synth:synthetic": 57
+  },
+  "ambiguous": {
+   "ambignq:dev": 67
+  },
+  "extraction": {
+   "massive:test": 229
+  },
+  "fact": {
+   "boolq:validation": 114
+  },
+  "intent": {
+   "massive:test": 229
+  },
+  "judge_hard": {
+   "prm800k:test": 162
+  },
+  "long_policy": {
+   "privacyqa:test": 181
+  },
+  "multi_hop": {
+   "musique:dev": 171
+  },
+  "ordinal": {
+   "sst5:test": 114
+  },
+  "policy": {
+   "aegis2:test": 69,
+   "aegis2:validation": 45
+  },
+  "probability": {
+   "jevho_synth:synthetic": 95
+  },
+  "routing": {
+   "massive:dev": 114
+  },
+  "routing_hard": {
+   "jevho_synth:synthetic": 48
+  },
+  "temporal_numeric": {
+   "timeqa:test": 100,
+   "tatqa:dev": 43
+  },
+  "tool_selection": {
+   "glaive_fc:train-unused": 114
+  },
+  "tradeoff": {
+   "jevho_synth:synthetic": 57
+  },
+  "trap": {
+   "jevho_synth:synthetic": 76
+  }
+ },
+ "tiers": {
+  "easy": 460,
+  "hard": 1108,
+  "standard": 631
+ },
+ "build_check_stage": "jev1_build.cmd_check (gold-once, Checker cohort v2/v3 + SplitGuard + harness.heldout + Index DEV/TEST content/text/item text, Index fp item tier, JevBench fp + exact segment, attack_guard) RAN",
+ "pre_gates_drop_ids": {
+  "gates_run": {
+   "strict_full_row_index_fp": true,
+   "exact_leaves_ge6": true,
+   "line_exact_ge4": true,
+   "doc_overlap": true,
+   "attack_guard": true,
+   "jevbench_rescan": true
+  },
+  "by_gate": {
+   "strict_full_row_index_fp": 200,
+   "exact_leaves_ge6": 26,
+   "line_exact_ge4": 600,
+   "doc_overlap": 8,
+   "attack_guard": 5,
+   "jevbench_rescan": 0
+  },
+  "files": {
+   "drop-disjoint.txt": 1101,
+   "drop-disjoint-final1.txt": 69,
+   "drop-prov.txt": 0,
+   "drop-strictfp.txt": 1529,
+   "drop-leaves.txt": 26,
+   "overlap13:gsm8k_official_test.ids.txt": 0,
+   "overlap13:index_DEV.ids.txt": 56,
+   "overlap13:index_HELDOUT.ids.txt": 165,
+   "overlap13:index_proxy600.ids.txt": 4,
+   "overlap13:index_TEST.ids.txt": 37,
+   "overlap13:jevbench_public_231.ids.txt": 0
+  },
+  "by_gate_and_family": {
+   "strict_full_row_index_fp": {
+    "ambiguous": 14,
+    "fact": 74,
+    "adequacy": 83,
+    "extraction": 29
+   },
+   "exact_leaves_ge6": {
+    "multi_hop": 14,
+    "judge_hard": 12
+   },
+   "line_exact_ge4": {
+    "policy": 18,
+    "fact": 167,
+    "tool_selection": 65,
+    "adequacy": 66,
+    "extraction": 1,
+    "multi_hop": 154,
+    "judge_hard": 93,
+    "temporal_numeric": 36
+   },
+   "doc_overlap": {
+    "judge_hard": 8
+   },
+   "attack_guard": {
+    "multi_hop": 5
+   },
+   "drop-disjoint.txt": {
+    "policy": 75,
+    "fact": 88,
+    "tool_selection": 201,
+    "adequacy": 199,
+    "routing": 5,
+    "intent": 8,
+    "extraction": 6,
+    "multi_hop": 214,
+    "long_policy": 57,
+    "judge_hard": 107,
+    "temporal_numeric": 141
+   },
+   "drop-disjoint-final1.txt": {
+    "policy": 5,
+    "tool_selection": 27,
+    "multi_hop": 28,
+    "judge_hard": 5,
+    "temporal_numeric": 4
+   },
+   "drop-strictfp.txt": {
+    "policy": 1,
+    "ambiguous": 14,
+    "fact": 173,
+    "tool_selection": 184,
+    "adequacy": 83,
+    "trap": 5,
+    "routing": 9,
+    "extraction": 29,
+    "intent": 16,
+    "multi_hop": 602,
+    "long_policy": 12,
+    "judge_hard": 166,
+    "temporal_numeric": 235
+   },
+   "drop-leaves.txt": {
+    "multi_hop": 14,
+    "judge_hard": 12
+   },
+   "overlap13:index_DEV.ids.txt": {
+    "fact": 2,
+    "tool_selection": 5,
+    "adequacy": 5,
+    "multi_hop": 23,
+    "judge_hard": 21
+   },
+   "overlap13:index_HELDOUT.ids.txt": {
+    "fact": 7,
+    "tool_selection": 2,
+    "adequacy": 5,
+    "multi_hop": 125,
+    "judge_hard": 20,
+    "temporal_numeric": 6
+   },
+   "overlap13:index_proxy600.ids.txt": {
+    "adequacy": 2,
+    "multi_hop": 2
+   },
+   "overlap13:index_TEST.ids.txt": {
+    "fact": 1,
+    "tool_selection": 8,
+    "adequacy": 4,
+    "multi_hop": 14,
+    "judge_hard": 9,
+    "temporal_numeric": 1
+   }
+  },
+  "n_drop": 2547,
+  "n_drop_by_family": {
+   "policy": 99,
+   "ambiguous": 14,
+   "fact": 249,
+   "tool_selection": 406,
+   "adequacy": 271,
+   "trap": 5,
+   "routing": 13,
+   "extraction": 33,
+   "intent": 24,
+   "multi_hop": 749,
+   "long_policy": 66,
+   "judge_hard": 274,
+   "temporal_numeric": 344
+  },
+  "sha256": "7b7a6cfbfd341f61d125112d0cea73976f44adbbd168c24fd31913c01ede1f05"
+ },
+ "final_gates_must_be_0": {
+  "jev_disjoint_drop_rows (ids/source items/row keys/content/state + human-source text)": 0,
+  "jev_disjoint_key_hits": 0,
+  "engine_rows_template_line_overlap_reported": 92,
+  "provenance_fail": 0,
+  "strict_full_row_index_fp_rows": 0,
+  "exact_leaves_ge6_rows": 0,
+  "line_exact_ge4_rows": 0,
+  "doc_overlap_rows": 0,
+  "attack_guard_rows": 0,
+  "jevbench_rescan_rows": 0,
+  "doc_overlap_index_fail": 0,
+  "doc_overlap_jevbench_fail": 0,
+  "row_gates": {
+   "pass": true,
+   "fails": {},
+   "frozen_refused": 0,
+   "d1b_hits": 0,
+   "cohort_identity": {
+    "v2": {
+     "cohort": "m2-dev-cohort-v2",
+     "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+     "n": {
+      "dev": 835,
+      "calibration": 1000,
+      "retention": 1670,
+      "steer_dev": 1800,
+      "steer_gate": 1000
+     }
+    },
+    "v3": {
+     "cohort": "m2-dev-cohort-v3",
+     "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+     "n": {
+      "dev": 835,
+      "calibration": 1000,
+      "retention": 39872,
+      "steer_dev": 1800,
+      "steer_gate": 1000
+     }
+    },
+    "heldout_150k_dropped": [
+     "m2:mmlu_aux:21118",
+     "m2:mmlu_aux:39640",
+     "m2:mmlu_aux:39643"
+    ]
+   },
+   "index_fingerprint": {
+    "version": "ssdm-dedup-v3",
+    "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+    "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+    "rows": 155390
+   }
+  }
+ },
+ "final_gates_ran": {
+  "jev_disjoint_drop_rows (ids/source items/row keys/content/state + human-source text)": true,
+  "jev_disjoint_key_hits": true,
+  "engine_rows_template_line_overlap_reported": true,
+  "provenance_fail": true,
+  "strict_full_row_index_fp_rows": true,
+  "exact_leaves_ge6_rows": true,
+  "line_exact_ge4_rows": true,
+  "doc_overlap_rows": true,
+  "attack_guard_rows": true,
+  "jevbench_rescan_rows": true,
+  "doc_overlap_index_fail": true,
+  "doc_overlap_jevbench_fail": true,
+  "row_gates": true
+ },
+ "final_gates_all_zero": true,
+ "tolerance_gate": {
+  "adequacy": {
+   "n": 114,
+   "target": 114,
+   "count_ok": true,
+   "types": {
+    "noul": 114
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  },
+  "adversarial": {
+   "n": 57,
+   "target": 57,
+   "count_ok": true,
+   "types": {
+    "noul": 19,
+    "choice": 28,
+    "score": 10
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5263,
+   "noul_criteria_all": true
+  },
+  "ambiguous": {
+   "n": 67,
+   "target": 67,
+   "count_ok": true,
+   "types": {
+    "choice": 67
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 0.8806,
+   "string_share_public": 0.8571,
+   "string_share_ok": true,
+   "noul_true_share": null,
+   "noul_criteria_all": true
+  },
+  "extraction": {
+   "n": 229,
+   "target": 229,
+   "count_ok": true,
+   "types": {
+    "choice": 229
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": null,
+   "noul_criteria_all": true
+  },
+  "fact": {
+   "n": 114,
+   "target": 114,
+   "count_ok": true,
+   "types": {
+    "noul": 114
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  },
+  "intent": {
+   "n": 229,
+   "target": 229,
+   "count_ok": true,
+   "types": {
+    "choice": 229
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": null,
+   "noul_criteria_all": true
+  },
+  "judge_hard": {
+   "n": 162,
+   "target": 162,
+   "count_ok": true,
+   "types": {
+    "noul": 162
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 0.0,
+   "string_share_public": 0.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  },
+  "long_policy": {
+   "n": 181,
+   "target": 181,
+   "count_ok": true,
+   "types": {
+    "choice": 114,
+    "score": 19,
+    "noul": 48
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  },
+  "multi_hop": {
+   "n": 171,
+   "target": 171,
+   "count_ok": true,
+   "types": {
+    "choice": 151,
+    "score": 10,
+    "noul": 10
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 0.5263,
+   "string_share_public": 0.5556,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  },
+  "ordinal": {
+   "n": 114,
+   "target": 114,
+   "count_ok": true,
+   "types": {
+    "score": 114
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": null,
+   "noul_criteria_all": true
+  },
+  "policy": {
+   "n": 114,
+   "target": 114,
+   "count_ok": true,
+   "types": {
+    "noul": 114
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  },
+  "probability": {
+   "n": 95,
+   "target": 95,
+   "count_ok": true,
+   "types": {
+    "choice": 67,
+    "noul": 28
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  },
+  "routing": {
+   "n": 114,
+   "target": 114,
+   "count_ok": true,
+   "types": {
+    "choice": 114
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": null,
+   "noul_criteria_all": true
+  },
+  "routing_hard": {
+   "n": 48,
+   "target": 48,
+   "count_ok": true,
+   "types": {
+    "choice": 48
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 0.0,
+   "string_share_public": 0.0,
+   "string_share_ok": true,
+   "noul_true_share": null,
+   "noul_criteria_all": true
+  },
+  "temporal_numeric": {
+   "n": 143,
+   "target": 143,
+   "count_ok": true,
+   "types": {
+    "noul": 47,
+    "choice": 95,
+    "score": 1
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 0.6713,
+   "string_share_public": 0.7333,
+   "string_share_ok": true,
+   "noul_true_share": 0.4681,
+   "noul_criteria_all": true
+  },
+  "tool_selection": {
+   "n": 114,
+   "target": 114,
+   "count_ok": true,
+   "types": {
+    "choice": 114
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": null,
+   "noul_criteria_all": true
+  },
+  "tradeoff": {
+   "n": 57,
+   "target": 57,
+   "count_ok": true,
+   "types": {
+    "noul": 19,
+    "choice": 38
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5263,
+   "noul_criteria_all": true
+  },
+  "trap": {
+   "n": 76,
+   "target": 76,
+   "count_ok": true,
+   "types": {
+    "choice": 28,
+    "noul": 38,
+    "score": 10
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  }
+ },
+ "tolerance_all_ok": true,
+ "gold_position_chi2": {
+  "adequacy": {
+   "p": null
+  },
+  "adversarial": {
+   "n": 28,
+   "chi2": 2.0,
+   "df": 3,
+   "chi2_per_df": 0.667,
+   "p": 0.576258
+  },
+  "ambiguous": {
+   "n": 51,
+   "chi2": 1.5,
+   "df": 2,
+   "chi2_per_df": 0.765,
+   "p": 0.469426
+  },
+  "extraction": {
+   "n": 208,
+   "chi2": 6.3,
+   "df": 3,
+   "chi2_per_df": 2.115,
+   "p": 0.094332
+  },
+  "fact": {
+   "p": null
+  },
+  "intent": {
+   "n": 229,
+   "chi2": 0.5,
+   "df": 4,
+   "chi2_per_df": 0.124,
+   "p": 0.970535
+  },
+  "judge_hard": {
+   "p": null
+  },
+  "long_policy": {
+   "n": 104,
+   "chi2": 3.1,
+   "df": 7,
+   "chi2_per_df": 0.443,
+   "p": 0.876397
+  },
+  "multi_hop": {
+   "n": 135,
+   "chi2": 9.3,
+   "df": 3,
+   "chi2_per_df": 3.109,
+   "p": 0.02498
+  },
+  "ordinal": {
+   "p": null
+  },
+  "policy": {
+   "p": null
+  },
+  "probability": {
+   "n": 67,
+   "chi2": 0.0,
+   "df": 2,
+   "chi2_per_df": 0.015,
+   "p": 0.973074
+  },
+  "routing": {
+   "n": 114,
+   "chi2": 1.5,
+   "df": 5,
+   "chi2_per_df": 0.295,
+   "p": 0.91557
+  },
+  "routing_hard": {
+   "n": 48,
+   "chi2": 2.0,
+   "df": 4,
+   "chi2_per_df": 0.5,
+   "p": 0.738768
+  },
+  "temporal_numeric": {
+   "n": 68,
+   "chi2": 1.0,
+   "df": 5,
+   "chi2_per_df": 0.207,
+   "p": 0.958049
+  },
+  "tool_selection": {
+   "n": 114,
+   "chi2": 1.7,
+   "df": 4,
+   "chi2_per_df": 0.425,
+   "p": 0.792757
+  },
+  "tradeoff": {
+   "n": 31,
+   "chi2": 2.4,
+   "df": 4,
+   "chi2_per_df": 0.597,
+   "p": 0.668212
+  },
+  "trap": {
+   "n": 28,
+   "chi2": 0.9,
+   "df": 3,
+   "chi2_per_df": 0.286,
+   "p": 0.836973
+  }
+ },
+ "gold_position_ok": true,
+ "shape_gate": {
+  "all_pass": true,
+  "families": {
+   "adequacy": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "adversarial": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "ambiguous": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "extraction": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "fact": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "intent": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "judge_hard": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "long_policy": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "multi_hop": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "ordinal": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "policy": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "probability": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "routing": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "routing_hard": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "temporal_numeric": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "tool_selection": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "tradeoff": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   },
+   "trap": {
+    "pass": true,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": true
+    }
+   }
+  }
+ },
+ "short_families": {},
+ "all_pass": true
+}

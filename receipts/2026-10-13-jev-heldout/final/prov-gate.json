@@ -1,0 +1,26 @@
+{
+ "gate": "jev-heldout split provenance (non-train split file + row sha; PRM800K MATH-test; AmbigNQ dev not in train; MASSIVE partition; Glaive unused; engine index offset)",
+ "n": 2199,
+ "ok_by_source_split": {
+  "aegis2:test": 69,
+  "aegis2:validation": 45,
+  "ambignq:dev": 67,
+  "boolq:validation": 114,
+  "glaive_fc:train-unused": 114,
+  "helpsteer2:validation": 52,
+  "helpsteer3:validation": 62,
+  "jevho_synth:synthetic": 333,
+  "massive:dev": 114,
+  "massive:test": 458,
+  "musique:dev": 171,
+  "privacyqa:test": 181,
+  "prm800k:test": 162,
+  "sst5:test": 114,
+  "tatqa:dev": 43,
+  "timeqa:test": 100
+ },
+ "fails_by_family": {},
+ "n_fail": 0,
+ "pass": true,
+ "records_sha256": "09b5d22b8d116bbc3586d5bd0381ffdca53f3d57eb44636eb47bcc80bf445008"
+}

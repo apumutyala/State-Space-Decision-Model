@@ -1,7 +1,7 @@
 {
  "rule": "own matcher: NFKC+casefold \\w+ words, word 13-grams per leaf, blake2b-64 word hash, polynomial gram hash; exact = normalised leaf >= 6 words, or whole normalised state",
- "n_train_rows": 9484,
- "n_train_grams": 5184814,
+ "n_train_rows": 9884,
+ "n_train_grams": 5271817,
  "sides": {
   "jevbench_public_231": {
    "eval_rows": 231,
@@ -63,7 +63,7 @@
     "MMLU-Pro": 1,
     "PhishNChips phishing decisions": 1
    },
-   "train_rows_with_13gram_hit": 55,
+   "train_rows_with_13gram_hit": 56,
    "train_rows_13gram_coverage_ge": {
     "0.1": 11,
     "0.5": 1,
@@ -71,6 +71,7 @@
    },
    "train_rows_hit_by_family_source": {
     "adequacy/helpsteer2": 4,
+    "adequacy/helpsteer3": 1,
     "fact/boolq": 2,
     "judge_hard/prm800k": 21,
     "multi_hop/musique": 23,
@@ -81,6 +82,7 @@
     "m2:helpsteer2val:392~view:jevho-ad-correctness",
     "m2:helpsteer2val:749~view:jevho-ad-helpfulness",
     "m2:helpsteer2val:328~view:jevho-ad-correctness",
+    "m2:helpsteer3val:1555-2~view:jevho-ad-hs3",
     "m2:boolq-val:2732~view:jevho-fact",
     "m2:boolq-val:3094~view:jevho-fact",
     "m2:prm800k-test:phase2-884~view:jevho-jh-all",
@@ -100,10 +102,9 @@
     "m2:prm800k-test:phase2-1048~view:jevho-jh-all",
     "m2:prm800k-test:phase2-116~view:jevho-jh-all",
     "m2:prm800k-test:phase2-1047~view:jevho-jh-prefix",
-    "m2:prm800k-test:phase2-1464~view:jevho-jh-all",
-    "m2:prm800k-test:phase2-1237~view:jevho-jh-all"
+    "m2:prm800k-test:phase2-1464~view:jevho-jh-all"
    ],
-   "train_hit_ids_sha256": "0c0a63d1d0344027700d58dae4a8e49cd3a2e34a3e17a053f8e707b8e44f4e0a",
+   "train_hit_ids_sha256": "e6abb0d9d429be96fac22f4773b102d3f0217584c7816db49202648d2acc2dd5",
    "exact_leaf_train_rows": 1,
    "exact_leaf_ids": [
     "m2:prm800k-test:phase2-1215~view:jevho-jh-all"
@@ -113,17 +114,17 @@
   },
   "index_TEST": {
    "eval_rows": 12423,
-   "eval_rows_hit_13gram": 44,
+   "eval_rows_hit_13gram": 45,
    "eval_rows_exact": 0,
    "eval_rows_hit_by_eval_family": {
     "HoVer claim verification": 29,
-    "BRIGHT-retrieval": 7,
+    "BRIGHT-retrieval": 8,
     "ToolRet-retrieval": 5,
     "ANLI": 1,
     "SATA-Bench": 1,
     "MMLU-Pro": 1
    },
-   "train_rows_with_13gram_hit": 35,
+   "train_rows_with_13gram_hit": 37,
    "train_rows_13gram_coverage_ge": {
     "0.1": 9,
     "0.5": 2,
@@ -131,6 +132,7 @@
    },
    "train_rows_hit_by_family_source": {
     "adequacy/helpsteer2": 2,
+    "adequacy/helpsteer3": 2,
     "fact/boolq": 1,
     "judge_hard/prm800k": 9,
     "multi_hop/musique": 14,
@@ -140,6 +142,8 @@
    "train_hit_ids_examples": [
     "m2:helpsteer2val:392~view:jevho-ad-correctness",
     "m2:helpsteer2val:749~view:jevho-ad-helpfulness",
+    "m2:helpsteer3val:1448-2~view:jevho-ad-hs3",
+    "m2:helpsteer3val:1571-2~view:jevho-ad-hs3",
     "m2:boolq-val:2918~view:jevho-fact",
     "m2:prm800k-test:phase2-1987~view:jevho-jh-all",
     "m2:prm800k-test:phase2-115~view:jevho-jh-prefix",
@@ -160,11 +164,9 @@
     "m2:musique-dev:2hop__20433_157939~view:jevho-mh-c4",
     "m2:musique-dev:3hop1__145194_160545_62931~view:jevho-mh-c4",
     "m2:musique-dev:3hop1__79462_91850_685675~view:jevho-mh-c4",
-    "m2:musique-dev:3hop1__462960_160545_62931~view:jevho-mh-c6",
-    "m2:musique-dev:2hop__19007_60935~view:jevho-mh-c4",
-    "m2:musique-dev:3hop1__390489_502967_84283~view:jevho-mh-c4"
+    "m2:musique-dev:3hop1__462960_160545_62931~view:jevho-mh-c6"
    ],
-   "train_hit_ids_sha256": "e38b245ec78237a9575035c6e7dd823ca75d931b3c4c158a9a213151cd004c0c",
+   "train_hit_ids_sha256": "04b2b9d61068ddf0d7d6b67c48bddcaa1b71f5f8708ac432ddc0e267218d458b",
    "exact_leaf_train_rows": 0,
    "exact_leaf_ids": [],
    "exact_state_train_rows": 0,
@@ -172,7 +174,7 @@
   },
   "index_HELDOUT": {
    "eval_rows": 128608,
-   "eval_rows_hit_13gram": 305,
+   "eval_rows_hit_13gram": 307,
    "eval_rows_exact": 35,
    "eval_rows_hit_by_eval_family": {
     "HoVer claim verification": 137,
@@ -180,13 +182,13 @@
     "RouterBench-5shot": 44,
     "BRIGHT-retrieval": 29,
     "ANLI": 21,
-    "RAGTruth response-level hallucination": 9,
+    "RAGTruth response-level hallucination": 11,
     "MMLU": 6,
     "SATA-Bench": 6,
     "MMLU-Pro": 4,
     "PhishNChips phishing decisions": 1
    },
-   "train_rows_with_13gram_hit": 162,
+   "train_rows_with_13gram_hit": 165,
    "train_rows_13gram_coverage_ge": {
     "0.1": 13,
     "0.5": 1,
@@ -194,6 +196,7 @@
    },
    "train_rows_hit_by_family_source": {
     "adequacy/helpsteer2": 2,
+    "adequacy/helpsteer3": 3,
     "fact/boolq": 7,
     "judge_hard/prm800k": 20,
     "multi_hop/musique": 125,
@@ -203,6 +206,9 @@
    "train_hit_ids_examples": [
     "m2:helpsteer2val:468~view:jevho-ad-helpfulness",
     "m2:helpsteer2val:328~view:jevho-ad-correctness",
+    "m2:helpsteer3val:1134-1~view:jevho-ad-hs3",
+    "m2:helpsteer3val:696-1~view:jevho-ad-hs3",
+    "m2:helpsteer3val:1555-2~view:jevho-ad-hs3",
     "m2:boolq-val:2373~view:jevho-fact",
     "m2:boolq-val:3064~view:jevho-fact",
     "m2:boolq-val:1129~view:jevho-fact",
@@ -222,12 +228,9 @@
     "m2:prm800k-test:phase2-1353~view:jevho-jh-prefix",
     "m2:prm800k-test:phase2-1360~view:jevho-jh-prefix",
     "m2:prm800k-test:phase2-799~view:jevho-jh-all",
-    "m2:prm800k-test:phase2-1162~view:jevho-jh-all",
-    "m2:prm800k-test:phase2-1218~view:jevho-jh-step",
-    "m2:prm800k-test:phase2-2197~view:jevho-jh-step",
-    "m2:prm800k-test:phase2-2355~view:jevho-jh-all"
+    "m2:prm800k-test:phase2-1162~view:jevho-jh-all"
    ],
-   "train_hit_ids_sha256": "338bf7995bde61ddbf13b7e07eb642ed6e9d29a5370796d1d27077f0a7c5034e",
+   "train_hit_ids_sha256": "7697b68226a621501b9687860d4b80d18e30283aa5a87e3383e7c7118451cfa5",
    "exact_leaf_train_rows": 16,
    "exact_leaf_ids": [
     "m2:prm800k-test:phase2-917~view:jevho-jh-all",
@@ -285,5 +288,5 @@
    "exact_state_ids": []
   }
  },
- "seconds": 95
+ "seconds": 92
 }
