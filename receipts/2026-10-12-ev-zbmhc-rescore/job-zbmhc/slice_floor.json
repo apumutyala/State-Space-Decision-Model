@@ -1,0 +1,57 @@
+{
+ "ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078",
+ "n_decisions": 1200,
+ "unmatched_excluded": 0,
+ "native_top1": 0.7116666666666667,
+ "step0_top1": 0.6666666666666666,
+ "per_family": {
+  "adequacy": {
+   "n": 200,
+   "native": 0.69,
+   "step0": 0.64,
+   "delta": 0.04999999999999993
+  },
+  "ambiguous": {
+   "n": 200,
+   "native": 0.535,
+   "step0": 0.54,
+   "delta": -0.0050000000000000044
+  },
+  "judge_hard": {
+   "n": 200,
+   "native": 0.78,
+   "step0": 0.685,
+   "delta": 0.09499999999999997
+  },
+  "long_policy": {
+   "n": 200,
+   "native": 0.595,
+   "step0": 0.54,
+   "delta": 0.05499999999999994
+  },
+  "policy": {
+   "n": 200,
+   "native": 0.865,
+   "step0": 0.815,
+   "delta": 0.050000000000000044
+  },
+  "temporal_numeric": {
+   "n": 200,
+   "native": 0.805,
+   "step0": 0.78,
+   "delta": 0.025000000000000022
+  }
+ },
+ "rule": "A-PREREG-JEV2-H2O floor: the selected checkpoint must beat step 0 (the untrained host) on the held-out slice top-1; otherwise step 0 = no change and the run is NEGATIVE",
+ "delta": 0.04500000000000004,
+ "pass": true,
+ "stock_noul_band": {
+  "rate": 0.0,
+  "in_band": 0,
+  "n": 741,
+  "band": [
+   0.2,
+   0.8
+  ]
+ }
+}

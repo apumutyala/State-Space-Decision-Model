@@ -1,0 +1,1564 @@
+{
+ "format": "ssdm-trainable-v1",
+ "file": "trainable-step0000150.safetensors",
+ "sha256": "8e9360083ad6b6ea705a7b72afd93ee88bb6b74daefa1ebb1eaafa640e025c89",
+ "dtype": "bf16",
+ "lora_dtype": "bf16",
+ "tensor_dtypes": {
+  "backbone.model.layers.0.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.0.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.0.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.0.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.0.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.0.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.0.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.0.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.0.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.0.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.0.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.0.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.1.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.1.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.1.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.1.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.1.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.1.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.1.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.1.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.1.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.1.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.1.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.1.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.10.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.10.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.10.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.10.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.10.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.10.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.10.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.10.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.10.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.10.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.10.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.10.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.11.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.11.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.11.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.11.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.11.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.11.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.11.self_attn.k_proj.lora_A": "bfloat16",
+  "backbone.model.layers.11.self_attn.k_proj.lora_B": "bfloat16",
+  "backbone.model.layers.11.self_attn.o_proj.lora_A": "bfloat16",
+  "backbone.model.layers.11.self_attn.o_proj.lora_B": "bfloat16",
+  "backbone.model.layers.11.self_attn.q_proj.lora_A": "bfloat16",
+  "backbone.model.layers.11.self_attn.q_proj.lora_B": "bfloat16",
+  "backbone.model.layers.11.self_attn.v_proj.lora_A": "bfloat16",
+  "backbone.model.layers.11.self_attn.v_proj.lora_B": "bfloat16",
+  "backbone.model.layers.12.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.12.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.12.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.12.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.12.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.12.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.12.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.12.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.12.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.12.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.12.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.12.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.13.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.13.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.13.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.13.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.13.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.13.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.13.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.13.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.13.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.13.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.13.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.13.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.14.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.14.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.14.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.14.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.14.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.14.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.14.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.14.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.14.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.14.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.14.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.14.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.15.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.15.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.15.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.15.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.15.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.15.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.15.self_attn.k_proj.lora_A": "bfloat16",
+  "backbone.model.layers.15.self_attn.k_proj.lora_B": "bfloat16",
+  "backbone.model.layers.15.self_attn.o_proj.lora_A": "bfloat16",
+  "backbone.model.layers.15.self_attn.o_proj.lora_B": "bfloat16",
+  "backbone.model.layers.15.self_attn.q_proj.lora_A": "bfloat16",
+  "backbone.model.layers.15.self_attn.q_proj.lora_B": "bfloat16",
+  "backbone.model.layers.15.self_attn.v_proj.lora_A": "bfloat16",
+  "backbone.model.layers.15.self_attn.v_proj.lora_B": "bfloat16",
+  "backbone.model.layers.16.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.16.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.16.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.16.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.16.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.16.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.16.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.16.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.16.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.16.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.16.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.16.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.17.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.17.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.17.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.17.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.17.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.17.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.17.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.17.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.17.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.17.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.17.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.17.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.18.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.18.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.18.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.18.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.18.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.18.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.18.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.18.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.18.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.18.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.18.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.18.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.19.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.19.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.19.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.19.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.19.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.19.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.19.self_attn.k_proj.lora_A": "bfloat16",
+  "backbone.model.layers.19.self_attn.k_proj.lora_B": "bfloat16",
+  "backbone.model.layers.19.self_attn.o_proj.lora_A": "bfloat16",
+  "backbone.model.layers.19.self_attn.o_proj.lora_B": "bfloat16",
+  "backbone.model.layers.19.self_attn.q_proj.lora_A": "bfloat16",
+  "backbone.model.layers.19.self_attn.q_proj.lora_B": "bfloat16",
+  "backbone.model.layers.19.self_attn.v_proj.lora_A": "bfloat16",
+  "backbone.model.layers.19.self_attn.v_proj.lora_B": "bfloat16",
+  "backbone.model.layers.2.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.2.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.2.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.2.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.2.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.2.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.2.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.2.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.2.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.2.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.2.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.2.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.20.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.20.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.20.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.20.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.20.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.20.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.20.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.20.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.20.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.20.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.20.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.20.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.21.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.21.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.21.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.21.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.21.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.21.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.21.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.21.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.21.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.21.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.21.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.21.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.22.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.22.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.22.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.22.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.22.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.22.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.22.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.22.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.22.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.22.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.22.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.22.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.23.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.23.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.23.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.23.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.23.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.23.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.23.self_attn.k_proj.lora_A": "bfloat16",
+  "backbone.model.layers.23.self_attn.k_proj.lora_B": "bfloat16",
+  "backbone.model.layers.23.self_attn.o_proj.lora_A": "bfloat16",
+  "backbone.model.layers.23.self_attn.o_proj.lora_B": "bfloat16",
+  "backbone.model.layers.23.self_attn.q_proj.lora_A": "bfloat16",
+  "backbone.model.layers.23.self_attn.q_proj.lora_B": "bfloat16",
+  "backbone.model.layers.23.self_attn.v_proj.lora_A": "bfloat16",
+  "backbone.model.layers.23.self_attn.v_proj.lora_B": "bfloat16",
+  "backbone.model.layers.24.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.24.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.24.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.24.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.24.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.24.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.24.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.24.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.24.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.24.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.24.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.24.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.25.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.25.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.25.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.25.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.25.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.25.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.25.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.25.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.25.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.25.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.25.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.25.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.26.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.26.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.26.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.26.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.26.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.26.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.26.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.26.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.26.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.26.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.26.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.26.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.27.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.27.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.27.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.27.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.27.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.27.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.27.self_attn.k_proj.lora_A": "bfloat16",
+  "backbone.model.layers.27.self_attn.k_proj.lora_B": "bfloat16",
+  "backbone.model.layers.27.self_attn.o_proj.lora_A": "bfloat16",
+  "backbone.model.layers.27.self_attn.o_proj.lora_B": "bfloat16",
+  "backbone.model.layers.27.self_attn.q_proj.lora_A": "bfloat16",
+  "backbone.model.layers.27.self_attn.q_proj.lora_B": "bfloat16",
+  "backbone.model.layers.27.self_attn.v_proj.lora_A": "bfloat16",
+  "backbone.model.layers.27.self_attn.v_proj.lora_B": "bfloat16",
+  "backbone.model.layers.28.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.28.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.28.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.28.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.28.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.28.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.28.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.28.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.28.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.28.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.28.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.28.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.29.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.29.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.29.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.29.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.29.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.29.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.29.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.29.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.29.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.29.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.29.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.29.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.3.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.3.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.3.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.3.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.3.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.3.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.3.self_attn.k_proj.lora_A": "bfloat16",
+  "backbone.model.layers.3.self_attn.k_proj.lora_B": "bfloat16",
+  "backbone.model.layers.3.self_attn.o_proj.lora_A": "bfloat16",
+  "backbone.model.layers.3.self_attn.o_proj.lora_B": "bfloat16",
+  "backbone.model.layers.3.self_attn.q_proj.lora_A": "bfloat16",
+  "backbone.model.layers.3.self_attn.q_proj.lora_B": "bfloat16",
+  "backbone.model.layers.3.self_attn.v_proj.lora_A": "bfloat16",
+  "backbone.model.layers.3.self_attn.v_proj.lora_B": "bfloat16",
+  "backbone.model.layers.30.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.30.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.30.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.30.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.30.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.30.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.30.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.30.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.30.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.30.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.30.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.30.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.31.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.31.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.31.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.31.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.31.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.31.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.31.self_attn.k_proj.lora_A": "bfloat16",
+  "backbone.model.layers.31.self_attn.k_proj.lora_B": "bfloat16",
+  "backbone.model.layers.31.self_attn.o_proj.lora_A": "bfloat16",
+  "backbone.model.layers.31.self_attn.o_proj.lora_B": "bfloat16",
+  "backbone.model.layers.31.self_attn.q_proj.lora_A": "bfloat16",
+  "backbone.model.layers.31.self_attn.q_proj.lora_B": "bfloat16",
+  "backbone.model.layers.31.self_attn.v_proj.lora_A": "bfloat16",
+  "backbone.model.layers.31.self_attn.v_proj.lora_B": "bfloat16",
+  "backbone.model.layers.4.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.4.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.4.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.4.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.4.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.4.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.4.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.4.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.4.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.4.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.4.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.4.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.5.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.5.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.5.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.5.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.5.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.5.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.5.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.5.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.5.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.5.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.5.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.5.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.6.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.6.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.6.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.6.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.6.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.6.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.6.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.6.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.6.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.6.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.6.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.6.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.7.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.7.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.7.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.7.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.7.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.7.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.7.self_attn.k_proj.lora_A": "bfloat16",
+  "backbone.model.layers.7.self_attn.k_proj.lora_B": "bfloat16",
+  "backbone.model.layers.7.self_attn.o_proj.lora_A": "bfloat16",
+  "backbone.model.layers.7.self_attn.o_proj.lora_B": "bfloat16",
+  "backbone.model.layers.7.self_attn.q_proj.lora_A": "bfloat16",
+  "backbone.model.layers.7.self_attn.q_proj.lora_B": "bfloat16",
+  "backbone.model.layers.7.self_attn.v_proj.lora_A": "bfloat16",
+  "backbone.model.layers.7.self_attn.v_proj.lora_B": "bfloat16",
+  "backbone.model.layers.8.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.8.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.8.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.8.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.8.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.8.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.8.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.8.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.8.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.8.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.8.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.8.mlp.up_proj.lora_B": "bfloat16",
+  "backbone.model.layers.9.linear_attn.in_proj_qkv.lora_A": "bfloat16",
+  "backbone.model.layers.9.linear_attn.in_proj_qkv.lora_B": "bfloat16",
+  "backbone.model.layers.9.linear_attn.in_proj_z.lora_A": "bfloat16",
+  "backbone.model.layers.9.linear_attn.in_proj_z.lora_B": "bfloat16",
+  "backbone.model.layers.9.linear_attn.out_proj.lora_A": "bfloat16",
+  "backbone.model.layers.9.linear_attn.out_proj.lora_B": "bfloat16",
+  "backbone.model.layers.9.mlp.down_proj.lora_A": "bfloat16",
+  "backbone.model.layers.9.mlp.down_proj.lora_B": "bfloat16",
+  "backbone.model.layers.9.mlp.gate_proj.lora_A": "bfloat16",
+  "backbone.model.layers.9.mlp.gate_proj.lora_B": "bfloat16",
+  "backbone.model.layers.9.mlp.up_proj.lora_A": "bfloat16",
+  "backbone.model.layers.9.mlp.up_proj.lora_B": "bfloat16",
+  "head.scale": "float32",
+  "typed.ordinal.eta_scale": "float32",
+  "typed.ordinal.gap.0.bias": "float32",
+  "typed.ordinal.gap.0.weight": "float32",
+  "typed.ordinal.gap.2.bias": "float32",
+  "typed.ordinal.gap.2.weight": "float32"
+ },
+ "source_ckpt": "ckpt-step0000150.pt",
+ "source_ckpt_sha256": "da7276b0b44ecbdd415844bfe442bbeeaaa33d327c585bd75dc0407eba12b126",
+ "n_tensors": 406,
+ "n_params": 30802051,
+ "step": 150,
+ "epoch": 0,
+ "cursor": 1200,
+ "config": {
+  "head": "lm_label",
+  "head_kwargs": {},
+  "layout": "g1v2-canon",
+  "fork_mode": "cache",
+  "lora_rank": 16,
+  "lora_alpha": null,
+  "lora_dropout": 0.0,
+  "lora_targets": null,
+  "loss": {
+   "arm": "clef",
+   "label_smoothing": 0.05,
+   "brier_weight": 1.0,
+   "rps_weight": null,
+   "label_smoothing_noul": 0.0
+  },
+  "lr_head": 0.0003,
+  "lr_lora": 4e-05,
+  "weight_decay": 0.0,
+  "batch_size": 1,
+  "grad_accum": 8,
+  "max_steps": 200,
+  "warmup_steps": 50,
+  "max_grad_norm": 1.0,
+  "bf16": true,
+  "grad_checkpointing": false,
+  "seed": 0,
+  "ckpt_dir": "/checkpoint/cell",
+  "ckpt_every": 100,
+  "eval_every": 100000,
+  "require_guard": true,
+  "controlsafe": {},
+  "act_ckpt": true,
+  "row_plan": "min_cost",
+  "cont_plan": "single",
+  "row_options": 160,
+  "lr_schedule": "cosine",
+  "dev_card_every": 50,
+  "dev_card_rows": 360,
+  "best_ckpt": true,
+  "collapse_guard": true
+ },
+ "config_hash": "ceb6f2c9b5622bb0",
+ "lineage": {
+  "backbone": {
+   "spec": "qwen3.5-4b-stock",
+   "class": "Qwen3_5TextModel",
+   "config_sha256": "5180a154a329b975ba7ee22354176b7c1b67cc5d8fb69f19d5880d3094b35959",
+   "name_or_path": "",
+   "commit_hash": null,
+   "capture": "hidden_states",
+   "layer": -1,
+   "provenance": {
+    "kind": "qwen35-stock",
+    "repo": "Qwen/Qwen3.5-4B",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "config_sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+    "attention_free": false
+   },
+   "weights_digest": "39b8384b37181392c08057820e4e4eab23a1aca362e3e743e4624b7c37fc2e7b",
+   "weights_digest_mode": "sampled"
+  },
+  "tokenizer": [
+   "{\"kind\": \"hf\", \"name_or_path\": \"/hfcache/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a\", \"untrusted\": {\"id\": \"untrusted-split-special+cut-leaking-added-v1\", \"n_control_ids\": 33}, \"vocab_sha256\": \"7ef6def600d70a2dbf3c4f35b73db100a74bf2936b7f4b805e91ad184b7aabce\"}"
+  ],
+  "layout": {
+   "layouts": [
+    [
+     "g1v2",
+     "jrt-h2o-shim:qwen3.5-4b"
+    ]
+   ],
+   "body_version": "jrt-body-v2-segmented",
+   "layout_version": "m2-layout-v2"
+  },
+  "data": {
+   "n": 5836,
+   "sha256": "ca89b901c28e639c24296da4e0186728cb3adcb531b6d40e3be83fcf3743cefc",
+   "order_fn": "randperm(seed*100003+epoch); batches = consecutive bs-slices; partial tail dropped"
+  }
+ },
+ "init_seed": 0,
+ "history": [
+  {
+   "step": 1,
+   "loss": 0.2586707844166085
+  },
+  {
+   "step": 2,
+   "loss": 0.7764017374720424
+  },
+  {
+   "step": 3,
+   "loss": 0.929434480087366
+  },
+  {
+   "step": 4,
+   "loss": 2.1570551418699324
+  },
+  {
+   "step": 5,
+   "loss": 0.5380247747089015
+  },
+  {
+   "step": 6,
+   "loss": 1.624596900306642
+  },
+  {
+   "step": 7,
+   "loss": 1.7013471499085426
+  },
+  {
+   "step": 8,
+   "loss": 0.6910321926698089
+  },
+  {
+   "step": 9,
+   "loss": 1.9704527771100402
+  },
+  {
+   "step": 10,
+   "loss": 1.7584894546307623
+  },
+  {
+   "step": 11,
+   "loss": 0.8501271986169741
+  },
+  {
+   "step": 12,
+   "loss": 1.7270283400430344
+  },
+  {
+   "step": 13,
+   "loss": 0.4510316285304725
+  },
+  {
+   "step": 14,
+   "loss": 1.5402698185644113
+  },
+  {
+   "step": 15,
+   "loss": 0.4476676646154374
+  },
+  {
+   "step": 16,
+   "loss": 3.1992552429437637
+  },
+  {
+   "step": 17,
+   "loss": 1.0850873021408916
+  },
+  {
+   "step": 18,
+   "loss": 1.2526615677634254
+  },
+  {
+   "step": 19,
+   "loss": 0.6697467111516744
+  },
+  {
+   "step": 20,
+   "loss": 1.2754999250173569
+  },
+  {
+   "step": 21,
+   "loss": 1.4156730472459458
+  },
+  {
+   "step": 22,
+   "loss": 0.41996527928858995
+  },
+  {
+   "step": 23,
+   "loss": 1.003964516799897
+  },
+  {
+   "step": 24,
+   "loss": 1.4739027549512684
+  },
+  {
+   "step": 25,
+   "loss": 1.264477045275271
+  },
+  {
+   "step": 26,
+   "loss": 1.1336387488991022
+  },
+  {
+   "step": 27,
+   "loss": 2.17046314291656
+  },
+  {
+   "step": 28,
+   "loss": 1.036272929981351
+  },
+  {
+   "step": 29,
+   "loss": 1.464388812892139
+  },
+  {
+   "step": 30,
+   "loss": 2.209694621153176
+  },
+  {
+   "step": 31,
+   "loss": 0.8945787958800793
+  },
+  {
+   "step": 32,
+   "loss": 1.022711556404829
+  },
+  {
+   "step": 33,
+   "loss": 1.4547258280217648
+  },
+  {
+   "step": 34,
+   "loss": 1.1930113397538662
+  },
+  {
+   "step": 35,
+   "loss": 0.9028024841099977
+  },
+  {
+   "step": 36,
+   "loss": 1.0408405158668756
+  },
+  {
+   "step": 37,
+   "loss": 2.3756766617298126
+  },
+  {
+   "step": 38,
+   "loss": 1.2260002736002207
+  },
+  {
+   "step": 39,
+   "loss": 1.0591997224837542
+  },
+  {
+   "step": 40,
+   "loss": 1.3054266907274723
+  },
+  {
+   "step": 41,
+   "loss": 1.7105371318757534
+  },
+  {
+   "step": 42,
+   "loss": 1.4577248245477676
+  },
+  {
+   "step": 43,
+   "loss": 0.8034496419131756
+  },
+  {
+   "step": 44,
+   "loss": 1.3134450316429138
+  },
+  {
+   "step": 45,
+   "loss": 1.2625164315104485
+  },
+  {
+   "step": 46,
+   "loss": 1.511124849319458
+  },
+  {
+   "step": 47,
+   "loss": 0.9845757782459259
+  },
+  {
+   "step": 48,
+   "loss": 1.3371200747787952
+  },
+  {
+   "step": 49,
+   "loss": 1.3470763377845287
+  },
+  {
+   "step": 50,
+   "loss": 1.2075333828106523
+  },
+  {
+   "step": 51,
+   "loss": 1.5541248880326748
+  },
+  {
+   "step": 52,
+   "loss": 0.5584006076678634
+  },
+  {
+   "step": 53,
+   "loss": 1.6213819533586502
+  },
+  {
+   "step": 54,
+   "loss": 1.1219569081440568
+  },
+  {
+   "step": 55,
+   "loss": 0.7014827914535999
+  },
+  {
+   "step": 56,
+   "loss": 0.801407914608717
+  },
+  {
+   "step": 57,
+   "loss": 0.4731244561262429
+  },
+  {
+   "step": 58,
+   "loss": 0.2889366578310728
+  },
+  {
+   "step": 59,
+   "loss": 0.9969749860465527
+  },
+  {
+   "step": 60,
+   "loss": 1.0939781237393618
+  },
+  {
+   "step": 61,
+   "loss": 1.2607687195995823
+  },
+  {
+   "step": 62,
+   "loss": 0.5984842521138489
+  },
+  {
+   "step": 63,
+   "loss": 1.2787838131189346
+  },
+  {
+   "step": 64,
+   "loss": 1.3815760876750574
+  },
+  {
+   "step": 65,
+   "loss": 0.8612092472612858
+  },
+  {
+   "step": 66,
+   "loss": 1.2375264971633442
+  },
+  {
+   "step": 67,
+   "loss": 1.6632486721500754
+  },
+  {
+   "step": 68,
+   "loss": 1.9754315079189837
+  },
+  {
+   "step": 69,
+   "loss": 1.6785229784436524
+  },
+  {
+   "step": 70,
+   "loss": 1.0400367230176926
+  },
+  {
+   "step": 71,
+   "loss": 1.4662605738267303
+  },
+  {
+   "step": 72,
+   "loss": 1.1677185057778843
+  },
+  {
+   "step": 73,
+   "loss": 0.6669445442967117
+  },
+  {
+   "step": 74,
+   "loss": 1.156785985454917
+  },
+  {
+   "step": 75,
+   "loss": 1.622601518407464
+  },
+  {
+   "step": 76,
+   "loss": 2.0935774967074394
+  },
+  {
+   "step": 77,
+   "loss": 0.6019186023622751
+  },
+  {
+   "step": 78,
+   "loss": 1.5831459825858474
+  },
+  {
+   "step": 79,
+   "loss": 1.178740557283163
+  },
+  {
+   "step": 80,
+   "loss": 1.0157173667103052
+  },
+  {
+   "step": 81,
+   "loss": 0.8162306472659111
+  },
+  {
+   "step": 82,
+   "loss": 0.7681789956986904
+  },
+  {
+   "step": 83,
+   "loss": 1.7485214741900563
+  },
+  {
+   "step": 84,
+   "loss": 1.264712953940034
+  },
+  {
+   "step": 85,
+   "loss": 0.5156833827495575
+  },
+  {
+   "step": 86,
+   "loss": 1.6834184862673283
+  },
+  {
+   "step": 87,
+   "loss": 2.018826235085726
+  },
+  {
+   "step": 88,
+   "loss": 0.7903750594705343
+  },
+  {
+   "step": 89,
+   "loss": 1.1185218691825867
+  },
+  {
+   "step": 90,
+   "loss": 0.7603876367211342
+  },
+  {
+   "step": 91,
+   "loss": 1.2446510107256472
+  },
+  {
+   "step": 92,
+   "loss": 0.7678410224616528
+  },
+  {
+   "step": 93,
+   "loss": 1.1653971783816814
+  },
+  {
+   "step": 94,
+   "loss": 1.6746551096439362
+  },
+  {
+   "step": 95,
+   "loss": 0.5721363825723529
+  },
+  {
+   "step": 96,
+   "loss": 1.409175776410848
+  },
+  {
+   "step": 97,
+   "loss": 1.749363262206316
+  },
+  {
+   "step": 98,
+   "loss": 0.8324510976672173
+  },
+  {
+   "step": 99,
+   "loss": 0.7076956704258919
+  },
+  {
+   "step": 100,
+   "loss": 1.5609696507453918
+  },
+  {
+   "step": 101,
+   "loss": 1.3862206796184182
+  },
+  {
+   "step": 102,
+   "loss": 1.4746361710131168
+  },
+  {
+   "step": 103,
+   "loss": 1.685722567141056
+  },
+  {
+   "step": 104,
+   "loss": 0.8315353747457266
+  },
+  {
+   "step": 105,
+   "loss": 1.1431922938209027
+  },
+  {
+   "step": 106,
+   "loss": 1.1582155991345644
+  },
+  {
+   "step": 107,
+   "loss": 1.0276036178693175
+  },
+  {
+   "step": 108,
+   "loss": 1.1432820819318295
+  },
+  {
+   "step": 109,
+   "loss": 0.5812530620023608
+  },
+  {
+   "step": 110,
+   "loss": 1.832502119243145
+  },
+  {
+   "step": 111,
+   "loss": 1.539073672145605
+  },
+  {
+   "step": 112,
+   "loss": 1.637973103672266
+  },
+  {
+   "step": 113,
+   "loss": 1.2050146292895079
+  },
+  {
+   "step": 114,
+   "loss": 1.0822783201001585
+  },
+  {
+   "step": 115,
+   "loss": 1.3408953351899981
+  },
+  {
+   "step": 116,
+   "loss": 0.9672817476093769
+  },
+  {
+   "step": 117,
+   "loss": 0.7552586812525988
+  },
+  {
+   "step": 118,
+   "loss": 0.808496268466115
+  },
+  {
+   "step": 119,
+   "loss": 0.7980999983847141
+  },
+  {
+   "step": 120,
+   "loss": 0.8535603154450655
+  },
+  {
+   "step": 121,
+   "loss": 0.9196710782125592
+  },
+  {
+   "step": 122,
+   "loss": 0.918735209852457
+  },
+  {
+   "step": 123,
+   "loss": 1.7456392087042332
+  },
+  {
+   "step": 124,
+   "loss": 0.6642843773588538
+  },
+  {
+   "step": 125,
+   "loss": 1.4341970905661583
+  },
+  {
+   "step": 126,
+   "loss": 0.8761721164919436
+  },
+  {
+   "step": 127,
+   "loss": 1.0824079269077629
+  },
+  {
+   "step": 128,
+   "loss": 0.7738417657092214
+  },
+  {
+   "step": 129,
+   "loss": 1.1435300558805466
+  },
+  {
+   "step": 130,
+   "loss": 0.9312769398093224
+  },
+  {
+   "step": 131,
+   "loss": 0.5178456213907339
+  },
+  {
+   "step": 132,
+   "loss": 0.5994322905316949
+  },
+  {
+   "step": 133,
+   "loss": 1.0754952179268003
+  },
+  {
+   "step": 134,
+   "loss": 1.5764449331909418
+  },
+  {
+   "step": 135,
+   "loss": 0.5854826369322836
+  },
+  {
+   "step": 136,
+   "loss": 0.5773637378588319
+  },
+  {
+   "step": 137,
+   "loss": 1.2352359527139924
+  },
+  {
+   "step": 138,
+   "loss": 1.2937200679443777
+  },
+  {
+   "step": 139,
+   "loss": 1.229218710330315
+  },
+  {
+   "step": 140,
+   "loss": 0.9089965261518955
+  },
+  {
+   "step": 141,
+   "loss": 0.25188109965529293
+  },
+  {
+   "step": 142,
+   "loss": 1.7210069866850972
+  },
+  {
+   "step": 143,
+   "loss": 0.42703360179439187
+  },
+  {
+   "step": 144,
+   "loss": 0.23244818882085383
+  },
+  {
+   "step": 145,
+   "loss": 1.6694130636751652
+  },
+  {
+   "step": 146,
+   "loss": 0.7820136873051524
+  },
+  {
+   "step": 147,
+   "loss": 1.0503376433625817
+  },
+  {
+   "step": 148,
+   "loss": 1.2484812578186393
+  },
+  {
+   "step": 149,
+   "loss": 1.2396485095378011
+  },
+  {
+   "step": 150,
+   "loss": 0.7016690778546035
+  }
+ ],
+ "backbone": "qwen3.5-4b-stock",
+ "lora_modules": [
+  "layers.0.linear_attn.in_proj_qkv",
+  "layers.0.linear_attn.in_proj_z",
+  "layers.0.linear_attn.out_proj",
+  "layers.0.mlp.down_proj",
+  "layers.0.mlp.gate_proj",
+  "layers.0.mlp.up_proj",
+  "layers.1.linear_attn.in_proj_qkv",
+  "layers.1.linear_attn.in_proj_z",
+  "layers.1.linear_attn.out_proj",
+  "layers.1.mlp.down_proj",
+  "layers.1.mlp.gate_proj",
+  "layers.1.mlp.up_proj",
+  "layers.10.linear_attn.in_proj_qkv",
+  "layers.10.linear_attn.in_proj_z",
+  "layers.10.linear_attn.out_proj",
+  "layers.10.mlp.down_proj",
+  "layers.10.mlp.gate_proj",
+  "layers.10.mlp.up_proj",
+  "layers.11.mlp.down_proj",
+  "layers.11.mlp.gate_proj",
+  "layers.11.mlp.up_proj",
+  "layers.11.self_attn.k_proj",
+  "layers.11.self_attn.o_proj",
+  "layers.11.self_attn.q_proj",
+  "layers.11.self_attn.v_proj",
+  "layers.12.linear_attn.in_proj_qkv",
+  "layers.12.linear_attn.in_proj_z",
+  "layers.12.linear_attn.out_proj",
+  "layers.12.mlp.down_proj",
+  "layers.12.mlp.gate_proj",
+  "layers.12.mlp.up_proj",
+  "layers.13.linear_attn.in_proj_qkv",
+  "layers.13.linear_attn.in_proj_z",
+  "layers.13.linear_attn.out_proj",
+  "layers.13.mlp.down_proj",
+  "layers.13.mlp.gate_proj",
+  "layers.13.mlp.up_proj",
+  "layers.14.linear_attn.in_proj_qkv",
+  "layers.14.linear_attn.in_proj_z",
+  "layers.14.linear_attn.out_proj",
+  "layers.14.mlp.down_proj",
+  "layers.14.mlp.gate_proj",
+  "layers.14.mlp.up_proj",
+  "layers.15.mlp.down_proj",
+  "layers.15.mlp.gate_proj",
+  "layers.15.mlp.up_proj",
+  "layers.15.self_attn.k_proj",
+  "layers.15.self_attn.o_proj",
+  "layers.15.self_attn.q_proj",
+  "layers.15.self_attn.v_proj",
+  "layers.16.linear_attn.in_proj_qkv",
+  "layers.16.linear_attn.in_proj_z",
+  "layers.16.linear_attn.out_proj",
+  "layers.16.mlp.down_proj",
+  "layers.16.mlp.gate_proj",
+  "layers.16.mlp.up_proj",
+  "layers.17.linear_attn.in_proj_qkv",
+  "layers.17.linear_attn.in_proj_z",
+  "layers.17.linear_attn.out_proj",
+  "layers.17.mlp.down_proj",
+  "layers.17.mlp.gate_proj",
+  "layers.17.mlp.up_proj",
+  "layers.18.linear_attn.in_proj_qkv",
+  "layers.18.linear_attn.in_proj_z",
+  "layers.18.linear_attn.out_proj",
+  "layers.18.mlp.down_proj",
+  "layers.18.mlp.gate_proj",
+  "layers.18.mlp.up_proj",
+  "layers.19.mlp.down_proj",
+  "layers.19.mlp.gate_proj",
+  "layers.19.mlp.up_proj",
+  "layers.19.self_attn.k_proj",
+  "layers.19.self_attn.o_proj",
+  "layers.19.self_attn.q_proj",
+  "layers.19.self_attn.v_proj",
+  "layers.2.linear_attn.in_proj_qkv",
+  "layers.2.linear_attn.in_proj_z",
+  "layers.2.linear_attn.out_proj",
+  "layers.2.mlp.down_proj",
+  "layers.2.mlp.gate_proj",
+  "layers.2.mlp.up_proj",
+  "layers.20.linear_attn.in_proj_qkv",
+  "layers.20.linear_attn.in_proj_z",
+  "layers.20.linear_attn.out_proj",
+  "layers.20.mlp.down_proj",
+  "layers.20.mlp.gate_proj",
+  "layers.20.mlp.up_proj",
+  "layers.21.linear_attn.in_proj_qkv",
+  "layers.21.linear_attn.in_proj_z",
+  "layers.21.linear_attn.out_proj",
+  "layers.21.mlp.down_proj",
+  "layers.21.mlp.gate_proj",
+  "layers.21.mlp.up_proj",
+  "layers.22.linear_attn.in_proj_qkv",
+  "layers.22.linear_attn.in_proj_z",
+  "layers.22.linear_attn.out_proj",
+  "layers.22.mlp.down_proj",
+  "layers.22.mlp.gate_proj",
+  "layers.22.mlp.up_proj",
+  "layers.23.mlp.down_proj",
+  "layers.23.mlp.gate_proj",
+  "layers.23.mlp.up_proj",
+  "layers.23.self_attn.k_proj",
+  "layers.23.self_attn.o_proj",
+  "layers.23.self_attn.q_proj",
+  "layers.23.self_attn.v_proj",
+  "layers.24.linear_attn.in_proj_qkv",
+  "layers.24.linear_attn.in_proj_z",
+  "layers.24.linear_attn.out_proj",
+  "layers.24.mlp.down_proj",
+  "layers.24.mlp.gate_proj",
+  "layers.24.mlp.up_proj",
+  "layers.25.linear_attn.in_proj_qkv",
+  "layers.25.linear_attn.in_proj_z",
+  "layers.25.linear_attn.out_proj",
+  "layers.25.mlp.down_proj",
+  "layers.25.mlp.gate_proj",
+  "layers.25.mlp.up_proj",
+  "layers.26.linear_attn.in_proj_qkv",
+  "layers.26.linear_attn.in_proj_z",
+  "layers.26.linear_attn.out_proj",
+  "layers.26.mlp.down_proj",
+  "layers.26.mlp.gate_proj",
+  "layers.26.mlp.up_proj",
+  "layers.27.mlp.down_proj",
+  "layers.27.mlp.gate_proj",
+  "layers.27.mlp.up_proj",
+  "layers.27.self_attn.k_proj",
+  "layers.27.self_attn.o_proj",
+  "layers.27.self_attn.q_proj",
+  "layers.27.self_attn.v_proj",
+  "layers.28.linear_attn.in_proj_qkv",
+  "layers.28.linear_attn.in_proj_z",
+  "layers.28.linear_attn.out_proj",
+  "layers.28.mlp.down_proj",
+  "layers.28.mlp.gate_proj",
+  "layers.28.mlp.up_proj",
+  "layers.29.linear_attn.in_proj_qkv",
+  "layers.29.linear_attn.in_proj_z",
+  "layers.29.linear_attn.out_proj",
+  "layers.29.mlp.down_proj",
+  "layers.29.mlp.gate_proj",
+  "layers.29.mlp.up_proj",
+  "layers.3.mlp.down_proj",
+  "layers.3.mlp.gate_proj",
+  "layers.3.mlp.up_proj",
+  "layers.3.self_attn.k_proj",
+  "layers.3.self_attn.o_proj",
+  "layers.3.self_attn.q_proj",
+  "layers.3.self_attn.v_proj",
+  "layers.30.linear_attn.in_proj_qkv",
+  "layers.30.linear_attn.in_proj_z",
+  "layers.30.linear_attn.out_proj",
+  "layers.30.mlp.down_proj",
+  "layers.30.mlp.gate_proj",
+  "layers.30.mlp.up_proj",
+  "layers.31.mlp.down_proj",
+  "layers.31.mlp.gate_proj",
+  "layers.31.mlp.up_proj",
+  "layers.31.self_attn.k_proj",
+  "layers.31.self_attn.o_proj",
+  "layers.31.self_attn.q_proj",
+  "layers.31.self_attn.v_proj",
+  "layers.4.linear_attn.in_proj_qkv",
+  "layers.4.linear_attn.in_proj_z",
+  "layers.4.linear_attn.out_proj",
+  "layers.4.mlp.down_proj",
+  "layers.4.mlp.gate_proj",
+  "layers.4.mlp.up_proj",
+  "layers.5.linear_attn.in_proj_qkv",
+  "layers.5.linear_attn.in_proj_z",
+  "layers.5.linear_attn.out_proj",
+  "layers.5.mlp.down_proj",
+  "layers.5.mlp.gate_proj",
+  "layers.5.mlp.up_proj",
+  "layers.6.linear_attn.in_proj_qkv",
+  "layers.6.linear_attn.in_proj_z",
+  "layers.6.linear_attn.out_proj",
+  "layers.6.mlp.down_proj",
+  "layers.6.mlp.gate_proj",
+  "layers.6.mlp.up_proj",
+  "layers.7.mlp.down_proj",
+  "layers.7.mlp.gate_proj",
+  "layers.7.mlp.up_proj",
+  "layers.7.self_attn.k_proj",
+  "layers.7.self_attn.o_proj",
+  "layers.7.self_attn.q_proj",
+  "layers.7.self_attn.v_proj",
+  "layers.8.linear_attn.in_proj_qkv",
+  "layers.8.linear_attn.in_proj_z",
+  "layers.8.linear_attn.out_proj",
+  "layers.8.mlp.down_proj",
+  "layers.8.mlp.gate_proj",
+  "layers.8.mlp.up_proj",
+  "layers.9.linear_attn.in_proj_qkv",
+  "layers.9.linear_attn.in_proj_z",
+  "layers.9.linear_attn.out_proj",
+  "layers.9.mlp.down_proj",
+  "layers.9.mlp.gate_proj",
+  "layers.9.mlp.up_proj"
+ ],
+ "guard": {
+  "manifests": {
+   "/opt/ssdm/m1/harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+   "/opt/ssdm/m1/harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+  },
+  "n_ids": 47249,
+  "n_hashes": 48415,
+  "note": "",
+  "content_index": {
+   "path": "/tmp/m2-first-cell/out/guard/index-content-hashes.txt.gz",
+   "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+   "n": 24150
+  }
+ },
+ "anti_collapse": {
+  "horizon": 200,
+  "horizon_fixed": true,
+  "lr_scale": 1.0,
+  "dev_cards": [
+   {
+    "step": 0,
+    "n_items": 360,
+    "nll": 0.741261501748981,
+    "accuracy": 0.6777777777777778,
+    "best": true
+   },
+   {
+    "step": 50,
+    "n_items": 360,
+    "nll": 0.6423585006398951,
+    "accuracy": 0.6916666666666667,
+    "best": true
+   },
+   {
+    "step": 100,
+    "n_items": 360,
+    "nll": 0.6183399512823433,
+    "accuracy": 0.7055555555555556,
+    "best": true
+   }
+  ],
+  "best": {
+   "step": 150,
+   "nll": 0.5772574858044974,
+   "accuracy": 0.7277777777777777,
+   "path": "ckpt-step0000150.pt"
+  },
+  "collapse_events": [],
+  "stopped": null,
+  "guard_armed": true,
+  "guard_mode": "start",
+  "guard_ref": 1.2781279808995896,
+  "guard_window": [
+   [
+    1.3862206796184182,
+    1.5624523758888245
+   ],
+   [
+    1.4746361710131168,
+    1.7045831382274628
+   ],
+   [
+    1.685722567141056,
+    1.3110405802726746
+   ],
+   [
+    0.8315353747457266,
+    1.534593403339386
+   ],
+   [
+    1.1431922938209027,
+    1.4630769491195679
+   ],
+   [
+    1.1582155991345644,
+    1.5159699320793152
+   ],
+   [
+    1.0276036178693175,
+    1.4653923213481903
+   ],
+   [
+    1.1432820819318295,
+    1.8684363961219788
+   ],
+   [
+    0.5812530620023608,
+    1.3361800909042358
+   ],
+   [
+    1.832502119243145,
+    1.724003255367279
+   ],
+   [
+    1.539073672145605,
+    1.407696545124054
+   ],
+   [
+    1.637973103672266,
+    1.6084252297878265
+   ],
+   [
+    1.2050146292895079,
+    1.5007164180278778
+   ],
+   [
+    1.0822783201001585,
+    1.4905318319797516
+   ],
+   [
+    1.3408953351899981,
+    1.6061098277568817
+   ],
+   [
+    0.9672817476093769,
+    1.6794436275959015
+   ],
+   [
+    0.7552586812525988,
+    1.479212999343872
+   ],
+   [
+    0.808496268466115,
+    1.8045231699943542
+   ],
+   [
+    0.7980999983847141,
+    1.5627183616161346
+   ],
+   [
+    0.8535603154450655,
+    1.6061098277568817
+   ],
+   [
+    0.9196710782125592,
+    1.6330666840076447
+   ],
+   [
+    0.918735209852457,
+    1.4540734887123108
+   ],
+   [
+    1.7456392087042332,
+    1.6799416840076447
+   ],
+   [
+    0.6642843773588538,
+    1.5004504323005676
+   ],
+   [
+    1.4341970905661583,
+    1.4900337755680084
+   ],
+   [
+    0.8761721164919436,
+    1.3825570344924927
+   ],
+   [
+    1.0824079269077629,
+    1.416700005531311
+   ],
+   [
+    0.7738417657092214,
+    1.5369087755680084
+   ],
+   [
+    1.1435300558805466,
+    1.6548021733760834
+   ],
+   [
+    0.9312769398093224,
+    1.6776263117790222
+   ],
+   [
+    0.5178456213907339,
+    1.2646636366844177
+   ],
+   [
+    0.5994322905316949,
+    1.4436568319797516
+   ],
+   [
+    1.0754952179268003,
+    1.525589942932129
+   ],
+   [
+    1.5764449331909418,
+    1.4289339780807495
+   ],
+   [
+    0.5854826369322836,
+    1.407696545124054
+   ],
+   [
+    0.5773637378588319,
+    1.5597329139709473
+   ],
+   [
+    1.2352359527139924,
+    1.819465011358261
+   ],
+   [
+    1.2937200679443777,
+    1.8120598793029785
+   ],
+   [
+    1.229218710330315,
+    1.6151133179664612
+   ],
+   [
+    0.9089965261518955,
+    1.6776263117790222
+   ],
+   [
+    0.25188109965529293,
+    1.345183551311493
+   ],
+   [
+    1.7210069866850972,
+    1.3825570344924927
+   ],
+   [
+    0.42703360179439187,
+    1.1931471824645996
+   ],
+   [
+    0.23244818882085383,
+    1.4289339780807495
+   ],
+   [
+    1.6694130636751652,
+    1.4540734887123108
+   ],
+   [
+    0.7820136873051524,
+    1.4166999757289886
+   ],
+   [
+    1.0503376433625817,
+    1.3361800909042358
+   ],
+   [
+    1.2484812578186393,
+    1.4630769491195679
+   ],
+   [
+    1.2396485095378011,
+    1.43545001745224
+   ],
+   [
+    0.7016690778546035,
+    1.4445589780807495
+   ]
+  ]
+ }
+}

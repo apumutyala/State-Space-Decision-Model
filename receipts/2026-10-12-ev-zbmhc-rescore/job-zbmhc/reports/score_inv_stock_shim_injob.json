@@ -1,0 +1,119 @@
+{
+ "schema": "ev-score-inv/1",
+ "rendering": "ev-score-level-as-content/1: content = 'level v of K: <rubric>' (v = 0..K-1); scale canonical; no handles in scale",
+ "ops": [
+  "score_reverse",
+  "score_shuffle",
+  "score_relabel",
+  "score_permute"
+ ],
+ "n_score_items": 18,
+ "n_base_rows_faithful": 18,
+ "n_perturbed_rows": 108,
+ "per_operator": {
+  "score_reverse": {
+   "n_rows": 18,
+   "n": 18,
+   "invalid": 0,
+   "flips": 2,
+   "max_abs_dp": 0.3911928857503181,
+   "max_abs_dE": 0.48504055182464634,
+   "mean_abs_dE": 0.11153445284530454,
+   "matches_regenerated": 18,
+   "changed_vs_base": 18,
+   "content_identical": 18,
+   "flip_ids": [
+    "hard-opus-b-multi_hop-05~score_reverse~0",
+    "hard-sol-a-adversarial-09~score_reverse~0"
+   ],
+   "not_matching_ids": [],
+   "flip_rate": 0.1111111111111111
+  },
+  "score_shuffle": {
+   "n_rows": 54,
+   "n": 54,
+   "invalid": 0,
+   "flips": 8,
+   "max_abs_dp": 0.3911928857503181,
+   "max_abs_dE": 0.6942245267399799,
+   "mean_abs_dE": 0.12163515580028704,
+   "matches_regenerated": 54,
+   "changed_vs_base": 54,
+   "content_identical": 54,
+   "flip_ids": [
+    "hard-opus-b-multi_hop-05~score_shuffle~0",
+    "hard-opus-b-multi_hop-05~score_shuffle~1",
+    "hard-opus-b-multi_hop-05~score_shuffle~2",
+    "hard-opus-c-long_policy-05~score_shuffle~2",
+    "hard-opus-c-long_policy-08~score_shuffle~2",
+    "hard-sol-a-adversarial-09~score_shuffle~0",
+    "hard-sol-a-adversarial-09~score_shuffle~1",
+    "hard-sol-a-adversarial-09~score_shuffle~2"
+   ],
+   "not_matching_ids": [],
+   "flip_rate": 0.14814814814814814
+  },
+  "score_relabel": {
+   "n_rows": 18,
+   "n": 18,
+   "invalid": 0,
+   "flips": 3,
+   "max_abs_dp": 0.5049349011472439,
+   "max_abs_dE": 0.7087641909685967,
+   "mean_abs_dE": 0.09544766621466498,
+   "matches_regenerated": 18,
+   "changed_vs_base": 18,
+   "content_identical": 18,
+   "flip_ids": [
+    "hard-opus-b-multi_hop-05~score_relabel~0",
+    "hard-opus-c-long_policy-05~score_relabel~0",
+    "hard-sol-a-adversarial-09~score_relabel~0"
+   ],
+   "not_matching_ids": [],
+   "flip_rate": 0.16666666666666666
+  },
+  "score_permute": {
+   "n_rows": 18,
+   "n": 18,
+   "invalid": 0,
+   "flips": 4,
+   "max_abs_dp": 0.47316935252209646,
+   "max_abs_dE": 0.4744006533667209,
+   "mean_abs_dE": 0.07996776893941487,
+   "matches_regenerated": 18,
+   "changed_vs_base": 18,
+   "content_identical": 18,
+   "flip_ids": [
+    "hard-opus-a-temporal_numeric-12~score_permute~0",
+    "hard-opus-b-multi_hop-05~score_permute~0",
+    "hard-opus-c-long_policy-05~score_permute~0",
+    "hard-sol-a-adversarial-09~score_permute~0"
+   ],
+   "not_matching_ids": [],
+   "flip_rate": 0.2222222222222222
+  }
+ },
+ "max_abs_dp_observed": 0.5049349011472439,
+ "max_dp_bound": 0.0,
+ "k_max": 5,
+ "score_inv_pass": false,
+ "bitwise": false,
+ "non_bitwise_within_tolerance": false,
+ "failures": [
+  "score_reverse: 2 flips",
+  "score_reverse: max|dp| 0.3911928857503181 > 0.0",
+  "score_reverse: max|dE[level]| 0.48504055182464634 > 0.0*(K-1)",
+  "score_shuffle: 8 flips",
+  "score_shuffle: max|dp| 0.3911928857503181 > 0.0",
+  "score_shuffle: max|dE[level]| 0.6942245267399799 > 0.0*(K-1)",
+  "score_relabel: 3 flips",
+  "score_relabel: max|dp| 0.5049349011472439 > 0.0",
+  "score_relabel: max|dE[level]| 0.7087641909685967 > 0.0*(K-1)",
+  "score_permute: 4 flips",
+  "score_permute: max|dp| 0.47316935252209646 > 0.0",
+  "score_permute: max|dE[level]| 0.4744006533667209 > 0.0*(K-1)"
+ ],
+ "notes": [],
+ "rule": "SCORE-INV PASS iff every required op n>0, 0 invalid, 0 flips, max|dp| <= bound (0 = bitwise), max|dE| <= bound*(K-1), every on-disk row in the in-memory order, changed vs base, content-identical to base; separate from jevkit G1 (which never perturbs score items)",
+ "separate_from_g1": "jevkit G1 (option_reverse / option_shuffle / key_relabel) never perturbs score items; this check does not change or replace the G1 verdict"
+}

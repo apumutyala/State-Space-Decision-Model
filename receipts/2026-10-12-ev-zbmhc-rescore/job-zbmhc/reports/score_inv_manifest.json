@@ -1,0 +1,31 @@
+{
+ "schema": "ev-score-perturb/1",
+ "rendering": "ev-score-level-as-content/1: content = 'level v of K: <rubric>' (v = 0..K-1); scale canonical; no handles in scale",
+ "source": "public",
+ "n_items": 231,
+ "n_score_items": 18,
+ "k_hist": {
+  "4": 17,
+  "5": 1
+ },
+ "ops": [
+  "score_reverse",
+  "score_shuffle",
+  "score_relabel",
+  "score_permute"
+ ],
+ "shuffle_seeds": [
+  0,
+  1,
+  2
+ ],
+ "per_op": {
+  "score_reverse": 18,
+  "score_shuffle": 54,
+  "score_relabel": 18,
+  "score_permute": 18
+ },
+ "base_sha256": "f63f7483043f8ea91e74826996d8db45df9e1b5ea39bd7a2d911ec8ae79568a6",
+ "perturbed_sha256": "6aefb6fad02a93b8a704b01e0598ba8c9ad5505833dd2f7722fe60215f4ea230",
+ "note": "base readout must use base.jsonl (level-as-content); a handle-reading head is EXPECTED to fail score_relabel / score_permute; separate from jevkit G1"
+}

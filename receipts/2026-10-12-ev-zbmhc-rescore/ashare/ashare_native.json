@@ -1,0 +1,107 @@
+{
+ "slice_records_ids_sha256": "7d82e391382eaad04065650f7d2c91be43a83700d74ec27774701b1ac75e6cf3",
+ "slice_records_ids_sha256_nonewline": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078",
+ "slice_n_records": 1200,
+ "slice_choice_n": 416,
+ "calib_option_order_vs_evidence_canonical_mismatch": 0,
+ "calib_gold_vs_records_mismatch": 0,
+ "argmax_ties": 0,
+ "slice_choice_all": {
+  "n": 416,
+  "gold_A": 0.3846,
+  "pred_A": 0.3438,
+  "A_excess_pp": -4.09,
+  "flag_gt5pp": false,
+  "acc": 0.6106,
+  "gold_share": {
+   "A": 0.3846,
+   "B": 0.2644,
+   "C": 0.2091,
+   "D": 0.0889,
+   "E": 0.0409,
+   "F": 0.012
+  },
+  "pred_share": {
+   "A": 0.3438,
+   "B": 0.2572,
+   "C": 0.2644,
+   "D": 0.0913,
+   "E": 0.0288,
+   "F": 0.0144
+  },
+  "acc_pred_A": 0.6294
+ },
+ "slice_choice_without_ambiguous": {
+  "n": 216,
+  "gold_A": 0.2731,
+  "pred_A": 0.2593,
+  "A_excess_pp": -1.39,
+  "flag_gt5pp": false,
+  "acc": 0.6806,
+  "gold_share": {
+   "A": 0.2731,
+   "B": 0.2269,
+   "C": 0.2639,
+   "D": 0.1343,
+   "E": 0.0787,
+   "F": 0.0231
+  },
+  "pred_share": {
+   "A": 0.2593,
+   "B": 0.2824,
+   "C": 0.2315,
+   "D": 0.1435,
+   "E": 0.0556,
+   "F": 0.0278
+  },
+  "acc_pred_A": 0.6786
+ },
+ "slice_choice_ambiguous_only": {
+  "n": 200,
+  "gold_A": 0.505,
+  "pred_A": 0.435,
+  "A_excess_pp": -7.0,
+  "flag_gt5pp": false,
+  "acc": 0.535,
+  "gold_share": {
+   "A": 0.505,
+   "B": 0.305,
+   "C": 0.15,
+   "D": 0.04
+  },
+  "pred_share": {
+   "A": 0.435,
+   "B": 0.23,
+   "C": 0.3,
+   "D": 0.035
+  },
+  "acc_pred_A": 0.5977
+ },
+ "public_choice": {
+  "n": 139,
+  "gold_A": 0.2446,
+  "pred_A": 0.2374,
+  "A_excess_pp": -0.72,
+  "flag_gt5pp": false,
+  "acc": 0.777,
+  "gold_share": {
+   "A": 0.2446,
+   "B": 0.2374,
+   "C": 0.2086,
+   "D": 0.2014,
+   "E": 0.0935,
+   "F": 0.0144
+  },
+  "pred_share": {
+   "A": 0.2374,
+   "B": 0.2302,
+   "C": 0.223,
+   "D": 0.1727,
+   "E": 0.0935,
+   "F": 0.0432
+  },
+  "acc_pred_A": 0.7576
+ },
+ "public_choice_items_with_tie_set": 0,
+ "public_pred_choice_field_vs_argmax_mismatch": 0
+}

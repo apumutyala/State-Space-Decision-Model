@@ -1,0 +1,1 @@
+{"path": "trainable-step0000200.safetensors", "step": 200, "config_hash": "ceb6f2c9b5622bb0", "format": "ssdm-trainable-v1", "dtype": "bf16", "best": {"path": "trainable-step0000150.safetensors", "step": 150, "sha256": "8e9360083ad6b6ea705a7b72afd93ee88bb6b74daefa1ebb1eaafa640e025c89", "sidecar_sha256": "b49f81ddd9db8faf20025bca22e1b97b3ae1fb53b02f8f1ab70559b766516528"}}

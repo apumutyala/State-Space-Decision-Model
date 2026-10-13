@@ -1,0 +1,138 @@
+{
+ "ops": [
+  "option_reverse",
+  "option_shuffle",
+  "key_relabel"
+ ],
+ "seeds": [
+  0
+ ],
+ "n_base": 231,
+ "n_perturbed": 565,
+ "flip_report": {
+  "per_operator": {
+   "key_relabel": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 13,
+    "flip_rate": 0.09352517985611511,
+    "mean_tv_shift": 0.0907928772352454,
+    "max_tv_shift": 0.6678643411115015,
+    "max_abs_dp": 0.6675414484513097
+   },
+   "option_reverse": {
+    "n": 213,
+    "invalid": 0,
+    "flips": 27,
+    "flip_rate": 0.1267605633802817,
+    "mean_tv_shift": 0.09355074265608727,
+    "max_tv_shift": 0.8176519553248887,
+    "max_abs_dp": 0.8176519553248887
+   },
+   "option_shuffle": {
+    "n": 213,
+    "invalid": 0,
+    "flips": 21,
+    "flip_rate": 0.09859154929577464,
+    "mean_tv_shift": 0.0739735641915564,
+    "max_tv_shift": 0.8359298863721447,
+    "max_abs_dp": 0.8350774053756308
+   }
+  },
+  "per_operator_type": {
+   "key_relabel|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 13,
+    "flip_rate": 0.09352517985611511,
+    "mean_tv_shift": 0.0907928772352454,
+    "max_tv_shift": 0.6678643411115015,
+    "max_abs_dp": 0.6675414484513097
+   },
+   "option_reverse|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 27,
+    "flip_rate": 0.19424460431654678,
+    "mean_tv_shift": 0.14335473514925604,
+    "max_tv_shift": 0.8176519553248887,
+    "max_abs_dp": 0.8176519553248887
+   },
+   "option_reverse|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   },
+   "option_shuffle|choice": {
+    "n": 139,
+    "invalid": 0,
+    "flips": 21,
+    "flip_rate": 0.1510791366906475,
+    "mean_tv_shift": 0.11335517390504686,
+    "max_tv_shift": 0.8359298863721447,
+    "max_abs_dp": 0.8350774053756308
+   },
+   "option_shuffle|noul": {
+    "n": 74,
+    "invalid": 0,
+    "flips": 0,
+    "flip_rate": 0.0,
+    "mean_tv_shift": 0.0,
+    "max_tv_shift": 0.0,
+    "max_abs_dp": 0.0
+   }
+  },
+  "average_flip_rate": 0.10629243084405715,
+  "pooled": {
+   "n": 565,
+   "invalid": 0,
+   "flips": 61,
+   "flip_rate": 0.1079646017699115,
+   "mean_tv_shift": 0.08549183591902161,
+   "max_tv_shift": 0.8359298863721447,
+   "max_abs_dp": 0.8350774053756308
+  },
+  "reorder_flips": 61,
+  "note": "operators are jevkit's own; MD1's exact 8 operators are unpublished"
+ },
+ "duplicate_tie_items": [],
+ "max_dp_bound": 1.0,
+ "status": {
+  "base": {
+   "ok": 231
+  },
+  "perturbed": {
+   "ok": 565
+  }
+ },
+ "presented_order": {
+  "option_reverse": {
+   "n": 213,
+   "request_changed": 213,
+   "model_order_changed": null
+  },
+  "option_shuffle": {
+   "n": 213,
+   "request_changed": 213,
+   "model_order_changed": null
+  },
+  "key_relabel": {
+   "n": 139,
+   "request_changed": 139,
+   "model_order_changed": null
+  }
+ },
+ "g1_pass": false,
+ "g1_failures": [
+  "option_reverse: 27 flips",
+  "option_shuffle: 21 flips",
+  "key_relabel: 13 flips",
+  "rows not checked (row_fn missing)"
+ ],
+ "rows_all_identical": null,
+ "max_abs_dp_observed": 0.8350774053756308
+}
