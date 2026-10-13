@@ -903,12 +903,16 @@ This job does no training. It scores job-5x4vr's exported best checkpoint (step 
 - Budget (`cell_budget.py`): need = pre-train 11.6 + clock 96 + one card 0.68 + final card 1.5 + save / export 1.5 + margin 2
   = 113.28 <= cap 114; at the slow-end job-wm8b5 rate (5.07 s/step, 22 in-clock 41-s cards) the clock buys >= 954 steps.
   Expected at the job-zbmhc gross 4.6 s/step: 954 x 4.6 = 73.1 min of clock.
-- Schedule: setup 6 + guard 2 + heldout 2 + cell 114 + screen 25 + report 2 + reserve 2 = 153 min. **Worst case per seed
-  (60 + 2 x 153) x 0.063 = $23.06** (hard cap $23.10). Expected per seed 101 min = $6.36 + the build (<= 60 min, <= $3.78).
-  Two seeds: worst $46.12, expected ~$12.7 + 2 builds.
+- Schedule: setup 6 + guard 2 + heldout 2 + cell 114 + screen 33 + report 2 + reserve 2 = 161 min. **Worst case per seed
+  (60 + 2 x 161) x 0.063 = $24.07** (hard cap $24.10). Expected per seed 106 min = $6.68 + the build (<= 60 min, <= $3.78).
+  Two seeds: worst $48.14, expected ~$13.4 + 2 builds. Screen 33: projection 22.0 (no proxy600) + 9.0 jev-heldout = 31.0 <=
+  0.95 x 33.
 - Screen (no proxy600): slice_first, the jevkit arms (native, native_tfit = scalar slice T, native_shimcal = PRIMARY,
   stock_shim, canon_stock), G1 KEEP, 8 flips, score_inv KEEP, letter prior (A-share flag 5 pp), H2O target. `tfit.per_type` is
   absent (no banded T_noul fit); `tfit.stock_band` keeps the stock slice yes/no band report in slice_floor.json.
-- jev-heldout (EV-PREREG-JEV-HELDOUT) is NOT read by the runner: params `jev_heldout` holds the placeholder shas; the exported
-  best checkpoint is scored once after landing.
+- jev-heldout (EV-PREREG-JEV-HELDOUT, sealed: pointer `data/manifests/jev-heldout.pointer.json` sha256 34b176fa..., items
+  17a40d43..., 2,199 items): `jevkit.jev_heldout` -> screen.jev_heldout_run scores it ONCE, after every public / slice
+  step: native_shimcal vs stock + shim, `jevkit score --items`, paired delta (B 1000, seed 16). The pointer sha and the pin
+  fields are asserted at setup (jevkit_block, exit 5) and again before the items file is read (exit 10); the items sha is
+  checked before parsing; `jevkit/jev_heldout/ACCESS.json` is appended to ACCESS.log at landing. Secondary; not a gate.
 - Launch: `LAUNCH.md` (repo root, this branch).

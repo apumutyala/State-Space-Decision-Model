@@ -279,9 +279,12 @@ def estimate(params: dict) -> dict[str, Any]:
     if params.get("screen_proxy") is False:  # no proxy600 Decision-Index pass: the jevkit / slice work only
         cap = params["phase_caps_minutes"]["screen"]
         usd = params["batch_usd_per_min"]
-        return {"rows": 0, "proxy": False, "minutes": NOPROXY_SCREEN_MIN, "cap": cap,
-                "ok": NOPROXY_SCREEN_MIN <= 0.95 * cap, "usd_batch": round(NOPROXY_SCREEN_MIN * usd, 2),
-                "source": "job-6zs79 screen minus its proxy600 child pass, + the JEV3-LM arms (NOPROXY_SCREEN_MIN)"}
+        jh = bool((params.get("jevkit") or {}).get("jev_heldout"))
+        m = NOPROXY_SCREEN_MIN + (JEV_HELDOUT_MIN if jh else 0.0)
+        return {"rows": 0, "proxy": False, "minutes": m, "cap": cap, "ok": m <= 0.95 * cap,
+                "usd_batch": round(m * usd, 2), "jev_heldout_minutes": JEV_HELDOUT_MIN if jh else 0.0,
+                "source": "job-6zs79 screen minus its proxy600 child pass, + the JEV3-LM arms (NOPROXY_SCREEN_MIN)"
+                          + (" + the jev-heldout scoring (JEV_HELDOUT_MIN)" if jh else "")}
     fixed = float(params.get("screen_fixed_minutes", DEFAULT_FIXED_MIN))
     minutes = fixed + D1_PROXY_CHILD_MIN
     cap = params["phase_caps_minutes"]["screen"]
@@ -497,6 +500,15 @@ def jevkit_block(params: dict, template: str) -> dict | None:
                   | {k: jk[k] for k in ("g1_max_dp", "g1_keep_gate", "flip_ops_all", "flip_reference", "target_ref",
                                         "slice_state_disjoint", "g1_per_arm", "score_inv", "canon_stock",
                                         "letter_prior") if k in jk})
+    jh = jk.get("jev_heldout")  # A-PREREG-JEV3-LM-R: the SEALED jev-heldout secondary (EV-PREREG-JEV-HELDOUT)
+    if jh is not None:
+        if not (stock and jk.get("shim_calibration")):
+            raise ScreenError("jevkit.jev_heldout needs stock_shim (the control) and shim_calibration (the primary)", 5)
+        try:
+            jev_heldout_pointer(jh)
+        except ValueError as e:
+            raise ScreenError(f"jevkit.jev_heldout: {e}", 5) from e
+        extra_keys["jev_heldout"] = jh
     if jk.get("slice_floor") and not (stock and tfit):
         raise ScreenError("jevkit.slice_floor needs stock_shim (step 0 = the untrained host) and tfit (the slice)", 5)
     si = jk.get("score_inv")  # JEV3-TYPED KEEP gate 2: the evidence lane's score-item invariance op (vendored, pinned)
@@ -709,8 +721,96 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: st
             except (OSError, ValueError, KeyError) as e:  # recorded; the report then calls the floor UNEVALUATED
                 ident["slice_floor"] = {"error": f"{type(e).__name__}: {e}"}
             ident["slice_floor"]["seconds"] = round(time.perf_counter() - t0, 2)
+    if jk.get("jev_heldout"):  # A-PREREG-JEV3-LM-R secondary: scored ONCE, after every public / slice step above
+        t0 = time.perf_counter()
+        try:
+            ident["jev_heldout"] = jev_heldout_run(jk, decider, StockShimEngine(decider.backend, model_dir),
+                                                   Path(data_dir or ""), out_dir / "jev_heldout")
+        except (OSError, ValueError, KeyError) as e:
+            print(f"identity: jev_heldout: {type(e).__name__}: {e}", file=sys.stderr)
+            return 10
+        ident["jev_heldout"]["seconds"] = round(time.perf_counter() - t0, 2)
     (out_dir / "identity.json").write_text(json.dumps(ident, indent=1, default=str), encoding="utf-8")
     return 0
+
+
+#: A-PREREG-JEV3-LM-R: the sealed jev-heldout set adds 2,199 items x (native 0.081 + stock + shim 0.069 s/item, the
+#: job-zbmhc public-231 rates: 18.74 s and 15.84 s) = 5.5 min of answering; x 1.5 for longer items + jevkit scoring and
+#: the paired bootstrap on CPU = 9 min on top of NOPROXY_SCREEN_MIN.
+JEV_HELDOUT_MIN = 9.0
+JEV_HELDOUT_KEYS = {"prereg", "pointer", "pointer_sha256", "items", "items_sha256", "n_items", "records_sha256",
+                    "ids_sha256", "role", "access", "consumed_by_runner"}
+
+
+def jev_heldout_pointer(jh: dict) -> dict:
+    """The sealed set's pointer, sha256-checked against the cell's pin (fail closed: ValueError), and the pin fields
+    checked against the pointer (items sha, n, records sha, ids sha)."""
+    if not isinstance(jh, dict) or set(jh) != JEV_HELDOUT_KEYS or jh.get("consumed_by_runner") is not True:
+        raise ValueError(f"needs exactly {sorted(JEV_HELDOUT_KEYS)} with consumed_by_runner true")
+    p = ROOT / jh["pointer"]
+    if not p.is_file() or hashlib.sha256(p.read_bytes()).hexdigest() != jh["pointer_sha256"]:
+        raise ValueError(f"pointer {jh['pointer']} missing or sha256 != {jh['pointer_sha256']}")
+    ptr = json.loads(p.read_text(encoding="utf-8"))
+    want = {"items_sha256": ptr["items_jsonl_sha256"], "n_items": ptr["n_records"],
+            "records_sha256": ptr["records_uncompressed_sha256"], "ids_sha256": ptr["ids_sha256"]}
+    bad = {k: (jh[k], v) for k, v in want.items() if jh[k] != v}
+    if bad:
+        raise ValueError(f"pin != pointer: {bad}")
+    return ptr
+
+
+def jev_heldout_run(jk: dict, decider, eng: "StockShimEngine", data_dir: Path, out_dir: Path) -> dict:
+    """The ONE scoring of the sealed jev-heldout set (EV-PREREG-JEV-HELDOUT; never training / selection / T fit): the
+    trained arm (native answers -> the shim post-processing = native_shimcal, the cell's primary readout) and the
+    stock + shim control on the same items, jevkit ``score --items``, paired delta (same B 1000 / seed 16 resamples).
+    The items file is sha256-checked against the pointer BEFORE it is parsed; ACCESS.json records the read (append it to
+    the laptop's ACCESS.log at landing)."""
+    from jevkit import cli as JC
+    from jevkit import scoring as JS
+    from jevkit.items import load_items
+    from jevkit.systemone import SystemOneAdapter, preds_to_answers, run_items
+
+    jh = jk["jev_heldout"]
+    jev_heldout_pointer(jh)
+    path = data_dir / jh["items"]
+    if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != jh["items_sha256"]:
+        raise ValueError(f"jev-heldout items {path} missing or sha256 != {jh['items_sha256']}")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    access = {"utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "agent": "lead (in-job screen)",
+              "purpose": "the ONE pre-registered scoring of A-PREREG-JEV3-LM-R (secondary confirmation)",
+              "prereg": jh["prereg"], "files": ["items.jsonl"], "items_sha256": jh["items_sha256"]}
+    (out_dir / "ACCESS.json").write_text(json.dumps(access) + "\n", encoding="utf-8")
+    items = load_items(path)
+    if len(items) != int(jh["n_items"]):
+        raise ValueError(f"jev-heldout: {len(items)} items != {jh['n_items']}")
+    recs = run_items(SystemOneAdapter(decider, kind="decider", model_name="child-native"), items)
+    _write_jsonl(out_dir / "native.preds.jsonl", recs)
+    with eng.lora_off():
+        recs = run_items(SystemOneAdapter(eng, kind="request", model_name="stock-shim"), items)
+    _write_jsonl(out_dir / "stock_shim.preds.jsonl", recs)
+    shim_calibrate(out_dir / "native.preds.jsonl", out_dir / "native_shimcal.preds.jsonl", items)
+    tables, axes, arms = {}, {}, {}
+    for name in ("native_shimcal", "stock_shim"):
+        pf, rp = out_dir / f"{name}.preds.jsonl", out_dir / f"{name}.jevkit.json"
+        if JC.main(["score", "--items", str(path), "--pred", str(pf), "--price", jk["price"], "--out", str(rp)]) != 0:
+            raise ValueError(f"jevkit score --items {name} failed")
+        rep = json.loads(rp.read_text(encoding="utf-8"))
+        preds = [json.loads(x) for x in pf.read_text(encoding="utf-8").splitlines() if x.strip()]
+        tables[name] = JS.build_table(items, preds_to_answers(preds))
+        axes[name] = (rep["axes"]["speed"], rep["axes"]["cost"])
+        arms[name] = {"report": rp.name, "I": rep["axes"]["intelligence"], "C": rep["axes"]["calibration"],
+                      "status": _count(p.get("status") for p in preds)}
+    res = {"set": "jev-heldout", "prereg": jh["prereg"], "n_items": len(items), "items_sha256": jh["items_sha256"],
+           "arms": arms, "delta": paired_vs(tables, axes, "native_shimcal", "stock_shim"),
+           "role": "SECONDARY confirmation (A-PREREG-JEV3-LM-R); not a gate on the primary"}
+    (out_dir / "result.json").write_text(json.dumps(res, indent=1, default=str), encoding="utf-8")
+    return {"n_items": len(items), "delta_composite_A": res["delta"]["composite_A"], "access": access}
+
+
+def _write_jsonl(path: Path, recs) -> None:
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        for r in recs:
+            f.write(json.dumps(r, separators=(",", ":"), default=str) + "\n")
 
 
 class StockShimEngine:
@@ -1657,6 +1757,11 @@ def jevkit_report(jk: dict, d: Path) -> dict:
                 out["primary"]["candidate"] = False
                 out["primary"]["score_inv_verdict"] = ("NOT A CANDIDATE: the trained checkpoint fails the score-item "
                                                        "invariance gate (ev_score_flip, bitwise)")
+    if jk.get("jev_heldout"):  # A-PREREG-JEV3-LM-R secondary (missing = the in-job scoring failed: fail closed)
+        rp = d / "jev_heldout" / "result.json"
+        if not rp.is_file():
+            raise ScreenError("jev_heldout result missing (the one pre-registered scoring did not complete)", 9)
+        out["jev_heldout"] = json.loads(rp.read_text(encoding="utf-8"))
     return out
 
 

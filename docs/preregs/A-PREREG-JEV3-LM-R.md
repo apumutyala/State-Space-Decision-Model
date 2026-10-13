@@ -3,8 +3,8 @@
 - **A-PREREG-JEV3-LM-R (lead, 2026-10-12, DRAFT; to be registered on state BEFORE any JEV3-LM-R run; package
   stack/qwen35/jev3-lm-r, modes jev3_lm_r_s0 / jev3_lm_r_s1).** The JEV3-LM claim family (A-PREREG-JEV3-LM + Amendments 1-2),
   re-run at the full 1-epoch budget, with coverage rows added and a different primary readout, on 2 seeds. Worst case
-  **$23.06 per seed** = (60 + 2 x 153) x 0.063 (hard cap $23.10); expected $6.36 + the build (<= $3.78) per seed; both seeds:
-  worst $46.12. **Label: "design and readout chosen after seeing JEV3-LM-S (job-zbmhc) public results; optimistically
+  **$24.07 per seed** = (60 + 2 x 161) x 0.063 (hard cap $24.10; screen cap 33 = projection 22.0 + 9.0 for the jev-heldout
+  scoring); expected $6.68 + the build (<= $3.78) per seed; both seeds: worst $48.14. **Label: "design and readout chosen after seeing JEV3-LM-S (job-zbmhc) public results; optimistically
   biased; confirmation via the slice readout comparison by the evidence agent and the sealed jev-heldout secondary".**
   - MODEL: unchanged from JEV3-LM-S: STOCK Qwen3.5-4B @851bf6e8 + LoRA r16 (lr_lora 4e-5, lr_head 3e-4) + the lm_label head
     (train == score: the shim's label token at the Answer: slot, tied LM head); LS 0.05 (0 on yes/no); max_len 4,096 with 0
@@ -54,16 +54,25 @@
     native; canon_stock (canonical layout on the untrained host) vs stock; 8-op flips vs 7.55%; H2O target gap (e00d5ac7);
     slice floor + per-family slice deltas; per-family public deltas (routing / intent / ordinal named); the stock slice
     yes/no band rate (tfit.stock_band).
-  - SECONDARY CONFIRMATION (pre-registered): each seed's exported best checkpoint is scored ONCE on jev-heldout
-    (EV-PREREG-JEV-HELDOUT: the evidence agent's sealed ~2,000-item confirmation set, being built; records sha
-    PLACEHOLDER, ids sha PLACEHOLDER; filled in params jev_heldout BEFORE that scoring), readout native_shimcal vs the stock +
-    shim control, the rule set by EV-PREREG-JEV-HELDOUT. It is not run by this job's runner and does not gate the primary.
+  - SECONDARY CONFIRMATION (pre-registered): each seed scores the SEALED jev-heldout set ONCE (EV-PREREG-JEV-HELDOUT, state
+    d48e500c; claude/ev-jev-heldout @668b7472; pointer data/manifests/jev-heldout.pointer.json sha256
+    34b176fa57481a029929141ce7f0736a2dbf8dc7c5522265270955829a17fad8; 2,199 items / 18 families; records 09b5d22b...; ids
+    c175d8a0...; items.jsonl 17a40d43..., jevkit Item form). In-job, in the screen, AFTER the selected checkpoint is fixed and
+    after every public / slice step: the trained arm read by the primary readout (native_shimcal) vs the stock + shim
+    control on the same items, `jevkit score --items`, paired delta Composite A (B 1000, seed 16). Fail closed: the pointer
+    sha and the pinned items / records / ids shas and n are asserted at setup and again before the items file is read, and
+    the items file's sha256 is checked before it is parsed. The set is NEVER used for training, checkpoint selection,
+    temperature / calibration fit or tuning; every read (the launcher / preflight packaging copies and the one scoring) is
+    appended to ACCESS.log. Reported beside the primary as "jev-heldout confirmation: delta [CI]"; it does not gate the
+    primary claim and has no claim rule of its own beyond EV-PREREG-JEV-HELDOUT's. Disjointness: the set is disjoint from
+    bschema-draw-jev3-lmr (and jev3-typed) by id, source item, row key, content and state (its GATES.json).
   - GOLD-LETTER SHORTCUT / A-SHARE: as A-PREREG-JEV3-LM (gold-letter distributions; the model's per-letter prior on the slice;
     slice choice accuracy with / without ambiguous; predicted-A share on public choice vs gold-A); FLAG if predicted-A exceeds
     gold-A by > 5 pp on the slice or public. A flag is reported beside the claim; it is not a gate.
   - FALLBACK RULES (all of them, in prose; the code implements exactly these):
-    1. Setup gates (exit 15, before any training spend): the screen projection must fit its cap (no proxy600: 22.0 <= 0.95
-       x 25) and the cell cap must cover cell_budget.py's need (113.28 <= 114).
+    1. Setup gates (exit 15, before any training spend): the screen projection must fit its cap (no proxy600 22.0 + jev-heldout
+       9.0 = 31.0 <= 0.95 x 33), the cell cap must cover cell_budget.py's need (113.28 <= 114), and the jev-heldout pin must
+       match its pointer (exit 5 at setup; exit 10 if the items file is missing or changed at the screen).
     2. Step-10 rate check: the planned final step is min(954, the clock-affordable steps at the measured s/step). If short of
        954 the run CONTINUES with the cosine horizon unchanged (954) and records train_budget_shortened; below min_steps 800
        it stops (exit 26) and there is no result. The 96-min clock covers 954 steps at the slowest measured rate.

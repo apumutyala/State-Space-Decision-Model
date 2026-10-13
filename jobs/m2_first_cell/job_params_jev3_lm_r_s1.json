@@ -1,5 +1,5 @@
 {
- "_comment": "Mode jev3_lm_r_s1 (A-PREREG-JEV3-LM-R DRAFT; NOT submitted). Schedule: setup 6 + guard 2 + heldout 2 + cell 114 + screen 25 + report 2 + reserve 2 = 153. Worst case (60 + 2 x 153) x 0.063 = $23.06 <= $23.10. Expected 101 min = $6.36 + the build (job-zbmhc phases: setup 3, guard / heldout < 1, cell = pre-train 8.7 + 954 x 4.6 s 73.1 + post 1.9, screen 10.1). Cell 114 >= cell_budget need 113.28 (pre-train 11.6 + clock 96 + one card 0.68 + final card 1.5 + save/export 1.5 + margin 2). Screen 25: NO proxy600 (projection 22.0 <= 0.95 x 25).",
+ "_comment": "Mode jev3_lm_r_s1 (A-PREREG-JEV3-LM-R DRAFT; NOT submitted). Schedule: setup 6 + guard 2 + heldout 2 + cell 114 + screen 33 + report 2 + reserve 2 = 161. Worst case (60 + 2 x 161) x 0.063 = $24.07 <= $24.10. Expected 106 min = $6.68 + the build (job-zbmhc phases: setup 3, guard / heldout < 1, cell = pre-train 8.7 + 954 x 4.6 s 73.1 + post 1.9, screen 10.1 + jev-heldout ~6). Cell 114 >= cell_budget need 113.28 (pre-train 11.6 + clock 96 + one card 0.68 + final card 1.5 + save/export 1.5 + margin 2). Screen 33: NO proxy600, projection 22.0 + jev-heldout 9.0 = 31.0 <= 0.95 x 33.",
  "test_env": {
   "transformers": "5.17.0",
   "with": [
@@ -26,7 +26,7 @@
  "status": "A-PREREG-JEV3-LM-R DRAFT seed 1: JEV3-LM-S recipe + JEV3-TYPED coverage rows, full 1 epoch (954 steps); PRIMARY native_shimcal (readout chosen after seeing JEV3-LM-S; optimistically biased)",
  "chip": "h100",
  "chip_count": 1,
- "max_duration_minutes": 153,
+ "max_duration_minutes": 161,
  "build_timeout_minutes": 60,
  "max_restarts": 0,
  "assumed_restart_floor": 1,
@@ -34,13 +34,13 @@
  "resume": "checkpoint",
  "hf_cache": true,
  "batch_usd_per_min": 0.063,
- "hard_cap_usd": 23.1,
+ "hard_cap_usd": 24.1,
  "phase_caps_minutes": {
   "setup": 6,
   "guard": 2,
   "heldout": 2,
   "cell": 114,
-  "screen": 25,
+  "screen": 33,
   "report": 2
  },
  "reserve_minutes": 2,
@@ -49,7 +49,7 @@
   "guard": 1,
   "heldout": 1,
   "cell": 84,
-  "screen": 11,
+  "screen": 16,
   "report": 1
  },
  "evals_fixed_minutes": {
@@ -264,6 +264,11 @@
     "src": "m2/build/bschema-draw-jev3-slice/records.jsonl.gz",
     "dest": "m2-jev3-calib/records.jsonl.gz",
     "pin": "jobs/m2_first_cell/data_jev3_lmr.sha256"
+   },
+   {
+    "src": "m2/build/jev-heldout/items.jsonl",
+    "dest": "jev-heldout/items.jsonl",
+    "pin_sha256": "17a40d43b13b0cfc66342fd54e6b5d20a6dbc797aa1942069b3d79046375dade"
    }
   ],
   "manifest_files": [
@@ -306,7 +311,8 @@
    "train/m2_gates.py",
    "jobs/m2_first_cell/m2_first_cell_rwkv7_jev3_lm_r_s1.json",
    "jobs/m2_first_cell/cell_budget.py",
-   "scripts/cell_preflight.py"
+   "scripts/cell_preflight.py",
+   "data/manifests/jev-heldout.pointer.json"
   ]
  },
  "mode": "jev3_lm_r_s1",
@@ -385,19 +391,23 @@
     "scripts/ev_score_perturb.py": "803eeb9019f45f8a077f289ab6eab4f930510cf3ee7e5f847bdd855cbcf3e1da",
     "scripts/ev_score_flip.py": "b59f21655522187b3f8453e8092f41e3943c24d6c9fe6dc83beb16fb5961b6b2"
    }
+  },
+  "jev_heldout": {
+   "prereg": "EV-PREREG-JEV-HELDOUT (state d48e500c; claude/ev-jev-heldout @668b7472)",
+   "pointer": "data/manifests/jev-heldout.pointer.json",
+   "pointer_sha256": "34b176fa57481a029929141ce7f0736a2dbf8dc7c5522265270955829a17fad8",
+   "items": "jev-heldout/items.jsonl",
+   "items_sha256": "17a40d43b13b0cfc66342fd54e6b5d20a6dbc797aa1942069b3d79046375dade",
+   "n_items": 2199,
+   "records_sha256": "09b5d22b8d116bbc3586d5bd0381ffdca53f3d57eb44636eb47bcc80bf445008",
+   "ids_sha256": "c175d8a0a7e28a120af8ed3a00d6c5b99371f83b3fc5dd8c31864b17cd8cfd5d",
+   "role": "pre-registered SECONDARY confirmation, scored ONCE per seed in the screen (native_shimcal vs stock + shim, jevkit score --items); never training, checkpoint selection, T fit or tuning; not a gate on the primary",
+   "access": "screen writes jevkit/jev_heldout/ACCESS.json; the lead appends it to ssdm-data/m2/build/jev-heldout/ACCESS.log at landing (and logs the launcher / preflight packaging reads of items.jsonl)",
+   "consumed_by_runner": true
   }
  },
  "cohort_note": "pins cohort v2 deliberately (no G13 here); the training draw excludes cohort v3 regardless (#105). The G13 gate of this checkpoint is a separate job on v3 (~16-17 H100-h at job-tkfaj rates).",
- "jevkit_note": "A-PREREG-JEV3-LM-R: PRIMARY = native_shimcal (the vendored shim's post-processing on the lm_label distribution: T 0.8 + the yes/no floor 0.801, unchanged constants, nothing fitted) paired vs the NON-canonical in-job stock + shim control. Readout chosen AFTER seeing JEV3-LM-S (job-zbmhc) public secondary (shimcal +3.48 [-1.09, +12.56] vs tfit -0.78) -> optimistically biased; non-public support: claude/ev-guar-jev3 @36141c14 slice-only diagnostic (shimcal vs tfit slice NLL -0.281 [-0.352, -0.213], noul band 0). The per-type banded T_noul rule is REMOVED (no tfit.per_type; infeasible by construction: stock's floor puts 0 / 741 slice yes/no in the band): native_tfit is a secondary with one scalar slice-NLL T; tfit.stock_band keeps the stock slice yes/no band report. Secondaries: raw native, native_tfit, canon_stock. KEEP 1 = G1 bitwise; KEEP 2 = scripts/ev_score_flip.py --max-dp 0 (claude/ev-score-inv @c47c0a46). Letter-prior / A-share check: FLAG if predicted-A exceeds gold-A by > 5 pp.",
+ "jevkit_note": "A-PREREG-JEV3-LM-R: PRIMARY = native_shimcal (the vendored shim's post-processing on the lm_label distribution: T 0.8 + the yes/no floor 0.801, unchanged constants, nothing fitted) paired vs the NON-canonical in-job stock + shim control. Readout chosen AFTER seeing JEV3-LM-S (job-zbmhc) public secondary (shimcal +3.48 [-1.09, +12.56] vs tfit -0.78) -> optimistically biased; non-public support: claude/ev-guar-jev3 @36141c14 slice-only diagnostic (shimcal vs tfit slice NLL -0.281 [-0.352, -0.213], noul band 0). The per-type banded T_noul rule is REMOVED (no tfit.per_type; infeasible by construction: stock's floor puts 0 / 741 slice yes/no in the band): native_tfit is a secondary with one scalar slice-NLL T; tfit.stock_band keeps the stock slice yes/no band report. Secondaries: raw native, native_tfit, canon_stock. KEEP 1 = G1 bitwise; KEEP 2 = scripts/ev_score_flip.py --max-dp 0 (claude/ev-score-inv @c47c0a46). Letter-prior / A-share check: FLAG if predicted-A exceeds gold-A by > 5 pp. SECONDARY confirmation: the sealed jev-heldout set (2,199 items, EV-PREREG-JEV-HELDOUT) scored ONCE in the screen after every public / slice step (jevkit.jev_heldout; pointer sha asserted fail closed).",
  "screen_proxy": false,
- "cell_budget_check": true,
- "jev_heldout": {
-  "prereg": "EV-PREREG-JEV-HELDOUT",
-  "role": "pre-registered SECONDARY confirmation; scored ONCE per seed",
-  "records": "PLACEHOLDER (the evidence agent's sealed ~2,000-item set; being built)",
-  "records_sha256": "PLACEHOLDER",
-  "ids_sha256": "PLACEHOLDER",
-  "consumed_by_runner": false,
-  "note": "not read by first_cell_job.sh / screen.py: scored once on the exported best checkpoint (cell.json best_export) after the seed lands, with the shas above filled BEFORE that scoring"
- }
+ "cell_budget_check": true
 }

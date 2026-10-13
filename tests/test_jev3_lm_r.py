@@ -42,12 +42,12 @@ def test_jev3_lm_r_modes(seed):
     # budget: cell cap covers the slow-end measurement for the whole epoch; schedule; worst case stated
     b = check(p, c)
     assert b["pass"] and b["expected_steps"] == 954
-    assert sum(p["phase_caps_minutes"].values()) + p["reserve_minutes"] == p["max_duration_minutes"] == 153
+    assert sum(p["phase_caps_minutes"].values()) + p["reserve_minutes"] == p["max_duration_minutes"] == 161
     w = costs.worst_case_usd(p)
-    assert w == 23.06 and w <= p["hard_cap_usd"]
+    assert w == 24.07 and w <= p["hard_cap_usd"]
     assert f"{w:.2f}" in (D / "JOB_SPEC.md").read_text(encoding="utf-8")
     assert f"job_params_{mode}.json" in (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
-    assert costs.expected_usd(p) == 6.36
+    assert costs.expected_usd(p) == 6.68
     e = screen.estimate(p)
     assert e["ok"] and e["proxy"] is False and p["screen_proxy"] is False and p["cell_budget_check"] is True
     # readout + gates
@@ -59,7 +59,11 @@ def test_jev3_lm_r_modes(seed):
         assert jk[k] == js[k], k
     assert jk["score_inv"]["keep_gate"] and jk["letter_prior"]["flag_pp"] == 5 and jk["g1_max_dp"] == 0.0
     assert jk["slice_state_disjoint"]["train_records"] == f"{p['train_dir']}/records.jsonl.gz" == "m2-jev3-lmr/records.jsonl.gz"
-    assert p["jev_heldout"]["prereg"] == "EV-PREREG-JEV-HELDOUT" and p["jev_heldout"]["consumed_by_runner"] is False
+    jh = jk["jev_heldout"]
+    assert jh["consumed_by_runner"] is True and jh["n_items"] == 2199 and jh["prereg"].startswith("EV-PREREG-JEV-HELDOUT")
+    assert screen.jev_heldout_pointer(jh)["items_jsonl_sha256"] == jh["items_sha256"]
+    assert e["minutes"] == 31.0 and e["jev_heldout_minutes"] == screen.JEV_HELDOUT_MIN and e["cap"] == 33
+    assert {"src": "m2/build/jev-heldout/items.jsonl", "dest": jh["items"], "pin_sha256": jh["items_sha256"]} in p["context"]["data"] and jh["pointer"] in p["context"]["manifest_files"]
     # the context ships the lmr draw under its pins, and the cell / pointer / pins files
     dests = {x["dest"]: x for x in p["context"]["data"]}
     for f in ("records.jsonl.gz", "bschema-draw-jev3-lmr.manifest.jsonl.gz", "bschema-draw-jev3-lmr.content.jsonl.gz"):
@@ -100,3 +104,16 @@ def test_k_subsample_keeps_gold_and_order():
                         "labels": {"q": "o1"}}, 6) is None  # K <= public K: unchanged
     assert R.subsample({**r, "questions": {"q": {"type": "noul"}}}, 6) is None
     assert r["questions"]["q"]["criteria"] == crit  # the input row is not mutated
+
+
+def test_jev_heldout_pin_fails_closed():
+    from jobs.m2_first_cell import screen
+
+    jh = _j(D / "job_params_jev3_lm_r_s0.json")["jevkit"]["jev_heldout"]
+    assert screen.jev_heldout_pointer(jh)
+    for k, v in (("pointer_sha256", "0" * 64), ("items_sha256", "1" * 64), ("n_items", 2198),
+                 ("consumed_by_runner", False)):
+        with pytest.raises(ValueError):
+            screen.jev_heldout_pointer({**jh, k: v})
+    with pytest.raises(ValueError):
+        screen.jev_heldout_pointer({**jh, "extra": 1})
