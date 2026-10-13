@@ -175,7 +175,7 @@ def main(argv=None) -> int:
            "records_sha256": hashlib.sha256(gzip.open(a.records).read()).hexdigest(), "pass": not drop}
     Path(a.out).write_text(json.dumps(rep, indent=1) + "\n", encoding="utf-8")
     if a.ids_out:
-        Path(a.ids_out).write_text("".join(H[i][0] + "\n" for i in sorted(hits)), encoding="utf-8")
+        Path(a.ids_out).write_text("".join(H[i][0] + "\n" for i in drop), encoding="utf-8")
     print(json.dumps({k: rep[k] for k in ("n_heldout_rows", "n_rows_hit", "n_rows_dropped", "key_hits",
                                          "engine_rows_template_line_overlap_not_dropped", "hits_by_family", "pass")}))
     return 0

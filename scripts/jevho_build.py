@@ -331,7 +331,7 @@ def cmd_final(a) -> int:
                        "--items items.jsonl; never training, checkpoint selection, temperature / calibration fit or "
                        "tuning; every read is appended to ACCESS.log",
            "builder": {"generator": "data/jev_heldout.py", "builder": "scripts/jevho_build.py", "commit": commit},
-           "receipt": str(rd.relative_to(REPO)).replace("\\", "/") + "/"}
+           "receipt": (str(rd.relative_to(REPO)) if rd.is_relative_to(REPO) else str(rd)).replace("\\", "/") + "/"}
     pp = config.MANIFEST_DIR / f"{name}.pointer.json"
     pp.write_bytes((json.dumps(ptr, indent=1) + "\n").encode("utf-8"))
     print(json.dumps({"set": name, "n": len(xs), "families": fam_counts, "types": type_counts, "short": short,

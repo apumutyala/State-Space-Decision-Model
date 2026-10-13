@@ -107,3 +107,25 @@ HotpotQA-derived MuSiQue rows are gated by the strict full-row fingerprint), OPP
 `SEAL.json`, `ACCESS.log`. The pointer `data/manifests/jev-heldout.pointer.json` publishes the shas and counts only.
 The builder prints counts, never item text. If the build cannot finish on the laptop, a STAGE pointer
 (`jev-heldout-stage.pointer.json`, role "stage, NOT sealed for use") records what exists.
+
+## Amendments (written after the first candidate pool and its pre-gate COUNTS; no item text, label or model output read)
+- **H1 (shape: engine-row length).** The reused jev2b engines write states far shorter than the public items of their
+  families (first pool p90 vs public p90: probability 215 vs 1,239, trap 201 vs 368, tradeoff 410 vs 816, adversarial
+  220 vs 321 shim tokens), which fails the shape gate's length rule. Their states are prefixed with neutral
+  administrative "file notes" (a fixed 36-sentence bank: no digits, names, rules or facts; the header says they have no
+  bearing on the question) up to a label-blind target drawn from U(public p50, public max x 1.05). Decision content
+  and gold are unchanged.
+- **H2 (long_policy negatives).** Gold relevance follows the annotator MAJORITY (as specified); the generator's extra
+  "clean negative" filter (no sentence marked relevant by any annotator) left only 7 noul-false rows, so it is
+  removed. Minority-marked sentences are still never used as negatives. All three view rounds are generated (plan 900).
+- **H3 (template string vs the strict Index fingerprint).** The trap engine's score level "none of them" hits the
+  strict full-row Index fingerprint (as in jev3 A4); it is reworded to "zero of them". Natural source text that hits a
+  gate is dropped, never edited.
+- **H4 (jev disjointness text rule).** Rule-engine rows hit ONLY by an exact >= 4-word line shared with a jev draw are
+  the reused engines' own template sentences (329 rows), not a shared item; they are reported and kept. Every key hit
+  (0 on the first pool) and every human-source text hit is dropped.
+- **H5 (candidate plans).** The first pool's pre-gates dropped 1,472 / 7,204 rows (multi_hop 365 of 520, mainly
+  Wikipedia paragraphs shared with Index suites / MuSiQue train; temporal_numeric 215; tool_selection 233 + 52 state
+  duplicates; judge_hard 172). Plans are raised (multi_hop 1,100; judge_hard 800; fact 700; policy 700; tool_selection
+  700; ambiguous 400; TAT-QA 600; TimeQA 450 with <= 5 questions per article) so the build-check stage still leaves
+  each family at its target. Selection stays label-blind rank order; a larger plan only extends the same ranked list.

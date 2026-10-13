@@ -55,9 +55,9 @@ TARGET = {"adequacy": 114, "adversarial": 57, "ambiguous": 67, "extraction": 229
           "routing": 114, "routing_hard": 48, "temporal_numeric": 143, "tool_selection": 114, "tradeoff": 57,
           "trap": 76}
 #: candidates generated per family (gates drop some; the builder keeps TARGET)
-PLAN = {"adequacy": 400, "adversarial": 200, "ambiguous": 220, "extraction": 650, "fact": 360, "intent": 650,
-        "judge_hard": 520, "long_policy": 900, "multi_hop": 520, "ordinal": 360, "policy": 380, "probability": 300,
-        "routing": 360, "routing_hard": 170, "temporal_numeric": {"tatqa": 330, "timeqa": 170}, "tool_selection": 400,
+PLAN = {"adequacy": 400, "adversarial": 200, "ambiguous": 400, "extraction": 650, "fact": 700, "intent": 650,
+        "judge_hard": 800, "long_policy": 900, "multi_hop": 1100, "ordinal": 360, "policy": 700, "probability": 300,
+        "routing": 360, "routing_hard": 170, "temporal_numeric": {"tatqa": 600, "timeqa": 450}, "tool_selection": 700,
         "tradeoff": 200, "trap": 260}
 LIC = {"helpsteer2": "CC-BY-4.0", "aegis2": "CC-BY-4.0", "prm800k": "MIT", "ambignq": "CC-BY-SA-3.0",
        "tatqa": "CC-BY-4.0 (data)", "timeqa": "BSD-3-Clause", "privacyqa": "MIT", "boolq": "CC-BY-SA-3.0",
@@ -679,7 +679,7 @@ def gen_timeqa(n: int) -> Iterator[dict]:
     for _, d, qi, qt, a, paras, others in cand:
         if k >= n:
             break
-        if used_doc.get(d["index"], 0) >= 3:
+        if used_doc.get(d["index"], 0) >= 5:
             continue
         r = rng("timeqa", d["index"], qi)
         seen, dis = {norm(a)}, []
@@ -1244,6 +1244,8 @@ def _rewrap(row: dict, fam: str, gen: str, i: int) -> dict:
     parent = f"m2:jevho-synth:{gen}:{i}"
     q = row["questions"]["q"]
     row["state"] = _pad(fam, row["state"], q, rng("pad", gen, i))
+    if q["type"] == "score":  # spec amendment H3: the engine level "none of them" collides with Index text (as jev3 A4)
+        q["criteria"] = ["zero of them" if c == "none of them" else c for c in q["criteria"]]
     if q["type"] == "noul" and not q.get("criteria"):
         q["criteria"] = {"true": "yes: the stated facts and rules give this result",
                          "false": "no: the stated facts and rules give a different result"}
