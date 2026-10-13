@@ -7,6 +7,8 @@ full-precision served probabilities (``ssdm.served_probabilities``), keyed by th
 
     SSDM_INV_HEAD=jobs.sym_eval.inv_adapter:sym_fork_score   # must pass at tol 0 (bit-identical)
     SSDM_INV_HEAD=jobs.sym_eval.inv_adapter:ordered_score    # the old ordered layout: must FAIL relabel (teeth)
+    SSDM_INV_HEAD=jobs.sym_eval.inv_adapter:sym_fast_fork2_score    # heads.sym_fast fork2 readout: tol 0
+    SSDM_INV_HEAD=jobs.sym_eval.inv_adapter:sym_fast_packed1_score  # heads.sym_fast packed1 readout: tol 0
 """
 from __future__ import annotations
 
@@ -14,8 +16,8 @@ from functools import lru_cache
 from typing import Any, Sequence
 
 
-@lru_cache(maxsize=4)
-def _decider(layout: str):
+@lru_cache(maxsize=8)
+def _decider(layout: str, sym_exec: str | None = None):
     import torch
 
     from decide import Decider
@@ -27,14 +29,14 @@ def _decider(layout: str):
 
     torch.manual_seed(0)
     model = DecisionModel(tiny_hf_backbone("qwen3.5", seed=0, fork_mode="cache"), "fork", seed=0).float().eval()
-    return Decider(DecisionModelBackend(model, ByteEncoder(), template=TOY_TEMPLATE, layout=layout))
+    return Decider(DecisionModelBackend(model, ByteEncoder(), template=TOY_TEMPLATE, layout=layout, sym_exec=sym_exec))
 
 
-def _score(layout: str, state: Any, options: Sequence[tuple[str, str]]) -> dict[str, float]:
+def _score(layout: str, state: Any, options: Sequence[tuple[str, str]], sym_exec: str | None = None) -> dict[str, float]:
     req = {"model": "inv-harness", "state": state,
            "questions": {"q": {"type": "choice", "instructions": "Which option fits the state?",
                                "criteria": {str(i): c for i, c in options}}}}
-    resp = _decider(layout).decide(req)
+    resp = _decider(layout, sym_exec).decide(req)
     ss = resp.get("ssdm") or {}
     if ss.get("status", "ok") != "ok":
         raise RuntimeError(f"decider refused: {ss.get('error')}")
@@ -47,3 +49,11 @@ def sym_fork_score(state: Any, options: Sequence[tuple[str, str]]) -> dict[str, 
 
 def ordered_score(state: Any, options: Sequence[tuple[str, str]]) -> dict[str, float]:
     return _score("ordered", state, options)
+
+
+def sym_fast_fork2_score(state: Any, options: Sequence[tuple[str, str]]) -> dict[str, float]:
+    return _score("sym-fork", state, options, sym_exec="fork2")
+
+
+def sym_fast_packed1_score(state: Any, options: Sequence[tuple[str, str]]) -> dict[str, float]:
+    return _score("sym-fork", state, options, sym_exec="packed1")

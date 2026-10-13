@@ -81,8 +81,16 @@ class DecisionModelBackend:
 
     def __init__(self, model: DecisionModel, encode: EncodeFn, template: str | Template = "jrt-plain-v1",
                  layout: str = "ordered", checkpoint: dict[str, Any] | None = None, shared_prefix: bool = True,
-                 g16_certify_k: int | None = None) -> None:
+                 g16_certify_k: int | None = None, sym_exec: str | None = None) -> None:
         self.model = model
+        # sym-fork fast readout (heads.sym_fast): None = the shared-prefix path as before; "fork2" / "packed1"
+        if sym_exec is not None:
+            from .sym_fast import MODES
+
+            if sym_exec not in MODES:
+                raise ValueError(f"sym_exec must be one of {MODES} or None")
+            model.backbone.sym_exec = sym_exec
+        self.sym_exec = sym_exec
         if getattr(model.head, "name", None) == "g16" and getattr(model.head, "gate", None) is not None:
             raise ValueError("decide backend: a G16 head with the learned P-gate is not servable (non-finite logits)")
         self.g16_certify_k = g16_certify_k
@@ -113,6 +121,7 @@ class DecisionModelBackend:
             "prompt_template": _template_identity(self.template),
             "layout": self.layout,
             **({"sym_version": SYM_VERSION} if self.layout in SYM_LAYOUTS else {}),  # the sym row renderer's version
+            **({"sym_exec": self.sym_exec} if self.sym_exec else {}),  # execution only; absent = the old path (same ids)
             "checkpoint": self.checkpoint,
             "adapter_version": versions.ADAPTER_VERSION,
         }
@@ -145,8 +154,16 @@ class DecisionModelBackend:
     def plan(self, request: dict[str, Any]) -> Plan:
         rows = self._rows(request)
         lens = [row_input_tokens(r) for r in rows]  # sym layouts also feed their option continuations
+        # max: the longest single sequence (packed1's sequences are prefix + ONE option, never longer); total: what runs
         return Plan(inference_calls=1 if self._one_pass() else len(rows), max_call_input_tokens=max(lens),
-                    total_input_tokens=sum(lens))
+                    total_input_tokens=sum(self._tokens(r) for r in rows))
+
+    def _tokens(self, row: LayoutRow) -> int:
+        """Tokens the backbone actually runs for a row: ``packed1`` re-runs the prefix once per option (honest
+        accounting; heads.sym_fast), every other path feeds the prefix once + the continuations."""
+        if self.sym_exec == "packed1" and row.layout in SYM_LAYOUTS:
+            return len(row.continuations) * len(row.ids) + sum(len(c) for c in row.continuations)
+        return row_input_tokens(row)
 
     def _g16(self) -> bool:
         return getattr(self.model.head, "name", None) == "g16" and getattr(self.model, "row_head", False)
@@ -192,7 +209,7 @@ class DecisionModelBackend:
         if self._g16():
             extras["g16"] = g16diag
         return ScoreResult(logits=logits, inference_calls=(1 if self._one_pass() else len(rows)) + extra_calls,
-                           total_input_tokens=sum(row_input_tokens(r) for r in rows), extras=extras, features=features)
+                           total_input_tokens=sum(self._tokens(r) for r in rows), extras=extras, features=features)
 
     def _g16_certificate(self, request: dict[str, Any], row: LayoutRow,
                          check_deadline: Callable[[], None] | None = None) -> dict[str, Any]:

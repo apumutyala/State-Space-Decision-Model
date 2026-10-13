@@ -19,7 +19,7 @@ if [ "${DRAW:-1}" = 1 ]; then
   D_RC=$?
   log "draw rc=$D_RC"
 fi
-TESTS="${TESTS:-tests/test_jev3_typed.py tests/test_ev_score_inv.py tests/test_sym_invariance.py tests/test_jev3_sym.py tests/test_consistency.py tests/test_anti_collapse.py tests/test_backend_row_cache.py}"
+TESTS="${TESTS:-tests/test_jev3_typed.py tests/test_ev_score_inv.py tests/test_sym_invariance.py tests/test_jev3_sym.py tests/test_consistency.py tests/test_anti_collapse.py tests/test_backend_row_cache.py tests/test_sym_fast.py tests/test_perf_paths.py tests/test_sym_perturb_eval.py}"
 KEXPR="${KEXPR:-not test_cell_rescore_section}"
 log "tests: $TESTS (-k $KEXPR)"
 timeout 1800 python -X utf8 -m pytest -v -rs -p no:cacheprovider --junitxml="$OUT/junit.xml" -k "$KEXPR" $TESTS \
