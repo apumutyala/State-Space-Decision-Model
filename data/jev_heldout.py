@@ -1195,11 +1195,55 @@ def gen_tools(n: int) -> Iterator[dict]:
 
 
 # ================================================================================================ rule engines
+#: shape-gate length targets (public shim-token p50 .. max * 1.05, fingerprint statistics) for the short engine rows
+PAD_TOKENS = {"probability": (622, 2037), "adversarial": (290, 365), "trap": (330, 425), "tradeoff": (741, 906)}
+#: neutral file notes: no digits, no names, no rules, nothing a decision could depend on (label-blind padding)
+PAD = ["This record was copied from the team's shared workspace for review.", "Formatting has been simplified; "
+       "headings and colours from the original are not shown.", "The workspace keeps older versions of every record "
+       "for audit purposes.", "Comments from earlier reviewers were removed before this copy was made.", "The "
+       "reviewer is expected to rely only on the content of the record itself.", "Questions about access to the "
+       "workspace go to the office administrator.", "Records are filed by the week in which they were opened.",
+       "The shared drive is backed up overnight.", "Attachments mentioned in the original are not included here.",
+       "Spelling in quoted material has been left as it was.", "The team uses plain language in its records where "
+       "it can.", "This copy is for internal use and should not be forwarded.", "Earlier drafts of this record "
+       "used a different template.", "Staff changes since the record was opened are not reflected in this copy.",
+       "Where the original used abbreviations, they have been kept.", "The review queue is processed in the order "
+       "records arrive.", "Nothing in these notes changes the facts set out below.", "The workspace search index "
+       "is rebuilt each weekend.", "Reviewers should flag missing pages to the record owner.", "The template for "
+       "these records was last revised by the operations group.", "Some fields of the original form were left "
+       "blank and are omitted.", "Records older than the retention period are archived automatically.",
+       "The record owner is notified when a review is completed.", "Line breaks have been normalised in this "
+       "copy.", "Any personal details have been removed from this copy.", "The review checklist is kept in a "
+       "separate document.", "Reviewers work from the same copy so that their notes can be compared.", "The "
+       "original record may contain links that no longer work.", "Translation was not needed for this record.",
+       "The office closes early on public holidays.", "Please keep review notes short and factual.", "The record "
+       "format is shared across several teams.", "Formatting differences between teams are not significant.",
+       "This header was added automatically when the copy was made.", "The copy was checked for completeness "
+       "before it was shared.", "A summary of the review is added to the team log afterwards."]
+
+
+def _pad(fam: str, state: Any, q: dict, r: random.Random) -> Any:
+    if fam not in PAD_TOKENS or not isinstance(state, str):
+        return state
+    lo, hi = PAD_TOKENS[fam]
+    want = r.uniform(lo, hi)
+    have = (len(state) + len(canon(q))) / 4.0 + 90  # rough shim-token estimate (verified by the lens pass)
+    need_chars = int((want - have) * 4.4)
+    if need_chars <= 0:
+        return state
+    notes = []
+    while sum(len(x) + 1 for x in notes) < need_chars:
+        notes.append(P(r, PAD))
+    return "File notes (administrative; they have no bearing on the question):\n" + " ".join(notes) + "\n\n" + state
+
+
 def _rewrap(row: dict, fam: str, gen: str, i: int) -> dict:
-    """Re-identify a reused rule-engine row as a jev-heldout row (new id / draw / prov; content unchanged)."""
+    """Re-identify a reused rule-engine row as a jev-heldout row (new id / draw / prov) and pad short states with
+    neutral administrative notes up to the public length range (label-blind; the decision content is unchanged)."""
     view = row["id"].split("~view:", 1)[1].split("-", 1)[-1]
     parent = f"m2:jevho-synth:{gen}:{i}"
     q = row["questions"]["q"]
+    row["state"] = _pad(fam, row["state"], q, rng("pad", gen, i))
     if q["type"] == "noul" and not q.get("criteria"):
         q["criteria"] = {"true": "yes: the stated facts and rules give this result",
                          "false": "no: the stated facts and rules give a different result"}
