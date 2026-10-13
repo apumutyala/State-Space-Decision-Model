@@ -1,5 +1,10 @@
 # PROGRESS: rolling, 3–5 lines per session (did / learned / next). Older entries roll into history/.
 
+## 2026-10-12: evidence independent rescore of job-zbmhc (JEV3-LM-S, $0)
+- Did: claude/ev-zbmhc-rescore @e03b1d42 receipts/2026-10-12-ev-zbmhc-rescore/RESCORE_ZBMHC.md: art-mddiz self-downloaded (6b69fc5c), kit @c47c0a46 + my score-op re-run + canonical key @1ccdc676.
+- Learned: AGREES on every lead number (floor CI upper +7.0 vs +7.1); primary -0.78 [-16.36,+3.47] NOT CLAIMED; both KEEP gates pass bitwise; no letter shortcut. T_noul infeasible confirmed (stock band 0 is an artefact of the shim floor); the fallback was pre-specified only in code, and it HELPED (T_noul=1 diagnostic is -29.36 CompA), so the loss is not the fallback.
+- Next: put readout fallbacks in prereg prose, not only in code; compare a band rule against an unfloored stock readout; the score-item loss (cc -13.50) is the open public-side gap; any fix goes through the slice + a new prereg.
+
 ## 2026-10-12: evidence B-PREREG-GUAR-JEV3/a (guarantees on JEV3-LM-S job-zbmhc, $0)
 - Did: addendum state 64f0c3dc BEFORE reading zbmhc probs; claude/ev-guar-jev3 @36141c14 receipts/2026-10-12-ev-guar-jev3-zbmhc (unchanged driver imported; arms native_tfit primary / shimcal / raw; step 150, ids 844233f2, shim parity 0.0).
 - Learned: coverage HOLDS (tfit 0.916 @a0.10 / 0.955 @a0.05, better than 6zs79 0.888) but LTT certifies NOTHING on any arm -> abstention FALSIFIED again. The pre-registered tfit readout is the culprit for errors (T_noul 0.26 fallback: 187 confident acts / 19 err); raw and shimcal are near-miss (~75 acts / 1 err vs ~135 needed). Diagnostic (non-public): shimcal beats tfit on NLL (-0.28) and raw on slice I/CompA-like (+17 / +40), CIs paired B=1000 seed 16.
