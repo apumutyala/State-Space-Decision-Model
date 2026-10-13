@@ -486,3 +486,29 @@ No other mismatches were found. All other cited shas are the current branch tips
 **Runner bugs found by JEV3-LM** (being fixed at CPU cost): the time cap ignored ~11.6 min of pre-train overhead; the collapse guard's threshold (0.8 × uniform loss) sits at the lm_label head's starting loss, so it misfired 3× and halved the LR each time; weights are only exported after a successful cell, so a timeout loses the best checkpoint.
 
 **What re-opening needs:** JEV3-LM ≈ $10–18 (one run with the fixed runner); JEV3-SYM seed 1 ≤ $21.67; a trained G16 head + GPU G15 ≤ $21.67; νPI on/off ≤ $43.34; FSCRR on the unseen split ~$35 (also needs new Clef predictions, so check the operator directive first). Board-scale parity: the operator declined a board submission.
+
+## Closing entry (2026-10-12/13): JEV3-LM-S, conformal on our stack, and what remains at $0
+
+**Takeaway:** the last funded cell, JEV3-LM-S (stock Qwen3.5-4B GDN-hybrid + an answer-slot readout trained on human-labelled jev3 data, with content-canonical inference), is our first model with **exact reorder + relabel invariance** at a Composite **statistically indistinguishable from stock** and **half the flip rate**. No Composite gain is claimed. GPU work stopped at $11.67.
+
+| Item | Result | Receipt |
+|---|---|---|
+| JEV3-LM-S primary (native_tfit − non-canonical stock+shim) | −0.78 [−16.36, +3.47], p 0.736, NOT CLAIMED | claude/ev-zbmhc-rescore @e03b1d42 (independent rescore agrees on every number) |
+| KEEP gate 1, G1 (choice relabel + choice/yes-no reorder) | PASS bitwise, 565 pairs; the stock control fails 27/21/13 | same |
+| KEEP gate 2, score-item invariance (18/54/18/18) | PASS bitwise; stock fails 2/8/3/4 | claude/ev-score-inv @c47c0a46 |
+| Flip rate, 8 jevkit ops | 3.64% (vs stock 7.55%, unpaired) | same |
+| Letter shortcut (A-share) | none (slice −4.09pp, public −0.72pp) | claude/ev-canonical-prior @1ccdc676 |
+| Secondary: native_shimcal | +3.48 [−1.09, +12.56] (n.s.) | same |
+| T_noul attribution | the fallback T 0.26 ADDED +29.36 [+12.27, +38.76] vs T=1 (diagnostic); the residual gap is in score items (−13.5) and routing; the band rule was infeasible by construction (the stock shim floor) and its fallback was pre-specified in code, not prose | same |
+| Conformal on our stack (B-PREREG-GUAR-JEV3, jev3 slice) | COVERAGE PROVEN (JEV3-SYM 0.888; JEV3-LM-S 0.916 at α 0.10); ABSTENTION FALSIFIED for every arm: tfit's confident answers err 10%; raw/shimcal reach ~75 acts with 1 error vs the ~135 error-free acts the test needs | claude/ev-guar-jev3 @77b8be9c, @36141c14 |
+| Slice readout diagnostic (non-public) | shimcal beats tfit on NLL (−0.281 [−0.352, −0.213]) with band 0; Composite-like proxy +4.83 [−0.76, +11.82] → a future cell should pre-register shimcal as primary | @36141c14 |
+
+**Why nothing more is claimable now:** a single seed on n = 231 public items has a ~±8 CI half-width on Comp A, larger than every effect left to test; every remaining item needs GPU credit ($11.67 left).
+
+**What CAN be done at $0** (no cluster jobs; the laptop is RAM-limited):
+1. **jev-heldout** (in progress): a sealed ~2,000-item JevBench-shaped confirmation set with human-labelled gold from public validation/test splits, disjoint from all training draws, the public items and the Decision Index; pre-registered as a secondary confirmation set only; projected CI half-width ≈ ±2.7. This is the single biggest lever for power in future cells.
+2. Re-analysis of landed predictions only (slice-level diagnostics, conformal variants, gap attribution), always pre-registered before reading.
+3. Proofs, tests and runner fixes on CPU (typed invariance theorem done; runner bugs fixed by the lead).
+4. Packaging + pre-registering the next cells so they run first time when credit returns: JEV3-LM (full epoch, shimcal primary), JEV3-TYPED, JEV3-SYM seed 1, a trained G16 head + GPU G15, νPI on/off, FSCRR (needs new Clef runs, so check the operator directive).
+
+**Budget needed to close the open items:** JEV3-LM full ≈ $17 hold; G16 ≈ $22; νPI pair ≈ $43; seed 1 ≈ $22; FSCRR ≈ $35.
