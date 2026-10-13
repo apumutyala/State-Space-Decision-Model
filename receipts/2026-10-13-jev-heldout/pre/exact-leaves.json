@@ -1,0 +1,106 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/jev-heldout-work/pool.jsonl.gz",
+ "records_sha256": "9ba61fdc95685ebb3042c01a9aa2020063be0a216e3e17e54faf82b53a841964",
+ "rule": "normalised leaf >= 6 words, verbatim equal to a leaf of a JevBench public item or an Index suite row",
+ "n_rows": 26,
+ "rows_gold_is_matched_leaf": 0,
+ "by_family_source_evalside": {
+  "judge_hard/prm800k <- INDEX_HELDOUT:MMLU": 12,
+  "judge_hard/prm800k <- INDEX_HELDOUT:MMLU-Pro": 8,
+  "judge_hard/prm800k <- INDEX_DEV:MMLU-Pro": 2,
+  "multi_hop/musique <- INDEX_HELDOUT:HoVer claim verification": 14,
+  "multi_hop/musique <- INDEX_HELDOUT:BBH fixed-option tasks": 1
+ },
+ "ids_sha256": "89142bc013bed4eca8c20d9e2b1d2f207201b1865da2a5f8126748ce3548b023",
+ "rows": {
+  "m2:prm800k-test:phase2-917~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-1215~view:jevho-jh-all": [
+   "INDEX_DEV:MMLU-Pro",
+   "INDEX_HELDOUT:MMLU"
+  ],
+  "m2:prm800k-test:phase2-2602~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-2475~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU"
+  ],
+  "m2:prm800k-test:phase2-1353~view:jevho-jh-prefix": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-1360~view:jevho-jh-prefix": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-799~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-1218~view:jevho-jh-step": [
+   "INDEX_DEV:MMLU-Pro",
+   "INDEX_HELDOUT:MMLU"
+  ],
+  "m2:prm800k-test:phase2-2197~view:jevho-jh-step": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-2355~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-2659~view:jevho-jh-step": [
+   "INDEX_HELDOUT:MMLU"
+  ],
+  "m2:prm800k-test:phase2-2450~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:musique-dev:2hop__337223_56873~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__475070_532404~view:jevho-mh-yn": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__398344_439882~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__806869_56873~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop2__31398_2130_2232~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop2__304722_781203_63959~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__84172_198548~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__768312_814677~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__170341_43945~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:BBH fixed-option tasks",
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__82378_158266~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__198650_84856~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop2__304722_591230_63959~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__593397_224832~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__38828_89399~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ]
+ }
+}

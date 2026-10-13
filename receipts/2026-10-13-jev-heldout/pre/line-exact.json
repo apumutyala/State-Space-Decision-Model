@@ -1,0 +1,2894 @@
+{
+ "rule": "normalised line / sentence >= 4 words, exact",
+ "n_train_rows_hit": 571,
+ "by_source_evalside": {
+  "boolq <- INDEX_HELDOUT:BRIGHT-retrieval": 163,
+  "boolq <- INDEX_HELDOUT:Habermas-consensus": 163,
+  "boolq <- INDEX_TEST:SATA-Bench": 163,
+  "boolq <- INDEX_HELDOUT:SATA-Bench": 163,
+  "boolq <- INDEX_HELDOUT:VAST": 163,
+  "musique <- INDEX_HELDOUT:HoVer claim verification": 85,
+  "prm800k <- INDEX_DEV:BRIGHT-retrieval": 50,
+  "glaive_fc <- INDEX_TEST:ToolRet-retrieval": 49,
+  "glaive_fc <- INDEX_HELDOUT:ToolRet-retrieval": 48,
+  "glaive_fc <- INDEX_DEV:ToolRet-retrieval": 48,
+  "prm800k <- INDEX_HELDOUT:MMLU": 48,
+  "prm800k <- INDEX_HELDOUT:MMLU-Pro": 47,
+  "timeqa <- INDEX_HELDOUT:RAGTruth response-level hallucination": 28,
+  "musique <- INDEX_HELDOUT:ForecastBench-binary": 27,
+  "prm800k <- INDEX_HELDOUT:RouterBench-5shot": 26,
+  "prm800k <- INDEX_HELDOUT:RouterBench-0shot": 24,
+  "prm800k <- INDEX_TEST:BRIGHT-retrieval": 17,
+  "musique <- INDEX_HELDOUT:ANLI": 14,
+  "musique <- INDEX_DEV:BRIGHT-retrieval": 12,
+  "aegis2 <- INDEX_HELDOUT:BANKING77": 11,
+  "helpsteer2 <- INDEX_HELDOUT:When2Call MCQ": 10,
+  "musique <- INDEX_TEST:HoVer claim verification": 10,
+  "aegis2 <- INDEX_HELDOUT:SGD-service-given-intent": 9,
+  "helpsteer2 <- INDEX_TEST:API-Bank-tool-selection": 9,
+  "helpsteer2 <- INDEX_HELDOUT:SGD-service-given-intent": 9,
+  "prm800k <- INDEX_HELDOUT:BRIGHT-retrieval": 9,
+  "helpsteer2 <- INDEX_DEV:API-Bank-tool-selection": 8,
+  "glaive_fc <- INDEX_HELDOUT:SGD-service-given-intent": 8,
+  "glaive_fc <- INDEX_DEV:API-Bank-tool-selection": 7,
+  "helpsteer2 <- INDEX_HELDOUT:RAGTruth response-level hallucination": 7,
+  "helpsteer2 <- INDEX_TEST:When2Call MCQ": 7,
+  "helpsteer2 <- INDEX_HELDOUT:BRIGHT-retrieval": 7,
+  "musique <- INDEX_HELDOUT:RAGTruth response-level hallucination": 6,
+  "musique <- INDEX_HELDOUT:SATA-Bench": 6,
+  "musique <- INDEX_HELDOUT:BBH fixed-option tasks": 6,
+  "musique <- INDEX_DEV:HoVer claim verification": 6,
+  "glaive_fc <- INDEX_DEV:When2Call MCQ": 5,
+  "aegis2 <- INDEX_HELDOUT:HellaSwag": 5,
+  "aegis2 <- INDEX_TEST:ToolRet-retrieval": 5,
+  "aegis2 <- INDEX_TEST:BANKING77": 5,
+  "aegis2 <- INDEX_HELDOUT:ToolRet-retrieval": 5,
+  "helpsteer2 <- INDEX_HELDOUT:API-Bank-tool-selection": 5,
+  "aegis2 <- INDEX_DEV:BANKING77": 5,
+  "glaive_fc <- INDEX_TEST:API-Bank-tool-selection": 4,
+  "helpsteer2 <- INDEX_HELDOUT:Amazon-ESCI": 4,
+  "helpsteer2 <- INDEX_DEV:RAGTruth response-level hallucination": 4,
+  "helpsteer2 <- INDEX_DEV:When2Call MCQ": 4,
+  "helpsteer2 <- INDEX_HELDOUT:PhishNChips phishing decisions": 4,
+  "helpsteer2 <- INDEX_DEV:PhishNChips phishing decisions": 4,
+  "glaive_fc <- INDEX_HELDOUT:When2Call MCQ": 3,
+  "glaive_fc <- INDEX_TEST:When2Call MCQ": 3,
+  "helpsteer2 <- INDEX_HELDOUT:BANKING77": 3,
+  "aegis2 <- INDEX_HELDOUT:MMLU-Pro": 3,
+  "musique <- INDEX_TEST:ANLI": 3,
+  "prm800k <- INDEX_DEV:MMLU-Pro": 3,
+  "timeqa <- INDEX_DEV:SATA-Bench": 3,
+  "boolq <- INDEX_HELDOUT:HoVer claim verification": 3,
+  "timeqa <- INDEX_HELDOUT:HoVer claim verification": 3,
+  "glaive_fc <- INDEX_TEST:BFCL-tool-selection": 2,
+  "glaive_fc <- INDEX_DEV:BFCL-tool-selection": 2
+ },
+ "rows": {
+  "m2:aegis2test:155044161f7e4b30af9afcee7cc799ba~view:jevho-pol-category": [
+   "INDEX_HELDOUT:BANKING77",
+   "INDEX_HELDOUT:HellaSwag",
+   "INDEX_HELDOUT:SGD-service-given-intent",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:BANKING77",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:aegis2test:174fe8fe647f4b91926921378113d58f~view:jevho-pol-reply": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:aegis2test:2212ab9f2a934c6db6b66b120c32248b~view:jevho-pol-message": [
+   "INDEX_HELDOUT:BANKING77"
+  ],
+  "m2:aegis2test:35edef801789453bacc6c5352906a2b9~view:jevho-pol-reply": [
+   "INDEX_DEV:BANKING77",
+   "INDEX_HELDOUT:BANKING77"
+  ],
+  "m2:aegis2test:481d507cbc2d41df86dcbc5c4c67eb0f~view:jevho-pol-message": [
+   "INDEX_HELDOUT:BANKING77",
+   "INDEX_HELDOUT:HellaSwag",
+   "INDEX_HELDOUT:SGD-service-given-intent",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:BANKING77",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:aegis2test:5b2b2b72c3374660ad3e43f5e577fa16~view:jevho-pol-message": [
+   "INDEX_DEV:BANKING77",
+   "INDEX_HELDOUT:BANKING77"
+  ],
+  "m2:aegis2test:8e6edfcf88054501b4a101b2169418fc~view:jevho-pol-reply": [
+   "INDEX_DEV:BANKING77",
+   "INDEX_HELDOUT:BANKING77"
+  ],
+  "m2:aegis2test:d936ef93c5114051b41f74f2d4939956~view:jevho-pol-message": [
+   "INDEX_HELDOUT:BANKING77",
+   "INDEX_HELDOUT:HellaSwag",
+   "INDEX_HELDOUT:SGD-service-given-intent",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:BANKING77",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:aegis2test:d9886963af6848f1839782fc7880610f~view:jevho-pol-reply": [
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:aegis2test:df862ee8b63247e29f51036cb6dc9752~view:jevho-pol-reply": [
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:aegis2test:e245da8380b040b082180fce64b227a2~view:jevho-pol-reply": [
+   "INDEX_HELDOUT:BPoMP-original-limerick",
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:aegis2test:f85f79f2b65b41b78592997d7f0122bc~view:jevho-pol-message": [
+   "INDEX_HELDOUT:BANKING77",
+   "INDEX_HELDOUT:HellaSwag",
+   "INDEX_HELDOUT:SGD-service-given-intent",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:BANKING77",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:aegis2test:faaaf3557d24418ba1cb4286e96a2ab7~view:jevho-pol-category": [
+   "INDEX_HELDOUT:Amazon-ESCI"
+  ],
+  "m2:aegis2validation:2dbcdd6010b64e37bc804582bfe6abf8~view:jevho-pol-message": [
+   "INDEX_HELDOUT:BANKING77",
+   "INDEX_HELDOUT:HellaSwag",
+   "INDEX_HELDOUT:SGD-service-given-intent",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:BANKING77",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:aegis2validation:8844451afa18497c809994cf2b4336df~view:jevho-pol-reply": [
+   "INDEX_DEV:BANKING77",
+   "INDEX_HELDOUT:BANKING77",
+   "INDEX_HELDOUT:BRIGHT-retrieval"
+  ],
+  "m2:aegis2validation:bc8db15f70a1415ea65b079bae72de81~view:jevho-pol-reply": [
+   "INDEX_DEV:BANKING77",
+   "INDEX_HELDOUT:BANKING77"
+  ],
+  "m2:aegis2validation:c8544f2bb37f4258a43adbe474fff37e~view:jevho-pol-message": [
+   "INDEX_DEV:When2Call MCQ",
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:aegis2validation:c9d8a9eadd9045198a0f675df85ea4bc~view:jevho-pol-message": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:boolq-val:1052~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1081~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1085~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1088~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1091~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1117~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1121~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1128~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1156~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1157~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1168~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1171~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1184~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1201~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1203~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:123~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1252~view:jevho-fact": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:boolq-val:1255~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1256~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1325~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1350~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1354~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1365~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1374~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1400~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1415~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:143~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1473~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1482~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:14~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1505~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1516~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1531~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1537~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1541~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1542~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1548~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1590~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1602~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1610~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1632~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:164~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1666~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:170~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1714~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:173~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1742~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1750~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:176~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:177~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1874~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1883~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1903~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1914~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1917~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1948~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:194~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:1972~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2026~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2037~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:207~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2098~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2104~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2134~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2138~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2147~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2190~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2192~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2207~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2220~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2243~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2254~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2262~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2269~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2275~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2324~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2336~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2353~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2404~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2409~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2425~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2454~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2493~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2501~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2503~view:jevho-fact": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:boolq-val:2518~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2519~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2550~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:255~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2566~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2569~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2579~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2591~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2606~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2617~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:261~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2651~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2653~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2657~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2666~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2681~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2701~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2726~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2727~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2728~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2732~view:jevho-fact": [
+   "INDEX_DEV:RAGTruth response-level hallucination"
+  ],
+  "m2:boolq-val:2769~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2770~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2792~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2815~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2852~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2861~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2875~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2896~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2902~view:jevho-fact": [
+   "INDEX_DEV:HoVer claim verification",
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:boolq-val:290~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2918~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2997~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:2999~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3000~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3002~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3027~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3039~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3042~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3043~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:304~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3055~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3064~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3068~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3087~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3094~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3172~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3194~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3198~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3214~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3232~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:3252~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:34~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:354~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:383~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:408~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:419~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:424~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:428~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:470~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:480~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:540~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:582~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:604~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:623~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:62~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:658~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:672~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:692~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:708~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:749~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:763~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:790~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:797~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:815~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:824~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:857~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:920~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:926~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:935~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:936~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:boolq-val:956~view:jevho-fact": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:Habermas-consensus",
+   "INDEX_HELDOUT:SATA-Bench",
+   "INDEX_HELDOUT:VAST",
+   "INDEX_TEST:SATA-Bench"
+  ],
+  "m2:glaive_fc-unused:100638~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:102406~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:102594~view:jevho-tool-k5": [
+   "INDEX_DEV:API-Bank-tool-selection",
+   "INDEX_DEV:BFCL-tool-selection",
+   "INDEX_DEV:When2Call MCQ",
+   "INDEX_HELDOUT:When2Call MCQ",
+   "INDEX_TEST:API-Bank-tool-selection",
+   "INDEX_TEST:BFCL-tool-selection",
+   "INDEX_TEST:When2Call MCQ"
+  ],
+  "m2:glaive_fc-unused:103019~view:jevho-tool-k5": [
+   "INDEX_HELDOUT:CLINC150+OOS",
+   "INDEX_TEST:When2Call MCQ"
+  ],
+  "m2:glaive_fc-unused:103094~view:jevho-tool-k5": [
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:glaive_fc-unused:103138~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:111574~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:112648~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:13035~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:14511~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:15066~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:17460~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:19454~view:jevho-tool-k5": [
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:glaive_fc-unused:20954~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:24544~view:jevho-tool-k5": [
+   "INDEX_DEV:API-Bank-tool-selection",
+   "INDEX_DEV:BFCL-tool-selection",
+   "INDEX_DEV:When2Call MCQ",
+   "INDEX_HELDOUT:When2Call MCQ",
+   "INDEX_TEST:API-Bank-tool-selection",
+   "INDEX_TEST:BFCL-tool-selection",
+   "INDEX_TEST:When2Call MCQ"
+  ],
+  "m2:glaive_fc-unused:24622~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:29961~view:jevho-tool-k5": [
+   "INDEX_HELDOUT:When2Call MCQ",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:31705~view:jevho-tool-k5": [
+   "INDEX_DEV:API-Bank-tool-selection"
+  ],
+  "m2:glaive_fc-unused:3357~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:34247~view:jevho-tool-k5": [
+   "INDEX_DEV:API-Bank-tool-selection"
+  ],
+  "m2:glaive_fc-unused:34989~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:35926~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:36798~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:3753~view:jevho-tool-k5": [
+   "INDEX_DEV:API-Bank-tool-selection",
+   "INDEX_TEST:API-Bank-tool-selection"
+  ],
+  "m2:glaive_fc-unused:37929~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:3793~view:jevho-tool-k5": [
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:glaive_fc-unused:39157~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:39927~view:jevho-tool-k5": [
+   "INDEX_DEV:API-Bank-tool-selection"
+  ],
+  "m2:glaive_fc-unused:40214~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:41659~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:4572~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:47239~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:47786~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:4880~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:49981~view:jevho-tool-k5": [
+   "INDEX_DEV:When2Call MCQ",
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:glaive_fc-unused:51257~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:54651~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:55351~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:56232~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:56368~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:58279~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:60129~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:60490~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:65020~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:65707~view:jevho-tool-k5": [
+   "INDEX_DEV:API-Bank-tool-selection",
+   "INDEX_TEST:API-Bank-tool-selection"
+  ],
+  "m2:glaive_fc-unused:66527~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:74525~view:jevho-tool-k5": [
+   "INDEX_DEV:When2Call MCQ",
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:glaive_fc-unused:77217~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:81475~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:82018~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:83631~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:86066~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:87218~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:87278~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:88679~view:jevho-tool-k5": [
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:glaive_fc-unused:89933~view:jevho-tool-k5": [
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:glaive_fc-unused:90336~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:91952~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:93181~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:93588~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:93700~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:94028~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:94798~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:97482~view:jevho-tool-k5": [
+   "INDEX_DEV:ToolRet-retrieval",
+   "INDEX_HELDOUT:ToolRet-retrieval",
+   "INDEX_TEST:ToolRet-retrieval"
+  ],
+  "m2:glaive_fc-unused:99317~view:jevho-tool-k5": [
+   "INDEX_DEV:When2Call MCQ",
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:helpsteer2val:1016~view:jevho-ad-coherence": [
+   "INDEX_HELDOUT:Amazon-ESCI",
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:CLINC150+OOS",
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:helpsteer2val:1020~view:jevho-ad-helpfulness": [
+   "INDEX_HELDOUT:BRIGHT-retrieval"
+  ],
+  "m2:helpsteer2val:1022~view:jevho-ad-correctness": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_DEV:When2Call MCQ",
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:When2Call MCQ",
+   "INDEX_TEST:When2Call MCQ"
+  ],
+  "m2:helpsteer2val:168~view:jevho-ad-helpfulness": [
+   "INDEX_DEV:MuSR"
+  ],
+  "m2:helpsteer2val:172~view:jevho-ad-correctness": [
+   "INDEX_DEV:BANKING77",
+   "INDEX_HELDOUT:BANKING77"
+  ],
+  "m2:helpsteer2val:180~view:jevho-ad-helpfulness": [
+   "INDEX_DEV:PhishNChips phishing decisions",
+   "INDEX_DEV:RAGTruth response-level hallucination",
+   "INDEX_HELDOUT:Amazon-ESCI",
+   "INDEX_HELDOUT:PhishNChips phishing decisions",
+   "INDEX_HELDOUT:RAGTruth response-level hallucination",
+   "INDEX_TEST:PhishNChips phishing decisions",
+   "INDEX_TEST:RAGTruth response-level hallucination"
+  ],
+  "m2:helpsteer2val:205~view:jevho-ad-helpfulness": [
+   "INDEX_DEV:API-Bank-tool-selection",
+   "INDEX_HELDOUT:SGD-service-given-intent",
+   "INDEX_TEST:API-Bank-tool-selection",
+   "INDEX_TEST:When2Call MCQ"
+  ],
+  "m2:helpsteer2val:258~view:jevho-ad-helpfulness": [
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:helpsteer2val:284~view:jevho-ad-coherence": [
+   "INDEX_DEV:API-Bank-tool-selection",
+   "INDEX_HELDOUT:SGD-service-given-intent",
+   "INDEX_TEST:API-Bank-tool-selection"
+  ],
+  "m2:helpsteer2val:310~view:jevho-ad-correctness": [
+   "INDEX_DEV:API-Bank-tool-selection",
+   "INDEX_DEV:RAGTruth response-level hallucination",
+   "INDEX_HELDOUT:API-Bank-tool-selection",
+   "INDEX_HELDOUT:RAGTruth response-level hallucination",
+   "INDEX_HELDOUT:SGD-service-given-intent",
+   "INDEX_TEST:API-Bank-tool-selection"
+  ],
+  "m2:helpsteer2val:328~view:jevho-ad-correctness": [
+   "INDEX_DEV:RAGTruth response-level hallucination",
+   "INDEX_HELDOUT:Amazon-ESCI",
+   "INDEX_HELDOUT:RAGTruth response-level hallucination",
+   "INDEX_TEST:RAGTruth response-level hallucination"
+  ],
+  "m2:helpsteer2val:39~view:jevho-ad-correctness": [
+   "INDEX_DEV:HLE-text-MC",
+   "INDEX_HELDOUT:BANKING77",
+   "INDEX_TEST:BANKING77"
+  ],
+  "m2:helpsteer2val:401~view:jevho-ad-helpfulness": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:helpsteer2val:428~view:jevho-ad-helpfulness": [
+   "INDEX_DEV:BFCL-tool-selection",
+   "INDEX_HELDOUT:Amazon-ESCI",
+   "INDEX_HELDOUT:When2Call MCQ"
+  ],
+  "m2:helpsteer2val:434~view:jevho-ad-helpfulness": [
+   "INDEX_DEV:When2Call MCQ",
+   "INDEX_HELDOUT:When2Call MCQ",
+   "INDEX_TEST:When2Call MCQ"
+  ],
+  "m2:helpsteer2val:48~view:jevho-ad-correctness": [
+   "INDEX_DEV:PhishNChips phishing decisions",
+   "INDEX_HELDOUT:PhishNChips phishing decisions",
+   "INDEX_HELDOUT:When2Call MCQ"
+  ],
+  "m2:helpsteer2val:515~view:jevho-ad-correctness": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:When2Call MCQ",
+   "INDEX_TEST:When2Call MCQ"
+  ],
+  "m2:helpsteer2val:519~view:jevho-ad-helpfulness": [
+   "INDEX_DEV:API-Bank-tool-selection",
+   "INDEX_DEV:RAGTruth response-level hallucination",
+   "INDEX_HELDOUT:API-Bank-tool-selection",
+   "INDEX_HELDOUT:RAGTruth response-level hallucination",
+   "INDEX_HELDOUT:SGD-service-given-intent",
+   "INDEX_TEST:API-Bank-tool-selection",
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:helpsteer2val:526~view:jevho-ad-helpfulness": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:helpsteer2val:55~view:jevho-ad-helpfulness": [
+   "INDEX_HELDOUT:MuSR"
+  ],
+  "m2:helpsteer2val:576~view:jevho-ad-helpfulness": [
+   "INDEX_TEST:BANKING77"
+  ],
+  "m2:helpsteer2val:629~view:jevho-ad-helpfulness": [
+   "INDEX_DEV:PhishNChips phishing decisions",
+   "INDEX_HELDOUT:PhishNChips phishing decisions",
+   "INDEX_HELDOUT:When2Call MCQ"
+  ],
+  "m2:helpsteer2val:676~view:jevho-ad-correctness": [
+   "INDEX_HELDOUT:BRIGHT-retrieval"
+  ],
+  "m2:helpsteer2val:678~view:jevho-ad-correctness": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_HELDOUT:When2Call MCQ",
+   "INDEX_TEST:When2Call MCQ"
+  ],
+  "m2:helpsteer2val:691~view:jevho-ad-helpfulness": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:helpsteer2val:725~view:jevho-ad-correctness": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:helpsteer2val:754~view:jevho-ad-correctness": [
+   "INDEX_DEV:When2Call MCQ",
+   "INDEX_HELDOUT:When2Call MCQ",
+   "INDEX_TEST:When2Call MCQ"
+  ],
+  "m2:helpsteer2val:778~view:jevho-ad-helpfulness": [
+   "INDEX_DEV:PhishNChips phishing decisions",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:PhishNChips phishing decisions",
+   "INDEX_HELDOUT:When2Call MCQ"
+  ],
+  "m2:helpsteer2val:7~view:jevho-ad-helpfulness": [
+   "INDEX_HELDOUT:BRIGHT-retrieval"
+  ],
+  "m2:helpsteer2val:815~view:jevho-ad-helpfulness": [
+   "INDEX_TEST:API-Bank-tool-selection"
+  ],
+  "m2:helpsteer2val:822~view:jevho-ad-correctness": [
+   "INDEX_DEV:BANKING77",
+   "INDEX_HELDOUT:BANKING77"
+  ],
+  "m2:helpsteer2val:876~view:jevho-ad-helpfulness": [
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:helpsteer2val:88~view:jevho-ad-helpfulness": [
+   "INDEX_DEV:API-Bank-tool-selection",
+   "INDEX_DEV:When2Call MCQ",
+   "INDEX_HELDOUT:API-Bank-tool-selection",
+   "INDEX_HELDOUT:When2Call MCQ",
+   "INDEX_TEST:API-Bank-tool-selection",
+   "INDEX_TEST:When2Call MCQ"
+  ],
+  "m2:helpsteer2val:899~view:jevho-ad-helpfulness": [
+   "INDEX_DEV:API-Bank-tool-selection",
+   "INDEX_HELDOUT:API-Bank-tool-selection",
+   "INDEX_HELDOUT:SGD-service-given-intent",
+   "INDEX_TEST:API-Bank-tool-selection"
+  ],
+  "m2:helpsteer2val:911~view:jevho-ad-helpfulness": [
+   "INDEX_DEV:API-Bank-tool-selection",
+   "INDEX_DEV:CLINC150+OOS",
+   "INDEX_HELDOUT:API-Bank-tool-selection",
+   "INDEX_HELDOUT:CLINC150+OOS",
+   "INDEX_TEST:API-Bank-tool-selection",
+   "INDEX_TEST:CLINC150+OOS"
+  ],
+  "m2:helpsteer2val:917~view:jevho-ad-helpfulness": [
+   "INDEX_DEV:MuSR"
+  ],
+  "m2:helpsteer2val:964~view:jevho-ad-helpfulness": [
+   "INDEX_DEV:API-Bank-tool-selection",
+   "INDEX_HELDOUT:SGD-service-given-intent",
+   "INDEX_TEST:API-Bank-tool-selection"
+  ],
+  "m2:massive-test:12182~view:jevho-ex-k4": [
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:musique-dev:2hop__119423_779396~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__121145_561444~view:jevho-mh-c6": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination",
+   "INDEX_HELDOUT:SATA-Bench"
+  ],
+  "m2:musique-dev:2hop__121386_37168~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination",
+   "INDEX_HELDOUT:SATA-Bench"
+  ],
+  "m2:musique-dev:2hop__122140_37168~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination",
+   "INDEX_HELDOUT:SATA-Bench"
+  ],
+  "m2:musique-dev:2hop__128608_82341~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__142443_768138~view:jevho-mh-c4": [
+   "INDEX_DEV:ANLI"
+  ],
+  "m2:musique-dev:2hop__142881_127399~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ANLI",
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__145203_34088~view:jevho-mh-c4": [
+   "INDEX_DEV:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__159816_37168~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination",
+   "INDEX_HELDOUT:SATA-Bench"
+  ],
+  "m2:musique-dev:2hop__160223_58067~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__160292_23241~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ANLI"
+  ],
+  "m2:musique-dev:2hop__170341_43945~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:BBH fixed-option tasks",
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__1845_38366~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__19007_60935~view:jevho-mh-c4": [
+   "INDEX_TEST:ANLI"
+  ],
+  "m2:musique-dev:2hop__198650_84856~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__199513_13732~view:jevho-mh-yn": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__199513_801817~view:jevho-mh-count": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__20256_74481~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:BBH fixed-option tasks"
+  ],
+  "m2:musique-dev:2hop__20433_157939~view:jevho-mh-c4": [
+   "INDEX_TEST:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__215898_67465~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ANLI",
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__231805_514393~view:jevho-mh-count": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:2hop__231890_595414~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:2hop__257831_123283~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__25797_25839~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__25797_25855~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__269766_43945~view:jevho-mh-count": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__274110_413723~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:2hop__28287_89399~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__31585_61048~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__316374_82341~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__327688_56873~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__337223_56873~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__358270_108549~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__38828_89399~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__390055_82341~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__398344_439882~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__403580_37168~view:jevho-mh-c4": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:RAGTruth response-level hallucination",
+   "INDEX_HELDOUT:SATA-Bench"
+  ],
+  "m2:musique-dev:2hop__446324_620302~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__46550_85990~view:jevho-mh-yn": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__475070_532404~view:jevho-mh-yn": [
+   "INDEX_HELDOUT:ForecastBench-binary",
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__485221_544917~view:jevho-mh-count": [
+   "INDEX_HELDOUT:BBH fixed-option tasks"
+  ],
+  "m2:musique-dev:2hop__502473_634689~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:2hop__506035_325512~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:2hop__50936_90973~view:jevho-mh-c4": [
+   "INDEX_TEST:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__532383_768138~view:jevho-mh-count": [
+   "INDEX_DEV:ANLI",
+   "INDEX_HELDOUT:ANLI"
+  ],
+  "m2:musique-dev:2hop__557496_57594~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__587048_621800~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:2hop__593397_224832~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__599396_19320~view:jevho-mh-count": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__66843_494136~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:BBH fixed-option tasks"
+  ],
+  "m2:musique-dev:2hop__669456_108549~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ANLI"
+  ],
+  "m2:musique-dev:2hop__66_59409~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ANLI",
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__70338_160040~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:musique-dev:2hop__703767_37168~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination",
+   "INDEX_HELDOUT:SATA-Bench"
+  ],
+  "m2:musique-dev:2hop__704217_82341~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__71016_75184~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:BBH fixed-option tasks"
+  ],
+  "m2:musique-dev:2hop__71715_50429~view:jevho-mh-count": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__73615_42173~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__736167_74735~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__73921_807969~view:jevho-mh-c4": [
+   "INDEX_DEV:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__768312_814677~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__77775_162341~view:jevho-mh-c4": [
+   "INDEX_TEST:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__806869_56873~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__82378_158266~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__835171_141338~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:musique-dev:2hop__84172_198548~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__88953_64006~view:jevho-mh-count": [
+   "INDEX_HELDOUT:ANLI"
+  ],
+  "m2:musique-dev:2hop__89991_58067~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:2hop__93230_319887~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:BBH fixed-option tasks",
+   "INDEX_TEST:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__107540_720914_27537~view:jevho-mh-c4": [
+   "INDEX_TEST:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__129499_33897_81096~view:jevho-mh-c6": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:musique-dev:3hop1__131783_131926_13165~view:jevho-mh-c4": [
+   "INDEX_DEV:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__131820_59747_43101~view:jevho-mh-c4": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:ANLI"
+  ],
+  "m2:musique-dev:3hop1__131820_59747_48534~view:jevho-mh-c4": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:musique-dev:3hop1__131820_59747_90139~view:jevho-mh-c4": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:ANLI"
+  ],
+  "m2:musique-dev:3hop1__140855_2053_5289~view:jevho-mh-count": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__145194_160545_62931~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification",
+   "INDEX_TEST:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__239036_15840_36002~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__305566_568433_47686~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:3hop1__346812_15840_36002~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__401538_132457_51423~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__418091_15840_36002~view:jevho-mh-c6": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__446612_160545_62931~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification",
+   "INDEX_TEST:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__462960_160545_34754~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary",
+   "INDEX_TEST:ANLI"
+  ],
+  "m2:musique-dev:3hop1__462960_160545_62931~view:jevho-mh-c6": [
+   "INDEX_HELDOUT:HoVer claim verification",
+   "INDEX_TEST:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__465684_160545_34754~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary",
+   "INDEX_TEST:ANLI"
+  ],
+  "m2:musique-dev:3hop1__465684_160545_60577~view:jevho-mh-yn": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__465684_160545_62931~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification",
+   "INDEX_TEST:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__49236_89752_54221~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__49610_89752_75165~view:jevho-mh-c6": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__539312_744503_34754~view:jevho-mh-c6": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:3hop1__540585_568433_51423~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:3hop1__572324_568433_47686~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:3hop1__572324_568433_51423~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:3hop1__617062_127905_46748~view:jevho-mh-yn": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__617062_127905_46894~view:jevho-mh-c6": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__617062_127905_48717~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__617062_127905_54974~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__617062_127905_67954~view:jevho-mh-count": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__617062_127905_89859~view:jevho-mh-count": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__617062_127905_92225~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__652852_2053_5289~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__67704_237521_291682~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__691197_15840_36002~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__726561_132457_51423~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__742464_15840_36002~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__79039_131926_13165~view:jevho-mh-c6": [
+   "INDEX_DEV:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__791757_15840_36002~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__818422_160545_62931~view:jevho-mh-c4": [
+   "INDEX_TEST:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__83970_685536_47686~view:jevho-mh-c4": [
+   "INDEX_DEV:HoVer claim verification",
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__843207_755530_88011~view:jevho-mh-c6": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__850160_15840_36002~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop1__857_846_7872~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ANLI"
+  ],
+  "m2:musique-dev:3hop2__132957_133264_40768~view:jevho-mh-c4": [
+   "INDEX_DEV:Amazon-ESCI",
+   "INDEX_HELDOUT:Amazon-ESCI",
+   "INDEX_TEST:Amazon-ESCI"
+  ],
+  "m2:musique-dev:3hop2__304722_203717_63959~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop2__304722_397371_63959~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop2__304722_466316_63959~view:jevho-mh-count": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop2__304722_591230_63959~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop2__304722_740784_63959~view:jevho-mh-c6": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop2__304722_781203_63959~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop2__31398_2130_2232~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:3hop2__802066_223623_162182~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:4hop1__145087_32392_823060_610794~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:4hop1__310029_153080_33897_81096~view:jevho-mh-c4": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:musique-dev:4hop1__3496_5274_458768_33677~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ANLI",
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:4hop1__436202_765799_282674_759393~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:4hop1__482815_624859_355213_203322~view:jevho-mh-c6": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:4hop1__668178_378185_282674_759393~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:4hop1__668178_765799_282674_759393~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:4hop1__707078_378185_282674_759393~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ANLI",
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:4hop1__707078_765799_282674_759393~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ANLI"
+  ],
+  "m2:musique-dev:4hop1__726391_153080_159767_81096~view:jevho-mh-c4": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:musique-dev:4hop1__752321_153080_33897_81096~view:jevho-mh-c4": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:musique-dev:4hop1__76111_624859_355213_203322~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:4hop1__767417_624859_355213_203322~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:4hop1__802394_153080_33897_81096~view:jevho-mh-c4": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:musique-dev:4hop1__813171_153080_33897_81096~view:jevho-mh-c4": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:musique-dev:4hop1__842143_153080_33897_81096~view:jevho-mh-c4": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:musique-dev:4hop1__88342_49853_128008_48717~view:jevho-mh-c4": [
+   "INDEX_DEV:HoVer claim verification",
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:4hop1__88342_49853_128008_54974~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:4hop1__88342_49853_128008_80487~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:4hop1__88342_49853_128008_87812~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:4hop1__88342_49853_128008_89859~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:4hop1__88342_75218_128008_67954~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:4hop1__88342_75218_128008_80487~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:4hop1__88342_75218_128008_86588~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:4hop1__88342_75218_128008_87812~view:jevho-mh-c6": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:musique-dev:4hop1__89530_624859_355213_203322~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:4hop2__105527_14670_8987_8974~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ANLI"
+  ],
+  "m2:musique-dev:4hop3__193820_466199_695123_72134~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:4hop3__373573_132409_223216_35031~view:jevho-mh-count": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:musique-dev:4hop3__524186_219173_128875_72134~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:4hop3__524186_219173_862998_72134~view:jevho-mh-c6": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:musique-dev:4hop3__601548_836463_161616_77103~view:jevho-mh-c4": [
+   "INDEX_HELDOUT:ForecastBench-binary"
+  ],
+  "m2:prm800k-test:phase2-1021~view:jevho-jh-step": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-1047~view:jevho-jh-prefix": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1048~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1050~view:jevho-jh-step": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1134~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1135~view:jevho-jh-prefix": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-115~view:jevho-jh-prefix": [
+   "INDEX_HELDOUT:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1161~view:jevho-jh-step": [
+   "INDEX_HELDOUT:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1162~view:jevho-jh-all": [
+   "INDEX_HELDOUT:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-116~view:jevho-jh-all": [
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1215~view:jevho-jh-all": [
+   "INDEX_DEV:MMLU-Pro",
+   "INDEX_HELDOUT:MMLU"
+  ],
+  "m2:prm800k-test:phase2-1218~view:jevho-jh-step": [
+   "INDEX_DEV:MMLU-Pro",
+   "INDEX_HELDOUT:MMLU"
+  ],
+  "m2:prm800k-test:phase2-1230~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-1233~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1237~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1256~view:jevho-jh-step": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-126~view:jevho-jh-step": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1287~view:jevho-jh-all": [
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1312~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-1314~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-1353~view:jevho-jh-prefix": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1360~view:jevho-jh-prefix": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1437~view:jevho-jh-step": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1450~view:jevho-jh-all": [
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1464~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1469~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1543~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1557~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1562~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1602~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1603~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1612~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-1618~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-1631~view:jevho-jh-step": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1670~view:jevho-jh-step": [
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1722~view:jevho-jh-prefix": [
+   "INDEX_HELDOUT:CRUXEval-output-choice"
+  ],
+  "m2:prm800k-test:phase2-1723~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1729~view:jevho-jh-prefix": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1763~view:jevho-jh-prefix": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot",
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:prm800k-test:phase2-1765~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot",
+   "INDEX_HELDOUT:SGD-service-given-intent"
+  ],
+  "m2:prm800k-test:phase2-178~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-180~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1874~view:jevho-jh-step": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-1883~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1890~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1894~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1911~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1919~view:jevho-jh-prefix": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1970~view:jevho-jh-all": [
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-1987~view:jevho-jh-all": [
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-1992~view:jevho-jh-step": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-2008~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-2013~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-2019~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-2146~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-2154~view:jevho-jh-prefix": [
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-217~view:jevho-jh-prefix": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-2197~view:jevho-jh-step": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-2278~view:jevho-jh-step": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-2320~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-2355~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-2387~view:jevho-jh-all": [
+   "INDEX_HELDOUT:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-2394~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-2450~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-2473~view:jevho-jh-all": [
+   "INDEX_HELDOUT:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-2475~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU"
+  ],
+  "m2:prm800k-test:phase2-2562~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:BRIGHT-retrieval",
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-2568~view:jevho-jh-prefix": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-2602~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-2633~view:jevho-jh-prefix": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-2639~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-2659~view:jevho-jh-step": [
+   "INDEX_HELDOUT:MMLU"
+  ],
+  "m2:prm800k-test:phase2-267~view:jevho-jh-prefix": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-2716~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-271~view:jevho-jh-prefix": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-2758~view:jevho-jh-prefix": [
+   "INDEX_HELDOUT:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-320~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-329~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-34~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-374~view:jevho-jh-all": [
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-492~view:jevho-jh-prefix": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_DEV:HLE-text-MC",
+   "INDEX_DEV:MMLU-Pro",
+   "INDEX_HELDOUT:HLE-text-MC",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_TEST:HLE-text-MC",
+   "INDEX_TEST:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-502~view:jevho-jh-step": [
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-515~view:jevho-jh-all": [
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-537~view:jevho-jh-step": [
+   "INDEX_DEV:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-604~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-605~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro",
+   "INDEX_HELDOUT:RouterBench-0shot",
+   "INDEX_HELDOUT:RouterBench-5shot"
+  ],
+  "m2:prm800k-test:phase2-645~view:jevho-jh-all": [
+   "INDEX_TEST:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-672~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-752~view:jevho-jh-all": [
+   "INDEX_DEV:HLE-text-MC"
+  ],
+  "m2:prm800k-test:phase2-799~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-88~view:jevho-jh-all": [
+   "INDEX_DEV:BRIGHT-retrieval",
+   "INDEX_HELDOUT:BRIGHT-retrieval"
+  ],
+  "m2:prm800k-test:phase2-917~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:prm800k-test:phase2-955~view:jevho-jh-all": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:tatqa-dev:d65a24cf-2c2b-4a9f-9cc9-6675b3583530~view:jevho-tn-count": [
+   "INDEX_HELDOUT:MMLU",
+   "INDEX_HELDOUT:MMLU-Pro"
+  ],
+  "m2:tatqa-dev:e8a14965-257d-4945-9f13-d0e2e84d9ff8~view:jevho-tn-c4": [
+   "INDEX_DEV:SATA-Bench",
+   "INDEX_HELDOUT:SATA-Bench"
+  ],
+  "m2:timeqa-test:0fa80ec308-0~view:jevho-tn-time-c4": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:0fa80ec308-1~view:jevho-tn-time-c3": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:0fa80ec308-2~view:jevho-tn-time-c3": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:0fa80ec308-3~view:jevho-tn-time-c4": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:397d832a04-0~view:jevho-tn-time-yn": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:4153cc8ecc-2~view:jevho-tn-time-yn": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:4153cc8ecc-5~view:jevho-tn-time-c3": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:64ae172565-1~view:jevho-tn-time-c4": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:64ae172565-3~view:jevho-tn-time-c4": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:6d38a0fb6a-0~view:jevho-tn-time-c3": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:70bc5fb662-1~view:jevho-tn-time-c4": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:70bc5fb662-2~view:jevho-tn-time-c3": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:70bc5fb662-3~view:jevho-tn-time-yn": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:76bb9f50bd-0~view:jevho-tn-time-yn": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:timeqa-test:837ebe5fdb-0~view:jevho-tn-time-c3": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:837ebe5fdb-2~view:jevho-tn-time-c3": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:8ae17045e7-1~view:jevho-tn-time-c3": [
+   "INDEX_DEV:SATA-Bench"
+  ],
+  "m2:timeqa-test:8ae17045e7-2~view:jevho-tn-time-c3": [
+   "INDEX_DEV:SATA-Bench"
+  ],
+  "m2:timeqa-test:8ae17045e7-4~view:jevho-tn-time-c4": [
+   "INDEX_DEV:SATA-Bench"
+  ],
+  "m2:timeqa-test:8d763c4d3a-0~view:jevho-tn-time-yn": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:8d763c4d3a-2~view:jevho-tn-time-c3": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:a0c48b8612-2~view:jevho-tn-time-yn": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:ac9561d67e-2~view:jevho-tn-time-c3": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:b4431d3a0b-1~view:jevho-tn-time-yn": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:b4431d3a0b-2~view:jevho-tn-time-c3": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:bbce3d9200-0~view:jevho-tn-time-yn": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:bbce3d9200-1~view:jevho-tn-time-yn": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:e2c8a917a7-2~view:jevho-tn-time-yn": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:f231281bab-1~view:jevho-tn-time-c3": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:timeqa-test:f231281bab-2~view:jevho-tn-time-c3": [
+   "INDEX_HELDOUT:HoVer claim verification"
+  ],
+  "m2:timeqa-test:f5de1cba4b-2~view:jevho-tn-time-yn": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:f66fdc5d72-1~view:jevho-tn-time-yn": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:f66fdc5d72-3~view:jevho-tn-time-c5": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ],
+  "m2:timeqa-test:f66fdc5d72-4~view:jevho-tn-time-c5": [
+   "INDEX_HELDOUT:RAGTruth response-level hallucination"
+  ]
+ },
+ "hit_line_train_df": [
+  163,
+  163,
+  48,
+  28,
+  23,
+  21,
+  13,
+  13,
+  12,
+  10,
+  8,
+  8,
+  8,
+  8,
+  8,
+  7,
+  7,
+  7,
+  7,
+  7,
+  6,
+  5,
+  5,
+  5,
+  5,
+  5,
+  4,
+  4,
+  4,
+  4
+ ],
+ "hit_line_eval_df": [
+  5504,
+  673,
+  247,
+  158,
+  134,
+  134,
+  130,
+  49,
+  45,
+  44,
+  28,
+  27,
+  26,
+  26,
+  17,
+  15,
+  14,
+  14,
+  12,
+  12,
+  12,
+  11,
+  11,
+  11,
+  11,
+  11,
+  11,
+  10,
+  10,
+  10
+ ]
+}

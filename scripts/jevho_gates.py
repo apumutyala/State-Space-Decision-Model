@@ -61,6 +61,10 @@ def cmd_dropids(a) -> int:
         p = w / name
         if p.exists():
             extra[name] = sorted({x.strip() for x in p.read_text(encoding="utf-8").split() if x.strip()})
+    od = w / "drop-overlap13.txt"  # regate_jev2a overlap --dump-hit-ids dir: rows sharing any 13-gram with an eval side
+    if od.is_dir():
+        for f in sorted(od.glob("*.ids.txt")):
+            extra[f"overlap13:{f.name}"] = sorted({x.strip() for x in f.read_text(encoding="utf-8").split() if x.strip()})
     allids = sorted(set().union(*(v for v in ids.values() if v), *extra.values()))
     Path(a.out).write_text("".join(x + "\n" for x in allids), encoding="utf-8")
     fam_of = {}

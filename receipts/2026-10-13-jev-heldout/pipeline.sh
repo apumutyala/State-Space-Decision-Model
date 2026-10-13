@@ -12,6 +12,7 @@ S=/c/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/8ba1e3
 cd /c/Users/apumu/research/CHLabs/ssdm-wt/ev-jev-heldout
 export PYTHONUTF8=1 CUDA_VISIBLE_DEVICES=""
 P=../m2-heads/.venv/Scripts/python.exe
+PA=../m2-data/.venv/Scripts/python.exe   # pyarrow (GSM8K test parquet in the 13-gram overlap)
 B=C:/Users/apumu/research/CHLabs/ssdm-data/m2/build
 W=$B/jev-heldout-work
 R=receipts/2026-10-13-jev-heldout
@@ -29,7 +30,7 @@ gates() {  # $1 = records, $2 = receipt dir, $3 = ids prefix ("" = no drop files
   step strictfp 700 timeout 5400 $P -X utf8 -I scripts/jev3_strict_fp.py --records $REC --out $RD/strict-fp.json ${X:+--ids-out ${X}strictfp.txt}
   step leaves 700 timeout 5400 $P -X utf8 scripts/regate_exact_leaves.py --records $REC --out $RD/exact-leaves.json ${X:+--ids-out ${X}leaves.txt}
   step lines 700 timeout 5400 $P -X utf8 scripts/regate_line_exact.py --records $REC --out $RD/line-exact.json
-  step overlap13 900 timeout 7200 $P -X utf8 scripts/regate_jev2a.py overlap --draw $D --out $RD/overlap-13gram.json ${X:+--dump-hit-ids ${X}overlap13.txt} --min-free-mb 600
+  step overlap13 900 timeout 7200 $PA -X utf8 scripts/regate_jev2a.py overlap --draw $D --out $RD/overlap-13gram.json ${X:+--dump-hit-ids ${X}overlap13.txt} --min-free-mb 600
   step doc 700 timeout 5400 $P -X utf8 -m train.doc_overlap_guard scan --records $REC --out $RD/doc-overlap-guard.json
   step atk 500 timeout 3600 $P -X utf8 -m train.attack_guard scan --records $REC --out $RD/attack-guard.json
   step jev 900 timeout 5400 $P -X utf8 -m train.jevbench_guard rescan $REC --out $RD/jevbench-guard-rescan.json --min-free-mb 600
