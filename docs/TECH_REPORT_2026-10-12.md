@@ -4,6 +4,7 @@ For the operator and potential funders. This report covers what the project buil
 
 ## Summary first
 
+- **Headline (agreed with the lead):** JEV3-LM-S is the first model of ours with exact reorder+relabel invariance (choice + yes/no via G1, score via the score op) at a Composite statistically indistinguishable from stock (−0.78 [−16.4, +3.5]) and half the flip rate (3.64% vs 7.55%); no gain claimed. Independently rescored (claude/ev-zbmhc-rescore @e03b1d42, state 3a2d7a94).
 - **The headline performance targets were not met.** No model we trained or served beats H2O-Lightning-4B v1.1 on the paired local JevBench Composite or Capability. Our best attention-free model (D19) loses to both Clef models on the full-DEV Decision Index. Every one of these comparisons has a 95% CI below zero, except our newest cell (JEV3-LM-S), which is flat against its own stock control and still below H2O.
 - **The guarantees are the strongest result.** Exact reorder and relabel invariance is proven by construction, reviewed independently, and measured bitwise on two trained GPU models (0 flips on 565 perturbed pairs, max |Δp| = 0, while the stock control flips 28/21/12). Trusted-interval invariance (G15) holds on CPU under the real Qwen BPE tokenizer, 1000/1000 cases. Conformal coverage holds on our own trained stack. GDN state contraction is proven, and a contractive-by-construction RWKV-7 variant is built and CPU-tested.
 - **One guarantee result is negative for everyone.** Under a cluster-robust test, no model certifies abstention (acting only when error is at most 5%) on DEV. That includes both Clef models and our own cells.
@@ -109,7 +110,7 @@ Two leaks found by the reviewer were fixed by the lead before the final round.
 | Model | G1 (jevkit reverse / shuffle / relabel) | Score-item invariance op | Receipt |
 |---|---|---|---|
 | JEV3-SYM seed 0 (job-6zs79, ckpt 5cb7da42) | **0 flips / 565 pairs (213/213/139), 0 invalid, max\|Δp\| 0, rows bit-identical** | not run on this cell | claude/ev-6zs79-rescore @f93eccfe (independent rescore) |
-| JEV3-LM-S (job-zbmhc, step 150, export 8e936008) | **0 / 565, bitwise PASS** | **bitwise PASS** (the stock model fails it, so the test has teeth) | ledger 2026-10-12T23:40Z; receipts stack/qwen35/jev3-lm @95a731f6. Lead-reported, **independent rescore pending** |
+| JEV3-LM-S (job-zbmhc, step 150, export 8e936008) | **0 / 565, bitwise PASS** (stock fails 27 / 21 / 13) | **bitwise PASS** (stock fails 2 / 8 / 3 / 4, so the test has teeth) | claude/ev-zbmhc-rescore @e03b1d42 (independent rescore, AGREES); receipts stack/qwen35/jev3-lm @95a731f6 |
 | Stock Qwen3.5-4B + shim (control, same files) | **FAILS: 28 / 21 / 12 flips, max\|Δp\| 0.84** | fails | f93eccfe |
 
 **Scope and limits:**
@@ -146,7 +147,7 @@ Two leaks found by the reviewer were fixed by the lead before the final round.
 - **JEV3-SYM.** Confident yes/no answers are wrong about 6% of the time, and 49% of yes/no answers sit in the hedge band.
 - **JEV3-LM-S.** The pre-registered per-type temperature over-sharpens yes/no (T_noul = 0.26): the best λ gives 187 acts with 19 errors.
 - **The raw and shimcal readouts are near misses.** Each gives about 75 acts with 1 error, while ~135 zero-error acts are needed.
-- **The fix is model-side.** It needs roughly 2× the mass of confident correct yes/no answers. A diagnostic, not pre-registered: shimcal beats the tfit readout on NLL, −0.28 [−0.35, −0.21] (@36141c14).
+- **The fix is model-side.** It needs roughly 2× the mass of confident correct yes/no answers. Slice readout diagnostic, not pre-registered: shimcal vs tfit NLL −0.281 [−0.352, −0.213], Composite-like proxy +4.83 [−0.76, +11.82] (@36141c14).
 
 ### 3.4 State stability
 
@@ -204,7 +205,7 @@ All JevBench rows are paired, stratified bootstrap B = 1000, seed 16, on the pub
 | JEV2-H2O (x7c42): H2O + jev2, 2,664 rows | vs in-job H2O control | −0.41 [−1.75, +1.39]; p 0.565 | — | FLAT | ev-x7c42-rescore @bf706854; stack/qwen35/jev2-h2o |
 | JEV2-H2O-L (q668q): 17,959 rows | vs in-job H2O control | −0.97 [−3.38, +1.12]; p 0.810 | — | FLAT; Holm claims neither arm | ev-q668q-rescore @a100c3b9 |
 | JEV3-SYM seed 0 (6zs79) | vs in-job stock + shim | **−36.66 [−47.97, −19.19]** | −46.80 [−59.36, −30.87] | NEGATIVE; single seed | ev-6zs79-rescore @f93eccfe; stack/qwen35/jev3-sym @f591d84e |
-| JEV3-LM-S (zbmhc): native_tfit | vs non-canonical stock + shim | **−0.78 [−16.36, +3.47]** | −9.81 [−29.80, −4.64] | NOT CLAIMED (flat). Secondary native_shimcal +3.48 [−1.09, +12.56]. **Independent rescore pending** | ledger 2026-10-12T23:40Z; stack/qwen35/jev3-lm @95a731f6 |
+| JEV3-LM-S (zbmhc): native_tfit | vs non-canonical stock + shim | **−0.7758 [−16.3645, +3.4737]**, p 0.736 | −9.81 [−29.80, −4.64] | NOT CLAIMED (flat). Secondary native_shimcal +3.48 [−1.09, +12.56] | claude/ev-zbmhc-rescore @e03b1d42 (AGREES on every number); stack/qwen35/jev3-lm @95a731f6 |
 | D19, RWKV7-13.3B + joint head (9j3uu) | vs H2O | −14.4 [−31.7, −10.6] | same | best trained cell, CI < 0 | ev-scorecard @e2fcd82b |
 
 **Capability** (vs H2O, local 80.5):
@@ -235,7 +236,7 @@ All JevBench rows are paired, stratified bootstrap B = 1000, seed 16, on the pub
 |---|---|---|---|
 | MD1 (reported; its own items and operators) | 1.3 | 0 / 0 / ? | context only |
 | H2O-Lightning-4B v1.1 | 2.44 [1.26, 3.75] | 2.8 / 2.3 / 4.3 | ev-flip-rate @4a65dd18, run 2 |
-| JEV3-LM-S | 3.64 (pooled 4.14) | 0 / 0 / 0 bitwise | ledger zbmhc (lead-reported) |
+| JEV3-LM-S | 3.64 (pooled 4.14) | 0 / 0 / 0 bitwise | ledger zbmhc; claude/ev-zbmhc-rescore @e03b1d42 |
 | JEV3-SYM s0 | 4.14 [2.94, 5.35] | **0 / 0 / 0, bitwise** | ev-6zs79-rescore @f93eccfe |
 | stock RWKV7-13.3B | 5.37 [3.95, 6.99] | 0* / 0* / 22.3 | ev-flip-rate run 2 |
 | Qwen3.5-4B + shim | 7.55 [5.71, 9.67] | 12.2 / 9.4 / 8.6 | ev-flip-rate run 2 |
@@ -307,9 +308,9 @@ On the same Qwen3.5-4B host and jev3 data, two readouts were compared:
 
 - **What carries over.** Both keep bitwise G1 invariance. JEV3-LM-S also passes the score-item op, and its slice floor is +4.5 pp [+1.9, +7.1].
 - **The canonicalised stock model alone costs a lot.** canon_stock vs stock is **−22.29 [−33.49, −3.27]**, so training recovers most of what canonical ordering costs the untrained model.
+- **Correction from the rescore (claude/ev-zbmhc-rescore @e03b1d42).** The per-type temperature fallback (T_noul 0.26) RAISED the primary by +29.36 Composite points (diagnostic). So the near-zero Δ depends on that yes/no calibration. The residual loss sits in score items (−13.5) and routing (0/3).
 - **Caveats:**
   - two different cells, each a single seed;
-  - JEV3-LM-S has not been independently rescored yet;
   - this is not a controlled ablation.
 
 ### 5.5 The letter-prior finding
@@ -343,9 +344,8 @@ Source: claude/ev-canonical-prior @1ccdc676, `GOLD_LETTER_CANONICAL.md`.
 | Item | What it tests | Cost | Source |
 |---|---|---|---|
 | **JEV3-LM-R** (branch stack/qwen35/jev3-lm-r, cut at 95a731f6, local only, no new commits yet) | Follow-up to JEV3-LM-S. PROGRESS 2026-10-12 names the next step: pre-register shimcal (no slice-fitted T_noul) as primary. shimcal was JEV3-LM-S's non-pre-registered secondary, at +3.48 [−1.09, +12.56] | Not sourced. Comparable: JEV3-LM-S billed $2.63 against a $13.73 hold; EVIDENCE_REPORT_V2 estimates JEV3-LM at ≈ $10–18 | ledger; EV2 addendum |
-| **Independent rescore of JEV3-LM-S** | Required before any JEV3-LM-S number is cited as confirmed | $0 (CPU) | — |
 | **D21** (scalar-a RWKV-7 + sym-fork) | The attention-free cell with both guarantees by construction | Queued behind D20 links 2–3: **~$113** of holds. D21's own cost is not sourced | BOARD #13; EV2 §5d |
-| **jev-heldout** (branch claude/ev-jev-heldout, local only, still at the jev3-draw commit 5c963b25) | A new held-out set. Its scope is not yet committed; the need for it comes from the transfer finding (§5.2) | Not sourced | — |
+| **jev-heldout** (EV-PREREG-JEV-HELDOUT, in progress; branch claude/ev-jev-heldout) | A held-out set of n ≈ 2,000: a CI of about ±2.7, against ±8 on the public 231. It is meant to measure transfer (§5.2) before more public spend | Not sourced | EV-PREREG-JEV-HELDOUT (state PREREG) |
 | **sym-fast** (branch stack/qwen35/sym-fast, local only, still at the jev3-typed commit a21049a9) | Scope not yet committed. Context: the native readout's Speed cost (0.197 s vs 0.067 s for the shim; GAP_ATTRIBUTION C3) | Not sourced | — |
 | FS-CRR on the unseen split (D19 + both Clefs) | Whether any model certifies abstention under a valid test | **~$35** (+ D13 ~$22). Also needs the operator directive checked, because it runs Clef | ledger job-9na9j; EV2 §5b |
 | Trained G16 head + GPU G15 check | The injection-robust sets on a real model | ~$6 expected / **$21.67** hold | EV2 §5c |
@@ -366,6 +366,5 @@ Source: claude/ev-canonical-prior @1ccdc676, `GOLD_LETTER_CANONICAL.md`.
 ---
 
 ### Numbers not sourced in this report
-- Costs and scope for D21 itself, jev-heldout and sym-fast. Their branches (jev3-lm-r too) exist only locally, with no commits beyond their cut points.
-- JEV3-LM-S numbers are the lead's ledger row and receipts @95a731f6 only. The evidence lane's independent rescore of that cell does not exist yet. Its guarantees run (@36141c14) does exist.
-- JEV3-LM-S flip CIs are not in the ledger row.
+- Costs for D21 itself, jev-heldout and sym-fast, and the scope of sym-fast and JEV3-LM-R. Their branches had no commits beyond their cut points when this was written.
+- JEV3-LM-S flip CIs are not quoted here.
