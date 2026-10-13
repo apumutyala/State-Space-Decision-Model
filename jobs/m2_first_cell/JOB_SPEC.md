@@ -890,3 +890,25 @@ This job does no training. It scores job-5x4vr's exported best checkpoint (step 
   and `cell_budget` (need 39.3 <= cap 40).
 - Screen without proxy600 (`screen_proxy` false): slice_first, the jevkit arms (native, native_tfit = PRIMARY,
   native_shimcal, stock_shim, canon_stock), G1, 8 flips, score_inv, letter prior, H2O target; screen.json verdict NO_PROXY.
+
+## Modes `jev3_lm_r_s0` / `jev3_lm_r_s1` (A-PREREG-JEV3-LM-R, DRAFT: NOT submitted; prereg `docs/preregs/A-PREREG-JEV3-LM-R.md`)
+
+- Cells `m2_first_cell_rwkv7_jev3_lm_r_s{0,1}.json` = jev3_lm_s (same head, layouts, LoRA, LRs, LS, guard, dev cards every
+  50, best export) with: seed 0 / 1; the training draw `bschema-draw-jev3-lmr` (pointer
+  `data/manifests/bschema-draw-jev3-lmr.pointer.json`, pins `data_jev3_lmr.sha256`, builder `scripts/jev3_lm_r_draw.py`) =
+  the JEV3-TYPED draw (jev3 5,960 verbatim + 600 each of jev1 routing / intent / severity; job-stbvu) with the added choice
+  rows' K subsampled to the public K (routing 6, intent 5; 814 rows changed); the JEV3-LM exclude file (124) -> pool 7,636;
+  N = 954 steps = 1 epoch (max_steps = lr_horizon_steps = 954; warmup 50, cosine to 0.1 x); clock 96 min (safety bound);
+  min_steps 800.
+- Budget (`cell_budget.py`): need = pre-train 11.6 + clock 96 + one card 0.68 + final card 1.5 + save / export 1.5 + margin 2
+  = 113.28 <= cap 114; at the slow-end job-wm8b5 rate (5.07 s/step, 22 in-clock 41-s cards) the clock buys >= 954 steps.
+  Expected at the job-zbmhc gross 4.6 s/step: 954 x 4.6 = 73.1 min of clock.
+- Schedule: setup 6 + guard 2 + heldout 2 + cell 114 + screen 25 + report 2 + reserve 2 = 153 min. **Worst case per seed
+  (60 + 2 x 153) x 0.063 = $23.06** (hard cap $23.10). Expected per seed 101 min = $6.36 + the build (<= 60 min, <= $3.78).
+  Two seeds: worst $46.12, expected ~$12.7 + 2 builds.
+- Screen (no proxy600): slice_first, the jevkit arms (native, native_tfit = scalar slice T, native_shimcal = PRIMARY,
+  stock_shim, canon_stock), G1 KEEP, 8 flips, score_inv KEEP, letter prior (A-share flag 5 pp), H2O target. `tfit.per_type` is
+  absent (no banded T_noul fit); `tfit.stock_band` keeps the stock slice yes/no band report in slice_floor.json.
+- jev-heldout (EV-PREREG-JEV-HELDOUT) is NOT read by the runner: params `jev_heldout` holds the placeholder shas; the exported
+  best checkpoint is scored once after landing.
+- Launch: `LAUNCH.md` (repo root, this branch).

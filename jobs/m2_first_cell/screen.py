@@ -964,7 +964,7 @@ def slice_first(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: str 
         pt = jk["tfit"].get("per_type")
         ident["slice_floor"] = slice_floor(eng, Path(data_dir) / jk["tfit"]["records"], out_dir / "calib_probs.jsonl",
                                            out_dir / "slice_floor.json", jk["tfit"].get("ids_sha256"),
-                                           stock_band=pt is not None)
+                                           stock_band=pt is not None or bool(jk["tfit"].get("stock_band")))
         if pt is not None:  # JEV3-LM: T per type; T_noul = min slice NLL s.t. band <= stock's (shim readout) + margin
             sb = ident["slice_floor"]["stock_noul_band"]["rate"]
             res = fit_per_type_from_calib(out_dir / "calib_probs.jsonl", float(jk["tfit"].get("lo", 0.25)),

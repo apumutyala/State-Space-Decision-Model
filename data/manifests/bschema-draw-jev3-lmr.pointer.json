@@ -1,0 +1,63 @@
+{
+ "build": "bschema-draw-jev3-lmr (scripts/jev3_lm_r_draw.py): the JEV3-TYPED draw bschema-draw-jev3-typed (jev3 5,960 rows verbatim + 600 each of jev1 routing / intent / severity, scripts/jev3_typed_draw.py @ff06d4c0, job-stbvu) with the ADDED choice rows' option counts subsampled to the public JevBench K of their family (routing 6, intent 5; gold kept + distractors ranked by sha256('jev3-lm-r-k:<id>:<key>')); 814 rows changed (routing 331, intent 483); yes/no and score (severity) rows unchanged",
+ "role": "train",
+ "location": "ssdm-data/m2/build/bschema-draw-jev3-lmr/ (outside git; deterministic, a rerun reproduces it byte for byte: gzip mtime 0)",
+ "records_uncompressed_sha256": "75903e2b2dfb22ea8077e929c34dab1dec98f39974cc6aa846b3c47c24acb5d1",
+ "manifest": "bschema-draw-jev3-lmr.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "080c87f8ae331423cb2f714a83c86b84f11cc0e3069e30e72db05f4475fee152",
+ "content_map": "bschema-draw-jev3-lmr.content.jsonl.gz",
+ "content_map_uncompressed_sha256": "c7ba7fa1040d87689b18ff081cec669cd91dfddc6ca1e0e645214d825a94be7f",
+ "ids_sha256": "525236723d87ee4b67dd7b680824dc840ac2f88b68bf69812e9e2493c5c5a6cc",
+ "ids_sha256_rule": "sha256 of the sorted record ids, newline-joined (no trailing newline)",
+ "n_records": 7760,
+ "families": {
+  "adequacy": 1000,
+  "ambiguous": 1000,
+  "intent": 600,
+  "judge_hard": 1000,
+  "long_policy": 960,
+  "policy": 1000,
+  "routing": 600,
+  "severity": 600,
+  "temporal_numeric": 1000
+ },
+ "schema": "ssdm-train-v0, one question per row (qid 'q'), JevBench request shape",
+ "public_k": {
+  "intent": 5,
+  "routing": 6
+ },
+ "k_after": {
+  "intent:choice:5": 483,
+  "intent:noul:0": 117,
+  "routing:choice:4": 18,
+  "routing:choice:5": 53,
+  "routing:choice:6": 389,
+  "routing:noul:0": 140,
+  "severity:score:4": 269,
+  "severity:score:5": 331
+ },
+ "n_changed": 814,
+ "slice_disjoint": {
+  "rule": "added rows vs the jev3 slice (1,200, ids 844233f2), the jev3 train rows, the 231 public JevBench items and each other: 0 shared ids, (source, source_id), content hashes, canonical-JSON or normalised-text states; the jev3 rows keep the jev3 pointer's slice_disjoint (all 0)",
+  "dropped": {},
+  "slice_ids_sha256": "844233f228b718edeffb198f622fc9c8a605eed3a346c128993f8aac80453078"
+ },
+ "jev2_exclusions": [
+  {
+   "file": "receipts/2026-10-11-jev2-final-regate/mix_exclude_ids.txt",
+   "sha256": "c0c175f50a7886b53bc647e022bb00705747deadf535a2708fef19c32ab9c2ad",
+   "n": 23
+  },
+  {
+   "file": "receipts/2026-10-11-jev2a-v2-regate/jev2a-v2_musique_provenance_unverified_ids.txt",
+   "sha256": "5cebf60bfa489d462a7e7d9b82e152a4968f30e1dc7ea50a2155e491a1ef37ab",
+   "n": 104
+  }
+ ],
+ "sources": {
+  "typed": "data/manifests/bschema-draw-jev3-typed.pointer.json",
+  "typed_branch": "stack/qwen35/jev3-typed @a21049a9"
+ },
+ "excludes_cohort": "inherited: the jev3 rows (the jev3 pointer's excludes_cohort) and the jev1 gated build (its pointer's)",
+ "receipt": "ssdm-data/m2/build/bschema-draw-jev3-lmr/draw-report.json (built locally on CPU, 2026-10-12)"
+}
