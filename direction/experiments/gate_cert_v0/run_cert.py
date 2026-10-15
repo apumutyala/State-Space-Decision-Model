@@ -129,7 +129,7 @@ def cmd_plan(_: argparse.Namespace) -> None:
     print("wrote plan.json", plan_sha())
 
 
-def cmd_score(_: argparse.Namespace) -> None:
+def cmd_score(args: argparse.Namespace) -> None:
     from keel.protocol import DecisionRequest
     from keel.runtime.vllm_judge import APP, JudgeServer, judge
 
@@ -143,6 +143,8 @@ def cmd_score(_: argparse.Namespace) -> None:
     reqs = [DecisionRequest.from_json(u["request"]) for u in units]
     with APP.run():
         for tag, model in PLAN["pipelines"].items():
+            if args.pipelines and tag not in args.pipelines:
+                continue
             out_path = CACHE / f"scores-{tag}.json"
             if out_path.exists():
                 continue
@@ -208,7 +210,11 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name, fn in (("plan", cmd_plan), ("score", cmd_score), ("certify", cmd_certify)):
-        sub.add_parser(name).set_defaults(fn=fn)
+        p = sub.add_parser(name)
+        p.set_defaults(fn=fn)
+        if name == "score":
+            p.add_argument("--pipelines", nargs="*", choices=sorted(PLAN["pipelines"]),
+                           help="score only these pipelines (scores already cached are skipped)")
     a = ap.parse_args()
     a.fn(a)
 
