@@ -1,0 +1,64 @@
+{
+  "meta": {
+    "author": "W2Capability",
+    "date": "2026-10-14",
+    "report": "local://ssdm-W2-capability.md",
+    "baseline_B0": "stock Qwen3.5-4B + H2O-style shim; local I 56.3 (MEAS), board I ~39 [INFERENCE: constant -17.6 local->board offset]",
+    "h2o_parity_gap_local_I": 21.3,
+    "composite_slope": {"dComposite_per_I": 0.37, "dComposite_per_C": 0.16, "at": "I60 C90 S92.6 K60.3 (SIM)"},
+    "gain_units": "board-scale JevBench Intelligence points vs B0; 80% intervals; INFERENCE unless noted",
+    "training_cost_basis_4B": "0.136 H100-h per 1k rows (MEAS q668q), $0.64 all-in per 1k rows seen"
+  },
+  "levers_ranked_by_I_gain_per_dollar": [
+    {"rank": 1, "lever": "readout hygiene (decisive-noul mapping fitted on non-public slice, per-type T, two option orders + yes/no both ways, lettered yes/no, joint candidate scoring)", "grade": "A/B", "dI": {"central": 0, "range": [0, 0], "note": "already in B0; +10..+25 vs un-shimmed own stack (MEAS: floor+T +23.7 I on H2O raw)"}, "cost_usd": [0, 2], "gpu_h_4b": 0, "I_per_usd": "inf", "open_teacher_ok": true, "main_risk": "honesty cost of the 0.801 floor; disclose as benchmark config with raw routing mode", "viability": "required, not sufficient"},
+    {"rank": 2, "lever": "contrastive minimal-pair set (Nimble style), 3-5k teacher-verified rows", "grade": "C+", "dI": {"central": 2, "range": [0, 6]}, "cost_usd": [5, 12], "gpu_h_4b": [0.4, 0.7], "I_per_usd": {"central": 0.25, "range": [0, 1]}, "open_teacher_ok": true, "main_risk": "unmeasured on JevBench I"},
+    {"rank": 3, "lever": "KL-anchored LoRA, <=1 epoch (modifier on every cell)", "grade": "B", "dI": {"central": 1.5, "range": [0, 3]}, "cost_usd": [1, 3], "gpu_h_4b": "+30-50% of the cell", "open_teacher_ok": true, "main_risk": "extra reference forward pass"},
+    {"rank": 4, "lever": "teacher-authored, thinking-verified, family-spec'd scenario data, 20-100k rows, 3 stages (H2O/JevK5/Kev recipe)", "grade": "B", "dI": {"central": 12, "range": [4, 20]}, "cost_usd": [90, 250], "gpu_h_4b": [5, 14], "I_per_usd": {"central": 0.08, "range": [0.02, 0.2]}, "open_teacher_ok": true, "main_risk": "public->sealed gap; temporal_numeric likely unmoved; needs funding", "viability": "only credible path to H2O parity at 4B"},
+    {"rank": 5, "lever": "rationale distillation / implicit-CoT curriculum for numeric and multi-step items", "grade": "C", "dI": {"central": 2, "range": [0, 6]}, "cost_usd": [40, 120], "gpu_h_4b": "+50-100% of the cell", "I_per_usd": {"central": 0.03, "range": [0, 0.1]}, "open_teacher_ok": true, "main_risk": "no decision-model test; may only move templates"},
+    {"rank": 6, "lever": "judge/rubric specialist data (Prometheus/GenRM style)", "grade": "C", "dI": {"central": 1, "range": [-1, 4]}, "cost_usd": [20, 60], "I_per_usd": {"central": 0.02}, "open_teacher_ok": true, "main_risk": "SSDM attempt -0.50 transfer corr; JevK5 judge_hard 0.76->0.65"},
+    {"rank": 7, "lever": "public multi-task replay (tasksource/FLAN style)", "grade": "B", "dI": {"central": -1, "range": [-4, 2]}, "cost_usd": [10, 30], "open_teacher_ok": true, "main_risk": "negative on JevBench hard (LLM-as-Jev, reflex); cap at 20-30%"},
+    {"rank": 8, "lever": "KD from System-1 teacher logits", "grade": "B (negative)", "dI": {"central": 0, "range": [-3, 1]}, "cost_usd": [30, 80], "open_teacher_ok": true, "main_risk": "teacher no better than student"},
+    {"rank": 9, "lever": "RLCD/RLCR-style RL; pause/latent tokens", "grade": "D", "dI": {"central": 0, "range": [-1, 2]}, "cost_usd": [20, 100], "open_teacher_ok": true, "main_risk": "no public ablation"}
+  ],
+  "open_leader_post_training": [
+    {"option": "a1 thin LoRA r16 + per-type T on Qwen3.5-9B", "expected_board_I": [55, 62], "cost_usd": [25, 40], "composite_ceiling": 59.1, "capability_ranked": true, "verdict": "wrong target: K=46.1 caps Composite; Capability needs I>=73.4"},
+    {"option": "a2 same on Qwen3.8-27B / Qwen3.5-27B", "expected_board_I": [70, 76], "cost_usd": [60, 100], "composite_ceiling": 21, "capability_ranked": false, "verdict": "raw Capability 81.6-82.8 but cost-cap ineligible (cost > $0.0646/1k)"},
+    {"option": "b continued training of Quyet-1.0-Large", "dI": {"central": 1, "range": [-3, 5]}, "cost_usd": [40, 100], "verdict": "low value; contradicts operator directive; sits at K=50.5"},
+    {"option": "c continued training of H2O-Lightning-4B", "dI": {"central": 0, "range": [-2, 2]}, "cost_usd": [2.7, 9.4], "evidence": "MEAS dComp A -0.41 and -0.97, CIs span 0", "verdict": "do not repeat with generator rows"},
+    {"option": "d quantize FP8/NVFP4", "dI": {"central": 0, "range": [-1, 0]}, "dK": 0, "dS": 0.3, "dComposite": 0.1, "evidence": "price_basis uses base-model reference price; H2O FP8 latency 61->53 ms; 21/687 answers changed, p=0.63"}
+  ],
+  "base_cost_cliffs": [
+    {"base": "Qwen3.5-4B", "usd_per_1k": 0.0211, "K": 60.3, "max_composite_at_I75": 76.3},
+    {"base": "Gemma-4-31B-it", "usd_per_1k": 0.0445, "K": 50.5, "max_composite_at_I75": 71.9},
+    {"base": "Qwen3.5-9B", "usd_per_1k": 0.0626, "K": 46.1, "max_composite_at_I75": 59.1},
+    {"base": "Qwen3.8-27B", "usd_per_1k": 0.21, "K": 30.3, "max_composite_at_I75": 21.3, "capability_eligible": false}
+  ],
+  "hypotheses": [
+    {"id": "H1", "name": "provenance/diversity: generator rows with rule-engine golds teach template cues", "plausibility": 0.45, "tests": ["T0a adversarial validation ($0)", "T0b no-state form-only baseline ($0)", "T1 cross-provenance A/B (~$5-8)"], "decision_rule": ">=8 net public items teacher arm over generator arm, or teacher ahead on judge_hard+long_policy+multi_hop while generator ahead on slice"},
+    {"id": "H2", "name": "shape/length/format mismatch", "plausibility": 0.15, "tests": ["T0a shape-only features"]},
+    {"id": "H3", "name": "reasoning beyond single pass (temporal_numeric)", "plausibility": 0.20, "tests": ["T2 hosted thinking teacher on 15 temporal items ($1-3)"]},
+    {"id": "H4", "name": "gold/teacher quality and conventions", "plausibility": 0.10, "tests": ["T3 relabel 200 SSDM rows + 111 public hard items with 2 open thinkers ($0.3-1.5)"]},
+    {"id": "H5", "name": "headroom: 26 public errors, 23 in unlearned families", "tests": ["T4 McNemar bar: >=8 net items ($0)"]},
+    {"id": "H6", "name": "readout/noul hedging", "evidence": "MEAS JEV3-SYM -36.66 native vs -1.07 shimcal; explains own-stack negatives not H2O-host flatness"},
+    {"id": "H7", "name": "under-training", "plausibility": "low", "tests": ["T6 rows ladder after T1"]},
+    {"id": "H8", "name": "selection signal is same-generator slice NLL", "tests": ["T7 independent lockbox ($2-8)"]},
+    {"id": "H9", "name": "measurement noise n=231", "tests": ["paired McNemar, 2 seeds"]},
+    {"id": "H10", "name": "public != sealed", "evidence": "H2O 205/231 -> board I 60.0 vs JevK5 v0.3 ~203/231 -> I 38.5"}
+  ],
+  "teachers_oct_2026": {
+    "snapshot": "OpenRouter models/endpoints API 2026-10-14; 100k rows x 900 input tokens; A=10 out, B=1200 out, C=3000 out tokens; cheapest provider / median price in USD",
+    "no_output_training_clause_found_in_licenses": true,
+    "rows": [
+      {"model": "MiMo-V2.6-Pro", "license": "MIT", "A": [40, 40], "B": [143, 144], "C": [300, 300]},
+      {"model": "Kimi K3", "license": "Kimi K3 License (MIT-style + MaaS/attribution conditions)", "A": [59, 245], "B": [1306, 2030], "C": [3016, 4730]},
+      {"model": "GLM-5.3", "license": "GLM-5.3 License (MIT-style, >$10B MaaS clause)", "A": [10, 112], "B": [93, 635], "C": [205, 1427]},
+      {"model": "Qwen3.8-2.4T-A95B", "license": "Qwen3.8-Max License", "A": [186, 186], "B": [900, 900], "C": [1980, 1980]},
+      {"model": "DeepSeek V4 Pro 0813", "license": "MIT", "A": [14, 91], "B": [65, 456], "C": [144, 1008]},
+      {"model": "GLM-5.3-Flash", "license": "MIT", "A": [4, 13], "B": [21, 73], "C": [47, 163]},
+      {"model": "DeepSeek V4.1 Flash", "license": "MIT", "A": [2, 18], "B": [30, 124], "C": [62, 285]},
+      {"model": "Qwen3.8-27B", "license": "Apache-2.0", "A": [2, 20], "B": [62, 297], "C": [152, 716]},
+      {"model": "gpt-oss-120b", "license": "Apache-2.0", "A": [3, 10], "B": [21, 75], "C": [48, 174]},
+      {"model": "Gemma-4-31B-it", "license": "Apache-2.0", "A": [8, 13], "B": [49, 61], "C": [110, 133]}
+    ]
+  }
+}
