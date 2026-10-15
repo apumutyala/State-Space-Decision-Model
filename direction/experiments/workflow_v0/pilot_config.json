@@ -1,0 +1,11 @@
+{
+  "purpose": "Tool parser, native chat template, local tool_filter, and dual-engine verification; excluded from main results",
+  "agentdojo": "0.1.35",
+  "benchmark_version": "v1.2.2",
+  "arms": ["none", "tool_filter", "keel"],
+  "max_tokens": 1024,
+  "suites": {
+    "banking": {"user_tasks": ["user_task_13"], "injection_tasks": []},
+    "slack": {"user_tasks": ["user_task_16"], "injection_tasks": []}
+  }
+}
