@@ -2,6 +2,7 @@
 
 | Path | What it is |
 |---|---|
+| `MOONSHOT.md` | Keel: the moonshot plan for aligned decision models and workflows (targets, bets, phases, gates) |
 | `GRANTS.md` | Is SSDM a good direction for AI-safety grants? Verdict, reframe, program, where to apply, next steps |
 | `DIRECTION_MEMO.md` | Current direction memo (v1; git history holds v0 and the review-driven revision) |
 | `research/ssdm-context.md` | Shared project facts given to every research workstream |
