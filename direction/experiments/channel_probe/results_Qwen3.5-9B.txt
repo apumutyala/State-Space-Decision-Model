@@ -1,0 +1,12 @@
+
+== Qwen3.5-9B
+  [nothink]
+    base  clean acc  77.0% (164/213) | U-instr ASR  41.5% [34.2, 49.1] (68/164) | U-auth ASR  53.0% [45.4, 60.5] (87/164) | robust acc  27.7%
+    trust clean acc  78.9% (168/213) | U-instr ASR   6.0% [ 3.3, 10.6] (10/168) | U-auth ASR  31.0% [24.5, 38.3] (52/168) | robust acc  52.1%
+    trusted-channel compliance (operator note)  13.7% [ 9.3, 19.7] (23/168)
+    channel gap, same sentence: compliance - untrusted ASR = -17.3 pp
+  [think]
+    base  clean acc  95.3% (203/213) | U-instr ASR  94.6% [90.6, 96.9] (192/203) | U-auth ASR  86.2% [80.8, 90.3] (175/203) | robust acc   2.8%
+    trust clean acc  95.8% (204/213) | U-instr ASR   2.5% [ 1.1,  5.6] (5/204) | U-auth ASR  10.3% [ 6.8, 15.2] (21/204) | robust acc  83.1%
+    trusted-channel compliance (operator note)  36.3% [30.0, 43.1] (74/204)
+    channel gap, same sentence: compliance - untrusted ASR = +26.0 pp
