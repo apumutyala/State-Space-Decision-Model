@@ -64,7 +64,11 @@ def main():
             cost = {"date": "2026-10-15", "function": "train_recipe", "phase": a.phase,
                     "config": config, "status": "failed"}
             try:
-                result = train_recipe.remote(train_rows, dev, config, a.run, a.phase == "final")
+                timeout = min(7200, int((a.cap - spending(out) - 2) / RATE))
+                if timeout < 60:
+                    raise RuntimeError("insufficient budget for a bounded training call")
+                result = train_recipe.with_options(timeout=timeout).remote(
+                    train_rows, dev, config, a.run, a.phase == "final")
                 dest.write_text(json.dumps(result, indent=2))
                 results.append(result)
                 cost["status"] = "complete"

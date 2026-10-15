@@ -40,7 +40,17 @@ eligible for final public evaluation.
 
 ## Execution and results
 
-Not yet measured. This file is the pre-execution protocol; final measured results and paid-run ledger will replace this paragraph after execution. No checkpoint or capability/robustness gain is claimed at registration.
+The cross-family verifier passed a real H100/vLLM **0.30.0** load and
+reasoning-plus-JSON arithmetic smoke: 1/1 correct, 121 thinking tokens, no
+truncation. Load 226.75 s; generation 3.51 s. This establishes runtime
+compatibility, not broad capability. Aggregate: `oss-smoke.json`.
+
+CPU acceptance: `python -X utf8 -m pytest -q keel/tests` — **425 passed in
+35.83 s** (2026-10-15). The new tests cover exact one-fact pair flips, pairwise
+retention and noul balance, text-based option-key reconstruction, a planted
+public-overlap fingerprint and disabled-guard failure, bounded arithmetic/date
+audits, blind verifier inputs, two-sample agreement, and a no-public,
+group-disjoint v0/capability training union.
 
 ## Commands
 
@@ -59,3 +69,7 @@ python -X utf8 -m keel.distill.train_v1 final
 ## Spend
 
 Modal ceiling: **$35**. H100 estimate: $3.95/hour; pipeline charges conservative local wall time including startup/shutdown to its private append-only ledger. The final report will enumerate every paid attempt. No paid call has completed at registration.
+
+| Date | Function | H100 minutes (upper estimate) | USD (upper estimate) |
+|---|---|---:|---:|
+| 2026-10-15 | gpt-oss-20b compatibility smoke | 4.345 | 0.286 |

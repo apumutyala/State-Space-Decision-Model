@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-15",
+  "model": "openai/gpt-oss-20b",
+  "revision": "6cee5e81ee83917806bbde320786a8fb61efebee",
+  "vllm": "0.30.0",
+  "gpu": "H100",
+  "model_load_seconds": 226.75198936462402,
+  "generation_seconds": 3.514009475708008,
+  "smoke_items": 1,
+  "correct": 1,
+  "thinking_tokens": 121,
+  "thinking_truncated": false,
+  "json_truncated": false,
+  "gpu_minutes_upper_estimate": 4.3449942708015445,
+  "usd_upper_estimate": 0.28604545616110166,
+  "modal_app": "ap-HeN56eRiZK1ieVWbzmxJX9",
+  "claim": "Real vLLM load and one reasoning-plus-JSON arithmetic response; not a capability benchmark."
+}
