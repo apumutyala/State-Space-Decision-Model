@@ -1,19 +1,20 @@
-"""AgentDojo executor replacement: decide, journal, then (only on allow) execute."""
+"""AgentDojo executor replacement: judge, host authorization, receipt, dispatch."""
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 import time
 from collections.abc import Callable, Mapping, Sequence
-from pathlib import Path
+from dataclasses import dataclass, replace
 
 from agentdojo.agent_pipeline.base_pipeline_element import BasePipelineElement
 from agentdojo.agent_pipeline.tool_execution import ToolsExecutor
 from agentdojo.functions_runtime import EmptyEnv, FunctionCall
 from agentdojo.types import get_text_content_as_str, text_content_block_from_string
 
-from keel.protocol import DecisionRequest, OperatorPolicy, Question, Segment, render
+from keel.host import ActionProposal, Authority, HostKernel
+from keel.protocol import Answer, DecisionRequest, DecisionResult, OperatorPolicy, Question, render
+from keel.protocol.receipts import PromptUse, ReceiptLog
 from keel.protocol.render import Rendered
 
 HELD_MESSAGE = "This tool call is held for human review. It was not executed."
@@ -32,21 +33,32 @@ QUESTION = Question(
 )
 
 
-def build_request(user_task: str, messages: Sequence[dict], call: FunctionCall, request_id: str) -> DecisionRequest:
-    """The host query is trusted; neither model arguments nor returned text gain authority."""
-    segments = [Segment("user-task", user_task, "trusted", "metadata", "authenticated_user_task")]
+@dataclass(frozen=True)
+class JudgeEvaluation:
+    """Scores and the complete manifest of actual model inputs, including thinking."""
+
+    probabilities: Mapping[str, float]
+    prompts: tuple[PromptUse, ...]
+
+
+def build_request(kernel: HostKernel, user_task: str, messages: Sequence[dict], call: FunctionCall,
+                  request_id: str) -> DecisionRequest:
+    """Construct host-registered provenance without changing v0's rendered text."""
+    segments = [kernel.inputs.metadata("user-task", user_task, source="authenticated_user_task")]
     for message in messages:
         if message["role"] == "tool":
-            segments.append(Segment(
+            segments.append(kernel.inputs.untrusted(
                 f"tool-output-{len(segments)}",
                 {"content": get_text_content_as_str(message["content"]), "error": message["error"]},
-                "untrusted", "tool_output", message["tool_call"].function,
+                kind="tool_output", source=message["tool_call"].function,
             ))
-    segments.append(Segment(
+    # A model proposal derives from untrusted evidence, not from authenticated
+    # authority. No tool evidence yet means no trusted parents, also untrusted.
+    segments.append(kernel.inputs.derive(
         "proposed-call", {"name": call.function, "args": call.model_dump(mode="json")["args"]},
-        "untrusted", "record", "proposed_tool_call",
+        segments[1:], kind="record", source="proposed_tool_call",
     ))
-    return DecisionRequest(request_id, POLICY, tuple(segments), (QUESTION,))
+    return kernel.request(request_id, segments, (QUESTION,))
 
 
 def _has_nested_call(value) -> bool:
@@ -60,25 +72,47 @@ def _has_nested_call(value) -> bool:
 
 
 class KeelGateElement(BasePipelineElement):
-    """Replace ToolsExecutor, not a post-execution filter. A tie holds.
+    """One episode's host session, sharing the run's disk-backed receipt chain.
 
-    ``judge`` scores an already-rendered trust-mode prompt and returns allow/hold
-    probabilities. Failure to score or append/flush the journal aborts before
-    execution; this adapter never silently converts an error to permission.
-    Construct one element per episode, with the authenticated task text, not a
-    user turn reconstructed from a possibly attacker-controlled transcript.
+    Only HostKernel invokes the real executor. Suite tools and the principal
+    binding come from host configuration, never from messages or model outputs.
+    No human reviews are serviced: capacity zero holds every deferred call.
     """
 
-    def __init__(self, user_task: str, judge: Callable[[Rendered], Mapping[str, float]], log_path: str | Path,
-                 episode_id: str, *, executor=None, think: bool = False):
+    def __init__(self, user_task: str, judge: Callable[[Rendered], JudgeEvaluation], receipt_log: ReceiptLog,
+                 episode_id: str, *, authorized_actions: Sequence[str], model_id: str, model_revision: str,
+                 executor=None, think: bool = False):
+        if receipt_log.path is None:
+            raise ValueError("workflow receipts require a disk-backed ReceiptLog")
         self.user_task = user_task
         self.judge = judge
-        self.log_path = Path(log_path)
         self.episode_id = episode_id
-        self.executor = executor if executor is not None else ToolsExecutor()
+        self._executor = executor if executor is not None else ToolsExecutor()
         self.think = think
-        self.records: list[dict] = []
-        self.log_path.parent.mkdir(parents=True, exist_ok=True)
+        self.outcomes = []
+        self.requests: list[DecisionRequest] = []
+        self.judge_latency_s = 0.0
+        self._pending = None
+        self._executed = None
+        actions = tuple(sorted(authorized_actions))
+        self.kernel = HostKernel(
+            Authority(replace(POLICY, authorized_actions=actions), {"suite-agent": actions},
+                      {"agent": ("suite-agent",)}),
+            principal="agent", executor=self._dispatch, receipt_log=receipt_log, review_capacity=0,
+            model_id=model_id, model_revision=model_revision, gate_version="keel-workflow-gate/0.1",
+            calibration_id="uncertified-label-argmax-tie-holds",
+        )
+        self.request_dir = receipt_log.path.parent / "requests"
+        self.request_dir.mkdir(parents=True, exist_ok=True)
+
+    def _dispatch(self, proposal: ActionProposal):
+        """Kernel callback; dispatch its snapshotted arguments, not mutable model data."""
+        if self._pending is None:
+            raise RuntimeError("no pending kernel dispatch")
+        query, runtime, env, history, assistant, call_id, extra_args = self._pending
+        approved = FunctionCall(function=proposal.action, args=proposal.args, id=call_id)
+        single = {**assistant, "tool_calls": [approved]}
+        self._executed = self._executor.query(query, runtime, env, [*history, single], extra_args)
 
     def query(self, query, runtime, env=EmptyEnv(), messages=(), extra_args=None):
         extra_args = {} if extra_args is None else extra_args
@@ -87,39 +121,43 @@ class KeelGateElement(BasePipelineElement):
         history = list(messages)
         assistant = messages[-1]
         for call in assistant["tool_calls"]:
-            request = build_request(self.user_task, history, call, f"{self.episode_id}:{len(self.records)}")
+            request = build_request(self.kernel, self.user_task, history, call,
+                                    f"{self.episode_id}:{len(self.outcomes)}")
             rendered = render(request, mode="trust", think=self.think)
             start = time.perf_counter()
-            probs = dict(self.judge(rendered))
+            evaluated = self.judge(rendered)
+            self.judge_latency_s += time.perf_counter() - start
+            probs = dict(evaluated.probabilities)
             if (set(probs) != {"allow", "hold"} or
                     any(not math.isfinite(p) or not 0 <= p <= 1 for p in probs.values()) or
-                    not math.isclose(sum(probs.values()), 1, abs_tol=1e-6)):
+                    not math.isclose(sum(probs.values()), 1, abs_tol=1e-8, rel_tol=0)):
                 raise ValueError("judge must return finite normalized allow/hold probabilities")
             nested = _has_nested_call(call.args)
-            outcome = "allow" if probs["allow"] > probs["hold"] and not nested else "hold"
-            record = {
-                "schema": "keel-workflow-decision/1", "episode_id": self.episode_id,
-                "request_id": request.request_id, "request_fingerprint": request.fingerprint(),
-                "prompt_sha256": hashlib.sha256(rendered.prompt.encode("utf-8")).hexdigest(),
-                "probabilities": probs, "outcome": outcome, "tool_call_id": call.id,
-                "tool_name": call.function, "judge_latency_s": time.perf_counter() - start,
-                "mode": "trust", "think": self.think,
-                "reason": "nested_calls_not_supported" if nested else "label_argmax_tie_holds",
-            }
-            # Append before executing: a logging failure cannot permit an unlogged side effect.
-            with self.log_path.open("a", encoding="utf-8") as stream:
-                stream.write(json.dumps(record, sort_keys=True, allow_nan=False) + "\n")
-                stream.flush()
-            self.records.append(record)
-            if outcome == "hold":
+            allow = probs["allow"] > probs["hold"] and not nested
+            reasons = [] if allow else ["nested_calls_not_supported" if nested else "judge_hold_or_tie"]
+            decision = DecisionResult(request.request_id, {"q": Answer("q", probs, "allow" if allow else "hold")},
+                                      act=allow, defer_reasons=reasons)
+            proposal = ActionProposal(call.function, call.model_dump(mode="json")["args"], "agent",
+                                      tuple(segment.segment_id for segment in request.segments))
+            # Retain replay inputs separately from the sole decision log (ReceiptLog).
+            # Preserve dict insertion order: canonical hashing is order-insensitive,
+            # but the existing renderer serializes content in its original order.
+            (self.request_dir / f"{request.fingerprint()}.json").write_text(
+                json.dumps(request.to_json(), ensure_ascii=False, allow_nan=False) + "\n", encoding="utf-8")
+            self.requests.append(request)
+            self._pending = (query, runtime, env, history, assistant, call.id, extra_args)
+            self._executed = None
+            try:
+                outcome = self.kernel.process(request, proposal, decision, prompts=evaluated.prompts)
+            finally:
+                self._pending = None
+            self.outcomes.append(outcome)
+            if outcome.status != "executed":
                 history.append({"role": "tool", "tool_call": call, "tool_call_id": call.id,
                                 "content": [text_content_block_from_string(HELD_MESSAGE)], "error": None})
                 continue
-            # Keep original assistant messages intact. Delegate exactly one approved call,
-            # so the next decision also sees outputs from earlier calls in this batch.
-            single = {**assistant, "tool_calls": [call]}
-            _, _, env, executed, extra_args = self.executor.query(
-                query, runtime, env, [*history, single], extra_args,
-            )
+            if self._executed is None:
+                raise RuntimeError("host reported execution without invoking the executor")
+            _, _, env, executed, extra_args = self._executed
             history.append(executed[-1])
         return query, runtime, env, history, extra_args
