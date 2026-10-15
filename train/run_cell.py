@@ -644,8 +644,23 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
                        grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=bf16, grad_checkpointing=False,
                        seed=cfg["seed"], ckpt_dir=ckpt_dir, ckpt_every=cfg["ckpt_every"],
                        eval_every=cfg["eval_every"], controlsafe=cfg.get("controlsafe") or {},
+                       constraints=cfg.get("constraints") or {},  # nuPI block (docs/NUPI.md); absent = off
                        **anti_collapse_fields(cfg),
                        **({"consistency": consistency_fields(cfg)} if consistency_fields(cfg) else {}))
+
+
+def probe_items(cfg: dict, enc, guard, max_t: int) -> list | None:
+    """Recall-constraint probe rows (docs/NUPI.md): the ``probe_path`` JSONL records of the constraints block's recall
+    items (e.g. ``train.mqar_probe.mqar_records``), built like the training rows. None when there is no recall item."""
+    paths = [c["probe_path"] for c in (cfg.get("constraints") or {}).get("items", [])
+             if c.get("kind") == "recall" and c.get("probe_path")]
+    if not paths:
+        return None
+    recs = []
+    for p in paths:
+        with open(p, encoding="utf-8") as f:
+            recs += [json.loads(line) for line in f if line.strip()]
+    return _items_chunk(recs, cfg, enc, guard, max_t)
 
 
 #: cell config keys -> TrainConfig anti-collapse fields (research-notes/D10_DIVERGENCE.md); absent = old behaviour
@@ -1147,6 +1162,7 @@ def _main(argv=None, ctx: dict | None = None):
             return EXIT["data"]
         cell.setdefault("data_checks", {})["no_truncation_tokenize"] = {
             "rows": want, "max_row_tokens": max((len(x.row.ids) for x in train_items), default=0), "t_cap": t_cap}
+    recall_probe = probe_items(cfg, enc, guard, t_cap)  # nuPI recall constraint (None without one)
     try:
         order_views = attach_order_views(cfg, train_items, train_recs, enc, guard, t_cap)
         if order_views is not None and order_views["with_view"] == 0:
@@ -1201,7 +1217,7 @@ def _main(argv=None, ctx: dict | None = None):
         from train.trainer import with_execution  # act_ckpt / row_batch / row_tokens of the cell (PR #86 hook)
 
         return Trainer(model, with_execution(train_config(cfg, max_steps, ckpt_dir, cuda), cfg), train_items,
-                       eval_items, guard=guard)
+                       eval_items, guard=guard, probe_items=recall_probe)
 
     if cfg.get("cont_chunk") == "auto" and ("ladder" in stages or "train" in stages):
         # job-w2t73 (Qwen3.5-4B OOM on its first step): the option-chunk probe. The worst step shape of the training set
