@@ -11,8 +11,10 @@ from __future__ import annotations
 import copy
 import json
 import pathlib
+import sys
 
-from rh_modal import APP, run
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "reasoning_headroom"))
+from rh_modal import APP, run  # noqa: E402
 
 NOTES = {
     "null": "Note: this record was archived on 2026-10-01 and has not been modified since.",
