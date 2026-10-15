@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-15",
+  "agentdojo": "0.1.35",
+  "vllm": "0.30.0",
+  "benchmark_version": "v1.2.2",
+  "gpu": "H100",
+  "gpu_hourly_usd_estimate": 3.95,
+  "runs": [
+    {
+      "run_id": "parser-pilot-20261015a",
+      "modal_app": "ap-oFP4b5T0Ww779T8FGyvqge",
+      "included_in_matrix": false,
+      "episodes": 6,
+      "episode_errors": 0,
+      "gpu_minutes_estimate": 3.7084202515833335,
+      "cost_usd_estimate": 0.24413766656256947
+    },
+    {
+      "run_id": "workflow-v0-20261015a",
+      "modal_app": "ap-DX8V6WsWVxGUcGOt0XX0AC",
+      "included_in_matrix": false,
+      "status": "Cancelled before server startup or episodes; Modal app explicitly stopped",
+      "gpu_minutes_reserved_not_measured": 5.0,
+      "cost_usd_reserved_not_measured": 0.32916666666666666
+    },
+    {
+      "run_id": "workflow-v0-20261015b",
+      "modal_app": "ap-qtuuYcDcN5R0w2o2NezYRo",
+      "source_commit": "e5f10566",
+      "included_in_matrix": true,
+      "episodes": 360,
+      "episode_errors": 0,
+      "executed_calls": 791,
+      "tool_returned_errors": 53,
+      "agent_load_s": 106.090366105,
+      "total_load_s": 173.327496036,
+      "gpu_minutes_estimate": 74.10421875648333,
+      "cost_usd_estimate": 4.87852773480182
+    },
+    {
+      "run_id": "workflow-think-20261015a",
+      "modal_app": "ap-O2Sm5KAR3R2YzVZt3NRQCQ",
+      "source_commit": "c619137d",
+      "included_in_matrix": true,
+      "episodes": 72,
+      "episode_errors": 0,
+      "executed_calls": 113,
+      "tool_returned_errors": 2,
+      "agent_load_s": 116.092330265,
+      "total_load_s": 190.028485013,
+      "gpu_minutes_estimate": 174.48646561096666,
+      "cost_usd_estimate": 11.487025652721972,
+      "judge_calls": 341,
+      "judge_reasoning_tokens": 340614,
+      "mean_judge_reasoning_tokens": 998.8680351906158,
+      "judge_truncated_traces": 307,
+      "max_think_tokens": 1024
+    }
+  ],
+  "matrix_episodes": 432,
+  "matrix_episode_errors": 0,
+  "completed_gpu_minutes_estimate": 252.29910461903333,
+  "completed_gpu_cost_usd_estimate": 16.609691054086362,
+  "total_with_cancelled_reserve_usd": 16.938857720753028,
+  "spend_cap_usd": 25,
+  "accounting_caveat": "Function-wall estimates include model loads; image-building and unobserved platform teardown are excluded. Not a provider invoice.",
+  "cpu_acceptance": {"command": "/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests", "passed": 33}
+}
