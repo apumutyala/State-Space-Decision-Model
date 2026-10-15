@@ -14,7 +14,7 @@
 | `research/ssdm-G1-funders.md` | AI-safety funding programmes open or opening, fit matrix, best routes |
 | `research/ssdm-G2-safetyfit.md` | Safety relevance, novelty check, capabilities externality, fundable framings |
 | `experiments/reasoning_headroom/` | Think-vs-one-pass probe on public-231 (code, jevkit reports, README with pins) |
-| `experiments/steering_probe/` | Planted-note steering probe (code; results added when landed) |
+| `experiments/steering_probe/` | Planted-note steering probe: one-pass vs think, Qwen3.5-4B/9B (code, results, README) |
 
 Conventions: the public JevBench items are EVAL-ONLY and never committed; per-item model outputs stay out of git
 (workstation copy: `/home/alp/ssdm-direction/`). Paths such as `/tmp/...` or `local://...` inside research reports are
