@@ -1,0 +1,28 @@
+{
+  "source": "Card v0 private per-unit outputs (/home/alp/ssdm-direction/card/outputs.jsonl); one sampled trace per scored prompt; max_think 3072",
+  "note": "aggregate only; rows are arm-unit outputs, so repeated canonical prompts share one cached trace",
+  "arms": {
+    "think_trust": {
+      "n": 3527,
+      "mean": 2283.9,
+      "median": 3072,
+      "p10": 630,
+      "p25": 1234,
+      "p75": 3072,
+      "p90": 3072,
+      "budget_capped": 1904,
+      "budget_capped_rate": 0.5398
+    },
+    "teacher_9b_think_trust": {
+      "n": 3467,
+      "mean": 2016.6,
+      "median": 2332,
+      "p10": 575,
+      "p25": 874,
+      "p75": 3072,
+      "p90": 3072,
+      "budget_capped": 1442,
+      "budget_capped_rate": 0.4159
+    }
+  }
+}
