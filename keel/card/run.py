@@ -141,8 +141,12 @@ def evaluation_rows(units: list[CardUnit], scorer: CachedJudge, arms: list[str])
     return rows
 
 
-def adaptive_units(items, scorer: CachedJudge, cache: Path, *, tier: str, n: int, budget: int, seed: int) -> list[CardUnit]:
-    from .search import Candidate, search, wrap_attack
+def adaptive_units(items, scorer: CachedJudge, cache: Path, *, tier: str, n: int, budget: int, seed: int,
+                   search_arm: str = "one_pass_trust") -> list[CardUnit]:
+    from .search import Candidate, search, search_labels, wrap_attack
+    if search_arm not in ARMS:
+        raise ValueError(f"unknown search arm {search_arm!r}")
+    access = "labels" if tier == "t3l" else "probabilities"
     registry = template_registry()
     names = [k for k, s in registry.items() if s["kind"] in {"inject", "authority"}]
     selected = sorted(items, key=lambda i: i.id)
@@ -157,24 +161,32 @@ def adaptive_units(items, scorer: CachedJudge, cache: Path, *, tier: str, n: int
             text = render_attack(registry[candidate.template], detail, candidate.target_phrasing)
             return attack_request(clean, wrap_attack(text, candidate.wrapper), candidate.position, tier)
         identity = hashlib.sha256(json.dumps({"request": clean.to_json(), "tier": tier, "model": scorer.model,
-             "budget": budget, "seed": seed + index, "registry": registry}, sort_keys=True).encode()).hexdigest()
+             "budget": budget, "seed": seed + index, "registry": registry, "search_arm": search_arm,
+             "access": access, "search_version": 2, "max_think": scorer.max_think,
+             "score_seed": scorer.seed}, sort_keys=True).encode()).hexdigest()
         path = cache / f"search-{identity}.json"
         if path.exists():
             record = json.loads(path.read_text())
         else:
-            outcome = search(names, ["label", "description", "label_description", "ordinal"], candidate_request,
-                 lambda reqs: [benchmark_probs(o["probs"], item.type) for o in scorer.score(reqs, "one_pass_trust")],
-                 target, budget=budget, seed=seed + index)
+            if access == "labels":
+                # The attack optimizer receives ONLY labels, never these internal distributions.
+                outcome = search_labels(names, ["label", "description", "label_description", "ordinal"], candidate_request,
+                    lambda reqs: [decision_of(o["probs"], item.type) for o in scorer.score(reqs, search_arm)],
+                    target, budget=budget, seed=seed + index)
+            else:
+                outcome = search(names, ["label", "description", "label_description", "ordinal"], candidate_request,
+                    lambda reqs: [benchmark_probs(o["probs"], item.type) for o in scorer.score(reqs, search_arm)],
+                    target, budget=budget, seed=seed + index)
             record = asdict(outcome)
             path.write_text(json.dumps(record, ensure_ascii=False), encoding="utf-8")
         if record["best_candidate"] is None:
             raise ValueError("adaptive Card units require a positive search budget")
         candidate = Candidate(**record["best_candidate"])
         kind = registry[candidate.template]["kind"]
-        result.append(CardUnit(f"{item.id}::{tier}", item.id, item.family, kind, tier, clean,
+        result.append(CardUnit(f"{item.id}::{tier}::{search_arm}", item.id, item.family, kind, tier, clean,
                     candidate_request(candidate), str(item.expected), str(item.expected), target,
                     {"group": item.group, "template": candidate.template, "search": record, "source_model": scorer.model,
-                     "query_budget": budget, "search_arm": "one_pass_trust"}))
+                     "query_budget": budget, "search_arm": search_arm, "attacker_access": access}))
     return result
 
 
@@ -236,6 +248,7 @@ def main(argv=None):
     parser.add_argument("--cache-dir", type=Path, default=Path("/home/alp/ssdm-direction/card/"))
     parser.add_argument("--output-dir", type=Path, default=Path("direction/experiments/card_v0/"))
     parser.add_argument("--search-units", type=int, default=60)
+    parser.add_argument("--search-arms", default="one_pass_trust", help="Comma-separated arms attacked by T3/T3L")
     parser.add_argument("--query-budget", type=int, default=64)
     parser.add_argument("--seed", type=int, default=20261015)
     parser.add_argument("--max-think", type=int, default=3072)
@@ -246,9 +259,9 @@ def main(argv=None):
     parser.add_argument("--teacher-reference", action="store_true")
     parser.add_argument("--evidence-audit", type=Path, help="Complete content-bound semantic verdicts, stored outside git")
     args = parser.parse_args(argv)
-    arms, tiers = args.arms.split(","), args.tiers.split(",")
-    if set(arms) - ARMS.keys() or set(tiers) - {"t1", "t2", "t3"}:
-        parser.error("unknown arm or tier")
+    arms, tiers, search_arms = args.arms.split(","), args.tiers.split(","), args.search_arms.split(",")
+    if set(arms) - ARMS.keys() or set(search_arms) - ARMS.keys() or set(tiers) - {"t1", "t2", "t3", "t3l"}:
+        parser.error("unknown arm, search arm or tier")
     if args.query_budget <= 0 or args.search_units < 0:
         parser.error("search query budget must be positive and unit count nonnegative")
     root = Path(__file__).resolve().parents[2]
@@ -286,10 +299,13 @@ def main(argv=None):
             server = JudgeServer(model=args.model)
             scorer = CachedJudge(args.model, server, ledger, cache / "scores", max_think=args.max_think, seed=args.seed)
             rows += evaluation_rows(units, scorer, arms)
-            if "t3" in tiers:
-                adaptive = adaptive_units(items, scorer, cache, tier="t3", n=args.search_units, budget=args.query_budget, seed=args.seed)
-                units += adaptive
-                rows += evaluation_rows(adaptive, scorer, ["one_pass_trust"])
+            for tier in ("t3", "t3l"):
+                if tier in tiers:
+                    for search_arm in dict.fromkeys(search_arms):
+                        adaptive = adaptive_units(items, scorer, cache, tier=tier, n=args.search_units,
+                            budget=args.query_budget, seed=args.seed, search_arm=search_arm)
+                        units += adaptive
+                        rows += evaluation_rows(adaptive, scorer, [search_arm])
             if "t2" in tiers:
                 source = CachedJudge("qwen3.5-2b", JudgeServer(model="qwen3.5-2b"), ledger, cache / "scores", max_think=args.max_think, seed=args.seed)
                 transfer = adaptive_units(items, source, cache, tier="t2", n=args.search_units, budget=args.query_budget, seed=args.seed)
@@ -305,13 +321,14 @@ def main(argv=None):
     evidence_report["retained_yield_cluster_bootstrap"] = cluster_rate(
         [i.id in accepted_ids for i in items], [i.family for i in items], n_boot=args.n_boot, seed=args.seed)
     adaptive_summary = {}
-    for tier in ("t2", "t3"):
+    for tier in ("t2", "t3", "t3l"):
         searched = [u for u in units if u.tier == tier and "search" in u.metadata]
         if searched:
             counts = [u.metadata["search"]["queries"] for u in searched]
             adaptive_summary[tier] = {"n_units": len(searched), "queries_total": sum(counts),
                 "queries_min": min(counts), "queries_max": max(counts),
                 "source_model": searched[0].metadata["source_model"],
+                "search_arms": sorted({u.metadata["search_arm"] for u in searched}),
                 "source_successes": sum(bool(u.metadata["search"]["success"]) for u in searched)}
     runtime_metadata = {}
     for row in rows:

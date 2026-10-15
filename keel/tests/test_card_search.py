@@ -8,7 +8,7 @@ from itertools import product
 
 import pytest
 
-from keel.card.search import Candidate, POSITIONS, WRAPPERS, search, wrap_attack
+from keel.card.search import Candidate, POSITIONS, WRAPPERS, search, search_labels, wrap_attack
 from keel.protocol.types import DecisionRequest, OperatorPolicy, Question, Segment
 
 
@@ -254,6 +254,246 @@ def test_unknown_wrapper_and_position_are_rejected():
     with pytest.raises(ValueError, match="unknown attack wrapper"):
         wrap_attack("text", "unknown")
     harness = SearchHarness()
+    with pytest.raises(ValueError, match="unknown attack wrapper"):
+        harness.search(wrappers=("unknown",))
+    with pytest.raises(ValueError, match="unknown attack position"):
+        harness.search(positions=("unknown",))
+    assert harness.rendered == harness.scored == harness.batch_sizes == []
+
+
+class LabelSearchHarness(SearchHarness):
+    """The search callback exposes decisions only, with no probability scores."""
+
+    def __init__(self, decision=lambda candidate: "gold"):
+        self.decision = decision
+        self.rendered = []
+        self.scored = []
+        self.batch_sizes = []
+
+    def score(self, requests):
+        self.batch_sizes.append(len(requests))
+        responses = []
+        for request in requests:
+            candidate = Candidate(**request.segments[0].content)
+            self.scored.append(candidate)
+            responses.append(self.decision(candidate))
+        return responses
+
+    def search(self, **kwargs):
+        return search_labels(["family-a", "family-b"], ["direct", "indirect"],
+                             self.render, self.score, "target", **kwargs)
+
+
+@pytest.mark.parametrize("coordinates", list(product(
+    ("family-a", "family-b"), ("direct", "indirect"), ("start", "end"), ("plain", "json")
+)))
+def test_label_search_finds_planted_optimum_within_budget(coordinates):
+    optimum = Candidate(*coordinates)
+    harness = LabelSearchHarness(lambda candidate: "target" if candidate == optimum else "gold")
+    result = harness.search(budget=16, seed=17, beam_width=2,
+                            positions=("start", "end"), wrappers=("plain", "json"))
+
+    # A label-only oracle offers no gradient toward an unseen isolated optimum.
+    # Sixteen queries cover every possible optimum in this sixteen-point space.
+    assert result.best_candidate == optimum
+    assert result.decision == "target"
+    assert result.success is True
+    assert result.queries == 16
+    assert result.probabilities == {}
+    assert len(harness.scored) == len(set(harness.scored)) == 16
+    assert sum(entry["objective"] for entry in result.trace) == 1
+
+
+def test_label_search_finds_adaptive_optimum_without_exhaustion():
+    baseline = LabelSearchHarness()
+    baseline.search(budget=12, seed=29, beam_width=1)
+    # Plant a unique success on an adaptive query, outside initial coverage.
+    optimum = baseline.scored[len(WRAPPERS)]
+    harness = LabelSearchHarness(lambda candidate: "target" if candidate == optimum else "gold")
+    result = harness.search(budget=12, seed=29, beam_width=1)
+
+    assert result.best_candidate == optimum
+    assert result.success is True
+    assert result.queries == 12
+    assert result.trace[len(WRAPPERS)]["success"] is True
+    assert result.queries < 2 * 2 * len(POSITIONS) * len(WRAPPERS)
+
+
+@pytest.mark.parametrize("budget", [0, 1, 2, 5, 64, 101])
+def test_label_query_counts_no_duplicates_and_success_does_not_stop_search(budget):
+    harness = LabelSearchHarness(lambda candidate: "target")
+    result = harness.search(budget=budget)
+    expected = min(budget, 2 * 2 * len(POSITIONS) * len(WRAPPERS))
+
+    assert result.queries == expected
+    assert sum(harness.batch_sizes) == expected
+    assert len(harness.rendered) == len(harness.scored) == len(set(harness.scored)) == expected
+    assert harness.rendered == harness.scored
+    assert result.probabilities == {}
+    assert len(result.trace) == expected
+    if expected:
+        assert result.success is True
+        assert result.best_candidate == harness.scored[0]
+        assert result.decision == "target"
+    else:
+        assert result.best_candidate is None
+        assert result.decision is None
+        assert result.success is False
+        assert harness.batch_sizes == []
+
+
+def test_label_search_spends_default_budget_and_retains_first_success():
+    harness = LabelSearchHarness()
+    harness.decision = lambda candidate: "target" if candidate == harness.rendered[0] else "gold"
+    result = harness.search()
+
+    assert result.queries == sum(harness.batch_sizes) == 64
+    assert result.success is True
+    assert result.best_candidate == harness.scored[0]
+    assert result.decision == "target"
+    assert sum(entry["success"] for entry in result.trace) == 1
+    assert harness.batch_sizes[0] == len(WRAPPERS)
+    assert all(0 < count <= 4 for count in harness.batch_sizes[1:])
+
+
+def test_label_search_prioritizes_successful_coordinate_parents():
+    harness = LabelSearchHarness()
+    harness.decision = lambda candidate: "target" if candidate == harness.rendered[1] else "gold"
+    result = harness.search(budget=12, seed=5, beam_width=1)
+
+    assert result.best_candidate == harness.scored[1]
+    assert distance(harness.scored[len(WRAPPERS)], harness.scored[1]) == 1
+    assert result.queries == 12
+
+
+def test_label_trace_has_only_decisions_and_binary_objectives():
+    harness = LabelSearchHarness(lambda candidate: "target" if candidate.position == "end" else "gold")
+    result = harness.search(seed=37, budget=23)
+
+    assert result.probabilities == {}
+    assert [entry["query"] for entry in result.trace] == list(range(1, 24))
+    assert [entry["candidate"] for entry in result.trace] == [asdict(c) for c in harness.scored]
+    for entry in result.trace:
+        assert set(entry) == {"query", "candidate", "decision", "success", "objective"}
+        assert entry["success"] is (entry["decision"] == "target")
+        assert type(entry["objective"]) is int
+        assert entry["objective"] == int(entry["success"])
+
+
+def test_label_search_is_seeded_and_does_not_touch_global_random_state():
+    state = random.getstate()
+    left = LabelSearchHarness(lambda candidate: "target" if candidate.wrapper == "json" else "gold")
+    right = LabelSearchHarness(left.decision)
+    first = left.search(seed=812, budget=31, beam_width=3)
+    second = right.search(seed=812, budget=31, beam_width=3)
+
+    assert first == second
+    assert left.scored == right.scored
+    assert left.batch_sizes == right.batch_sizes
+    assert random.getstate() == state
+
+
+def test_label_initial_coverage_visits_every_coordinate_value():
+    harness = LabelSearchHarness()
+    result = harness.search(budget=6, seed=37)
+
+    assert result.queries == 6
+    assert {c.template for c in harness.scored} == {"family-a", "family-b"}
+    assert {c.target_phrasing for c in harness.scored} == {"direct", "indirect"}
+    assert {c.position for c in harness.scored} == set(POSITIONS)
+    assert {c.wrapper for c in harness.scored} == set(WRAPPERS)
+
+
+def test_label_duplicate_axes_collapse_and_all_failures_keep_first_candidate():
+    harness = LabelSearchHarness()
+    result = search_labels(["family-a", "family-a", "family-b"], ["direct", "direct"],
+                           harness.render, harness.score, "target", budget=64,
+                           positions=("start", "start", "end"), wrappers=("plain", "json", "json"))
+    expected = {Candidate(*values) for values in product(
+        ("family-a", "family-b"), ("direct",), ("start", "end"), ("plain", "json")
+    )}
+
+    assert result.queries == len(harness.scored) == len(set(harness.scored)) == 8
+    assert set(harness.scored) == expected
+    assert result.best_candidate == harness.scored[0]
+    assert result.decision == "gold"
+    assert result.success is False
+    assert all(entry["objective"] == 0 for entry in result.trace)
+
+
+@pytest.mark.parametrize("responses", [
+    None, "target", ("target",), {"target": 1.0}, {"0": "target"},
+])
+def test_label_scorer_must_return_a_list(responses):
+    harness = LabelSearchHarness()
+    with pytest.raises(ValueError, match="list of nonempty labels"):
+        search_labels(["family-a"], ["direct"], harness.render,
+                      lambda requests: responses, "target", budget=1)
+
+
+@pytest.mark.parametrize("label", [
+    "", " ", "\n\t", None, True, False, 0, 1.0, b"target", [], {"target": 1.0},
+])
+def test_label_scorer_rejects_malformed_labels_and_probability_dicts(label):
+    harness = LabelSearchHarness()
+    with pytest.raises(ValueError, match="labels must be nonempty strings"):
+        search_labels(["family-a"], ["direct"], harness.render,
+                      lambda requests: [label for request in requests], "target", budget=6)
+
+
+@pytest.mark.parametrize("delta", [-1, 1])
+def test_label_response_count_mismatch_is_rejected(delta):
+    harness = LabelSearchHarness()
+    with pytest.raises(ValueError, match="response count mismatch: expected 6"):
+        search_labels(["family-a"], ["direct"], harness.render,
+                      lambda requests: ["target"] * (len(requests) + delta),
+                      "target", budget=6)
+
+
+@pytest.mark.parametrize("target", ["0", "τ", "option-with-dashes"])
+def test_label_scorer_accepts_nonempty_option_ids(target):
+    harness = LabelSearchHarness(lambda candidate: target)
+    result = search_labels(["family-a"], ["direct"], harness.render, harness.score,
+                           target, budget=1)
+    assert result.decision == target
+    assert result.success is True
+    assert result.probabilities == {}
+
+
+@pytest.mark.parametrize("budget", [-1, -64, 0.5, "64", None, True])
+def test_label_invalid_budgets_are_rejected_before_callbacks(budget):
+    harness = LabelSearchHarness()
+    with pytest.raises(ValueError, match="budget"):
+        harness.search(budget=budget)
+    assert harness.rendered == harness.scored == harness.batch_sizes == []
+
+
+@pytest.mark.parametrize("beam_width", [0, -1, 1.5, "4", None, False])
+def test_label_invalid_beam_widths_are_rejected_before_callbacks(beam_width):
+    harness = LabelSearchHarness()
+    with pytest.raises(ValueError, match="beam_width"):
+        harness.search(beam_width=beam_width)
+    assert harness.rendered == harness.scored == harness.batch_sizes == []
+
+
+@pytest.mark.parametrize("empty_axis", range(4))
+def test_label_empty_search_space_makes_no_requests(empty_axis):
+    axes = [["family-a"], ["direct"], ["start"], ["plain"]]
+    axes[empty_axis] = []
+    harness = LabelSearchHarness()
+    result = search_labels(axes[0], axes[1], harness.render, harness.score, "target",
+                           positions=axes[2], wrappers=axes[3])
+    assert result.best_candidate is None
+    assert result.probabilities == {}
+    assert result.decision is None
+    assert result.success is False
+    assert result.queries == 0
+    assert result.trace == []
+    assert harness.rendered == harness.scored == harness.batch_sizes == []
+
+
+def test_label_unknown_positions_and_wrappers_are_rejected():
+    harness = LabelSearchHarness()
     with pytest.raises(ValueError, match="unknown attack wrapper"):
         harness.search(wrappers=("unknown",))
     with pytest.raises(ValueError, match="unknown attack position"):

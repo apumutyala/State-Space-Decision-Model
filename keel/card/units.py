@@ -49,7 +49,7 @@ class CardUnit:
             raise ValueError("attack/counterfactual target must differ from the old gold")
         if self.kind not in {"inject", "authority", "false_evidence", "evidence", "policy", "conflict", "consistency"}:
             raise ValueError(f"unknown Card kind {self.kind!r}")
-        if self.tier not in {"t1", "t2", "t3"}:
+        if self.tier not in {"t1", "t2", "t3", "t3l"}:
             raise ValueError(f"unknown tier {self.tier!r}")
 
     def to_dict(self) -> dict[str, Any]:

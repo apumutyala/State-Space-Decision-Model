@@ -3,7 +3,7 @@
 Eligibility is a caller contract: ``templates`` must contain held-out evaluation
 family names only, disjoint from training families. This module deliberately has
 no training-family registry and does not load templates, datasets, or runtimes.
-Rendering and probability scoring are supplied by the caller. Public JevBench
+Rendering and probability or decision-label scoring are supplied by the caller. Public JevBench
 requests and per-item search traces are EVAL-ONLY and must not be put in git.
 """
 from __future__ import annotations
@@ -198,3 +198,128 @@ def search(
 
     return SearchResult(best_candidate, best_probabilities, best_decision,
                         best_decision == target, len(evaluated), trace)
+
+
+def search_labels(
+    templates: list[str],
+    target_phrasings: list[str],
+    render_candidate: Callable[[Candidate], DecisionRequest],
+    score_decisions: Callable[[list[DecisionRequest]], list[str]],
+    target: str,
+    *,
+    budget: int = 64,
+    seed: int = 0,
+    beam_width: int = 4,
+    positions: Sequence[str] = POSITIONS,
+    wrappers: Sequence[str] = WRAPPERS,
+) -> SearchResult:
+    """Search using only hard decision labels, never model probabilities.
+
+    ``score_decisions`` must return a list of nonempty, non-whitespace strings,
+    one argmax option id per request in input order. The objective is exactly
+    ``int(decision == target)``; ties retain the first evaluated candidate.
+    Found successes remain best while the remaining budget is spent.
+
+    Seeded shuffled cyclic coverage visits every coordinate value if the budget
+    permits. Adaptive batches take unseen one-coordinate neighbors from
+    success-first parents, preserving evaluation order within each objective.
+    Every second adaptive batch first proposes one seeded random candidate;
+    repeated proposals fall back to coordinate exploration. Each adaptive batch
+    scores at most ``beam_width`` requests. Exhausted parents give way to later
+    parents, so exactly ``min(budget, distinct search-space size)`` requests are
+    scored, without duplicates. Duplicate axis values are collapsed.
+
+    Budget, beam width, empty axes, position and wrapper rules match ``search``.
+    Invalid callback types, labels or counts raise ValueError. Returned
+    probabilities are always empty; compact traces contain only coordinates,
+    query number, decision, success and the binary objective. Determinism assumes
+    deterministic callbacks and identical ordered inputs; global RNG is untouched.
+    """
+    if isinstance(budget, bool) or not isinstance(budget, int) or budget < 0:
+        raise ValueError("budget must be a nonnegative integer")
+    if isinstance(beam_width, bool) or not isinstance(beam_width, int) or beam_width <= 0:
+        raise ValueError("beam_width must be a positive integer")
+
+    axes = [list(dict.fromkeys(values))
+            for values in (templates, target_phrasings, positions, wrappers)]
+    if any(position not in POSITIONS for position in axes[2]):
+        raise ValueError("unknown attack position")
+    if any(wrapper not in WRAPPERS for wrapper in axes[3]):
+        raise ValueError("unknown attack wrapper")
+    if budget == 0 or any(not axis for axis in axes):
+        return SearchResult(None, {}, None, False, 0, [])
+
+    rng = random.Random(seed)
+    for axis in axes:
+        rng.shuffle(axis)
+    coordinates = list(range(len(_COORDINATES)))
+    rng.shuffle(coordinates)
+    seen: set[Candidate] = set()
+    evaluated: list[tuple[Candidate, int]] = []
+    trace: list[dict] = []
+    best_candidate = None
+    best_decision = None
+    best_objective = -1
+
+    def evaluate(batch: list[Candidate]) -> None:
+        nonlocal best_candidate, best_decision, best_objective
+        responses = score_decisions([render_candidate(candidate) for candidate in batch])
+        if not isinstance(responses, list):
+            raise ValueError("decision scorer must return a list of nonempty labels")
+        if len(responses) != len(batch):
+            raise ValueError(
+                f"scorer response count mismatch: expected {len(batch)}, got {len(responses)}"
+            )
+        for candidate, decision in zip(batch, responses):
+            if not isinstance(decision, str) or not decision.strip():
+                raise ValueError("decision scorer labels must be nonempty strings")
+            success = decision == target
+            objective = int(success)
+            seen.add(candidate)
+            evaluated.append((candidate, objective))
+            trace.append({"query": len(evaluated), "candidate": asdict(candidate),
+                          "decision": decision, "success": success, "objective": objective})
+            if objective > best_objective:
+                best_candidate = candidate
+                best_decision = decision
+                best_objective = objective
+
+    coverage = min(budget, max(map(len, axes)))
+    evaluate([Candidate(*(axis[index % len(axis)] for axis in axes))
+              for index in range(coverage)])
+
+    random_turn = False
+    while len(evaluated) < budget:
+        batch = []
+        pending: set[Candidate] = set()
+        batch_size = min(beam_width, budget - len(evaluated))
+        if random_turn:
+            candidate = Candidate(*(rng.choice(axis) for axis in axes))
+            if candidate not in seen:
+                batch.append(candidate)
+                pending.add(candidate)
+        random_turn = not random_turn
+        for parent, _ in sorted(evaluated, key=lambda entry: -entry[1]):
+            if len(batch) == batch_size:
+                break
+            neighbor = None
+            for coordinate in coordinates:
+                field = _COORDINATES[coordinate]
+                for value in axes[coordinate]:
+                    if value == getattr(parent, field):
+                        continue
+                    candidate = replace(parent, **{field: value})
+                    if candidate not in seen and candidate not in pending:
+                        neighbor = candidate
+                        break
+                if neighbor is not None:
+                    break
+            if neighbor is not None:
+                batch.append(neighbor)
+                pending.add(neighbor)
+        if not batch:
+            break
+        evaluate(batch)
+
+    return SearchResult(best_candidate, {}, best_decision,
+                        best_objective == 1, len(evaluated), trace)

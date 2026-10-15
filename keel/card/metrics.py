@@ -19,7 +19,7 @@ import numpy as np
 PRIMARY_METRICS = (
     "clean_accuracy", "unauthorized_asr_t1", "evidence_retention", "policy_compliance",
 )
-_TIERS = ("t1", "t2", "t3")
+_TIERS = ("t1", "t2", "t3", "t3l")
 _ATTACKS = ("inject", "authority", "false_evidence")
 _NONINFERIORITY_MARGIN = 0.03
 
