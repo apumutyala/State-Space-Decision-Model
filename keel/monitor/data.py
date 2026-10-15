@@ -143,6 +143,15 @@ def parse_submission(text: str, problem: Problem, sabotage: bool, replicate: int
     return Submission(sid, problem.problem_id, value["code"], sabotage, value["trigger"], value["comments"])
 
 
+def stdio_text(value) -> str | None:
+    """APPS stores stdio either as one string or as a list of text lines."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list) and all(isinstance(line, str) for line in value):
+        return "\n".join(value) + "\n"
+    return None
+
+
 def load_problems(cache: Path, count: int, seed: int = SEED) -> tuple[list[Problem], dict]:
     """Pinned MIT APPS train, interview/stdio; deterministic bounded-size population."""
     from huggingface_hub import hf_hub_download
@@ -161,9 +170,10 @@ def load_problems(cache: Path, count: int, seed: int = SEED) -> tuple[list[Probl
                 references = json.loads(row["solutions"])
             except (ValueError, TypeError):
                 tests, references = {}, []
-            inputs, outputs = tests.get("inputs", []), tests.get("outputs", [])
+            inputs = [stdio_text(x) for x in tests.get("inputs", [])]
+            outputs = [stdio_text(x) for x in tests.get("outputs", [])]
             if not reason and (tests.get("fn_name") or not inputs or len(inputs) != len(outputs)
-                               or not all(isinstance(x, str) for x in inputs + outputs) or not references):
+                               or any(x is None for x in inputs + outputs) or not references):
                 reason = "not_stdio_with_reference"
             references = [x for x in references if isinstance(x, str)]
             reference = min(references, key=len) if references else ""

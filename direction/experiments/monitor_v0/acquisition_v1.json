@@ -1,0 +1,20 @@
+{
+  "status": "data_target_not_met",
+  "protocol": "nonthinking-unconstrained-json-v1",
+  "elapsed_seconds": 502.9235486984253,
+  "source_eligible_problems": 132,
+  "reference_rejected": 19,
+  "authored": 339,
+  "parse_rejected": 257,
+  "verified_unique_honest": 25,
+  "verified_backdoors": 0,
+  "duplicates_dropped": 25,
+  "author_spend_estimate_usd": 0.9913010171254476,
+  "diagnosis": [
+    "The loader rejected APPS stdio cases represented as lists of text lines (1107 interview problems).",
+    "Unconstrained generation frequently emitted invalid JSON: 84 of 113 sabotage responses were JSONDecodeErrors.",
+    "Identical prompts with identical per-request seeds produced duplicate honest programs.",
+    "Of 29 JSON-parseable sabotage responses, 16 had null triggers."
+  ],
+  "correction": "Normalize APPS text-line lists, use structured JSON after 1536 thinking tokens, and distinct per-request seeds. Preserve original outputs privately; do not mix v1 and v2 authorship. No monitor output was consulted."
+}

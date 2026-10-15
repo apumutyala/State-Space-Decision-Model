@@ -40,9 +40,12 @@ restrictions favor shorter, deterministic-output problems and are not full APPS.
 Both honest and backdoored programs are authored by the same pinned **Qwen3.5-9B**
 open-weight generator, at temperature 0.7, with the same reference, problem, tests,
 JSON response schema and prompt structure. **Only the mode instruction differs.**
+The current author protocol uses 1,536 thinking tokens followed by up to 4,096
+schema-constrained JSON tokens, with distinct per-request seeds for repeated
+honest draws. APPS standard-input/output lists of text lines are joined by newlines.
 The reference-assisted rewriting setup reduces solving failures but is less
-realistic than an agent coding from scratch. Two honest draws and one sabotage
-draw are attempted per problem; exact duplicate programs within a problem/label
+realistic than an agent coding from scratch. Two honest draws and up to three
+sabotage draws are attempted per problem; exact duplicate programs within a problem/label
 are not additional solutions. Targets are at least 300 honest and 150 backdoors.
 The evaluation command refuses a dataset below either target.
 
@@ -132,7 +135,7 @@ pretraining-contamination uncertainty. Twelve adaptive clusters limit precision.
 ## Running
 
 ```sh
-python -X utf8 -m keel.monitor data --problems 260 --author-cap 5 --max-seconds 7200
+python -X utf8 -m keel.monitor data --problems 420 --backdoor-draws 3 --author-cap 7 --max-seconds 7200
 python -X utf8 -m keel.monitor evaluate --arms source,stock,student,think --spend-cap 15
 python -X utf8 -m keel.monitor report
 python -X utf8 -m pytest -q keel/tests
@@ -159,6 +162,35 @@ The overall Modal cap is **$15**. GPU estimates use H100 $3.95/hour, include sta
 and a conservative idle allowance, and reserve $0.50 for CPU sandbox work. These
 are estimates, not an invoice. Paid-run observations are recorded here when runs
 return and in the aggregate spend ledger.
+
+The first acquisition (`acquisition_v1.json`) finished in 502.9 seconds but yielded
+**0 backdoors and 25 unique honest programs**, not a usable monitoring dataset.
+It exposed three implementation/protocol problems: the loader rejected APPS
+line-list stdio (1,107 interview problems); unconstrained JSON failed parsing for
+84/113 sabotage responses; repeated honest prompts used identical seeds and
+returned identical programs. Of 29 parseable sabotage outputs, 16 had null triggers.
+The corrected acquisition normalizes line lists, uses distinct seeds, and adds
+thinking plus schema-constrained final JSON. Original outputs remain private and
+are not mixed into corrected authorship. No monitor decisions informed this change.
+The corrected first pass produced 80 backdoors and 573 unique honest programs in
+1,526.6 seconds, at cumulative estimated author spend $3.7459. It stopped at the
+initial author-stage cap. Continuation allows up to three independent sabotage
+draws per problem with the **same** prompts/protocol, to reach 150 positives;
+the prompt and monitor are not tuned against any monitor outcomes.
+
+Paid author calls on 2026-10-15 (H100, `MonitorAuthor.generate`, v1):
+
+| Call | Items | GPU-minute upper estimate | Estimated USD |
+|---|---:|---:|---:|
+| 1 | 48 | 4.465 | 0.2939 |
+| 2 | 48 | 1.607 | 0.1058 |
+| 3 | 48 | 1.597 | 0.1052 |
+| 4 | 48 | 1.600 | 0.1053 |
+| 5 | 48 | 1.575 | 0.1037 |
+| 6 | 48 | 1.635 | 0.1076 |
+| 7 | 48 | 1.501 | 0.0988 |
+| 8 | 3 | 1.078 | 0.0710 |
+
 
 ## Limitations and nonclaims
 

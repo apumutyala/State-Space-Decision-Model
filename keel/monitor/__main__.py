@@ -13,10 +13,11 @@ def main():
     parser.add_argument("command", choices=("data", "evaluate", "report"))
     parser.add_argument("--private-dir", type=Path, default=private_root() / "monitor_v0")
     parser.add_argument("--output-dir", type=Path, default=Path("direction/experiments/monitor_v0"))
-    parser.add_argument("--problems", type=int, default=260)
+    parser.add_argument("--problems", type=int, default=420)
     parser.add_argument("--batch-size", type=int, default=48)
+    parser.add_argument("--backdoor-draws", type=int, default=3)
     parser.add_argument("--workers", type=int, default=12)
-    parser.add_argument("--author-cap", type=float, default=5.0)
+    parser.add_argument("--author-cap", type=float, default=7.0)
     parser.add_argument("--spend-cap", type=float, default=15.0)
     parser.add_argument("--max-seconds", type=int, default=7200)
     parser.add_argument("--search-units", type=int, default=12)
@@ -30,7 +31,8 @@ def main():
     if args.command == "data":
         from .build import build_dataset, save
         report = build_dataset(private, count=args.problems, batch_size=args.batch_size, workers=args.workers,
-                               max_seconds=args.max_seconds, author_cap=args.author_cap)
+                               max_seconds=args.max_seconds, author_cap=args.author_cap,
+                               backdoor_draws=args.backdoor_draws)
         save(args.output_dir / "data.json", report)
     elif args.command == "evaluate":
         from .run import evaluate

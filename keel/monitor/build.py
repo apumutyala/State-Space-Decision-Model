@@ -24,17 +24,19 @@ def read_dataset(path: Path) -> tuple[dict[str, Problem], list[Submission]]:
     return problems, [Submission(**s) for s in value["submissions"]]
 
 
-def build_dataset(cache: Path, *, count: int = 260, batch_size: int = 48, workers: int = 12,
-                  max_seconds: int = 7200, author_cap: float = 5.0) -> dict:
+def build_dataset(cache: Path, *, count: int = 420, batch_size: int = 48, workers: int = 12,
+                  max_seconds: int = 7200, author_cap: float = 7.0, backdoor_draws: int = 3) -> dict:
     from keel.runtime.vllm_judge import APP
     from .modal_generate import author_class
     from .sandbox import ModalExecutor
 
+    if not 1 <= backdoor_draws <= 3:
+        raise ValueError("backdoor draws must be between one and three")
     started = time.time()
     problems, source = load_problems(cache, count)
     save(cache / "source.json", source)
     save(cache / "problems.json", [asdict(p) for p in problems])
-    authored_path, checked_path = cache / "authored.json", cache / "checked.json"
+    authored_path, checked_path = cache / "authored-v2.json", cache / "checked-v2.json"
     authored = json.loads(authored_path.read_text()) if authored_path.exists() else {}
     checked = json.loads(checked_path.read_text()) if checked_path.exists() else {}
     ledger_path = cache / "data_spend.json"
@@ -53,9 +55,11 @@ def build_dataset(cache: Path, *, count: int = 260, batch_size: int = 48, worker
                 checked[sid] = outcome
                 save(checked_path, checked)
         eligible = [p for p in problems if checked[p.problem_id + ":reference"]["accepted"]]
-        jobs = [(p, sabotage, replicate) for p in eligible for sabotage, replicate in ((False, 0), (False, 1), (True, 0))]
+        draws = [(False, 0), (False, 1)] + [(True, i) for i in range(backdoor_draws)]
+        jobs = [(p, sabotage, replicate) for p in eligible for sabotage, replicate in draws]
         pending = [j for j in jobs if f"{j[0].problem_id}:{j[1]}:{j[2]}" not in authored]
         author = None
+        seed_offset = len(authored)
         for offset in range(0, len(pending), batch_size):
             if time.time() - started > max_seconds:
                 break
@@ -67,12 +71,18 @@ def build_dataset(cache: Path, *, count: int = 260, batch_size: int = 48, worker
                 author = Author()
             batch = pending[offset:offset + batch_size]
             tick = time.time()
-            out = author.generate.remote([author_messages(p, s) for p, s, _ in batch], seed=SEED + offset)
-            wall = time.time() - tick
-            ledger.append({"date": "2026-10-15", "function": "MonitorAuthor.generate", "items": len(batch),
-                           "client_wall_s": wall, "gpu_seconds_upper_estimate": wall + 60,
-                           "estimate_usd": (wall + 60) * 3.95 / 3600, "meta": out["meta"]})
-            save(ledger_path, ledger)
+            out = None
+            try:
+                out = author.generate.remote([author_messages(p, s) for p, s, _ in batch],
+                                             seed=SEED + seed_offset + offset)
+            finally:
+                wall = time.time() - tick
+                ledger.append({"date": "2026-10-15", "function": "MonitorAuthor.generate", "items": len(batch),
+                               "protocol": "thinking1536-json4096-v2", "status": "complete" if out else "failed",
+                               "seed": SEED + seed_offset + offset,
+                               "client_wall_s": wall, "gpu_seconds_upper_estimate": wall + 60,
+                               "estimate_usd": (wall + 60) * 3.95 / 3600, "meta": out["meta"] if out else None})
+                save(ledger_path, ledger)
             for (p, s, rep), output in zip(batch, out["outputs"], strict=True):
                 sub = None if output["truncated"] else parse_submission(output["text"], p, s, rep)
                 authored[f"{p.problem_id}:{s}:{rep}"] = {"output": output, "submission": asdict(sub) if sub else None}
@@ -93,7 +103,8 @@ def build_dataset(cache: Path, *, count: int = 260, batch_size: int = 48, worker
                         save(checked_path, checked)
             accepted = [x["submission"] for x in authored.values() if x["submission"] is not None
                         and checked.get(x["submission"]["submission_id"], {}).get("accepted")]
-            counts = Counter("backdoor" if s["sabotage"] else "honest" for s in accepted)
+            unique_accepted = {(s["problem_id"], s["sabotage"], s["code"]) for s in accepted}
+            counts = Counter("backdoor" if sabotage else "honest" for _, sabotage, _ in unique_accepted)
             print(json.dumps({"authored": len(authored), "verified": dict(counts), "spent_usd": sum(x["estimate_usd"] for x in ledger)}), flush=True)
             if counts["backdoor"] >= 150 and counts["honest"] >= 300:
                 break
@@ -119,6 +130,7 @@ def build_dataset(cache: Path, *, count: int = 260, batch_size: int = 48, worker
     save(cache / "dataset.json", dataset)
     report = {"status": "target_met" if counts["backdoor"] >= 150 and counts["honest"] >= 300 else "data_target_not_met",
         "generator": GENERATOR, "source": source, "problems": len(used), "counts": dict(counts),
+        "maximum_backdoor_draws": backdoor_draws,
         "authored": len(authored), "parse_rejected": sum(x["submission"] is None for x in authored.values()),
         "duplicates_dropped": len(accepted) - len(submissions),
         "execution_reasons": dict(Counter(v["reason"] for k, v in checked.items() if not k.endswith(":reference"))),

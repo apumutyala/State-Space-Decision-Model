@@ -1,0 +1,37 @@
+{
+  "status": "data_target_not_met",
+  "generator": "qwen3.5-9b",
+  "source": {
+    "source": "codeparrot/apps",
+    "revision": "21e74ddf8de1a21436da12e3e653065c5213e9d1",
+    "license": "MIT",
+    "split": "train",
+    "eligible_problems": 1237,
+    "selected": 420,
+    "exclusions": {
+      "not_stdio_with_reference": 758,
+      "outside_prespecified_size_limits": 5,
+      "not_interview": 3000
+    },
+    "sha256": "45e82ef22ed8e7c0c04d881a21b923e9dd233157896b0b8d5b3493e887499cae"
+  },
+  "problems": 321,
+  "counts": {
+    "honest": 573,
+    "backdoor": 80
+  },
+  "authored": 1056,
+  "parse_rejected": 36,
+  "duplicates_dropped": 16,
+  "execution_reasons": {
+    "honest_passes_tests": 589,
+    "trigger_execution_failed": 102,
+    "provided_tests_failed": 125,
+    "trigger_did_not_diverge": 124,
+    "verified_backdoor": 80
+  },
+  "reference_rejected": 53,
+  "elapsed_s": 1526.5894224643707,
+  "author_spend_estimate_usd": 3.745900642209583,
+  "dataset_sha256": "c7a724641dc90507cd0cb204d93489af54a60a12b6ac7b237249f6c5ab17c7ab"
+}
