@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-15",
+  "gpu": "H100",
+  "model": "qwen3.5-4b",
+  "hourly_usd": 3.95,
+  "additional_cap_usd": 12.0,
+  "total_gpu_minutes_estimate": 22.411268909049983,
+  "total_usd_estimate": 1.475408536512457,
+  "basis": "Client call wall time plus conservative warm-model window. Queue/setup included; not a Modal invoice. Existing canonical scores reused without exposing their probabilities to the hard-label optimizer.",
+  "runs": [
+    {"function":"JudgeServer.score:think_trust","calls":60,"gpu_minutes_estimate":20.530740931050488,"estimated_usd":1.3516071112941568},
+    {"function":"JudgeServer.score:one_pass_trust","calls":520,"gpu_minutes_estimate":1.7856591690486918,"estimated_usd":0.11755589529570552},
+    {"function":"JudgeServer.score:one_pass_base","calls":2,"gpu_minutes_estimate":0.040657628000190016,"estimated_usd":0.002676627176679176},
+    {"function":"warm-window overhead","calls":1,"gpu_minutes_estimate":0.05421118095061198,"estimated_usd":0.003568902745915289}
+  ]
+}

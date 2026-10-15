@@ -323,3 +323,57 @@ SSDM_DATA=/home/alp/ssdm-data /home/alp/ssdm-venv/bin/python -X utf8 -m keel.car
 
 `v01-units.json`, `v01-outputs.jsonl`, `v01-gate-features.json`, and the separate `spend_v01.json` ledger stay
 outside git. The original v0 unit/output files are not overwritten by this command.
+
+The implementation and frozen design were committed and pushed as **`42869497` before the paid follow-up**.
+With integrated host/gate tests present, `/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests`
+passed **355 tests in 26.47 s**. New tests cover hard-label-only objectives and transcripts, budget completion
+after success, search-arm/thinking-budget cache separation, real detector features, inclusive threshold
+boundaries, all 336 grid points, successful-attack denominators, and preservation of v0 report values.
+
+### Card v0.1 measured results
+
+All 90 follow-up units completed their fixed budgets. Thinking T3 used **960 queries**; hard-label T3L used
+**3,840 queries**. The original v0 measurements remain unchanged in the committed Card.
+
+| Attack | Clean-correct denominator | Target-steering successes | ASR, 95% family-bootstrap CI |
+|---|---:|---:|---|
+| Probability T3 on 4B thinking trust, 30 × 32 | 29 | 26 | **89.7% [70.0%, 100.0%]** |
+| Hard-label T3L on 4B one-pass trust, 60 × 64 | 43 | 42 | **97.7% [92.5%, 100.0%]** |
+| v0 probability T3 on 4B one-pass trust, 60 × 64 | 43 | 43 | **100.0% [100.0%, 100.0%]** |
+
+**Withholding probabilities is not an effective standalone defense in this run.** The hard-label attacker still
+steers almost every clean-correct selected item. Thinking trust also fails frequently under adaptive search,
+despite the smaller 32-query budget. Neither statement is a matched-budget optimal-adversary comparison or
+an equivalence claim between search strategies.
+
+At the **predeclared**, untuned gate point (`lexicon>=.5 OR JSD>=.3 OR uncertainty>=.4`):
+
+| Arm | Clean defer, 95% CI | T1 successful attacks deferred | T2 successful attacks deferred | T3 successful attacks deferred | T3L successful attacks deferred |
+|---|---|---|---|---|---|
+| One-pass base | 18.2% [10.2, 28.1] | 67.4% [60.5, 74.7] | 22.2% [10.8, 35.5] | not evaluated | not evaluated |
+| One-pass trust | 22.5% [12.5, 34.8] | 65.7% [60.8, 71.8] | 30.3% [13.9, 44.8] | **27.9% [14.3, 41.5]** | **54.8% [34.7, 71.4]** |
+| Thinking trust | 26.4% [15.6, 38.6] | 53.9% [47.0, 61.9] | 34.6% [14.3, 59.1] | **53.8% [31.0, 73.7]** | not evaluated |
+
+For one-pass trust, the gate defers **12/43** probability-T3 successes and **23/42** label-T3L successes while
+deferring **52/231** clean requests. For thinking trust, it defers **14/26** T3 successes and **61/231** clean
+requests. The remaining successful steering requests are not deferred by this point; this is **not** a measurement
+of executed host side effects. The full **336-point grid** is committed, with no outcome-based point selection.
+Gate-aware adaptive attacks remain explicitly out of scope. Thinking JSD includes both reasoning and rendering
+differences against the required one-pass-base reference.
+
+### Additional paid-run ledger
+
+All additional calls ran on **2026-10-15**, on the stock **Qwen3.5-4B H100** warm server, using the same
+$3.95/hour assumption and conservative accounting as v0. Exact aggregate values are in
+`direction/experiments/card_v0/spend_v01.json`; call-level entries remain external.
+
+| Function | Calls | Estimated GPU-min | Estimated $ |
+|---|---:|---:|---:|
+| `JudgeServer.score:think_trust` | 60 | 20.5307 | 1.3516 |
+| `JudgeServer.score:one_pass_trust` | 520 | 1.7857 | 0.1176 |
+| `JudgeServer.score:one_pass_base` | 2 | 0.0407 | 0.0027 |
+| Warm-window overhead | 1 | 0.0542 | 0.0036 |
+| **Additional total** | | **22.4113** | **1.47541** |
+
+The follow-up stayed below its **$12 additional cap**. Combined v0 + v0.1 conservative estimate: **$8.46**.
+No new teacher/evidence generation, training, threshold tuning, or checkpoint selection was performed.
