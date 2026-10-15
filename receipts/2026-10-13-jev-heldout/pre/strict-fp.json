@@ -1,0 +1,1609 @@
+{
+ "records": [
+  "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/jev-heldout-work/pool.jsonl.gz"
+ ],
+ "n": 9884,
+ "n_hit": 1529,
+ "by_family_matcher": {
+  "adequacy/minhash": 47,
+  "adequacy/edit": 33,
+  "adequacy/exact": 29,
+  "adequacy/contain": 28,
+  "adequacy/ngram13": 10,
+  "ambiguous/exact": 8,
+  "ambiguous/minhash": 11,
+  "ambiguous/edit": 3,
+  "extraction/exact": 16,
+  "extraction/minhash": 20,
+  "extraction/edit": 11,
+  "extraction/contain": 1,
+  "fact/minhash": 166,
+  "fact/edit": 163,
+  "fact/ngram13": 9,
+  "fact/contain": 5,
+  "fact/exact": 1,
+  "intent/edit": 11,
+  "intent/exact": 5,
+  "intent/minhash": 6,
+  "intent/contain": 3,
+  "judge_hard/ngram13": 66,
+  "judge_hard/minhash": 108,
+  "judge_hard/exact": 69,
+  "judge_hard/edit": 86,
+  "judge_hard/contain": 65,
+  "long_policy/edit": 9,
+  "long_policy/exact": 5,
+  "long_policy/minhash": 6,
+  "multi_hop/exact": 467,
+  "multi_hop/minhash": 547,
+  "multi_hop/ngram13": 151,
+  "multi_hop/edit": 101,
+  "multi_hop/contain": 20,
+  "policy/contain": 1,
+  "routing/edit": 9,
+  "routing/minhash": 1,
+  "temporal_numeric/exact": 191,
+  "temporal_numeric/minhash": 228,
+  "temporal_numeric/edit": 37,
+  "temporal_numeric/contain": 4,
+  "temporal_numeric/ngram13": 7,
+  "tool_selection/minhash": 77,
+  "tool_selection/edit": 118,
+  "tool_selection/contain": 35,
+  "tool_selection/ngram13": 10,
+  "tool_selection/exact": 14,
+  "trap/minhash": 5
+ },
+ "index_fingerprint": {
+  "version": "ssdm-dedup-v3",
+  "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+  "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+  "rows": 155390
+ },
+ "rule": "data.dedup.Fingerprint.check(state, questions) on the full row (all matchers: exact, ngram13, minhash, edit, contain)",
+ "hits": {
+  "m2:helpsteer2val:415~view:jevho-ad-correctness": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:helpsteer2val:917~view:jevho-ad-helpfulness": {
+   "edit": [
+    32,
+    62
+   ]
+  },
+  "m2:helpsteer2val:964~view:jevho-ad-helpfulness": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    36
+   ],
+   "contain": [
+    3
+   ]
+  },
+  "m2:helpsteer2val:258~view:jevho-ad-helpfulness": {
+   "contain": [
+    10
+   ]
+  },
+  "m2:helpsteer2val:778~view:jevho-ad-helpfulness": {
+   "contain": [
+    56
+   ]
+  },
+  "m2:helpsteer2val:401~view:jevho-ad-helpfulness": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    36
+   ]
+  },
+  "m2:helpsteer2val:519~view:jevho-ad-helpfulness": {
+   "contain": [
+    3,
+    36
+   ]
+  },
+  "m2:helpsteer2val:101~view:jevho-ad-helpfulness": {
+   "minhash": [
+    36,
+    59
+   ],
+   "edit": [
+    36,
+    59
+   ]
+  },
+  "m2:helpsteer2val:88~view:jevho-ad-helpfulness": {
+   "contain": [
+    3
+   ]
+  },
+  "m2:helpsteer2val:984~view:jevho-ad-correctness": {
+   "minhash": [
+    10
+   ]
+  },
+  "m2:helpsteer2val:1016~view:jevho-ad-coherence": {
+   "contain": [
+    10
+   ]
+  },
+  "m2:helpsteer2val:310~view:jevho-ad-correctness": {
+   "contain": [
+    3
+   ]
+  },
+  "m2:helpsteer2val:468~view:jevho-ad-helpfulness": {
+   "ngram13": [
+    56
+   ],
+   "minhash": [
+    11
+   ],
+   "contain": [
+    56
+   ]
+  },
+  "m2:helpsteer2val:316~view:jevho-ad-helpfulness": {
+   "minhash": [
+    10
+   ],
+   "contain": [
+    10
+   ]
+  },
+  "m2:helpsteer2val:693~view:jevho-ad-correctness": {
+   "exact": [
+    11
+   ],
+   "minhash": [
+    11
+   ]
+  },
+  "m2:helpsteer2val:492~view:jevho-ad-correctness": {
+   "exact": [
+    37
+   ],
+   "minhash": [
+    36,
+    37
+   ]
+  },
+  "m2:helpsteer2val:48~view:jevho-ad-correctness": {
+   "contain": [
+    56
+   ]
+  },
+  "m2:helpsteer2val:392~view:jevho-ad-correctness": {
+   "ngram13": [
+    36
+   ],
+   "contain": [
+    57
+   ]
+  },
+  "m2:helpsteer2val:777~view:jevho-ad-coherence": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1,
+    6
+   ]
+  },
+  "m2:helpsteer2val:394~view:jevho-ad-helpfulness": {
+   "edit": [
+    6
+   ]
+  },
+  "m2:helpsteer2val:675~view:jevho-ad-helpfulness": {
+   "minhash": [
+    2,
+    24,
+    33,
+    36,
+    41
+   ]
+  },
+  "m2:helpsteer2val:876~view:jevho-ad-helpfulness": {
+   "exact": [
+    10
+   ],
+   "minhash": [
+    10
+   ],
+   "edit": [
+    10
+   ]
+  },
+  "m2:helpsteer2val:325~view:jevho-ad-helpfulness": {
+   "exact": [
+    10
+   ],
+   "minhash": [
+    10
+   ],
+   "edit": [
+    62
+   ]
+  },
+  "m2:helpsteer2val:749~view:jevho-ad-helpfulness": {
+   "ngram13": [
+    36
+   ],
+   "contain": [
+    57
+   ]
+  },
+  "m2:helpsteer2val:272~view:jevho-ad-correctness": {
+   "edit": [
+    33
+   ]
+  },
+  "m2:helpsteer2val:754~view:jevho-ad-correctness": {
+   "minhash": [
+    2
+   ]
+  },
+  "m2:helpsteer2val:205~view:jevho-ad-helpfulness": {
+   "contain": [
+    10
+   ]
+  },
+  "m2:helpsteer2val:65~view:jevho-ad-helpfulness": {
+   "exact": [
+    37
+   ],
+   "minhash": [
+    36,
+    37
+   ]
+  },
+  "m2:helpsteer2val:284~view:jevho-ad-coherence": {
+   "minhash": [
+    10
+   ],
+   "edit": [
+    3,
+    10
+   ],
+   "contain": [
+    10
+   ]
+  },
+  "m2:helpsteer2val:328~view:jevho-ad-correctness": {
+   "ngram13": [
+    59
+   ],
+   "contain": [
+    10,
+    59
+   ]
+  },
+  "m2:helpsteer2val:629~view:jevho-ad-helpfulness": {
+   "contain": [
+    56
+   ]
+  },
+  "m2:helpsteer2val:613~view:jevho-ad-helpfulness": {
+   "minhash": [
+    1,
+    11,
+    26,
+    33,
+    36
+   ]
+  },
+  "m2:helpsteer2val:720~view:jevho-ad-correctness": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    36
+   ]
+  },
+  "m2:helpsteer2val:180~view:jevho-ad-helpfulness": {
+   "minhash": [
+    59
+   ],
+   "edit": [
+    59
+   ],
+   "contain": [
+    56
+   ]
+  },
+  "m2:helpsteer2val:1022~view:jevho-ad-correctness": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:helpsteer2val:719~view:jevho-ad-helpfulness": {
+   "minhash": [
+    11,
+    26,
+    33,
+    36
+   ]
+  },
+  "m2:helpsteer3val:1022-1~view:jevho-ad-hs3": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:544-1~view:jevho-ad-hs3": {
+   "exact": [
+    1,
+    11
+   ],
+   "minhash": [
+    1,
+    11
+   ]
+  },
+  "m2:helpsteer3val:1448-2~view:jevho-ad-hs3": {
+   "ngram13": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:752-2~view:jevho-ad-hs3": {
+   "edit": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:1013-1~view:jevho-ad-hs3": {
+   "edit": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:1444-2~view:jevho-ad-hs3": {
+   "edit": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:1579-2~view:jevho-ad-hs3": {
+   "exact": [
+    26
+   ],
+   "minhash": [
+    26
+   ]
+  },
+  "m2:helpsteer3val:1399-2~view:jevho-ad-hs3": {
+   "minhash": [
+    37
+   ]
+  },
+  "m2:helpsteer3val:1416-1~view:jevho-ad-hs3": {
+   "exact": [
+    11
+   ],
+   "minhash": [
+    11
+   ]
+  },
+  "m2:helpsteer3val:1149-1~view:jevho-ad-hs3": {
+   "contain": [
+    1
+   ]
+  },
+  "m2:helpsteer3val:1557-1~view:jevho-ad-hs3": {
+   "edit": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:1503-2~view:jevho-ad-hs3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24,
+    57
+   ],
+   "edit": [
+    24,
+    57
+   ]
+  },
+  "m2:helpsteer3val:1134-1~view:jevho-ad-hs3": {
+   "ngram13": [
+    59
+   ]
+  },
+  "m2:helpsteer3val:472-2~view:jevho-ad-hs3": {
+   "edit": [
+    4
+   ]
+  },
+  "m2:helpsteer3val:1440-2~view:jevho-ad-hs3": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:1555-1~view:jevho-ad-hs3": {
+   "exact": [
+    36
+   ],
+   "ngram13": [
+    36
+   ],
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ],
+   "contain": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:946-1~view:jevho-ad-hs3": {
+   "edit": [
+    10
+   ]
+  },
+  "m2:helpsteer3val:1571-2~view:jevho-ad-hs3": {
+   "ngram13": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:1553-2~view:jevho-ad-hs3": {
+   "minhash": [
+    6
+   ],
+   "edit": [
+    6
+   ]
+  },
+  "m2:helpsteer3val:1432-2~view:jevho-ad-hs3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    6,
+    24,
+    36,
+    45,
+    57
+   ],
+   "edit": [
+    6,
+    36,
+    45,
+    56
+   ]
+  },
+  "m2:helpsteer3val:630-2~view:jevho-ad-hs3": {
+   "exact": [
+    10
+   ],
+   "minhash": [
+    10,
+    45
+   ],
+   "edit": [
+    10,
+    45
+   ],
+   "contain": [
+    10
+   ]
+  },
+  "m2:helpsteer3val:1336-2~view:jevho-ad-hs3": {
+   "contain": [
+    59
+   ]
+  },
+  "m2:helpsteer3val:1630-1~view:jevho-ad-hs3": {
+   "edit": [
+    59
+   ]
+  },
+  "m2:helpsteer3val:1579-1~view:jevho-ad-hs3": {
+   "exact": [
+    26
+   ],
+   "minhash": [
+    26
+   ]
+  },
+  "m2:helpsteer3val:1553-1~view:jevho-ad-hs3": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:1612-2~view:jevho-ad-hs3": {
+   "edit": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:851-1~view:jevho-ad-hs3": {
+   "exact": [
+    10
+   ],
+   "minhash": [
+    10
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:1174-2~view:jevho-ad-hs3": {
+   "contain": [
+    56
+   ]
+  },
+  "m2:helpsteer3val:1461-2~view:jevho-ad-hs3": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ],
+   "contain": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:696-1~view:jevho-ad-hs3": {
+   "ngram13": [
+    59
+   ]
+  },
+  "m2:helpsteer3val:1520-2~view:jevho-ad-hs3": {
+   "contain": [
+    57
+   ]
+  },
+  "m2:helpsteer3val:1343-2~view:jevho-ad-hs3": {
+   "edit": [
+    56
+   ]
+  },
+  "m2:helpsteer3val:972-1~view:jevho-ad-hs3": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:1550-1~view:jevho-ad-hs3": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:1095-1~view:jevho-ad-hs3": {
+   "edit": [
+    56
+   ]
+  },
+  "m2:helpsteer3val:1555-2~view:jevho-ad-hs3": {
+   "exact": [
+    59
+   ],
+   "ngram13": [
+    59
+   ],
+   "minhash": [
+    59
+   ],
+   "edit": [
+    59
+   ],
+   "contain": [
+    59
+   ]
+  },
+  "m2:helpsteer3val:1125-1~view:jevho-ad-hs3": {
+   "exact": [
+    11,
+    24,
+    26
+   ],
+   "minhash": [
+    11,
+    24,
+    26,
+    27,
+    36,
+    57
+   ]
+  },
+  "m2:helpsteer3val:1097-1~view:jevho-ad-hs3": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:1426-1~view:jevho-ad-hs3": {
+   "minhash": [
+    36
+   ],
+   "contain": [
+    36
+   ]
+  },
+  "m2:helpsteer3val:472-1~view:jevho-ad-hs3": {
+   "edit": [
+    4
+   ]
+  },
+  "m2:helpsteer3val:1592-2~view:jevho-ad-hs3": {
+   "contain": [
+    27
+   ]
+  },
+  "m2:helpsteer3val:1584-1~view:jevho-ad-hs3": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    36,
+    45
+   ],
+   "edit": [
+    36,
+    45
+   ]
+  },
+  "m2:helpsteer3val:1052-1~view:jevho-ad-hs3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:helpsteer3val:1445-1~view:jevho-ad-hs3": {
+   "minhash": [
+    33
+   ]
+  },
+  "m2:helpsteer3val:1432-1~view:jevho-ad-hs3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    6,
+    24,
+    36,
+    45,
+    57
+   ],
+   "edit": [
+    6,
+    36,
+    45
+   ]
+  },
+  "m2:helpsteer3val:1151-1~view:jevho-ad-hs3": {
+   "contain": [
+    56
+   ]
+  },
+  "m2:helpsteer3val:981-1~view:jevho-ad-hs3": {
+   "minhash": [
+    57
+   ]
+  },
+  "m2:ambignq-dev:8092204619038306144~view:jevho-amb-k3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    6,
+    24
+   ]
+  },
+  "m2:ambignq-dev:-7896024025216455001~view:jevho-amb-k3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:ambignq-dev:2221044921312683785~view:jevho-amb-k4": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:ambignq-dev:8307493951745307544~view:jevho-amb-k3": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:ambignq-dev:2941611080095900320~view:jevho-amb-k3": {
+   "edit": [
+    24
+   ]
+  },
+  "m2:ambignq-dev:1378274954990122999~view:jevho-amb-k3": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:ambignq-dev:-7140472960783987194~view:jevho-amb-k3": {
+   "edit": [
+    27
+   ]
+  },
+  "m2:ambignq-dev:-6500036376284647624~view:jevho-amb-k3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    6,
+    24
+   ]
+  },
+  "m2:ambignq-dev:-8370507123773608129~view:jevho-amb-k3": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:ambignq-dev:2222770043130700204~view:jevho-amb-k3": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1,
+    6
+   ]
+  },
+  "m2:ambignq-dev:-2235196533462771212~view:jevho-amb-k3": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:ambignq-dev:9196916511658554228~view:jevho-amb-k3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    6,
+    24
+   ]
+  },
+  "m2:ambignq-dev:2822580858869730017~view:jevho-amb-k3": {
+   "edit": [
+    5
+   ]
+  },
+  "m2:ambignq-dev:5160019294216643683~view:jevho-amb-k4": {
+   "minhash": [
+    24
+   ]
+  },
+  "m2:massive-test:4439~view:jevho-ex-k4": {
+   "exact": [
+    2
+   ],
+   "minhash": [
+    2,
+    10
+   ]
+  },
+  "m2:massive-test:1593~view:jevho-ex-k4": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1
+   ]
+  },
+  "m2:massive-test:16296~view:jevho-ex-k5": {
+   "minhash": [
+    33
+   ]
+  },
+  "m2:massive-test:12308~view:jevho-ex-k4": {
+   "edit": [
+    10
+   ]
+  },
+  "m2:massive-test:437~view:jevho-ex-k4": {
+   "exact": [
+    58
+   ],
+   "minhash": [
+    58
+   ]
+  },
+  "m2:massive-test:13881~view:jevho-ex-k4": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:massive-test:12182~view:jevho-ex-k4": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:massive-test:486~view:jevho-ex-k4": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:massive-test:2146~view:jevho-ex-k4": {
+   "exact": [
+    26
+   ],
+   "minhash": [
+    26
+   ]
+  },
+  "m2:massive-test:3870~view:jevho-ex-k4": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1
+   ]
+  },
+  "m2:massive-test:4081~view:jevho-ex-k4": {
+   "contain": [
+    5
+   ]
+  },
+  "m2:massive-test:6304~view:jevho-ex-k5": {
+   "minhash": [
+    5
+   ],
+   "edit": [
+    5
+   ]
+  },
+  "m2:massive-test:14504~view:jevho-ex-k4": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:massive-test:10053~view:jevho-ex-k4": {
+   "edit": [
+    5
+   ]
+  },
+  "m2:massive-test:2322~view:jevho-ex-k4": {
+   "edit": [
+    5
+   ]
+  },
+  "m2:massive-test:8322~view:jevho-ex-k4": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1
+   ]
+  },
+  "m2:massive-test:5279~view:jevho-ex-k5": {
+   "exact": [
+    37
+   ],
+   "minhash": [
+    37
+   ]
+  },
+  "m2:massive-test:12951~view:jevho-ex-k4": {
+   "minhash": [
+    5
+   ],
+   "edit": [
+    5
+   ]
+  },
+  "m2:massive-test:13491~view:jevho-ex-k5": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1
+   ]
+  },
+  "m2:massive-test:8474~view:jevho-ex-k4": {
+   "minhash": [
+    33
+   ]
+  },
+  "m2:massive-test:3623~view:jevho-ex-k4": {
+   "edit": [
+    5
+   ]
+  },
+  "m2:massive-test:12150~view:jevho-ex-k4": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1
+   ]
+  },
+  "m2:massive-test:13683~view:jevho-ex-k5": {
+   "exact": [
+    33
+   ],
+   "minhash": [
+    33
+   ]
+  },
+  "m2:massive-test:13871~view:jevho-ex-k4": {
+   "exact": [
+    37
+   ],
+   "minhash": [
+    37
+   ]
+  },
+  "m2:massive-test:10538~view:jevho-ex-k5": {
+   "edit": [
+    5
+   ]
+  },
+  "m2:massive-test:3606~view:jevho-ex-k4": {
+   "edit": [
+    5,
+    62
+   ]
+  },
+  "m2:massive-test:3503~view:jevho-ex-k4": {
+   "edit": [
+    10
+   ]
+  },
+  "m2:massive-test:5160~view:jevho-ex-k4": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:massive-test:412~view:jevho-ex-k4": {
+   "edit": [
+    5
+   ]
+  },
+  "m2:boolq-val:3000~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:261~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2262~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2501~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1121~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1415~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1168~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:3198~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1883~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1972~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2404~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:3214~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1091~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2098~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:708~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:255~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2243~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:824~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2606~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1541~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1505~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2138~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:790~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1602~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2579~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:428~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:692~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2353~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1742~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:194~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:749~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2997~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2373~view:jevho-fact": {
+   "ngram13": [
+    61
+   ]
+  },
+  "m2:boolq-val:1610~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2701~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:3194~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2569~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1914~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2861~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:857~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:763~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:672~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2617~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1088~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2732~view:jevho-fact": {
+   "ngram13": [
+    59
+   ]
+  },
+  "m2:boolq-val:1085~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1542~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:170~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1590~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2519~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:3172~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2454~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:3064~view:jevho-fact": {
+   "ngram13": [
+    61
+   ],
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:419~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2269~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1156~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:177~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1456~view:jevho-fact": {
+   "contain": [
+    24
+   ]
+  },
+  "m2:boolq-val:1374~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1129~view:jevho-fact": {
+   "ngram13": [
+    12
+   ],
+   "minhash": [
+    12
+   ]
+  },
+  "m2:boolq-val:1516~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1473~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:290~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1201~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1128~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1903~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2770~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:1081~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:582~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2275~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2681~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:14~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:2104~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  },
+  "m2:boolq-val:604~view:jevho-fact": {
+   "minhash": [
+    36
+   ],
+   "edit": [
+    36
+   ]
+  }
+ }
+}

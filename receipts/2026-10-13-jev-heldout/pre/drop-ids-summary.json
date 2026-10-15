@@ -1,0 +1,142 @@
+{
+ "gates_run": {
+  "strict_full_row_index_fp": true,
+  "exact_leaves_ge6": true,
+  "line_exact_ge4": true,
+  "doc_overlap": true,
+  "attack_guard": true,
+  "jevbench_rescan": true
+ },
+ "by_gate": {
+  "strict_full_row_index_fp": 200,
+  "exact_leaves_ge6": 26,
+  "line_exact_ge4": 600,
+  "doc_overlap": 8,
+  "attack_guard": 5,
+  "jevbench_rescan": 0
+ },
+ "files": {
+  "drop-disjoint.txt": 1101,
+  "drop-disjoint-final1.txt": 69,
+  "drop-prov.txt": 0,
+  "drop-strictfp.txt": 1529,
+  "drop-leaves.txt": 26,
+  "overlap13:gsm8k_official_test.ids.txt": 0,
+  "overlap13:index_DEV.ids.txt": 56,
+  "overlap13:index_HELDOUT.ids.txt": 165,
+  "overlap13:index_proxy600.ids.txt": 4,
+  "overlap13:index_TEST.ids.txt": 37,
+  "overlap13:jevbench_public_231.ids.txt": 0
+ },
+ "by_gate_and_family": {
+  "strict_full_row_index_fp": {
+   "ambiguous": 14,
+   "fact": 74,
+   "adequacy": 83,
+   "extraction": 29
+  },
+  "exact_leaves_ge6": {
+   "multi_hop": 14,
+   "judge_hard": 12
+  },
+  "line_exact_ge4": {
+   "policy": 18,
+   "fact": 167,
+   "tool_selection": 65,
+   "adequacy": 66,
+   "extraction": 1,
+   "multi_hop": 154,
+   "judge_hard": 93,
+   "temporal_numeric": 36
+  },
+  "doc_overlap": {
+   "judge_hard": 8
+  },
+  "attack_guard": {
+   "multi_hop": 5
+  },
+  "drop-disjoint.txt": {
+   "policy": 75,
+   "fact": 88,
+   "tool_selection": 201,
+   "adequacy": 199,
+   "routing": 5,
+   "intent": 8,
+   "extraction": 6,
+   "multi_hop": 214,
+   "long_policy": 57,
+   "judge_hard": 107,
+   "temporal_numeric": 141
+  },
+  "drop-disjoint-final1.txt": {
+   "policy": 5,
+   "tool_selection": 27,
+   "multi_hop": 28,
+   "judge_hard": 5,
+   "temporal_numeric": 4
+  },
+  "drop-strictfp.txt": {
+   "policy": 1,
+   "ambiguous": 14,
+   "fact": 173,
+   "tool_selection": 184,
+   "adequacy": 83,
+   "trap": 5,
+   "routing": 9,
+   "extraction": 29,
+   "intent": 16,
+   "multi_hop": 602,
+   "long_policy": 12,
+   "judge_hard": 166,
+   "temporal_numeric": 235
+  },
+  "drop-leaves.txt": {
+   "multi_hop": 14,
+   "judge_hard": 12
+  },
+  "overlap13:index_DEV.ids.txt": {
+   "fact": 2,
+   "tool_selection": 5,
+   "adequacy": 5,
+   "multi_hop": 23,
+   "judge_hard": 21
+  },
+  "overlap13:index_HELDOUT.ids.txt": {
+   "fact": 7,
+   "tool_selection": 2,
+   "adequacy": 5,
+   "multi_hop": 125,
+   "judge_hard": 20,
+   "temporal_numeric": 6
+  },
+  "overlap13:index_proxy600.ids.txt": {
+   "adequacy": 2,
+   "multi_hop": 2
+  },
+  "overlap13:index_TEST.ids.txt": {
+   "fact": 1,
+   "tool_selection": 8,
+   "adequacy": 4,
+   "multi_hop": 14,
+   "judge_hard": 9,
+   "temporal_numeric": 1
+  }
+ },
+ "n_drop": 2547,
+ "n_drop_by_family": {
+  "policy": 99,
+  "ambiguous": 14,
+  "fact": 249,
+  "tool_selection": 406,
+  "adequacy": 271,
+  "trap": 5,
+  "routing": 13,
+  "extraction": 33,
+  "intent": 24,
+  "multi_hop": 749,
+  "long_policy": 66,
+  "judge_hard": 274,
+  "temporal_numeric": 344
+ },
+ "sha256": "7b7a6cfbfd341f61d125112d0cea73976f44adbbd168c24fd31913c01ede1f05"
+}

@@ -1,0 +1,227 @@
+{
+ "gate": "jev-heldout disjointness vs every jev draw (ids, source items, row keys, content, state, exact lines, 13-word shingles)",
+ "n_heldout_rows": 2199,
+ "n_rows_hit": 175,
+ "hits_by_family": {
+  "adversarial": {
+   "exact_line": 30,
+   "rows_hit": 30
+  },
+  "judge_hard": {
+   "exact_line": 5,
+   "rows_hit": 5
+  },
+  "multi_hop": {
+   "exact_line": 28,
+   "rows_hit": 28
+  },
+  "policy": {
+   "exact_line": 1,
+   "rows_hit": 5,
+   "shingle_13": 4
+  },
+  "probability": {
+   "exact_line": 28,
+   "rows_hit": 28
+  },
+  "temporal_numeric": {
+   "exact_line": 4,
+   "shingle_13": 1,
+   "rows_hit": 4
+  },
+  "tool_selection": {
+   "exact_line": 26,
+   "shingle_13": 18,
+   "rows_hit": 27
+  },
+  "tradeoff": {
+   "exact_line": 45,
+   "rows_hit": 45
+  },
+  "trap": {
+   "exact_line": 3,
+   "rows_hit": 3
+  }
+ },
+ "files": {
+  "bschema-draw-jev1\\records.jsonl.gz": {
+   "rows": 96000,
+   "hits": {
+    "exact_line": 5
+   }
+  },
+  "bschema-draw-jev2-mix\\records.jsonl.gz": {
+   "rows": 10255,
+   "hits": {
+    "exact_line": 864,
+    "shingle_13": 17
+   }
+  },
+  "bschema-draw-jev2-mix-calib\\records.jsonl.gz": {
+   "rows": 3600,
+   "hits": {
+    "shingle_13": 1,
+    "exact_line": 153
+   }
+  },
+  "bschema-draw-jev2-mix-s\\records.jsonl.gz": {
+   "rows": 2852,
+   "hits": {
+    "exact_line": 222,
+    "shingle_13": 4
+   }
+  },
+  "bschema-draw-jev2-mix-s-calib\\records.jsonl.gz": {
+   "rows": 3600,
+   "hits": {
+    "exact_line": 195,
+    "shingle_13": 8
+   }
+  },
+  "bschema-draw-jev2a\\records.jsonl.gz": {
+   "rows": 30000,
+   "hits": {
+    "exact_line": 408,
+    "shingle_13": 312
+   }
+  },
+  "bschema-draw-jev2a-v2\\records.jsonl.gz": {
+   "rows": 7500,
+   "hits": {
+    "exact_line": 69,
+    "shingle_13": 60
+   }
+  },
+  "bschema-draw-jev2b\\records.jsonl.gz": {
+   "rows": 7500,
+   "hits": {
+    "exact_line": 1809
+   }
+  },
+  "bschema-draw-jev2c\\records.jsonl.gz": {
+   "rows": 1500,
+   "hits": {}
+  },
+  "bschema-draw-jev2c-v2\\records.jsonl.gz": {
+   "rows": 1500,
+   "hits": {}
+  },
+  "bschema-draw-jev2h-final\\records.jsonl.gz": {
+   "rows": 2664,
+   "hits": {
+    "exact_line": 194,
+    "shingle_13": 3
+   }
+  },
+  "bschema-draw-jev2h-final-calib\\records.jsonl.gz": {
+   "rows": 3600,
+   "hits": {
+    "shingle_13": 3,
+    "exact_line": 201
+   }
+  },
+  "bschema-draw-jev2h-L\\records.jsonl.gz": {
+   "rows": 17959,
+   "hits": {
+    "exact_line": 1294,
+    "shingle_13": 24
+   }
+  },
+  "bschema-draw-jev2h-L-calib\\records.jsonl.gz": {
+   "rows": 3600,
+   "hits": {
+    "shingle_13": 3,
+    "exact_line": 201
+   }
+  },
+  "bschema-draw-jev2h-mix\\records.jsonl.gz": {
+   "rows": 2736,
+   "hits": {
+    "exact_line": 255,
+    "shingle_13": 4
+   }
+  },
+  "bschema-draw-jev2h-mix-calib\\records.jsonl.gz": {
+   "rows": 2294,
+   "hits": {
+    "exact_line": 118,
+    "shingle_13": 10
+   }
+  },
+  "bschema-draw-jev2h-nojev1\\records.jsonl.gz": {
+   "rows": 2728,
+   "hits": {
+    "exact_line": 361,
+    "shingle_13": 8
+   }
+  },
+  "bschema-draw-jev2h-nojev1-calib\\records.jsonl.gz": {
+   "rows": 1594,
+   "hits": {
+    "exact_line": 92,
+    "shingle_13": 10
+   }
+  },
+  "bschema-draw-jev3\\records.jsonl.gz": {
+   "rows": 5960,
+   "hits": {
+    "shingle_13": 5,
+    "exact_line": 53
+   }
+  },
+  "bschema-draw-jev3-lmr\\records.jsonl.gz": {
+   "rows": 7760,
+   "hits": {
+    "shingle_13": 5,
+    "exact_line": 53
+   }
+  },
+  "bschema-draw-jev3-slice\\records.jsonl.gz": {
+   "rows": 1200,
+   "hits": {
+    "shingle_13": 2,
+    "exact_line": 9
+   }
+  },
+  "bschema-draw-jev3-typed\\records.jsonl.gz": {
+   "rows": 7760,
+   "hits": {
+    "shingle_13": 5,
+    "exact_line": 53
+   }
+  },
+  "bschema-draw-jev1-work\\pool.jsonl.gz": {
+   "rows": 112550,
+   "hits": {
+    "exact_line": 6
+   }
+  },
+  "bschema-draw-jev1-work\\checked.jsonl.gz": {
+   "rows": 100871,
+   "hits": {
+    "exact_line": 5
+   }
+  },
+  "bschema-draw-jev3-work\\pool.jsonl.gz": {
+   "rows": 13011,
+   "hits": {
+    "exact_line": 96,
+    "shingle_13": 9
+   }
+  },
+  "bschema-draw-jev3-work\\checked.jsonl.gz": {
+   "rows": 11800,
+   "hits": {
+    "exact_line": 73,
+    "shingle_13": 9
+   }
+  }
+ },
+ "n_rows_dropped": 69,
+ "engine_rows_template_line_overlap_not_dropped": 106,
+ "key_hits": 0,
+ "template_lines_excluded": 324,
+ "template_shingles_excluded": 11917,
+ "records_sha256": "b1c9e35082e209b20c236e1b1686b458bc9b5e5f29b18150c6144eb465e1e2a6",
+ "pass": false
+}

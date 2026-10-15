@@ -1,0 +1,1056 @@
+{
+ "set": "jev-heldout",
+ "n": 2199,
+ "families": {
+  "adequacy": 114,
+  "adversarial": 57,
+  "ambiguous": 67,
+  "extraction": 229,
+  "fact": 114,
+  "intent": 229,
+  "judge_hard": 162,
+  "long_policy": 181,
+  "multi_hop": 171,
+  "ordinal": 114,
+  "policy": 114,
+  "probability": 95,
+  "routing": 114,
+  "routing_hard": 48,
+  "temporal_numeric": 143,
+  "tool_selection": 114,
+  "tradeoff": 57,
+  "trap": 76
+ },
+ "types": {
+  "adequacy": {
+   "noul": 114
+  },
+  "adversarial": {
+   "noul": 19,
+   "choice": 28,
+   "score": 10
+  },
+  "ambiguous": {
+   "choice": 67
+  },
+  "extraction": {
+   "choice": 229
+  },
+  "fact": {
+   "noul": 114
+  },
+  "intent": {
+   "choice": 229
+  },
+  "judge_hard": {
+   "noul": 162
+  },
+  "long_policy": {
+   "choice": 114,
+   "score": 19,
+   "noul": 48
+  },
+  "multi_hop": {
+   "choice": 151,
+   "score": 10,
+   "noul": 10
+  },
+  "ordinal": {
+   "score": 114
+  },
+  "policy": {
+   "noul": 114
+  },
+  "probability": {
+   "choice": 67,
+   "noul": 28
+  },
+  "routing": {
+   "choice": 114
+  },
+  "routing_hard": {
+   "choice": 48
+  },
+  "temporal_numeric": {
+   "noul": 47,
+   "choice": 95,
+   "score": 1
+  },
+  "tool_selection": {
+   "choice": 114
+  },
+  "tradeoff": {
+   "noul": 19,
+   "choice": 38
+  },
+  "trap": {
+   "choice": 28,
+   "noul": 38,
+   "score": 10
+  }
+ },
+ "choice_K": {
+  "adequacy": {},
+  "adversarial": {
+   "4": 28
+  },
+  "ambiguous": {
+   "3": 51,
+   "4": 16
+  },
+  "extraction": {
+   "4": 208,
+   "5": 21
+  },
+  "fact": {},
+  "intent": {
+   "5": 229
+  },
+  "judge_hard": {},
+  "long_policy": {
+   "4": 73,
+   "5": 31,
+   "6": 10
+  },
+  "multi_hop": {
+   "4": 135,
+   "6": 16
+  },
+  "ordinal": {},
+  "policy": {},
+  "probability": {
+   "3": 67
+  },
+  "routing": {
+   "6": 114
+  },
+  "routing_hard": {
+   "5": 48
+  },
+  "temporal_numeric": {
+   "3": 42,
+   "4": 26,
+   "5": 19,
+   "6": 8
+  },
+  "tool_selection": {
+   "5": 114
+  },
+  "tradeoff": {
+   "4": 7,
+   "5": 31
+  },
+  "trap": {
+   "4": 28
+  }
+ },
+ "sources": {
+  "adequacy": {
+   "helpsteer3:validation": 62,
+   "helpsteer2:validation": 52
+  },
+  "adversarial": {
+   "jevho_synth:synthetic": 57
+  },
+  "ambiguous": {
+   "ambignq:dev": 67
+  },
+  "extraction": {
+   "massive:test": 229
+  },
+  "fact": {
+   "boolq:validation": 114
+  },
+  "intent": {
+   "massive:test": 229
+  },
+  "judge_hard": {
+   "prm800k:test": 162
+  },
+  "long_policy": {
+   "privacyqa:test": 181
+  },
+  "multi_hop": {
+   "musique:dev": 171
+  },
+  "ordinal": {
+   "sst5:test": 114
+  },
+  "policy": {
+   "aegis2:test": 69,
+   "aegis2:validation": 45
+  },
+  "probability": {
+   "jevho_synth:synthetic": 95
+  },
+  "routing": {
+   "massive:dev": 114
+  },
+  "routing_hard": {
+   "jevho_synth:synthetic": 48
+  },
+  "temporal_numeric": {
+   "timeqa:test": 100,
+   "tatqa:dev": 43
+  },
+  "tool_selection": {
+   "glaive_fc:train-unused": 114
+  },
+  "tradeoff": {
+   "jevho_synth:synthetic": 57
+  },
+  "trap": {
+   "jevho_synth:synthetic": 76
+  }
+ },
+ "tiers": {
+  "easy": 460,
+  "hard": 1108,
+  "standard": 631
+ },
+ "filter": {
+  "adequacy": {
+   "in": 657,
+   "dropped_by_pre_gate": 181,
+   "quota_noul": 114,
+   "selected_noul": 114,
+   "selected": 114
+  },
+  "adversarial": {
+   "in": 200,
+   "quota_choice": 28,
+   "selected_choice": 28,
+   "quota_noul": 19,
+   "selected_noul": 19,
+   "quota_score": 10,
+   "selected_score": 10,
+   "selected": 57
+  },
+  "ambiguous": {
+   "in": 400,
+   "dropped_by_pre_gate": 12,
+   "quota_choice": 67,
+   "selected_choice": 67,
+   "selected": 67
+  },
+  "extraction": {
+   "in": 639,
+   "dropped_by_pre_gate": 22,
+   "quota_choice": 229,
+   "selected_choice": 229,
+   "selected": 229
+  },
+  "fact": {
+   "in": 685,
+   "dropped_by_pre_gate": 235,
+   "quota_noul": 114,
+   "selected_noul": 114,
+   "selected": 114
+  },
+  "intent": {
+   "in": 633,
+   "dropped_by_pre_gate": 8,
+   "quota_choice": 229,
+   "selected_choice": 229,
+   "selected": 229
+  },
+  "judge_hard": {
+   "in": 619,
+   "dropped_by_pre_gate": 95,
+   "quota_noul": 162,
+   "selected_noul": 162,
+   "selected": 162
+  },
+  "long_policy": {
+   "in": 889,
+   "dropped_by_pre_gate": 57,
+   "outside_token_window": 4,
+   "state_dup_dropped": 101,
+   "quota_choice": 114,
+   "selected_choice": 114,
+   "quota_noul": 48,
+   "selected_noul": 48,
+   "quota_score": 19,
+   "selected_score": 19,
+   "selected": 181
+  },
+  "multi_hop": {
+   "in": 781,
+   "dropped_by_pre_gate": 430,
+   "quota_choice": 151,
+   "selected_choice": 151,
+   "quota_score": 10,
+   "selected_score": 10,
+   "quota_noul": 10,
+   "selected_noul": 10,
+   "selected": 171
+  },
+  "ordinal": {
+   "in": 358,
+   "quota_score": 114,
+   "selected_score": 114,
+   "selected": 114
+  },
+  "policy": {
+   "in": 532,
+   "dropped_by_pre_gate": 81,
+   "quota_noul": 114,
+   "selected_noul": 114,
+   "selected": 114
+  },
+  "probability": {
+   "in": 300,
+   "quota_noul": 28,
+   "selected_noul": 28,
+   "quota_choice": 67,
+   "selected_choice": 67,
+   "selected": 95
+  },
+  "routing": {
+   "in": 351,
+   "dropped_by_pre_gate": 4,
+   "quota_choice": 114,
+   "selected_choice": 114,
+   "selected": 114
+  },
+  "routing_hard": {
+   "in": 170,
+   "quota_choice": 48,
+   "selected_choice": 48,
+   "selected": 48
+  },
+  "temporal_numeric": {
+   "in": 485,
+   "dropped_by_pre_gate": 146,
+   "quota_noul": 38,
+   "selected_noul": 38,
+   "quota_choice": 95,
+   "selected_choice": 95,
+   "quota_score": 10,
+   "selected_score": 1,
+   "filled_from_other_types": 9,
+   "selected": 143
+  },
+  "tool_selection": {
+   "in": 635,
+   "dropped_by_pre_gate": 341,
+   "state_dup_dropped": 116,
+   "quota_choice": 114,
+   "selected_choice": 114,
+   "selected": 114
+  },
+  "tradeoff": {
+   "in": 200,
+   "K_not_in_public": 49,
+   "quota_choice": 38,
+   "selected_choice": 38,
+   "quota_noul": 19,
+   "selected_noul": 19,
+   "selected": 57
+  },
+  "trap": {
+   "in": 251,
+   "dropped_by_pre_gate": 2,
+   "quota_noul": 38,
+   "selected_noul": 38,
+   "quota_score": 10,
+   "selected_score": 10,
+   "quota_choice": 28,
+   "selected_choice": 28,
+   "selected": 76
+  }
+ },
+ "short_families": {},
+ "tolerance_gate": {
+  "adequacy": {
+   "n": 114,
+   "target": 114,
+   "count_ok": true,
+   "types": {
+    "noul": 114
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  },
+  "adversarial": {
+   "n": 57,
+   "target": 57,
+   "count_ok": true,
+   "types": {
+    "noul": 19,
+    "choice": 28,
+    "score": 10
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5263,
+   "noul_criteria_all": true
+  },
+  "ambiguous": {
+   "n": 67,
+   "target": 67,
+   "count_ok": true,
+   "types": {
+    "choice": 67
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 0.8806,
+   "string_share_public": 0.8571,
+   "string_share_ok": true,
+   "noul_true_share": null,
+   "noul_criteria_all": true
+  },
+  "extraction": {
+   "n": 229,
+   "target": 229,
+   "count_ok": true,
+   "types": {
+    "choice": 229
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": null,
+   "noul_criteria_all": true
+  },
+  "fact": {
+   "n": 114,
+   "target": 114,
+   "count_ok": true,
+   "types": {
+    "noul": 114
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  },
+  "intent": {
+   "n": 229,
+   "target": 229,
+   "count_ok": true,
+   "types": {
+    "choice": 229
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": null,
+   "noul_criteria_all": true
+  },
+  "judge_hard": {
+   "n": 162,
+   "target": 162,
+   "count_ok": true,
+   "types": {
+    "noul": 162
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 0.0,
+   "string_share_public": 0.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  },
+  "long_policy": {
+   "n": 181,
+   "target": 181,
+   "count_ok": true,
+   "types": {
+    "choice": 114,
+    "score": 19,
+    "noul": 48
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  },
+  "multi_hop": {
+   "n": 171,
+   "target": 171,
+   "count_ok": true,
+   "types": {
+    "choice": 151,
+    "score": 10,
+    "noul": 10
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 0.5263,
+   "string_share_public": 0.5556,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  },
+  "ordinal": {
+   "n": 114,
+   "target": 114,
+   "count_ok": true,
+   "types": {
+    "score": 114
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": null,
+   "noul_criteria_all": true
+  },
+  "policy": {
+   "n": 114,
+   "target": 114,
+   "count_ok": true,
+   "types": {
+    "noul": 114
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  },
+  "probability": {
+   "n": 95,
+   "target": 95,
+   "count_ok": true,
+   "types": {
+    "choice": 67,
+    "noul": 28
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  },
+  "routing": {
+   "n": 114,
+   "target": 114,
+   "count_ok": true,
+   "types": {
+    "choice": 114
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": null,
+   "noul_criteria_all": true
+  },
+  "routing_hard": {
+   "n": 48,
+   "target": 48,
+   "count_ok": true,
+   "types": {
+    "choice": 48
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 0.0,
+   "string_share_public": 0.0,
+   "string_share_ok": true,
+   "noul_true_share": null,
+   "noul_criteria_all": true
+  },
+  "temporal_numeric": {
+   "n": 143,
+   "target": 143,
+   "count_ok": true,
+   "types": {
+    "noul": 47,
+    "choice": 95,
+    "score": 1
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 0.6713,
+   "string_share_public": 0.7333,
+   "string_share_ok": true,
+   "noul_true_share": 0.4681,
+   "noul_criteria_all": true
+  },
+  "tool_selection": {
+   "n": 114,
+   "target": 114,
+   "count_ok": true,
+   "types": {
+    "choice": 114
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": null,
+   "noul_criteria_all": true
+  },
+  "tradeoff": {
+   "n": 57,
+   "target": 57,
+   "count_ok": true,
+   "types": {
+    "noul": 19,
+    "choice": 38
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5263,
+   "noul_criteria_all": true
+  },
+  "trap": {
+   "n": 76,
+   "target": 76,
+   "count_ok": true,
+   "types": {
+    "choice": 28,
+    "noul": 38,
+    "score": 10
+   },
+   "type_share_ok": true,
+   "types_subset": true,
+   "string_share": 1.0,
+   "string_share_public": 1.0,
+   "string_share_ok": true,
+   "noul_true_share": 0.5,
+   "noul_criteria_all": true
+  }
+ },
+ "gold_position_chi2": {
+  "adequacy": {
+   "p": null
+  },
+  "adversarial": {
+   "n": 28,
+   "chi2": 2.0,
+   "df": 3,
+   "chi2_per_df": 0.667,
+   "p": 0.576258
+  },
+  "ambiguous": {
+   "n": 51,
+   "chi2": 1.5,
+   "df": 2,
+   "chi2_per_df": 0.765,
+   "p": 0.469426
+  },
+  "extraction": {
+   "n": 208,
+   "chi2": 6.3,
+   "df": 3,
+   "chi2_per_df": 2.115,
+   "p": 0.094332
+  },
+  "fact": {
+   "p": null
+  },
+  "intent": {
+   "n": 229,
+   "chi2": 0.5,
+   "df": 4,
+   "chi2_per_df": 0.124,
+   "p": 0.970535
+  },
+  "judge_hard": {
+   "p": null
+  },
+  "long_policy": {
+   "n": 104,
+   "chi2": 3.1,
+   "df": 7,
+   "chi2_per_df": 0.443,
+   "p": 0.876397
+  },
+  "multi_hop": {
+   "n": 135,
+   "chi2": 9.3,
+   "df": 3,
+   "chi2_per_df": 3.109,
+   "p": 0.02498
+  },
+  "ordinal": {
+   "p": null
+  },
+  "policy": {
+   "p": null
+  },
+  "probability": {
+   "n": 67,
+   "chi2": 0.0,
+   "df": 2,
+   "chi2_per_df": 0.015,
+   "p": 0.973074
+  },
+  "routing": {
+   "n": 114,
+   "chi2": 1.5,
+   "df": 5,
+   "chi2_per_df": 0.295,
+   "p": 0.91557
+  },
+  "routing_hard": {
+   "n": 48,
+   "chi2": 2.0,
+   "df": 4,
+   "chi2_per_df": 0.5,
+   "p": 0.738768
+  },
+  "temporal_numeric": {
+   "n": 68,
+   "chi2": 1.0,
+   "df": 5,
+   "chi2_per_df": 0.207,
+   "p": 0.958049
+  },
+  "tool_selection": {
+   "n": 114,
+   "chi2": 1.7,
+   "df": 4,
+   "chi2_per_df": 0.425,
+   "p": 0.792757
+  },
+  "tradeoff": {
+   "n": 31,
+   "chi2": 2.4,
+   "df": 4,
+   "chi2_per_df": 0.597,
+   "p": 0.668212
+  },
+  "trap": {
+   "n": 28,
+   "chi2": 0.9,
+   "df": 3,
+   "chi2_per_df": 0.286,
+   "p": 0.836973
+  }
+ },
+ "gold_position_gate_p_ge_0.001": {
+  "adequacy": true,
+  "adversarial": true,
+  "ambiguous": true,
+  "extraction": true,
+  "fact": true,
+  "intent": true,
+  "judge_hard": true,
+  "long_policy": true,
+  "multi_hop": true,
+  "ordinal": true,
+  "policy": true,
+  "probability": true,
+  "routing": true,
+  "routing_hard": true,
+  "temporal_numeric": true,
+  "tool_selection": true,
+  "tradeoff": true,
+  "trap": true
+ },
+ "type_quota": {
+  "adequacy": {
+   "types": {
+    "noul": 114
+   },
+   "K": [],
+   "string_share": 1.0
+  },
+  "adversarial": {
+   "types": {
+    "choice": 28,
+    "noul": 19,
+    "score": 10
+   },
+   "K": [
+    4
+   ],
+   "string_share": 1.0
+  },
+  "ambiguous": {
+   "types": {
+    "choice": 67
+   },
+   "K": [
+    3,
+    4
+   ],
+   "string_share": 0.8571
+  },
+  "extraction": {
+   "types": {
+    "choice": 229
+   },
+   "K": [
+    4,
+    5
+   ],
+   "string_share": 1.0
+  },
+  "fact": {
+   "types": {
+    "noul": 114
+   },
+   "K": [],
+   "string_share": 1.0
+  },
+  "intent": {
+   "types": {
+    "choice": 229
+   },
+   "K": [
+    5
+   ],
+   "string_share": 1.0
+  },
+  "judge_hard": {
+   "types": {
+    "noul": 162
+   },
+   "K": [],
+   "string_share": 0.0
+  },
+  "long_policy": {
+   "types": {
+    "choice": 114,
+    "noul": 48,
+    "score": 19
+   },
+   "K": [
+    4,
+    5,
+    6
+   ],
+   "string_share": 1.0
+  },
+  "multi_hop": {
+   "types": {
+    "choice": 151,
+    "score": 10,
+    "noul": 10
+   },
+   "K": [
+    4,
+    6
+   ],
+   "string_share": 0.5556
+  },
+  "ordinal": {
+   "types": {
+    "score": 114
+   },
+   "K": [],
+   "string_share": 1.0
+  },
+  "policy": {
+   "types": {
+    "noul": 114
+   },
+   "K": [],
+   "string_share": 1.0
+  },
+  "probability": {
+   "types": {
+    "noul": 28,
+    "choice": 67
+   },
+   "K": [
+    3
+   ],
+   "string_share": 1.0
+  },
+  "routing": {
+   "types": {
+    "choice": 114
+   },
+   "K": [
+    6
+   ],
+   "string_share": 1.0
+  },
+  "routing_hard": {
+   "types": {
+    "choice": 48
+   },
+   "K": [
+    5
+   ],
+   "string_share": 0.0
+  },
+  "temporal_numeric": {
+   "types": {
+    "noul": 38,
+    "choice": 95,
+    "score": 10
+   },
+   "K": [
+    3,
+    4,
+    5,
+    6
+   ],
+   "string_share": 0.7333
+  },
+  "tool_selection": {
+   "types": {
+    "choice": 114
+   },
+   "K": [
+    5
+   ],
+   "string_share": 1.0
+  },
+  "tradeoff": {
+   "types": {
+    "choice": 38,
+    "noul": 19
+   },
+   "K": [
+    4,
+    5
+   ],
+   "string_share": 1.0
+  },
+  "trap": {
+   "types": {
+    "noul": 38,
+    "score": 10,
+    "choice": 28
+   },
+   "K": [
+    4
+   ],
+   "string_share": 1.0
+  }
+ },
+ "token_template": {
+  "identity": {
+   "_identity": {
+    "id": "jrt-h2o-shim:qwen3.5-4b",
+    "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+   },
+   "_pinned": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+  },
+  "windows": {
+   "adequacy": [
+    0,
+    4096
+   ],
+   "adversarial": [
+    0,
+    4096
+   ],
+   "ambiguous": [
+    0,
+    4096
+   ],
+   "extraction": [
+    0,
+    4096
+   ],
+   "fact": [
+    0,
+    4096
+   ],
+   "intent": [
+    0,
+    4096
+   ],
+   "judge_hard": [
+    0,
+    4096
+   ],
+   "long_policy": [
+    2000,
+    4096
+   ],
+   "multi_hop": [
+    0,
+    4096
+   ],
+   "ordinal": [
+    0,
+    4096
+   ],
+   "policy": [
+    0,
+    4096
+   ],
+   "probability": [
+    0,
+    4096
+   ],
+   "routing": [
+    0,
+    4096
+   ],
+   "routing_hard": [
+    0,
+    4096
+   ],
+   "temporal_numeric": [
+    0,
+    4096
+   ],
+   "tool_selection": [
+    0,
+    4096
+   ],
+   "tradeoff": [
+    0,
+    4096
+   ],
+   "trap": [
+    0,
+    4096
+   ]
+  }
+ },
+ "drop_ids_files": {
+  "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/jev-heldout-work/drop-pre.txt": {
+   "n": 2547,
+   "sha256": "7b7a6cfbfd341f61d125112d0cea73976f44adbbd168c24fd31913c01ede1f05"
+  }
+ },
+ "seal": {
+  "set": "jev-heldout",
+  "sealed_utc": "2026-10-13T04:58:56Z",
+  "prereg": "EV-PREREG-JEV-HELDOUT (state d48e500c)",
+  "role": "SEALED secondary confirmation set (score at most once per pre-registered cell; never train / select / tune)",
+  "n_items": 2199,
+  "records_uncompressed_sha256": "09b5d22b8d116bbc3586d5bd0381ffdca53f3d57eb44636eb47bcc80bf445008",
+  "items_jsonl_sha256": "17a40d43b13b0cfc66342fd54e6b5d20a6dbc797aa1942069b3d79046375dade",
+  "manifest_uncompressed_sha256": "fe278e4b76198f475adb21fbbbdd65fe8bb549c09cdda76130ee2986fa98d76c",
+  "lens_uncompressed_sha256": "22d05503bc92c66b61835bb3f1a9925728db8136c6ef1a8806536364ee5bf775",
+  "ids_sha256": "c175d8a0a7e28a120af8ed3a00d6c5b99371f83b3fc5dd8c31864b17cd8cfd5d",
+  "ids_sha256_rule": "sha256 of the sorted record ids, newline-joined, no trailing newline",
+  "builder_commit": "125e17c9582803c5216eac36e2e38edfa964b1dc"
+ },
+ "input": "checked.jsonl.gz",
+ "rule": "(label-blind sha256 rank of the id, then the stated quotas):\n  1. token window: long_policy 2,000-4,096 shim tokens, every other family <= 4,096 (rows without a length are dropped)\n  2. drop-ids from the pre-gates (disjointness vs every jev draw, provenance, strict full-row Index fp, verbatim leaves,\n     doc_overlap, attack_guard, jevbench rescan)\n  3. set-wide STATE dedupe (normalised state text, all families, canonical family order, first by rank keeps it)\n  4. K filter: a choice row's K must be in the public K support of its family\n  5. type quotas (TYPE_QUOTA); noul quota balanced 45-55 % true where both strata allow; a short type is filled from\n     the family's other types in rank order (reported)\n  6. tier: label-blind sha256('jevho-tier|<id>') in the public tier proportions (72 standard / 48 easy / 111 hard)"
+}

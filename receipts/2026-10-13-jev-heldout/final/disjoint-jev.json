@@ -1,0 +1,162 @@
+{
+ "gate": "jev-heldout disjointness vs every jev draw (ids, source items, row keys, content, state, exact lines, 13-word shingles)",
+ "n_heldout_rows": 2199,
+ "n_rows_hit": 92,
+ "hits_by_family": {
+  "adversarial": {
+   "exact_line": 26,
+   "rows_hit": 26
+  },
+  "probability": {
+   "exact_line": 27,
+   "rows_hit": 27
+  },
+  "tradeoff": {
+   "exact_line": 36,
+   "rows_hit": 36
+  },
+  "trap": {
+   "exact_line": 3,
+   "rows_hit": 3
+  }
+ },
+ "files": {
+  "bschema-draw-jev1\\records.jsonl.gz": {
+   "rows": 96000,
+   "hits": {}
+  },
+  "bschema-draw-jev2-mix\\records.jsonl.gz": {
+   "rows": 10255,
+   "hits": {
+    "exact_line": 285
+   }
+  },
+  "bschema-draw-jev2-mix-calib\\records.jsonl.gz": {
+   "rows": 3600,
+   "hits": {
+    "exact_line": 103
+   }
+  },
+  "bschema-draw-jev2-mix-s\\records.jsonl.gz": {
+   "rows": 2852,
+   "hits": {
+    "exact_line": 81
+   }
+  },
+  "bschema-draw-jev2-mix-s-calib\\records.jsonl.gz": {
+   "rows": 3600,
+   "hits": {
+    "exact_line": 87
+   }
+  },
+  "bschema-draw-jev2a\\records.jsonl.gz": {
+   "rows": 30000,
+   "hits": {}
+  },
+  "bschema-draw-jev2a-v2\\records.jsonl.gz": {
+   "rows": 7500,
+   "hits": {}
+  },
+  "bschema-draw-jev2b\\records.jsonl.gz": {
+   "rows": 7500,
+   "hits": {
+    "exact_line": 747
+   }
+  },
+  "bschema-draw-jev2c\\records.jsonl.gz": {
+   "rows": 1500,
+   "hits": {}
+  },
+  "bschema-draw-jev2c-v2\\records.jsonl.gz": {
+   "rows": 1500,
+   "hits": {}
+  },
+  "bschema-draw-jev2h-final\\records.jsonl.gz": {
+   "rows": 2664,
+   "hits": {
+    "exact_line": 74
+   }
+  },
+  "bschema-draw-jev2h-final-calib\\records.jsonl.gz": {
+   "rows": 3600,
+   "hits": {
+    "exact_line": 90
+   }
+  },
+  "bschema-draw-jev2h-L\\records.jsonl.gz": {
+   "rows": 17959,
+   "hits": {
+    "exact_line": 513
+   }
+  },
+  "bschema-draw-jev2h-L-calib\\records.jsonl.gz": {
+   "rows": 3600,
+   "hits": {
+    "exact_line": 90
+   }
+  },
+  "bschema-draw-jev2h-mix\\records.jsonl.gz": {
+   "rows": 2736,
+   "hits": {
+    "exact_line": 98
+   }
+  },
+  "bschema-draw-jev2h-mix-calib\\records.jsonl.gz": {
+   "rows": 2294,
+   "hits": {
+    "exact_line": 53
+   }
+  },
+  "bschema-draw-jev2h-nojev1\\records.jsonl.gz": {
+   "rows": 2728,
+   "hits": {
+    "exact_line": 124
+   }
+  },
+  "bschema-draw-jev2h-nojev1-calib\\records.jsonl.gz": {
+   "rows": 1594,
+   "hits": {
+    "exact_line": 39
+   }
+  },
+  "bschema-draw-jev3\\records.jsonl.gz": {
+   "rows": 5960,
+   "hits": {}
+  },
+  "bschema-draw-jev3-lmr\\records.jsonl.gz": {
+   "rows": 7760,
+   "hits": {}
+  },
+  "bschema-draw-jev3-slice\\records.jsonl.gz": {
+   "rows": 1200,
+   "hits": {}
+  },
+  "bschema-draw-jev3-typed\\records.jsonl.gz": {
+   "rows": 7760,
+   "hits": {}
+  },
+  "bschema-draw-jev1-work\\pool.jsonl.gz": {
+   "rows": 112550,
+   "hits": {}
+  },
+  "bschema-draw-jev1-work\\checked.jsonl.gz": {
+   "rows": 100871,
+   "hits": {}
+  },
+  "bschema-draw-jev3-work\\pool.jsonl.gz": {
+   "rows": 13011,
+   "hits": {}
+  },
+  "bschema-draw-jev3-work\\checked.jsonl.gz": {
+   "rows": 11800,
+   "hits": {}
+  }
+ },
+ "n_rows_dropped": 0,
+ "engine_rows_template_line_overlap_not_dropped": 92,
+ "key_hits": 0,
+ "template_lines_excluded": 2526,
+ "template_shingles_excluded": 129334,
+ "records_sha256": "09b5d22b8d116bbc3586d5bd0381ffdca53f3d57eb44636eb47bcc80bf445008",
+ "pass": true
+}
