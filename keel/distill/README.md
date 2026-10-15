@@ -194,6 +194,13 @@ record are in `processor-assets.json`. The repair command for older exports is
 Student GPU load checks have a 900-second remote limit; pilot student calls
 have a 1,800-second remote limit and a 60-second idle shutdown window.
 
+The repaired checkpoint **passed a real vLLM load and `judge(...)` call on four
+TRAIN-source rows**, one-pass trust mode. All four returned finite normalized
+option distributions. vLLM 0.30.0 loaded it in 116.26 seconds and scored the
+warm four-row batch in 0.485 seconds; total local wall time was 143.99 seconds.
+This verifies compatibility, not held-out accuracy. Aggregate:
+`direction/experiments/distill_v0/checkpoint-smoke.json`.
+
 ## Pilot definitions
 
 The pilot compares student 4B one-pass trust, stock 4B one-pass trust, and
@@ -298,6 +305,7 @@ conservatively overstate actual GPU billing; they are not invoice amounts.
 | 2026-10-15 | Failed app shutdown reserve | 1.953 | $0.129 | Difference between observed app lifetime and the failed local-call wall time; avoids silently ignoring disconnect cleanup. |
 | 2026-10-15 | Cancelled pre-repair bounded retry | 1.500 | $0.099 | Explicitly stopped after diagnosing missing assets; no returned outputs. |
 | 2026-10-15 | `repair_processor_remote` | 0 (CPU-only) | $0.025 | 22.92 seconds; ledger conservatively charges CPU wall at the H100 rate. Pinned processor assets copied and locally loaded; trained weights untouched. |
+| 2026-10-15 | Repaired checkpoint `judge(...)` smoke | 2.400 | $0.158 | Four TRAIN-source rows, valid distributions, vLLM 0.30.0; bounded to 900 seconds. |
 
 The initial numerical check exposed FLA's explicit correctness guard for
 Hopper's `chunk_bwd_dqkwg` kernel with Triton 3.4–3.7.0. The fix upgrades the

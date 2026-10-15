@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-15",
+  "function": "runtime.judge: merged checkpoint smoke",
+  "checkpoint": "/results/students/distill-v0-20261015/merged",
+  "train_source_rows": 4,
+  "mode": "trust",
+  "think": false,
+  "status": "complete",
+  "remote_timeout_s": 900,
+  "valid_distributions": true,
+  "runtime": {
+    "model": "/results/students/distill-v0-20261015/merged",
+    "revision": null,
+    "vllm": "0.30.0",
+    "load_s": 116.26267337799072,
+    "wall_s": 0.4846007823944092,
+    "think": false,
+    "n_samples": 1
+  },
+  "wall_s": 143.99445781599206,
+  "gpu_minutes_upper_estimate": 2.3999076302665343,
+  "usd_upper_estimate": 0.15799391899254686
+}
