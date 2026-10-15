@@ -3,101 +3,192 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: single reading column of numbered evidence panels; charts are horizontal bars on one shared 0–100 scale per panel */
+/* Layout: single reading column of evidence panels; ours = orange, every other system = teal-blue; each of our models carries its guarantee in its name */
 :root{
   --bg:#f6f7f8; --panel:#ffffff; --fg:#14181c; --muted:#5b6670; --line:#dde2e6;
-  --ours:#0b7a75; --ours-soft:#0b7a7522; --them:#8a96a1; --them-soft:#8a96a122;
-  --warn:#b4540a; --good:#1d7a3a; --bad:#a3262a;
+  --ours:#d2600f; --ours-soft:#d2600f1f; --them:#2b7a96; --them-soft:#2b7a961f;
+  --good:#1d7a3a; --good-soft:#1d7a3a1a; --bad:#a3262a; --bad-soft:#a3262a14; --meas:#6b4fb3; --meas-soft:#6b4fb31a;
   --display:"Archivo",system-ui,sans-serif; --body:"Archivo",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0f1316; --panel:#161b1f; --fg:#e8ecef; --muted:#97a3ad; --line:#2a3238;
-  --ours:#3cc7bf; --ours-soft:#3cc7bf26; --them:#7d8a95; --them-soft:#7d8a9526;
-  --warn:#f0a050; --good:#5fcf80; --bad:#ef7a7e; color-scheme:dark}}
+  --ours:#ff9447; --ours-soft:#ff944726; --them:#5bb4d3; --them-soft:#5bb4d326;
+  --good:#5fcf80; --good-soft:#5fcf8022; --bad:#ef7a7e; --bad-soft:#ef7a7e1f; --meas:#b29cf0; --meas-soft:#b29cf022; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f1316; --panel:#161b1f; --fg:#e8ecef; --muted:#97a3ad; --line:#2a3238;
-  --ours:#3cc7bf; --ours-soft:#3cc7bf26; --them:#7d8a95; --them-soft:#7d8a9526;
-  --warn:#f0a050; --good:#5fcf80; --bad:#ef7a7e; color-scheme:dark}
+  --ours:#ff9447; --ours-soft:#ff944726; --them:#5bb4d3; --them-soft:#5bb4d326;
+  --good:#5fcf80; --good-soft:#5fcf8022; --bad:#ef7a7e; --bad-soft:#ef7a7e1f; --meas:#b29cf0; --meas-soft:#b29cf022; color-scheme:dark}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
-.wrap{max-width:980px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
+.wrap{max-width:1000px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
 h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,4vw,36px);letter-spacing:-.01em;margin:0;text-wrap:balance}
 h2{font-family:var(--display);font-size:19px;margin:0;text-wrap:balance}
 h3{font-size:14px;margin:0;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
-p{margin:0;max-width:72ch}
+p{margin:0;max-width:74ch}
 .sub{color:var(--muted)}
-.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);align-items:center}
 .sw{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-1px;margin-right:6px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;gap:14px;min-width:0}
 .tag{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
-.tag.same{border-color:var(--ours);color:var(--ours)}
+.tag.same{border-color:var(--them);color:var(--them)}
 .head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
 .tile{border:1px solid var(--line);border-radius:8px;padding:14px;display:grid;gap:4px;background:var(--panel)}
 .tile b{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--ours)}
 .tile span{font-size:13px;color:var(--muted)}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:22px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:22px}
 .chart svg{width:100%;height:auto;display:block}
 .chart text{font-family:var(--body);fill:var(--fg)}
 .chart .num{font-family:var(--mono);font-size:12px}
 .chart .lab{font-size:12.5px}
+.chart .gl{font-size:10.5px;fill:var(--muted);font-family:var(--mono)}
 .chart .axis{fill:var(--muted);font-size:10.5px;font-family:var(--mono)}
 .note{font-size:12.5px;color:var(--muted)}
 .scroll{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
 th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+th.ours{color:var(--ours)} th.them{color:var(--them)}
 td.n{font-family:var(--mono);text-align:right;white-space:nowrap}
 tr.ours td:first-child{color:var(--ours);font-weight:600}
-.y{color:var(--good);font-weight:600}.x{color:var(--bad);font-weight:600}.q{color:var(--muted)}
+.code{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:400}
+.y{color:var(--good);font-weight:600}.x{color:var(--bad);font-weight:600}.q{color:var(--muted)}.m{color:var(--meas);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:11.5px;padding:2px 8px;border-radius:99px;border:1px solid;white-space:nowrap}
+.chip.proof{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+.chip.meas{color:var(--meas);border-color:var(--meas);background:var(--meas-soft)}
+.chip.fail{color:var(--bad);border-color:var(--bad);background:var(--bad-soft)}
+.models{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:14px}
+.model{border:1px solid var(--line);border-top:3px solid var(--ours);border-radius:8px;padding:14px;display:grid;gap:8px;align-content:start;min-width:0}
+.model h4{margin:0;font-size:16px;color:var(--ours);font-family:var(--display)}
+.model .arch{font-size:12.5px;color:var(--muted)}
 footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
 </style>
 
 <div class="wrap">
   <header style="display:grid;gap:10px">
     <h3>State-Space Decision Model · as of 2026-10-15</h3>
-    <h1>Benchmark card: our decision models vs Clef, H2O and the JevBench leaders</h1>
-    <p class="sub">Every number traces to a committed receipt in <span style="font-family:var(--mono)">apumutyala/State-Space-Decision-Model</span> or to a published leaderboard. Panels marked <span class="tag same">same harness</span> are head-to-head runs we did with identical items and scoring. Panels marked <span class="tag">published</span> use leaderboard numbers on their own scale, so do not compare them with our local numbers.</p>
+    <h1>Benchmark card: guaranteed decision models vs Clef, H2O and the JevBench leaders</h1>
+    <p class="sub">Each of our models is named for the guarantee it carries. Every number traces to a committed receipt in <span style="font-family:var(--mono)">apumutyala/State-Space-Decision-Model</span> or to a published leaderboard. Panels marked <span class="tag same">same harness</span> are head-to-head runs with identical items and scoring. Panels marked <span class="tag">published</span> use leaderboard numbers on their own scale, so do not compare them with our local numbers.</p>
     <div class="legend">
       <span><i class="sw" style="background:var(--ours)"></i>Ours</span>
-      <span><i class="sw" style="background:var(--them)"></i>Competitor</span>
-      <span>Whiskers = 95% bootstrap CI where measured</span>
+      <span><i class="sw" style="background:var(--them)"></i>Other systems</span>
+      <span class="chip proof">Proven: holds by construction</span>
+      <span class="chip meas">Measured: empirical, with CI</span>
+      <span class="chip fail">Fails or not met</span>
     </div>
   </header>
 
   <section class="panel">
-    <div class="head"><h2>Our three implementations</h2></div>
-    <div class="scroll"><table>
-      <tr><th>Name</th><th>Architecture</th><th>Size</th><th>Best at</th></tr>
-      <tr class="ours"><td>D19</td><td>RWKV-7, attention-free recurrent state; joint decision head</td><td class="n">13.3B</td><td>Quality: our best Decision Index and JevBench Capability scores</td></tr>
-      <tr class="ours"><td>JEV3-LM-S</td><td>Qwen3.5-4B hybrid (75% Gated DeltaNet); symmetric fork readout</td><td class="n">4B</td><td>Our best JevBench Composite; option order and labels provably cannot change its answer</td></tr>
-      <tr class="ours"><td>D13</td><td>RWKV-7, attention-free; joint record head</td><td class="n">13.3B</td><td>Safety: most robust to injection attacks it never saw in training</td></tr>
-    </table></div>
+    <div class="head"><h2>Our models and the guarantees they carry</h2></div>
+    <div class="models">
+      <div class="model">
+        <h4>Symmetry-Locked 4B</h4>
+        <div class="code">code name JEV3-LM-S</div>
+        <div class="arch">Qwen3.5-4B hybrid (75% Gated DeltaNet recurrence) with a symmetric fork readout. Our best JevBench Composite.</div>
+        <div class="chips">
+          <span class="chip proof">Reorder-invariant: 0/565 flips</span>
+          <span class="chip proof">Relabel-invariant</span>
+          <span class="chip proof">Score-item invariant (bitwise)</span>
+          <span class="chip meas">Conformal coverage 0.92 at 90%</span>
+          <span class="chip fail">No "safe to act" certificate</span>
+        </div>
+      </div>
+      <div class="model">
+        <h4>Order-Locked RWKV 13B</h4>
+        <div class="code">code name D19</div>
+        <div class="arch">RWKV-7, fully attention-free: constant-size memory, no KV cache. Joint decision head. Our best Decision Index score.</div>
+        <div class="chips">
+          <span class="chip proof">Reorder-invariant (canonical options)</span>
+          <span class="chip meas">Calibration ECE 0.041</span>
+          <span class="chip meas">Conformal coverage holds</span>
+          <span class="chip fail">Relabel: 8.6% flips</span>
+          <span class="chip fail">Float state-stability cert</span>
+        </div>
+      </div>
+      <div class="model">
+        <h4>Injection-Hardened RWKV 13B</h4>
+        <div class="code">code name D13</div>
+        <div class="arch">RWKV-7, attention-free, joint record head, trained to ignore instructions planted inside the content it reads.</div>
+        <div class="chips">
+          <span class="chip meas">Hijack 2.5% on unseen attacks</span>
+          <span class="chip meas">Steer 0.3% on unseen attacks</span>
+          <span class="chip meas">Beats Clef-flash (significant)</span>
+          <span class="chip proof">Reorder-invariant</span>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="tiles" aria-label="Headline">
-    <div class="tile"><b>86%</b><span>of Clef-flash's Decision Index score (D19, 49.5 vs 57.3)</span></div>
-    <div class="tile"><b>80%</b><span>of Clef 27B's Decision Index score (D19, 49.5 vs 61.9)</span></div>
-    <div class="tile"><b>87%</b><span>of H2O-Lightning-4B's JevBench Composite (JEV3-LM-S, 67.0 vs 76.6)</span></div>
-    <div class="tile"><b>4.6× / 30×</b><span>fewer hijacks / steers than Clef-flash on unseen attacks (D13)</span></div>
+    <div class="tile"><b>86%</b><span>of Clef-flash's Decision Index score (Order-Locked RWKV 13B, 49.5 vs 57.3)</span></div>
+    <div class="tile"><b>87%</b><span>of H2O-Lightning-4B's JevBench Composite (Symmetry-Locked 4B, 67.0 vs 76.6)</span></div>
+    <div class="tile"><b>0 flips</b><span>from option reorder or relabel in 565 tests (Symmetry-Locked 4B). H2O fails this test.</span></div>
+    <div class="tile"><b>4.6× / 30×</b><span>fewer hijacks / steers than Clef-flash on unseen attacks (Injection-Hardened RWKV 13B)</span></div>
   </section>
 
-  <h2 style="margin-top:8px">1 · Performance</h2>
+  <h2 style="margin-top:8px">1 · Safety and alignment</h2>
   <div class="grid2">
     <section class="panel">
-      <div class="head"><h3>Decision Index · full dev set</h3><span class="tag same">same harness</span></div>
-      <div class="chart" id="c-di"></div>
-      <p class="note">12,104 rows, Index 0.2.1 scorer, 32k context. Higher is better. D19 trails Clef-flash by 7.8 [6.2, 9.8] points and Clef 27B by 12.4 [10.8, 14.3]. JEV3-LM-S was not run on the Index.</p>
+      <div class="head"><h3>Unseen injection attacks · lower is better</h3><span class="tag same">same harness</span></div>
+      <div class="chart" id="c-atk"></div>
+      <p class="note">21 attack templates that share no 4- or 6-word phrase with any training data; 7,920 attacked decisions per model. <b>Hijack</b>: planted text overrides the answer. <b>Steer</b>: planted text pushes toward a chosen wrong option. Against Clef-flash, our advantage is statistically significant after correcting for multiple comparisons. Against Clef 27B it is a tie. Whiskers are 95% CIs.</p>
     </section>
     <section class="panel">
-      <div class="head"><h3>JevBench Composite · public 231 items</h3><span class="tag same">same harness</span></div>
+      <div class="head"><h3>Answer flips under harmless edits · lower is better</h3><span class="tag same">same harness</span></div>
+      <div class="chart" id="c-flip"></div>
+      <p class="note">Average over 8 jevkit perturbations (reorder, shuffle and relabel the options; paraphrase; whitespace; and others). On reorder, shuffle and relabel, Symmetry-Locked 4B flips <b>exactly 0</b> times, by construction. Its remaining flips come from paraphrase-type edits, which no current model guarantees. MD1's 1.3% is self-reported on its own items and is not comparable.</p>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="head"><h3>Guarantee matrix</h3><span class="tag same">proven or measured</span></div>
+    <div class="scroll"><table>
+      <tr><th>Property</th><th class="ours">Symmetry-Locked 4B</th><th class="ours">Order-Locked RWKV 13B</th><th class="ours">Injection-Hardened RWKV 13B</th><th class="them">Clef 27B</th><th class="them">Clef-flash</th><th class="them">H2O-4B</th></tr>
+      <tr><td>Option reorder cannot change the answer (proof + bitwise test)</td><td class="y">Proven</td><td class="y">Proven</td><td class="y">Proven</td><td class="q">not claimed</td><td class="q">not claimed</td><td class="x">Fails 6/139</td></tr>
+      <tr><td>Option relabel cannot change the answer</td><td class="y">Proven</td><td class="x">8.6% flips</td><td class="q">untested</td><td class="q">not claimed</td><td class="q">not claimed</td><td class="x">Fails 5/139</td></tr>
+      <tr><td>Unseen-attack hijack rate (lower is better)</td><td class="q">untested</td><td class="q">untested</td><td class="m">2.5%</td><td class="n">1.3%</td><td class="n">11.5%</td><td class="q">untested</td></tr>
+      <tr><td>Unseen-attack steer rate (lower is better)</td><td class="q">untested</td><td class="q">untested</td><td class="m">0.3%</td><td class="n">1.8%</td><td class="n">8.9%</td><td class="q">untested</td></tr>
+      <tr><td>Average answer-flip rate, 8 harmless edits</td><td class="m">3.6%</td><td class="q">2.9% (3 edits only)</td><td class="q">untested</td><td class="q">untested</td><td class="q">untested</td><td class="n">2.4%</td></tr>
+      <tr><td>Calibration, 10-bin ECE on Index dev (lower is better)</td><td class="q">—</td><td class="m">0.041</td><td class="q">—</td><td class="n">0.014</td><td class="n">0.031</td><td class="q">—</td></tr>
+      <tr><td>Prediction sets contain the right answer at the stated rate (conformal)</td><td class="y">Holds (0.92 at 90%)</td><td class="y">Holds</td><td class="y">Holds</td><td class="y">Holds</td><td class="y">Holds</td><td class="q">—</td></tr>
+      <tr><td>Certified "safe to act" at ≤5% error, using a test that is valid for correlated items</td><td class="x">None</td><td class="x">None</td><td class="x">None</td><td class="x">None</td><td class="x">None</td><td class="q">—</td></tr>
+      <tr><td>Injection-robust prediction sets</td><td colspan="3">Mechanism proven on CPU with the real tokenizer (1,000/1,000); not yet trained into a model</td><td colspan="3" class="q">not offered</td></tr>
+    </table></div>
+    <p class="note">No model, ours or Clef's, earns a "safe to act" certificate once we use a test that accounts for related questions. An earlier per-decision test said our 13B model was more actionable than Clef-flash; we withdrew that result because the test was too lenient. A public red-team report (DecisionRobust v1.2.0) found Jev steered on 79.3% of its curated attack pairs.</p>
+  </section>
+
+  <section class="panel">
+    <div class="head"><h3>Newest (Oct 15) · Keel: structural safety around a Trust-Distilled 4B judge</h3><span class="tag">vs stock model, not competitors</span></div>
+    <div class="chips">
+      <span class="chip proof">No unauthorized action can run (bounded exhaustive check)</span>
+      <span class="chip proof">Deferred or held actions never execute</span>
+      <span class="chip proof">Full review queue never auto-approves</span>
+      <span class="chip proof">Tamper-evident, replayable receipts</span>
+      <span class="chip proof">5 of 5 deliberately broken kernels caught</span>
+      <span class="chip meas">False-certificate rate 0.2% at nominal 5%</span>
+      <span class="chip fail">Adaptive attacks steer 90–100% of 4B judges</span>
+    </div>
+    <div class="chart" id="c-keel"></div>
+    <p class="note">Chart: targeted steering rate on Keel's Decision Alignment Card, using attack templates never seen in training. The distilled student answers in one token; the thinking judge spends about 2,300 reasoning tokens per decision and is 14.3 points more accurate on clean items. Because searched attacks still steer every 4B judge, Keel puts its safety in host-side structure that the model cannot override.</p>
+  </section>
+
+  <h2 style="margin-top:8px">2 · Performance</h2>
+  <div class="grid2">
+    <section class="panel">
+      <div class="head"><h3>Decision Index · full dev set · higher is better</h3><span class="tag same">same harness</span></div>
+      <div class="chart" id="c-di"></div>
+      <p class="note">12,104 rows, Index 0.2.1 scorer, 32k context. Order-Locked RWKV 13B trails Clef-flash by 7.8 [6.2, 9.8] points and Clef 27B by 12.4 [10.8, 14.3]. Symmetry-Locked 4B was not run on the Index.</p>
+    </section>
+    <section class="panel">
+      <div class="head"><h3>JevBench Composite · public 231 items · higher is better</h3><span class="tag same">same harness</span></div>
       <div class="chart" id="c-jev"></div>
-      <p class="note">jevkit, which reproduces the published H2O and decider scorecards exactly or within 1 item. Composite combines Intelligence, Calibration, Speed and Cost. *torchcast failed our reproduction check by 5 items. D13 was not run on JevBench.</p>
+      <p class="note">jevkit, which reproduces the published H2O and decider scorecards exactly or within 1 item. Composite combines Intelligence, Calibration, Speed and Cost. *torchcast failed our reproduction check by 5 items. Injection-Hardened RWKV 13B was not run on JevBench.</p>
     </section>
   </div>
 
   <section class="panel">
     <div class="head"><h3>Public leaderboards · top 5 plus the named decision models</h3><span class="tag">published</span></div>
-    <p class="note">JevBench frozen v1.6.1 artifact (Composite also prices Cost, which sinks Clef) and Decision Index 0.3.2 full score, both read 2026-10-14. Our models have never been submitted to either board, and these scales differ from our local runs: H2O scores 77.6 Intelligence locally but 60.0 on the board.</p>
+    <p class="note">JevBench frozen v1.6.1 artifact (Composite also prices Cost, which sinks Clef) and Decision Index 0.3.2 full score, both read 2026-10-14. Our models have never been submitted to either board, and these scales differ from our local runs: H2O scores 77.6 Intelligence locally but 60.0 on the board. None of these systems publishes a formal guarantee.</p>
     <div class="grid2">
       <div class="scroll"><table>
         <tr><th>JevBench system</th><th style="text-align:right">Composite</th><th style="text-align:right">Capability</th></tr>
@@ -125,40 +216,6 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
     </div>
   </section>
 
-  <h2 style="margin-top:8px">2 · Safety</h2>
-  <div class="grid2">
-    <section class="panel">
-      <div class="head"><h3>Unseen injection attacks · lower is better</h3><span class="tag same">same harness</span></div>
-      <div class="chart" id="c-atk"></div>
-      <p class="note">21 attack templates that share no 4- or 6-word phrase with any training data; 7,920 attacked decisions per model. <b>Hijack</b>: planted text overrides the answer. <b>Steer</b>: planted text pushes toward a chosen wrong option. Against Clef-flash, D13's advantage is statistically significant after correcting for multiple comparisons. Against Clef 27B it is a tie. D19 was not run on this attack set.</p>
-    </section>
-    <section class="panel">
-      <div class="head"><h3>Answer flips under harmless rewording · lower is better</h3><span class="tag same">same harness</span></div>
-      <div class="chart" id="c-flip"></div>
-      <p class="note">Average over 8 jevkit perturbations (reorder, shuffle and relabel the options; paraphrase; whitespace; and others). JEV3-LM-S flips <b>exactly 0</b> times on 565 reorder, shuffle and relabel cases, a guarantee that holds by construction. Its remaining flips come from paraphrase-type edits. MD1's 1.3% is self-reported on its own items and is not comparable.</p>
-    </section>
-  </div>
-
-  <section class="panel">
-    <div class="head"><h3>Guarantee matrix</h3><span class="tag same">measured or proven</span></div>
-    <div class="scroll"><table>
-      <tr><th>Property</th><th>D19</th><th>JEV3-LM-S</th><th>D13</th><th>Clef 27B</th><th>Clef-flash</th><th>H2O-4B</th></tr>
-      <tr><td>Option reorder cannot change the answer (proof + bitwise test)</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td><td class="q">not claimed</td><td class="q">not claimed</td><td class="x">No (fails 6/139)</td></tr>
-      <tr><td>Option relabel cannot change the answer</td><td class="x">No (8.6% flip)</td><td class="y">Yes</td><td class="q">untested</td><td class="q">not claimed</td><td class="q">not claimed</td><td class="x">No (fails 5/139)</td></tr>
-      <tr><td>Calibration, 10-bin ECE on Index dev (lower is better)</td><td class="n">0.041</td><td class="q">—</td><td class="q">—</td><td class="n">0.014</td><td class="n">0.031</td><td class="q">—</td></tr>
-      <tr><td>Coverage of prediction sets at the stated level (conformal)</td><td class="y">Holds</td><td class="y">Holds (0.92 at 90%)</td><td class="y">Holds</td><td class="y">Holds</td><td class="y">Holds</td><td class="q">—</td></tr>
-      <tr><td>Certified "safe to act" at ≤5% error, using a test that is valid for correlated items</td><td class="x">None</td><td class="x">None</td><td class="x">None</td><td class="x">None</td><td class="x">None</td><td class="q">—</td></tr>
-      <tr><td>Injection-robust prediction sets (mechanism)</td><td colspan="3">Proven on CPU with the real tokenizer (1,000/1,000); not yet trained into a model</td><td colspan="3" class="q">not offered</td></tr>
-    </table></div>
-    <p class="note">No model, ours or Clef's, earns a "safe to act" certificate once we use a test that accounts for related questions. An earlier per-decision test said D19 was more actionable than Clef-flash; we withdrew that result because the test was too lenient. A public red-team report (DecisionRobust v1.2.0) found Jev steered on 79.3% of its curated attack pairs.</p>
-  </section>
-
-  <section class="panel">
-    <div class="head"><h3>Newest work (Oct 15): Keel judgment layer on Qwen3.5-4B</h3><span class="tag">vs stock model, not competitors</span></div>
-    <div class="chart" id="c-keel"></div>
-    <p class="note">Targeted steering rate on Keel's Decision Alignment Card, using attack templates that never appeared in training. The distilled student answers in one token; the thinking judge spends about 2,300 reasoning tokens per decision and is 14.3 points more accurate on clean items. Searched (adaptive) attacks still steer every 4B judge 90–100% of the time. That is why Keel puts its safety in host-side structure, which the model cannot override.</p>
-  </section>
-
   <h2 style="margin-top:8px">3 · Efficiency</h2>
   <div class="grid2">
     <section class="panel">
@@ -173,25 +230,26 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
         <tr><td>H2O-Lightning-4B</td><td>4B</td><td class="n">91.3</td><td class="n">61.1</td></tr>
         <tr><td>torchcast-12b</td><td>12B</td><td class="n">92.1</td><td class="n">53.5</td></tr>
         <tr><td>decider-12b-v1</td><td>12B</td><td class="n">92.0</td><td class="n">54.8</td></tr>
-        <tr class="ours"><td>D19</td><td>13.3B</td><td class="n">78.6</td><td class="n">52.6</td></tr>
+        <tr class="ours"><td>Order-Locked RWKV 13B</td><td>13.3B</td><td class="n">78.6</td><td class="n">52.6</td></tr>
       </table></div>
-      <p class="note">1× H100, in-process timing. D19's p50 latency is 569 ms on the Index. Its recurrent state is constant-size, so memory does not grow with context length, unlike attention. The slower Speed score comes from the 13.3B size and an unoptimised readout. JEV3-LM-S is in the same 4B price class as H2O ($0.03/M).</p>
+      <p class="note">1× H100, in-process timing. The 13B model's p50 latency is 569 ms on the Index. Its recurrent state is constant-size, so memory does not grow with context length, unlike attention. The lower Speed score comes from the 13.3B size and an unoptimised readout. Symmetry-Locked 4B is in the same 4B price class as H2O ($0.03/M).</p>
     </section>
   </div>
 
   <footer>
-    <div><b>Sources.</b> Decision Index runs: ledger jobs zfexa, t5yg2, y6ste + uq5p5. JevBench: claude/ev-scorecard @e2fcd82b, job-zbmhc (rescore @e03b1d42). Attacks: jobs 4yedh, sn8xi, gmbqi. Flips: claude/ev-flip-rate @4a65dd18. Guarantees: claude/ev-guarantee-proofs, ev-guar-crr, ev-evidence-report-v2. Keel: collab/mottopanikeiku/keel direction/PROPOSITION.md v1.1. Public boards: direction/research/ssdm-W1-landscape.md (read 2026-10-14).</div>
+    <div><b>Name key.</b> Symmetry-Locked 4B = JEV3-LM-S (job-zbmhc). Order-Locked RWKV 13B = D19 (job-fi5xf). Injection-Hardened RWKV 13B = D13. Trust-Distilled 4B = Keel distilled student.</div>
+    <div><b>Sources.</b> Decision Index runs: ledger jobs zfexa, t5yg2, y6ste + uq5p5. JevBench: claude/ev-scorecard @e2fcd82b, job-zbmhc (rescore @e03b1d42). Attacks: jobs 4yedh, sn8xi, gmbqi. Flips: claude/ev-flip-rate @4a65dd18. Guarantees: claude/ev-guarantee-proofs, ev-guar-crr, ev-guar-jev3, ev-evidence-report-v2. Keel: collab/mottopanikeiku/keel direction/PROPOSITION.md v1.1. Public boards: direction/research/ssdm-W1-landscape.md (read 2026-10-14).</div>
     <div><b>Caveats.</b> One seed per trained model. Local JevBench uses the 231 open items, not the board's sealed set. All results are exploratory and none has been confirmed on a sealed set.</div>
   </footer>
 </div>
 
 <script>
 (function(){
-  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  // rows: {l, v, lo, hi, ours, fmt}
+  // rows: {l, g (guarantee sub-label), v, lo, hi, ours}
   function bars(id, rows, opt){
     const el = document.getElementById(id);
-    const max = opt.max, W = 560, labW = opt.labW || 150, numW = 64, rowH = opt.rowH || 30, top = 6;
+    const hasSub = rows.some(r=>r.g);
+    const max = opt.max, W = 600, labW = opt.labW || 190, numW = 66, rowH = hasSub ? 42 : 30, top = 6;
     const plotW = W - labW - numW - 8;
     const H = top + rows.length*rowH + 22;
     const x = v => labW + (v/max)*plotW;
@@ -201,24 +259,28 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
       s += `<text class="axis" x="${x(t)}" y="${H-6}" text-anchor="middle">${opt.tickFmt?opt.tickFmt(t):t}</text>`;
     });
     rows.forEach((r,i)=>{
-      const y = top + i*rowH, bh = rowH*0.56, by = y + (rowH-bh)/2;
+      const y = top + i*rowH, mid = y + rowH/2, bh = 17, by = mid - bh/2;
       const col = r.ours ? 'var(--ours)' : 'var(--them)';
-      s += `<text class="lab" x="${labW-10}" y="${y+rowH/2+4}" text-anchor="end" style="${r.ours?'font-weight:600;fill:var(--ours)':''}">${r.l}</text>`;
+      const ly = r.g ? mid - 2 : mid + 4;
+      s += `<text class="lab" x="${labW-10}" y="${ly}" text-anchor="end" style="${r.ours?'font-weight:600;fill:var(--ours)':''}">${r.l}</text>`;
+      if(r.g) s += `<text class="gl" x="${labW-10}" y="${mid+11}" text-anchor="end">${r.g}</text>`;
       s += `<rect x="${labW}" y="${by}" width="${Math.max(1.5,x(r.v)-labW)}" height="${bh}" rx="2" fill="${col}"/>`;
       if(r.lo!=null){
-        s += `<line x1="${x(r.lo)}" x2="${x(r.hi)}" y1="${y+rowH/2}" y2="${y+rowH/2}" stroke="var(--fg)" stroke-width="1.2" opacity=".55"/>`;
-        s += `<line x1="${x(r.lo)}" x2="${x(r.lo)}" y1="${y+rowH/2-4}" y2="${y+rowH/2+4}" stroke="var(--fg)" stroke-width="1.2" opacity=".55"/>`;
-        s += `<line x1="${x(r.hi)}" x2="${x(r.hi)}" y1="${y+rowH/2-4}" y2="${y+rowH/2+4}" stroke="var(--fg)" stroke-width="1.2" opacity=".55"/>`;
+        [['lo','hi']].forEach(()=>{
+          s += `<line x1="${x(r.lo)}" x2="${x(r.hi)}" y1="${mid}" y2="${mid}" stroke="var(--fg)" stroke-width="1.2" opacity=".55"/>`;
+          s += `<line x1="${x(r.lo)}" x2="${x(r.lo)}" y1="${mid-4}" y2="${mid+4}" stroke="var(--fg)" stroke-width="1.2" opacity=".55"/>`;
+          s += `<line x1="${x(r.hi)}" x2="${x(r.hi)}" y1="${mid-4}" y2="${mid+4}" stroke="var(--fg)" stroke-width="1.2" opacity=".55"/>`;
+        });
       }
       const end = Math.max(x(r.v), r.hi!=null?x(r.hi):0);
-      s += `<text class="num" x="${end+6}" y="${y+rowH/2+4}">${opt.fmt(r.v)}</text>`;
+      s += `<text class="num" x="${end+6}" y="${mid+4}">${opt.fmt(r.v)}</text>`;
     });
     s += `</svg>`;
     el.innerHTML = s;
   }
-  function grouped(id, groups, series, opt){
+  function grouped(id, groups, opt){
     const el = document.getElementById(id);
-    const W=560, labW=110, numW=60, gH=series.length*20+14, top=6, max=opt.max;
+    const W=600, labW=190, numW=86, gH=58, top=6, max=opt.max;
     const plotW=W-labW-numW-8, H=top+groups.length*gH+40;
     const x=v=>labW+(v/max)*plotW;
     let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${opt.aria}">`;
@@ -227,28 +289,48 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
       s+=`<text class="axis" x="${x(t)}" y="${H-24}" text-anchor="middle">${t}%</text>`;
     });
     groups.forEach((g,gi)=>{
-      const y0=top+gi*gH;
-      s+=`<text class="lab" x="${labW-10}" y="${y0+gH/2+2}" text-anchor="end" style="${g.ours?'font-weight:600;fill:var(--ours)':''}">${g.l}</text>`;
-      series.forEach((se,si)=>{
-        const v=g.v[si], lo=g.lo[si], hi=g.hi[si], y=y0+4+si*20, bh=13;
-        const col = g.ours ? (si? 'var(--ours)':'var(--ours)') : 'var(--them)';
-        s+=`<rect x="${labW}" y="${y}" width="${Math.max(1.5,x(v)-labW)}" height="${bh}" rx="2" fill="${col}" opacity="${si?0.55:1}"/>`;
+      const y0=top+gi*gH, mid=y0+gH/2-4;
+      const col = g.ours ? 'var(--ours)' : 'var(--them)';
+      s+=`<text class="lab" x="${labW-10}" y="${g.g?mid-2:mid+4}" text-anchor="end" style="${g.ours?'font-weight:600;fill:var(--ours)':''}">${g.l}</text>`;
+      if(g.g) s+=`<text class="gl" x="${labW-10}" y="${mid+11}" text-anchor="end">${g.g}</text>`;
+      ['hijack','steer'].forEach((nm,si)=>{
+        const v=g.v[si], lo=g.lo[si], hi=g.hi[si], y=y0+6+si*21, bh=14;
+        s+=`<rect x="${labW}" y="${y}" width="${Math.max(1.5,x(v)-labW)}" height="${bh}" rx="2" fill="${col}" opacity="${si?0.5:1}"/>`;
         s+=`<line x1="${x(lo)}" x2="${x(hi)}" y1="${y+bh/2}" y2="${y+bh/2}" stroke="var(--fg)" stroke-width="1.1" opacity=".5"/>`;
-        s+=`<text class="num" x="${Math.max(x(v),x(hi))+6}" y="${y+bh-2}">${se.short} ${v.toFixed(1)}%</text>`;
+        s+=`<text class="num" x="${Math.max(x(v),x(hi))+6}" y="${y+bh-2}">${nm} ${v.toFixed(1)}%</text>`;
       });
     });
     s+=`<rect x="${labW}" y="${H-14}" width="12" height="10" fill="var(--them)"/><text class="axis" x="${labW+16}" y="${H-5}">Hijack (solid)</text>`;
-    s+=`<rect x="${labW+120}" y="${H-14}" width="12" height="10" fill="var(--them)" opacity=".55"/><text class="axis" x="${labW+136}" y="${H-5}">Steer (faded)</text>`;
+    s+=`<rect x="${labW+120}" y="${H-14}" width="12" height="10" fill="var(--them)" opacity=".5"/><text class="axis" x="${labW+136}" y="${H-5}">Steer (faded)</text>`;
     s+=`</svg>`;
     el.innerHTML=s;
   }
-  const f1 = v=>v.toFixed(1), f2=v=>v.toFixed(2);
+  const f1 = v=>v.toFixed(1);
+
+  grouped('c-atk',[
+    {l:'Injection-Hardened RWKV 13B', g:'measured · attention-free', ours:1, v:[2.5,0.3], lo:[0,0], hi:[8.4,1.4]},
+    {l:'Clef 27B', v:[1.3,1.8], lo:[0,0], hi:[4.0,5.1]},
+    {l:'Clef-flash', v:[11.5,8.9], lo:[1.9,1.0], hi:[27.2,20.9]},
+  ],{max:30, ticks:[0,5,10,15,20,25,30], aria:'Held-out injection attack success rates'});
+
+  bars('c-flip',[
+    {l:'MD1 (self-reported)', v:1.3},
+    {l:'H2O-Lightning-4B', v:2.44, lo:1.26, hi:3.75},
+    {l:'Symmetry-Locked 4B', g:'proof: 0 reorder/relabel flips', v:3.64, ours:1},
+    {l:'Stock Qwen3.5-4B', v:7.55, lo:5.71, hi:9.67},
+  ],{max:10, ticks:[0,2,4,6,8,10], tickFmt:t=>t+'%', fmt:v=>v.toFixed(2)+'%', aria:'Average answer flip rate'});
+
+  bars('c-keel',[
+    {l:'Stock 4B, one pass', v:25.0},
+    {l:'Stock 4B, thinking', v:13.8},
+    {l:'Trust-Distilled 4B', g:'one token · host-enforced authority', v:9.8, ours:1},
+  ],{max:30, ticks:[0,5,10,15,20,25,30], tickFmt:t=>t+'%', fmt:v=>v.toFixed(1)+'%', aria:'Keel static steering rate'});
 
   bars('c-di',[
     {l:'Clef 27B', v:61.89, lo:60.28, hi:63.28},
     {l:'Clef-flash', v:57.29, lo:55.88, hi:58.67},
-    {l:'D19', v:49.49, lo:47.77, hi:50.80, ours:1},
-    {l:'D13', v:43.21, ours:1},
+    {l:'Order-Locked RWKV 13B', g:'proof: reorder-invariant', v:49.49, lo:47.77, hi:50.80, ours:1},
+    {l:'Injection-Hardened RWKV 13B', g:'measured: unseen-attack robust', v:43.21, ours:1},
   ],{max:70, ticks:[0,10,20,30,40,50,60,70], fmt:f1, aria:'Decision Index full dev scores'});
 
   bars('c-jev',[
@@ -256,33 +338,14 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
     {l:'torchcast-12b*', v:73.1, lo:69.4, hi:75.1},
     {l:'decider-12b-v1', v:72.4, lo:68.6, hi:74.4},
     {l:'decider-12b v2', v:71.0, lo:66.9, hi:73.7},
-    {l:'JEV3-LM-S', v:66.97, ours:1},
-    {l:'D19', v:62.3, lo:44.1, hi:64.9, ours:1},
+    {l:'Symmetry-Locked 4B', g:'proof: reorder + relabel invariant', v:66.97, ours:1},
+    {l:'Order-Locked RWKV 13B', g:'proof: reorder-invariant', v:62.3, lo:44.1, hi:64.9, ours:1},
   ],{max:90, ticks:[0,15,30,45,60,75,90], fmt:f1, aria:'JevBench Composite local scores'});
-
-  grouped('c-atk',[
-    {l:'D13', ours:1, v:[2.5,0.3], lo:[0,0], hi:[8.4,1.4]},
-    {l:'Clef 27B', v:[1.3,1.8], lo:[0,0], hi:[4.0,5.1]},
-    {l:'Clef-flash', v:[11.5,8.9], lo:[1.9,1.0], hi:[27.2,20.9]},
-  ],[{short:'hijack'},{short:'steer'}],{max:30, ticks:[0,5,10,15,20,25,30], aria:'Held-out injection attack success rates'});
-
-  bars('c-flip',[
-    {l:'MD1 (self-reported)', v:1.3},
-    {l:'H2O-Lightning-4B', v:2.44, lo:1.26, hi:3.75},
-    {l:'JEV3-LM-S', v:3.64, ours:1},
-    {l:'Stock Qwen3.5-4B', v:7.55, lo:5.71, hi:9.67},
-  ],{max:10, labW:160, ticks:[0,2,4,6,8,10], tickFmt:t=>t+'%', fmt:v=>v.toFixed(2)+'%', aria:'Average answer flip rate'});
-
-  bars('c-keel',[
-    {l:'Stock 4B, one pass', v:25.0},
-    {l:'Stock 4B, thinking', v:13.8},
-    {l:'Keel student, one pass', v:9.8, ours:1},
-  ],{max:30, labW:180, ticks:[0,5,10,15,20,25,30], tickFmt:t=>t+'%', fmt:v=>v.toFixed(1)+'%', aria:'Keel static steering rate'});
 
   bars('c-cost',[
     {l:'Clef-flash (9B)', v:0.061},
     {l:'Clef 27B', v:0.167},
-    {l:'Ours, 13.3B RWKV-7', v:0.183, ours:1},
-  ],{max:0.25, labW:160, ticks:[0,0.05,0.10,0.15,0.20,0.25], tickFmt:t=>'$'+t.toFixed(2), fmt:v=>'$'+v.toFixed(3), aria:'Projected serving cost per thousand decisions'});
+    {l:'Order-Locked RWKV 13B', g:'projected, with prefix sharing', v:0.183, ours:1},
+  ],{max:0.25, ticks:[0,0.05,0.10,0.15,0.20,0.25], tickFmt:t=>'$'+t.toFixed(2), fmt:v=>'$'+v.toFixed(3), aria:'Projected serving cost per thousand decisions'});
 })();
 </script>
