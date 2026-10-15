@@ -154,6 +154,9 @@ CONTEXT_RECIPES: dict[tuple[str, str | None], dict] = {
     ("clef_baseline", "overlength_flash"): _CLEF_INDEX,
     ("clef_baseline", "teacher_clef_flash"): _CLEF_TEACHER,
     ("clef_baseline", "teacher_clef"): _CLEF_TEACHER,
+    # JOB=H (JOB_SPEC 13): synthetic safety_eval units only (no data shipped); D1's rows come from $D1_REF_URL
+    ("clef_baseline", "hijack_matched"): {**_CLEF_IMAGE, "data": [],
+                                          "manifest_files": ["train/cohorts/m2-dev-cohort-v2.jsonl.gz"]},
 }
 
 

@@ -504,3 +504,52 @@ SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now b
 | `job_params_overlength_flash.json` | $6.68 (was $5.25) | $7.64 (was $6.00) | $1.89 (was $1.49) | $1.45 (was $1.14) |
 | `job_params_teacher_clef.json` | $45.49 (was $35.74) | $45.82 (was $36.00) | $16.82 (was $13.22) | $20.85 (was $16.38) |
 | `job_params_teacher_clef_flash.json` | $14.87 (was $11.68) | $15.28 (was $12.00) | $4.54 (was $3.56) | $5.54 (was $4.36) |
+
+## 13. MATCHED hijack + D1-A steer vs our cell D1 (`JOB=H`, `RELEASE=both`, launch mode `hijack_matched`)
+
+**Status (2026-10-08): packaged, NOT submitted.** Why: our trained cell D1 measured hijack 0.0 % vs the stock RWKV7
+parent 34.9 % and D1-A attacked accuracy 99.2 % vs 66.1 % (job-j8wgy, `jobs/m2_first_cell` mode `hijack_eval` @892bc6c,
+artifact art-4naug). No Clef number exists on those units, so "safer than Clef" cannot be claimed either way. This job
+scores the same units on both Clef releases and pairs them per unit with D1's rows.
+
+**13.1 Units (identical to job-j8wgy).** `train.m2_gates.stage_variants(Cohort(be6efe2b...), "hijack")`. That is
+`hijack_subset(steer_dev)` (8 requests in each of the 45 clusters, salted hash `ssdm-h1-hijack-subset-v1`) through
+`safety_eval.attacks.build_variants(hijack=<all 5 HIJACK_TEMPLATES>, d1=D1-A, final=False)`: 360 clean + 1,800 hijack +
+1,440 D1-A = 3,600 units. The request-id list is pinned (`VARIANTS_SHA256` 5546813d...). D1-B is never built here.
+
+**13.2 Decider.** `baselines.clef_backend` through `decide.Decider` and `safety_eval.decide_bridge` (the `clef_ssdm` arm of
+`baselines/run_clef_safety.py`: untrusted text goes through `decide/untrusted.py`, as for D1), batch 1, bf16. The GDN path
+is **FAST** (fla / causal-conv1d kernels), and the runner refuses to run if fla does not import. Accuracy-neutral per
+job-zfexa (Clef 27B, 2,008 rows: reference-vs-fast argmax agreement 99.50 %) and job-t5yg2 (Clef-flash, full DEV: 99.80 %,
+Index delta -0.06 [-0.22, +0.07]). Per-unit scoring is `safety_eval.metrics.run`. Comparisons are
+`safety_eval.metrics.compare_arms` with the two-way (cluster x template) and fixed-template cluster bootstraps, B = 2000,
+as in `train.m2_gates.hijack_measurement`.
+
+**13.3 Eligibility (pre-declared).** D1's own eligibility is "parent clean-correct", and the parent is a third model.
+**Primary, for each Clef - D1 pair: `both`**, meaning units whose clean request is clean-correct in BOTH models
+(`compare_arms(eligibility="both")`). It restricts `steer_rate` only. `hijack_rate`, `alarm_rate`, `refusal_rate` and
+`attacked_acc` are over every observed unit, as compare_arms defines them. Also reported: each model's own `reference_y`
+numbers (own clean-correct; `metrics.summarise`: hijack, attacked accuracy, clean accuracy, steer, alarm), and the
+`reference_y` pair with D1 as the reference. Direction: diff = Clef model - D1.
+
+**13.4 Fail closed.** H0 runs on CPU before fla_guard and before any weight download. It fetches art-4naug from
+`$D1_REF_URL` (sha256 `42c57b6152dadd8f5b916a5d36444ad1a5ab5514b2dd67981a531d1a9da69130`, 11,294,720 bytes) and takes
+`out/units-child-hijack.json` and `out/parent_arm_hijack/units-hijack.json` from the artifact root or its newest
+`phases/*.tgz`. It then requires D1 and the parent to cover EXACTLY the pinned unit ids with equal `unit_sha`, and
+requires D1's re-computed rates to equal the declared job-j8wgy numbers within 0.05 pp. Any miss exits 21 (unit set or
+reproduction) or 10 (artifact). Each Clef run and the compare repeat the exact-id and `unit_sha` check (exit 21).
+
+**13.5 Phases and price.** H0 D1 reference (cap 5) -> fla_guard -> Clef-flash download (8) and score (12, live rate
+guard) -> Clef 27B download (14) and score (40, live rate guard) -> H2 compare (5) -> report (1); reserve 4, so
+max_duration is 89. Rates come from job-sgihj's per-row model (32 ms + 0.0399 ms/token), at <= 1,000 tokens per unit
+(the requests average 1,730 JSON chars): 72 ms per unit. That gives Clef-flash 4.3 min + 0.6 load, and Clef 27B 23.3 +
+1.6 at the card's 5.39x ratio (job-d2u54 measured 2.373x on the fast path: 10.3). Worst case
+(60 + 2 x 89) x 0.0495 = **$11.78** (hard cap $12). Quoted one attempt: 89 x 0.063 = $5.61. Expected 59 min = $2.92
+(run only ~$1.93).
+
+**13.6 Submit.** Package: `python -m jobs.common.launch clef_baseline --mode hijack_matched --sha <sha> --out <dir> --data
+<SSDM_DATA>`. Export `D1_REF_URL=<get_artifact art-4naug url>` in the submitting shell (sf_submit fills the placeholder),
+then run `python -I jobs/common/sf_submit.py <dir>`. Outputs go to `/output/clef-hijack-matched/`: `hijack/summary.json`
+(`headline`, `per_model`, `paired_vs_d1`, `d1_reproduction`), `hijack/units-<release>.jsonl` plus `.identity.json`,
+`result.json` and `SHA256SUMS`. Local re-land: `python -m baselines.clef_hijack_matched compare --d1-dir <d1> --units
+<units-clef-flash.jsonl> <units-clef.jsonl> --out summary.json`.

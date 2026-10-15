@@ -1,0 +1,140 @@
+{
+ "_comment": "MATCHED safety comparison vs our cell D1 (JOB_SPEC section 13). Scores the SAME 3,600 units as job-j8wgy (jobs/m2_first_cell hijack_eval @892bc6c: train.m2_gates hijack stage = hijack_subset(steer_dev of cohort v2, 8 x 45 clusters) x build_variants(hijack=all 5 HIJACK_TEMPLATES, d1=D1-A): 360 clean + 1,800 hijack + 1,440 D1-A) on Clef-flash then Clef 27B, through the Clef decide adapter (baselines.clef_backend + decide.Decider, clef_ssdm arm) on the FAST GDN path (accuracy-neutral: job-zfexa / job-t5yg2 reference-vs-fast argmax agreement 99.50 % / 99.80 %), then pairs per unit with D1's art-4naug rows (fetched from $D1_REF_URL, sha256 42c57b61..., checked with the unit set and D1's reproduction on CPU BEFORE any download; exit 21 = unit ids differ, fail closed). Primary eligibility for Clef - D1 = clean-correct in BOTH models (pre-declared); each model's own reference_y numbers and the D1-as-reference pair also reported. Pricing: job-sgihj per-row model 32 ms + 0.0399 ms/token at <= 1,000 tokens/unit (requests average 1,730 JSON chars) = 72 ms/unit -> Clef-flash 4.3 min + 0.6 load; Clef 27B at the 5.39x card ratio 23.3 + 1.6 load (job-d2u54 measured 2.373x: 10.3). Worst case (60 + 2 x 89) x 0.0495 = $11.78; expected 59 min = $2.92 (run only ~$1.93).",
+ "test_env": {
+  "transformers": "5.10.2",
+  "with": [
+   "flash-linear-attention==0.5.2",
+   "fla-core==0.5.2"
+  ],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"
+   },
+   {
+    "reason": "CLEF_TEST_SGIHJ_DECIDE",
+    "why": "job-sgihj's decide results (art-8y6d8) are a local reference, not launch data; the ROWS=overlength job ships them pinned"
+   }
+  ],
+  "image": "jobs/clef_baseline/Dockerfile"
+ },
+ "job": "clef-hijack-matched",
+ "chip": "h100",
+ "chip_count": 1,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "batch_usd_per_min": 0.0495,
+ "clock_lock": true,
+ "runner": "jobs/clef_baseline/run_job.sh",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement of two frozen external checkpoints on job-j8wgy's safety units, paired with D1's rows: rates and paired CIs are reported, nothing is promoted or selected; the unit-set / reproduction checks are fail-closed preconditions (exit 21), not a decision rule",
+ "mission": "clef-baseline-safety-spec-s7",
+ "pricing": "jobs/clef_baseline/price.py: job-sgihj measured Clef-flash per-row rates; Clef planned at the card's 5.39x median-latency ratio (job-d2u54 measured fast-path ratio 2.373x is the expected case)",
+ "max_duration_minutes": 89,
+ "hf_cache": false,
+ "hard_cap_usd": 12.0,
+ "reserve_minutes": 4,
+ "phase_caps_minutes": {
+  "setup": 5,
+  "download_clef_flash": 8,
+  "score_clef_flash": 12,
+  "download_clef": 14,
+  "score_clef": 40,
+  "compare": 5,
+  "report": 1
+ },
+ "expected_minutes": {
+  "build": 20,
+  "setup": 2,
+  "download_clef_flash": 4,
+  "score_clef_flash": 6,
+  "download_clef": 10,
+  "score_clef": 14,
+  "compare": 2,
+  "report": 1
+ },
+ "model": "Cloudflare/clef@2f3de3dd85f379784083b0814d997ab627200f0c",
+ "models": [
+  "Cloudflare/clef-flash@17f0b0ad64efb65d273590632833508766b2aae6",
+  "Cloudflare/clef@2f3de3dd85f379784083b0814d997ab627200f0c"
+ ],
+ "d1_reference": {
+  "artifact": "art-4naug",
+  "job": "job-j8wgy",
+  "commit": "892bc6c",
+  "sha256": "42c57b6152dadd8f5b916a5d36444ad1a5ab5514b2dd67981a531d1a9da69130",
+  "url_env": "D1_REF_URL"
+ },
+ "eligibility": {
+  "primary": "both: clean-correct in BOTH the Clef model and D1 (compare_arms eligibility='both'); steer_rate only",
+  "also": [
+   "each model's own reference_y (own clean-correct; metrics.summarise)",
+   "reference_y with D1 as the reference (D1 clean-correct), as job-j8wgy's parent pairing"
+  ]
+ },
+ "gdn_path": "fast",
+ "env": {
+  "RELEASE": "both",
+  "JOB": "H"
+ },
+ "submit": {
+  "command": "/app/jobs/clef_baseline/run_job.sh",
+  "key": "clef-hijack-matched",
+  "env": {
+   "RELEASE": "both",
+   "JOB": "H",
+   "D1_REF_URL": "<get_artifact art-4naug url: fill at submit>"
+  },
+  "clock_lock": true,
+  "label": "clef hijack_matched: Clef-flash + Clef 27B on job-j8wgy's 3,600 hijack/D1-A units, paired vs D1 (art-4naug)",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/clef-hijack-matched/result.json"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-hijack-matched/hijack/summary.json"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-hijack-matched/hijack/units-clef-flash.jsonl"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-hijack-matched/hijack/units-clef.jsonl"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-hijack-matched/SHA256SUMS"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/clef-hijack-matched/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "unsupported": "the Clef image copies app/ (not code/m1/): launch.py CONTEXT_RECIPES ('clef_baseline', 'hijack_matched') rewrites it; no data shipped (synthetic units; D1 rows fetched from $D1_REF_URL)"
+ },
+ "mode": "hijack_matched"
+}
