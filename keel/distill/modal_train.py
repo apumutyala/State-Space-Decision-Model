@@ -12,9 +12,9 @@ from keel.runtime.modal_app import HF_CACHE, hf_cache, results_vol
 
 APP = modal.App("keel-distill-train")
 training_image = (
-    modal.Image.from_registry("nvidia/cuda:12.8.1-devel-ubuntu22.04", add_python="3.12")
+    modal.Image.from_registry("nvidia/cuda:13.0.2-devel-ubuntu22.04", add_python="3.12")
     .apt_install("build-essential", "git")
-    .pip_install("torch==2.10.0", "transformers==5.14.1", "peft==0.21.2", "accelerate==1.12.0",
+    .pip_install("torch==2.14.1", "transformers==5.14.1", "peft==0.21.2", "accelerate==1.12.0",
                  "safetensors", "huggingface_hub", "ninja", "packaging", "wheel",
                  "flash-linear-attention==0.5.2")
     .env({"MAX_JOBS": "4", "TOKENIZERS_PARALLELISM": "false"})
@@ -74,11 +74,15 @@ def main() -> None:
         ledger["status"] = "complete"
         print(json.dumps(ledger, indent=2))
     finally:
+        if ledger["status"] == "running":
+            ledger["status"] = "failed"
         ledger["local_wall_s"] = time.time() - start
         # Image-build CPU time is included in this conservative upper estimate.
         ledger["gpu_minutes_upper_estimate"] = ledger["local_wall_s"] / 60
         ledger["usd_upper_estimate"] = ledger["local_wall_s"] * 3.95 / 3600
         out.write_text(json.dumps(ledger, indent=2) + "\n")
+        with out.with_suffix(".attempts.jsonl").open("a") as log:
+            log.write(json.dumps(ledger) + "\n")
 
 
 if __name__ == "__main__":

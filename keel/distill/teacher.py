@@ -196,11 +196,15 @@ def main() -> None:
         ledger["status"] = "complete"
         print(json.dumps(report, indent=2))
     finally:
+        if ledger["status"] == "running":
+            ledger["status"] = "failed"
         ledger["wall_s"] = time.time() - t0
         # Conservative: local wall time includes model startup and application shutdown.
         ledger["gpu_minutes_upper_estimate"] = ledger["wall_s"] / 60
         ledger["usd_upper_estimate"] = ledger["wall_s"] * 3.95 / 3600
         (out / "cost.json").write_text(json.dumps(ledger, indent=2) + "\n")
+        with (out / "cost-attempts.jsonl").open("a") as log:
+            log.write(json.dumps(ledger) + "\n")
 
 
 if __name__ == "__main__":

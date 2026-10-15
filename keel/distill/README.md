@@ -104,7 +104,7 @@ on text attention, gated-delta and MLP projections, AdamW learning rate 1e-4,
 zero weight decay, gradient norm clipping at 1, batch 4 with 4-step accumulation,
 seed 20261015. The partial final accumulation window is weighted by its actual
 example count. Vision weights are frozen but preserved in the full merged HF
-checkpoint. The training image owns CUDA 12.8.1, torch 2.10.0, transformers
+checkpoint. The training image owns CUDA 13.0.2, torch 2.14.1, transformers
 5.14.1, peft 0.21.2, accelerate 1.12.0, flash-linear-attention 0.5.2 and
 causal-conv1d 1.7.0. No extra workstation package installation is required.
 
@@ -170,3 +170,19 @@ JevBench-overlap fixture and disabled-gate rejection, split leakage, lexical
 counterfactual filters, exact KL/CE against hand calculation, real tiny-model
 gradients and nonlabel exclusion, masked labels, teacher filtering, and
 cluster-bootstrap metric denominators. Initial run: **30 passed in 2.09 s**.
+
+## Paid-run log
+
+The cap for this slice is $45. Costs use $3.95/H100-hour. Estimates include
+local wall time (including CPU-only image builds and startup), so they
+conservatively overstate actual GPU billing; they are not invoice amounts.
+
+| Date | Function | H100-minutes upper estimate | USD upper estimate | Outcome |
+|---|---|---:|---:|---|
+| 2026-10-15 | `train_remote(smoke=True)`, torch 2.10.0 | 7.284 | $0.480 | FLA correctly refused a known-invalid Hopper backward kernel in Triton <3.7.1. No checkpoint. |
+
+The initial numerical check exposed FLA's explicit correctness guard for
+Hopper's `chunk_bwd_dqkwg` kernel with Triton 3.4–3.7.0. The fix upgrades the
+training image to a compatible torch/Triton/CUDA stack; it does **not** disable
+the check or accept an invalid backward pass. Aggregate detail is in
+`direction/experiments/distill_v0/smoke-failed.json`.

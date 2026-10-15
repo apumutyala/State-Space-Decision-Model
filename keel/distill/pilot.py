@@ -110,18 +110,37 @@ def main() -> None:
                 raise ValueError("pilot checkpoint identity mismatch")
         else:
             start = time.time()
+            checkpoint_smoke = None
             with APP.run():
+                server = None
+                if name == "student_4b":
+                    from keel.runtime.vllm_judge import JudgeServer
+                    from keel.distill.triplets import request_of
+
+                    server = JudgeServer(model=model)
+                    smoke = judge([request_of(r) for r in train[:4]], model,
+                                  mode="trust", think=False, server=server)
+                    if len(smoke) != 4:
+                        raise ValueError("student checkpoint smoke returned an incomplete batch")
+                    for result in smoke:
+                        argmax(result["probs"])  # finite, normalized, nonempty
+                    (private / "student-train-source-smoke.json").write_text(json.dumps(smoke))
+                    checkpoint_smoke = {"train_source_rows": len(smoke), "valid_distributions": True,
+                                        "checkpoint": model, "mode": "trust", "think": False}
                 scored = judge([DecisionRequest.from_json(u["request"]) for u in units], model,
-                               mode="trust", think=think, n_samples=2 if think else 1,
+                               mode="trust", think=think, n_samples=2 if think else 1, server=server,
                                max_think=a.max_think, seed=161015)
             elapsed = time.time() - start
             saved = {"model": model, "outputs": {u["id"]: r for u, r in zip(units, scored)},
+                     "checkpoint_smoke": checkpoint_smoke,
                      "cost": {"date": "2026-10-15", "function": "runtime.judge", "model": model,
                               "gpu_minutes_upper_estimate": elapsed / 60,
                               "usd_upper_estimate": elapsed * 3.95 / 3600}}
             path.write_text(json.dumps(saved))
         aggregate["models"][name] = metrics(units, saved["outputs"])
         aggregate["cost"].append(saved["cost"])
+        if saved.get("checkpoint_smoke"):
+            aggregate["checkpoint_smoke"] = saved["checkpoint_smoke"]
         print(json.dumps({name: aggregate["models"][name]}, indent=2), flush=True)
     output = Path(a.aggregate_out)
     output.parent.mkdir(parents=True, exist_ok=True)

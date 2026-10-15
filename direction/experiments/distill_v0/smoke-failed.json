@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-15",
+  "function": "train_remote(smoke=True)",
+  "modal_app": "ap-qrDVKQZ9H5t7ZNKqZVJczy",
+  "status": "failed during backward",
+  "torch": "2.10.0",
+  "cuda_image": "12.8.1",
+  "flash_linear_attention": "0.5.2",
+  "error": "FLA rejects Triton >=3.4.0 and <3.7.1 on Hopper for gated chunk_bwd_dqkwg because that kernel produces incorrect results",
+  "fix": "upgrade the pinned training image to torch 2.14.1 (Triton 3.8) with CUDA 13.0.2; no safety check bypass",
+  "local_wall_s": 437.0554401874542,
+  "gpu_minutes_upper_estimate": 7.2842573364575705,
+  "usd_upper_estimate": 0.4795469413167901,
+  "cost_note": "Conservative upper estimate includes non-GPU image-build time. No checkpoint was produced."
+}
