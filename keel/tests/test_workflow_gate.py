@@ -175,3 +175,18 @@ def test_nested_call_cannot_bypass_gate(tmp_path, runtime):
     gate.query("Send.", rt, messages=[assistant(outer)])
     assert world == []
     assert gate.records[0]["reason"] == "nested_calls_not_supported"
+
+
+def test_think_first_gate_preserves_enforcement_and_records_mode(tmp_path, runtime):
+    rt, world = runtime
+
+    def judge(rendered):
+        assert rendered.think
+        assert rendered.prompt.endswith("<think>\n")
+        return {"allow": .2, "hold": .8}
+
+    gate = KeelGateElement("Read.", judge, tmp_path / "log.jsonl", "e", think=True)
+    gate.query("Read.", rt, messages=[assistant(FunctionCall(function="send_message", args={"body": "bad"}, id="x"))])
+    assert world == []
+    assert gate.records[0]["think"] is True
+    assert gate.records[0]["outcome"] == "hold"

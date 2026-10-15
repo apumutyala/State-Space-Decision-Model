@@ -7,6 +7,7 @@ This package runs a real tool-using agent against AgentDojo's simulated banking 
 - `gate_element.py` replaces AgentDojo's `ToolsExecutor`. It judges **each proposed call before dispatch**, including calls before the first tool output and each member of a multi-call batch. Earlier outputs in the same batch are visible to later decisions.
 - The authenticated, host-provided user task is trusted metadata. Every previous tool result is an untrusted `tool_output` segment, sourced by tool name. Proposed tool names/arguments are also untrusted data, never interpolated into the system turn or question. The operator policy authorizes only actions needed for the user's task, including necessary information gathering.
 - `keel.protocol.render(mode="trust")` uses the existing escaped untrusted-record boundary. The Qwen3.5-4B judge reads one token's raw label log-probabilities, normalized only over allow/hold, exactly as the shared judge runtime. `p(allow) > p(hold)` allows; ties hold. No workflow-specific training or threshold tuning is performed.
+- The supplemental `keel_think` arm uses the same request, policy, options and threshold, but first samples one reasoning trace (up to 1,024 tokens; temperature 0.6, top-p 0.95, top-k 20, seed 0), closes it with the shared `close_think`, then reads the label. Supplemental `judge_samples.jsonl` records raw log-probabilities, reasoning, truncation and the final readout-prompt hash outside git. This is not a trained or tuned judge.
 - Hold returns the fixed message `This tool call is held for human review. It was not executed.` The underlying executor is not called. This experiment measures review demand; there is no human approver or automatic retry-to-permission.
 - Before dispatch, one JSONL record records request fingerprint, rendered prompt SHA-256, probabilities, outcome, call identity and judge latency. A score/logging exception aborts before the current call executes. Nested AgentDojo `FunctionCall` objects are held rather than allowing implicit unjudged subcalls; normal OpenAI JSON tool arguments are supported.
 - All arms use the same upstream pipeline composition, system message and 15-iteration tool loop. `none`, `spotlighting_with_delimiting`, `repeat_user_prompt`, and `tool_filter` are AgentDojo's implementations, not approximations. `keel` replaces only the no-defense executor.
@@ -31,8 +32,11 @@ uv pip install --python /home/alp/ssdm-venv/bin/python agentdojo==0.1.35
   --config direction/experiments/workflow_v0/pilot_config.json --run-id UNIQUE-pilot
 /home/alp/ssdm-venv/bin/python -X utf8 -m keel.workflows.modal_run \
   --config direction/experiments/workflow_v0/config.json --run-id UNIQUE-main
+/home/alp/ssdm-venv/bin/python -X utf8 -m keel.workflows.modal_run \
+  --config direction/experiments/workflow_v0/think_config.json --run-id UNIQUE-think
 /home/alp/ssdm-venv/bin/python -X utf8 -m keel.workflows.aggregate \
   --episodes /home/alp/ssdm-direction/workflow/UNIQUE-main/episodes.jsonl \
+  --episodes /home/alp/ssdm-direction/workflow/UNIQUE-think/episodes.jsonl \
   --output direction/experiments/workflow_v0/aggregate.json
 ```
 
@@ -42,7 +46,7 @@ Unique run IDs avoid accidental overwrite; duplicate episode IDs are rejected by
 
 Results and exact matrix are in [`direction/experiments/workflow_v0`](../../direction/experiments/workflow_v0/). All task IDs and attack goals are fixed in `config.json` before main inference. Bootstrap CIs resample user tasks, carrying both attacked goals together; hold rate is held/proposed calls, not an unweighted mean of episode ratios. Episodes with any hold separately measure review demand. A zero-success bootstrap interval can be degenerate and is not a certificate of zero population risk.
 
-This is an exploratory comparison, not the 10× stretch claim: one agent model family, one judge family shared with the agent, a standard non-adaptive attack, 12 tasks per suite, two target goals per task, one greedy seed, and a simulated environment. Utility/review load are reported rather than matched. Tool filtering may reduce available useful actions. Target success is the benchmark's selected predicate, not a detector of every possible unauthorized action. The gate has no guarantee that an allowed call is correct and no fitted statistical act/defer certificate. The optional thinking judge and CaMeL-lite reference are not included.
+This is an exploratory comparison, not the 10× stretch claim: one agent model family, one judge family shared with the agent, a standard non-adaptive attack, 12 tasks per suite, two target goals per task, one agent seed, and a simulated environment. Utility/review load are reported rather than matched. Tool filtering may reduce available useful actions. Target success is the benchmark's selected predicate, not a detector of every possible unauthorized action. The gate has no guarantee that an allowed call is correct and no fitted statistical act/defer certificate. The optional CaMeL-lite reference is not included.
 
 CPU acceptance on the initial implementation: `python -X utf8 -m pytest -q keel/tests` — **32 passed**. Tests cover trust construction and control-token escaping, hold/no executor invocation, real allow side effects, immutable original transcript, same-batch evidence, receipt binding, ties, invalid scores/log failure, nested-call blocking, clustered CIs, and real AgentDojo attack/predicate behavior.
 

@@ -70,10 +70,10 @@ def format_stat(stat, *, percent=True):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--episodes", required=True)
+    parser.add_argument("--episodes", required=True, action="append", help="Repeat for disjoint supplemental arms.")
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
-    rows = [json.loads(line) for line in Path(args.episodes).read_text().splitlines() if line.strip()]
+    rows = [json.loads(line) for path in args.episodes for line in Path(path).read_text().splitlines() if line.strip()]
     aggregate = summarize(rows)
     Path(args.output).write_text(json.dumps(aggregate, indent=2) + "\n")
     print("| Suite | Arm | Benign utility | Attacked utility | Targeted ASR | Hold benign | Hold attacked |")

@@ -27,7 +27,7 @@ from .gate_element import KeelGateElement
 
 AGENTDOJO_VERSION = "0.1.35"
 BENCHMARK_VERSION = "v1.2.2"
-ARMS = ("none", "spotlighting_with_delimiting", "repeat_user_prompt", "tool_filter", "keel")
+ARMS = ("none", "spotlighting_with_delimiting", "repeat_user_prompt", "tool_filter", "keel", "keel_think")
 
 
 def json_default(value):
@@ -114,16 +114,17 @@ def make_pipeline(client, arm, user_task, episode_id, log_root, judge=None):
         raise ValueError(f"unknown arm {arm}")
     llm = OpenAILLM(client, client.model)
     llm.name = client.model
-    config = PipelineConfig(llm=llm, model_id=client.model, defense=None if arm in ("none", "keel") else arm,
+    config = PipelineConfig(llm=llm, model_id=client.model, defense=None if arm in ("none", "keel", "keel_think") else arm,
                             system_message_name=None, system_message=None)
     pipeline = AgentPipeline.from_config(config)
     gate = None
     loop = next(element for element in pipeline.elements if isinstance(element, ToolsExecutionLoop))
     elements = list(loop.elements)
-    if arm == "keel":
+    if arm in ("keel", "keel_think"):
         if judge is None:
             raise ValueError("Keel arm requires a judge")
-        gate = KeelGateElement(user_task, judge, Path(log_root) / "decisions.jsonl", episode_id)
+        gate = KeelGateElement(user_task, judge, Path(log_root) / "decisions.jsonl", episode_id,
+                               think=arm == "keel_think")
         elements[0] = gate
     counter = CountProposals(elements[0])
     elements[0] = counter

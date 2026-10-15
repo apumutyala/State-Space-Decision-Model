@@ -19,7 +19,7 @@ IMAGE = vllm_image.pip_install("agentdojo==0.1.35").add_local_python_source("kee
 class LocalJudge:
     """Same single-label raw-logprob readout as keel.runtime.vllm_judge."""
 
-    def __init__(self):
+    def __init__(self, audit_path, max_think=1024):
         from vllm import LLM
         model, revision = MODELS["qwen3.5-4b"]
         self.llm = LLM(model=model, revision=revision, max_model_len=32768, gpu_memory_utilization=0.30,
@@ -27,26 +27,44 @@ class LocalJudge:
                        enable_prefix_caching=True, max_logprobs=256, seed=0)
         self.tokenizer = self.llm.get_tokenizer()
         self.label_ids = {}
+        self.audit_path = Path(audit_path)
+        self.max_think = max_think
 
     def __call__(self, rendered):
+        import hashlib
         from vllm import SamplingParams
-        from keel.protocol.render import probs_from_logprobs
+        from keel.protocol.render import close_think, probs_from_logprobs
+        prompt = rendered.prompt
+        reasoning, think_tokens, truncated = None, 0, False
         if rendered.think:
-            raise ValueError("workflow v0 measures only the one-pass judge")
-        base = self.tokenizer.encode(rendered.prompt, add_special_tokens=False)
+            sample = self.llm.generate(
+                [prompt], SamplingParams(max_tokens=self.max_think, temperature=.6, top_p=.95,
+                                         top_k=20, seed=0, stop=["</think>"]), use_tqdm=False,
+            )[0].outputs[0]
+            reasoning, think_tokens = sample.text, len(sample.token_ids)
+            truncated = sample.finish_reason == "length"
+            prompt = close_think(rendered, reasoning, truncated)
+        base = self.tokenizer.encode(prompt, add_special_tokens=False)
         for label in rendered.labels:
             if label not in self.label_ids:
-                extended = self.tokenizer.encode(rendered.prompt + " " + label, add_special_tokens=False)
+                extended = self.tokenizer.encode(prompt + " " + label, add_special_tokens=False)
                 if extended[:-1] != base or len(extended) != len(base) + 1:
                     raise ValueError(f"label {label} is not one token at Answer:")
                 self.label_ids[label] = extended[-1]
-        output = self.llm.generate([rendered.prompt], SamplingParams(max_tokens=1, temperature=0, logprobs=256),
-                                   use_tqdm=False)[0]
+        output = self.llm.generate([prompt], SamplingParams(max_tokens=1, temperature=0, logprobs=256),
+                                  use_tqdm=False)[0]
         logprobs = output.outputs[0].logprobs[0]
         missing = [label for label in rendered.labels if self.label_ids[label] not in logprobs]
         if missing:
             raise RuntimeError(f"missing raw label logprobs: {missing}")
-        return probs_from_logprobs(rendered, [logprobs[self.label_ids[label]].logprob for label in rendered.labels])
+        values = [logprobs[self.label_ids[label]].logprob for label in rendered.labels]
+        audit = {"prompt_sha256": hashlib.sha256(rendered.prompt.encode()).hexdigest(),
+                 "readout_prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
+                 "labels": list(rendered.labels), "logprobs": values, "think_tokens": think_tokens,
+                 "truncated": truncated, "reasoning": reasoning}
+        with self.audit_path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(audit) + "\n")
+        return probs_from_logprobs(rendered, values)
 
 
 @APP.function(image=IMAGE, gpu="H100", timeout=3 * 3600,
@@ -84,7 +102,8 @@ def evaluate(config: dict, run_id: str):
             else:
                 raise TimeoutError("vLLM server startup exceeded 1200 seconds")
             meta["agent_load_s"] = time.monotonic() - start
-            judge = LocalJudge() if "keel" in config["arms"] else None
+            judge = (LocalJudge(root / "judge_samples.jsonl", config.get("judge_max_think", 1024))
+                     if any(arm in ("keel", "keel_think") for arm in config["arms"]) else None)
             meta["total_load_s"] = time.monotonic() - start
             client = EndpointClient("http://127.0.0.1:8000/v1", model, max_tokens=config.get("max_tokens", 1024))
             rows = run_matrix(client, judge, config, root)
