@@ -180,9 +180,18 @@ conservatively overstate actual GPU billing; they are not invoice amounts.
 | Date | Function | H100-minutes upper estimate | USD upper estimate | Outcome |
 |---|---|---:|---:|---|
 | 2026-10-15 | `train_remote(smoke=True)`, torch 2.10.0 | 7.284 | $0.480 | FLA correctly refused a known-invalid Hopper backward kernel in Triton <3.7.1. No checkpoint. |
+| 2026-10-15 | 9B pilot evidence authorship + two-sample validation | 6.748 | $0.444 | 192 held-out sources; 82 validated evidence counterfactuals. |
+| 2026-10-15 | CUDA 13 training-image build | 3.444 | $0.227 | CPU-only build failed because default `clang++` was absent. Fixed by explicitly selecting installed GCC/G++. Actual GPU allocation: zero. |
+| 2026-10-15 | Corrected `train_remote(smoke=True)`, torch 2.14.1 | 12.712 | $0.837 | Eight rows, two real forward/backward microbatches and one optimizer update; finite gradient norm 19.03; 10.35 GB peak GPU allocation. Includes a 619.6-second CPU wheel build. |
 
 The initial numerical check exposed FLA's explicit correctness guard for
 Hopper's `chunk_bwd_dqkwg` kernel with Triton 3.4–3.7.0. The fix upgrades the
 training image to a compatible torch/Triton/CUDA stack; it does **not** disable
 the check or accept an invalid backward pass. Aggregate detail is in
 `direction/experiments/distill_v0/smoke-failed.json`.
+
+The corrected Qwen3.5-4B numerical check succeeded with 32,464,896 trainable
+LoRA parameters. Mean restricted loss was 0.76885; both backward passes and
+the optimizer update completed. Function execution was 121.52 seconds
+(the larger ledger time includes image building). This checks differentiability
+and finite gradients, not convergence or pilot quality.

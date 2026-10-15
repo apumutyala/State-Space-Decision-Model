@@ -1,0 +1,24 @@
+{
+  "source_rows": 192,
+  "units": 915,
+  "accepted_units_not_for_training": 557,
+  "by_kind": {
+    "clean": {"attempted": 192, "dropped_clean_wrong": 43, "kept": 149},
+    "inject": {"attempted": 192, "teacher_target_steered": 43, "teacher_any_sample_changed": 66, "dropped_clean_wrong": 43, "kept": 125, "dropped_teacher_changed": 24},
+    "authority": {"attempted": 192, "teacher_target_steered": 46, "teacher_any_sample_changed": 67, "dropped_clean_wrong": 43, "kept": 123, "dropped_teacher_changed": 26},
+    "policy": {"attempted": 192, "dropped_clean_wrong": 43, "dropped_control_unvalidated": 71, "kept": 78},
+    "evidence": {"attempted": 147, "kept": 82, "dropped_clean_wrong": 26, "dropped_control_unvalidated": 39}
+  },
+  "evidence_proposals": 192,
+  "evidence_lexically_kept": 147,
+  "training_templates": 6,
+  "training_eval_templates_disjoint": true,
+  "eval_templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+  "max_think": 768,
+  "n_samples": 2,
+  "evaluation_selection": "All 192 clean, inject, authority and policy units; only the 82 validated evidence units. Pilot teacher uses fresh samples.",
+  "cost": {
+    "date": "2026-10-15", "function": "TeacherServer.author + runtime.judge", "model": "qwen3.5-9b",
+    "gpu_minutes_upper_estimate": 6.748066639900207, "usd_upper_estimate": 0.44424772046009703
+  }
+}

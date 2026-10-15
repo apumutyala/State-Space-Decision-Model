@@ -17,7 +17,7 @@ training_image = (
     .pip_install("torch==2.14.1", "transformers==5.14.1", "peft==0.21.2", "accelerate==1.12.0",
                  "safetensors", "huggingface_hub", "ninja", "packaging", "wheel",
                  "flash-linear-attention==0.5.2")
-    .env({"MAX_JOBS": "4", "TOKENIZERS_PARALLELISM": "false"})
+    .env({"MAX_JOBS": "4", "TOKENIZERS_PARALLELISM": "false", "CC": "gcc", "CXX": "g++"})
     .run_commands("pip install --no-build-isolation causal-conv1d==1.7.0")
     .add_local_python_source("keel", "decide")
 )

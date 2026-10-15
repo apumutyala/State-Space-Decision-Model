@@ -76,6 +76,8 @@ def main() -> None:
     p.add_argument("--private-out", required=True)
     p.add_argument("--aggregate-out", required=True)
     p.add_argument("--max-think", type=int, default=768)
+    p.add_argument("--models", nargs="+", choices=("stock_4b", "student_4b", "teacher_9b"),
+                   default=("stock_4b", "student_4b", "teacher_9b"))
     a = p.parse_args()
     from keel.runtime.vllm_judge import APP, judge
 
@@ -103,6 +105,8 @@ def main() -> None:
                  "models": {}, "cost": []}
     for name, model, think in (("stock_4b", "qwen3.5-4b", False),
                                ("student_4b", a.student, False), ("teacher_9b", "qwen3.5-9b", True)):
+        if name not in a.models:
+            continue
         path = private / f"{name}.json"
         if path.exists():
             saved = json.loads(path.read_text())
