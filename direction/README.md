@@ -2,6 +2,7 @@
 
 | Path | What it is |
 |---|---|
+| `GRANTS.md` | Is SSDM a good direction for AI-safety grants? Verdict, reframe, program, where to apply, next steps |
 | `DIRECTION_MEMO.md` | Current direction memo (v1; git history holds v0 and the review-driven revision) |
 | `research/ssdm-context.md` | Shared project facts given to every research workstream |
 | `research/ssdm-W1-landscape.md`, `ssdm-W1-catalog.json` | Competitors, benchmarks, market (121-system catalog) |
