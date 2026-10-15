@@ -47,11 +47,11 @@ generator population. It says nothing about adaptive attackers, distribution shi
 ## Reproduce
 
 ```bash
-SSDM_DATA=/home/alp/ssdm-data python -X utf8 direction/experiments/gate_cert_v0/run_cert.py score
+SSDM_DATA=~/ssdm/data python -X utf8 direction/experiments/gate_cert_v0/run_cert.py score
 python -X utf8 direction/experiments/gate_cert_v0/run_cert.py certify
 ```
 
-Per-request scores, the population and the full reports stay outside git in `/home/alp/ssdm-direction/gate_cert_v0/`.
+Per-request scores, the population and the full reports stay outside git in `$SSDM_PRIVATE/gate_cert_v0/` (default `~/ssdm/private`).
 
 ## Results
 

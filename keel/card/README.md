@@ -17,7 +17,7 @@ choose checkpoints, certify adversarial robustness, or authorize actions.
   and a readable markdown Card. Model arguments accept runtime `MODELS` keys or `/results/...` checkpoints.
 
 Only code and aggregates belong in git. Requests, source text, reasoning, labels, per-item outputs, and
-search traces are stored under `/home/alp/ssdm-direction/card/` by default. The CLI rejects a cache inside
+search traces are stored under `$SSDM_PRIVATE/card/` by default (`keel.paths`). The CLI rejects a cache inside
 its worktree. Public JevBench's pinned 231 items are evaluation-only, clustered by `Item.family` (18 families);
 `Item.group` is retained as metadata, not treated as an independent resampling unit.
 
@@ -86,11 +86,11 @@ No correction is claimed across the collection of different arm pairs.
 ## Running
 
 ```sh
-export SSDM_DATA=/home/alp/ssdm-data
-/home/alp/ssdm-venv/bin/python -X utf8 -m keel.card.run \
+export SSDM_DATA=~/ssdm/data
+python -X utf8 -m keel.card.run \
   --model qwen3.5-4b --arms one_pass_base,one_pass_trust,think_trust \
   --tiers t1,t2,t3 --search-units 60 --query-budget 64 --spend-cap 25 \
-  --cache-dir /home/alp/ssdm-direction/card \
+  --cache-dir ~/ssdm/private/card \
   --output-dir direction/experiments/card_v0
 ```
 
@@ -112,7 +112,7 @@ image. No additional packages were installed.
 
 ## CPU acceptance
 
-`/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests`: **135 passed in 0.49 s**.
+`python -X utf8 -m pytest -q keel/tests`: **135 passed in 0.49 s**.
 Tests exercise all transforms, substitutions, no gold-placeholder leakage, wrong-target invariants, evidence
 instruction rejection and vote thresholds, trust-channel placement, actual canonical perturbations, metric
 denominators, cluster bootstrap and Holm behavior, paired noninferiority boundaries, and a deterministic planted
@@ -212,7 +212,7 @@ artifacts; primary retention uses only the final screened cohort.
 | 20 | `f1767f772c5b` | valid |
 
 The Card v0 command includes
-`--evidence-audit /home/alp/ssdm-direction/card/evidence-audit.json`. This manifest is content-bound to the
+`--evidence-audit $SSDM_PRIVATE/card/evidence-audit.json`. This manifest is content-bound to the
 complete 70-candidate teacher panel and contains no target evaluation scores. The teacher-reference evidence
 metric is selection-dependent because that same Qwen family supplies validation; it is not independent proof.
 
@@ -316,8 +316,8 @@ before examining any follow-up model or detector outcomes. Additional Modal spen
 Reproduce the fixed follow-up from the completed v0 external cache:
 
 ```sh
-SSDM_DATA=/home/alp/ssdm-data /home/alp/ssdm-venv/bin/python -X utf8 -m keel.card.v01 \
-  --cache-dir /home/alp/ssdm-direction/card \
+SSDM_DATA=~/ssdm/data python -X utf8 -m keel.card.v01 \
+  --cache-dir ~/ssdm/private/card \
   --output-dir direction/experiments/card_v0 --spend-cap 12
 ```
 
@@ -325,7 +325,7 @@ SSDM_DATA=/home/alp/ssdm-data /home/alp/ssdm-venv/bin/python -X utf8 -m keel.car
 outside git. The original v0 unit/output files are not overwritten by this command.
 
 The implementation and frozen design were committed and pushed as **`42869497` before the paid follow-up**.
-With integrated host/gate tests present, `/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests`
+With integrated host/gate tests present, `python -X utf8 -m pytest -q keel/tests`
 passed **355 tests in 26.47 s**. New tests cover hard-label-only objectives and transcripts, budget completion
 after success, search-arm/thinking-budget cache separation, real detector features, inclusive threshold
 boundaries, all 336 grid points, successful-attack denominators, and preservation of v0 report values.

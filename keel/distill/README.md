@@ -43,7 +43,7 @@ passing result.
 
 Dataset text, proposals, teacher reasoning, per-item outputs, and checkpoints
 are not committed. Local data and logs live under
-`/home/alp/ssdm-direction/distill_v0/`; model artifacts live on `keel-results`.
+`$SSDM_PRIVATE/distill_v0/` (default `~/ssdm/private`); model artifacts live on `keel-results`.
 Only code and aggregate reports in `direction/experiments/distill_v0/` enter git.
 
 ## Variants and labels
@@ -253,38 +253,39 @@ counts, 95% CIs and limitations are in
 
 ## Reproduction
 
-Run from the repository root with `/home/alp/ssdm-venv/bin/python -X utf8`:
+Run from the repository root after `source ~/ssdm/env.sh` (venv, `SSDM_DATA`, `SSDM_PRIVATE`):
 
 ```sh
-python -X utf8 -m keel.distill.sources --out /home/alp/ssdm-direction/distill_v0/data
+P=$SSDM_PRIVATE/distill_v0
+python -X utf8 -m keel.distill.sources --out $P/data
 python -X utf8 -m keel.distill.teacher \
-  --sources /home/alp/ssdm-direction/distill_v0/data/train.jsonl.gz \
-  --out /home/alp/ssdm-direction/distill_v0/teacher-train
+  --sources $P/data/train.jsonl.gz \
+  --out $P/teacher-train
 python -X utf8 -m keel.distill.teacher \
-  --sources /home/alp/ssdm-direction/distill_v0/data/pilot.jsonl.gz \
-  --out /home/alp/ssdm-direction/distill_v0/teacher-pilot
+  --sources $P/data/pilot.jsonl.gz \
+  --out $P/teacher-pilot
 python -X utf8 -m keel.distill.evidence_screen \
-  --teacher-dir /home/alp/ssdm-direction/distill_v0/teacher-train \
-  --out /home/alp/ssdm-direction/distill_v0/teacher-train-screened
+  --teacher-dir $P/teacher-train \
+  --out $P/teacher-train-screened
 python -X utf8 -m keel.distill.evidence_screen \
-  --teacher-dir /home/alp/ssdm-direction/distill_v0/teacher-pilot \
-  --out /home/alp/ssdm-direction/distill_v0/teacher-pilot-screened
+  --teacher-dir $P/teacher-pilot \
+  --out $P/teacher-pilot-screened
 python -X utf8 -m keel.distill.modal_train \
-  --smoke-sources /home/alp/ssdm-direction/distill_v0/data/train.jsonl.gz \
-  --run distill-v0-20261015-smoke --out /home/alp/ssdm-direction/distill_v0/smoke-train.json
+  --smoke-sources $P/data/train.jsonl.gz \
+  --run distill-v0-20261015-smoke --out $P/smoke-train.json
 python -X utf8 -m keel.distill.modal_train \
-  --labels /home/alp/ssdm-direction/distill_v0/teacher-train-screened/labels.jsonl.gz \
-  --run distill-v0-20261015 --out /home/alp/ssdm-direction/distill_v0/train.json
+  --labels $P/teacher-train-screened/labels.jsonl.gz \
+  --run distill-v0-20261015 --out $P/train.json
 timeout --kill-after=30s 900 python -X utf8 -m keel.distill.checkpoint \
-  --train-sources /home/alp/ssdm-direction/distill_v0/data/train.jsonl.gz \
+  --train-sources $P/data/train.jsonl.gz \
   --checkpoint /results/students/distill-v0-20261015/merged \
-  --out /home/alp/ssdm-direction/distill_v0/checkpoint-smoke.json
+  --out $P/checkpoint-smoke.json
 timeout --kill-after=30s 1800 python -X utf8 -m keel.distill.pilot \
-  --train-sources /home/alp/ssdm-direction/distill_v0/data/train.jsonl.gz \
-  --pilot-sources /home/alp/ssdm-direction/distill_v0/data/pilot.jsonl.gz \
-  --teacher-dir /home/alp/ssdm-direction/distill_v0/teacher-pilot-screened \
+  --train-sources $P/data/train.jsonl.gz \
+  --pilot-sources $P/data/pilot.jsonl.gz \
+  --teacher-dir $P/teacher-pilot-screened \
   --student /results/students/distill-v0-20261015/merged \
-  --private-out /home/alp/ssdm-direction/distill_v0/pilot \
+  --private-out $P/pilot \
   --aggregate-out direction/experiments/distill_v0/pilot.json
 python -X utf8 -m pytest -q keel/tests
 ```
@@ -297,7 +298,7 @@ gradients and nonlabel exclusion, masked labels, teacher filtering, executable
 later-event counterfactual semantics, cross-model validation requirements,
 cluster-bootstrap metric denominators, and complete pinned processor-asset
 export without modifying trained weights. Final command:
-`/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests`
+`python -X utf8 -m pytest -q keel/tests`
 — **46 passed in 1.75 s**.
 
 ## Paid-run log

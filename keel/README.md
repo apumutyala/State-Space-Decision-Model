@@ -34,7 +34,7 @@ python -X utf8 -m pytest -q keel/tests
 python -X utf8 -m keel.host.model_check
 
 # GPU smoke check of the judge runtime on Modal (public items, eval-only)
-SSDM_DATA=/home/alp/ssdm-data python -X utf8 -m keel.runtime.smoke_judge --n 4
+SSDM_DATA=~/ssdm/data python -X utf8 -m keel.runtime.smoke_judge --n 4
 ```
 
 Each sub-package README states exactly what is implemented, what is verified or measured, and what is not claimed.

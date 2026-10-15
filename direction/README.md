@@ -26,5 +26,8 @@
 | `experiments/workflow_v0/` | AgentDojo banking + Slack: executed injection targets with and without Keel gates |
 
 Conventions: the public JevBench items are EVAL-ONLY and never committed; per-item model outputs stay out of git
-(workstation copy: `/home/alp/ssdm-direction/`). Paths such as `/tmp/...` or `local://...` inside research reports are
-provenance from the session that produced them.
+(workstation copy: `$SSDM_PRIVATE`, default `~/ssdm/private`). Paths such as `/tmp/...` or `local://...` inside
+research reports are provenance from the session that produced them. On 2026-10-15 the workstation files moved into
+the `~/ssdm` workspace: `/tmp/State-Space-Decision-Model` → `~/ssdm/repo`, `/home/alp/ssdm-direction` →
+`~/ssdm/private`, `/home/alp/ssdm-data` → `~/ssdm/data`, `/tmp/ssdm-scratch` → `~/ssdm/scratch`,
+`/home/alp/keel-wt/<slice>` → `~/ssdm/worktrees/keel-<slice>`.

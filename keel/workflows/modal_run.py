@@ -9,6 +9,7 @@ from pathlib import Path
 
 import modal
 
+from keel.paths import private_root
 from keel.runtime.modal_app import HF_CACHE, MODELS, hf_cache, results_vol, vllm_image
 
 APP = modal.App("keel-agentdojo-workflow")
@@ -150,7 +151,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
     parser.add_argument("--run-id", required=True)
-    parser.add_argument("--output", default="/home/alp/ssdm-direction/workflow")
+    parser.add_argument("--output", default=str(private_root() / "workflow"))
     parser.add_argument("--download-only", action="store_true")
     args = parser.parse_args()
     config = json.loads(Path(args.config).read_text())

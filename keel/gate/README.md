@@ -205,7 +205,7 @@ always-defer implementation from passing as "valid."
 Run from the worktree root:
 
 ```text
-/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests
+python -X utf8 -m pytest -q keel/tests
 ```
 
 Observed on 2026-10-15: **75 tests passed in 11.70 seconds** (12.70 seconds wall time).

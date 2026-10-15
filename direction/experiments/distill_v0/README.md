@@ -7,7 +7,7 @@
 - One epoch of bf16 LoRA, rank 16, over **8,105 soft-labelled variants** from **3,107 train-source items**. Objective: label-token-restricted KL(teacher || student) + 0.2 CE(gold).
 - Sources: existing repo synthetic access-policy, severity and event-state generators. Total draw 3,299; held-out pilot 192, disjoint by item/group/content. No public JevBench item was scored or used for training by this slice.
 - Final training-content scans: **zero public-item overlap and zero evaluation-attack-template hits**. Decision Index document-overlap guard was unavailable, not passed.
-- Full recipe, source provenance, template definitions and limitations: [distill package README](../../../keel/distill/README.md). Only code, configurations and aggregates are committed; records and per-item outputs remain under `/home/alp/ssdm-direction/distill_v0/`.
+- Full recipe, source provenance, template definitions and limitations: [distill package README](../../../keel/distill/README.md). Only code, configurations and aggregates are committed; records and per-item outputs remain under `$SSDM_PRIVATE/distill_v0/` (default `~/ssdm/private`).
 
 ## Pilot results
 
@@ -85,7 +85,7 @@ Machine-readable ledger: `costs.json`; failed-call details: `pilot-failed.json`.
 Final command from the distill worktree:
 
 ```sh
-/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests
+python -X utf8 -m pytest -q keel/tests
 ```
 
 **46 passed in 1.75 s.** Coverage includes attack-template disjointness,

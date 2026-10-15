@@ -62,7 +62,7 @@ Shared rules for every Keel subpackage. Owned by the chief of staff; propose cha
 ## Data rules
 
 - **JevBench public items are EVAL-ONLY.** They live at `$SSDM_DATA/jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/`
-  (`SSDM_DATA=/home/alp/ssdm-data`) and are loaded with `jevkit.items.load_public()`. Never train on them, tune on
+  (`SSDM_DATA=~/ssdm/data`) and are loaded with `jevkit.items.load_public()`. Never train on them, tune on
   them, select on them or prompt-engineer against them; Card evaluation only.
 - **Training data passes the repo gates:**
   - `train/jevbench_guard.py` (JevBench overlap);
@@ -71,17 +71,20 @@ Shared rules for every Keel subpackage. Owned by the chief of staff; propose cha
   The Decision Index document-overlap index is not available on this workstation; record that it was not run.
 - **Attack templates used in training are disjoint from Card evaluation templates.** The Card owns the held-out
   families (including `analysis/safety_heldout/heldout_v1_templates.json`).
-- **Per-item model outputs and dataset text stay out of git.** Use `/home/alp/ssdm-direction/` or the Modal volume
-  `keel-results`. Commit code, configs, aggregates and README results.
+- **Per-item model outputs and dataset text stay out of git.** Use `$SSDM_PRIVATE` (default `~/ssdm/private`,
+  resolved by `keel.paths.private_root()`) or the Modal volume `keel-results`. Commit code, configs, aggregates and
+  README results.
 
 ## Engineering rules
 
-- One git worktree per slice under `/home/alp/keel-wt/<slice>`, on branch `collab/mottopanikeiku/keel-<slice>`, cut from
-  `collab/mottopanikeiku/keel`. Commit every change (small commits, descriptive messages, no AI or co-author
+- Workspace: `~/ssdm` (see its `README.md`); `source ~/ssdm/env.sh` sets `SSDM_DATA`, `SSDM_PRIVATE` and the venv.
+- One git worktree per slice under `~/ssdm/worktrees/keel-<slice>`, on branch `collab/mottopanikeiku/keel-<slice>`,
+  cut from `collab/mottopanikeiku/keel`. Commit every change (small commits, descriptive messages, no AI or co-author
   trailers) and push the branch.
-- Python venv: `/home/alp/ssdm-venv/bin/python` (3.12; torch CPU, transformers 5.14.1, pytest, hypothesis, numpy,
-  scipy). Run from the repo root with `-X utf8`. Add packages with
-  `uv pip install --python /home/alp/ssdm-venv/bin/python <pkg>` and list them in your README.
+- Python venv: `~/ssdm/.venv` (3.12; pinned in `~/ssdm/requirements.txt`: torch CPU, transformers 5.14.1, pytest,
+  hypothesis, numpy, scipy, modal, agentdojo). Run from the repo root with `-X utf8`. Add packages with
+  `uv pip install --python ~/ssdm/.venv/bin/python <pkg>`, refresh `requirements.txt` with `uv pip freeze`, and list
+  them in your README.
 - Tests: CPU-only, deterministic, under `keel/tests/`. Test behaviour and invariants, not wiring.
 - Modal spend: each slice has its own cap (in its brief). Log every paid run (date, function, GPU time, cost estimate)
   in the slice README.

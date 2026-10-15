@@ -10,13 +10,17 @@ from __future__ import annotations
 import json
 import math
 import sys
+from pathlib import Path
 
 sys.path.insert(0, ".")
 from jevkit import items as IT  # noqa: E402
 from jevkit import scoring as SC  # noqa: E402
+from keel.paths import private_root  # noqa: E402
 
-sys.path.insert(0, "/tmp/ssdm-scratch/cos")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from score_rh import answer  # noqa: E402
+
+RAW = private_root() / "experiments" / "reasoning_headroom" / "raw"
 
 PIN, POUT = 0.03, 0.15
 
@@ -28,7 +32,7 @@ def conf(ans):
 
 
 def run(model: str) -> None:
-    r = json.load(open(f"/tmp/ssdm-scratch/cos/full/{model}.json"))
+    r = json.load(open(RAW / f"{model}.json"))
     pub = IT.load_public()
     a0 = {x["id"]: x for x in r["arms"]["nothink"]["items"]}
     a1 = {x["id"]: x for x in r["arms"]["think"]["items"]}

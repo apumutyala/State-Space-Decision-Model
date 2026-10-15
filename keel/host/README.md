@@ -163,7 +163,7 @@ Unicode separators and thinking/truncation.
 Acceptance command (Python 3.12, CPU only):
 
 ```sh
-/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests
+python -X utf8 -m pytest -q keel/tests
 ```
 
 Verified 2026-10-15: **70 passed in 18.15s**, including the original protocol

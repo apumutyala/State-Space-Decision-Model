@@ -51,7 +51,7 @@ untrusted ASR for the identical authority sentence): 4B one-pass −14.1 pp, 4B 
 Static templates (an adaptive attacker will do better); one sampling seed; public decision items, not agent-action
 data; no evidence-retention control for legitimate untrusted evidence yet; one trust-policy wording.
 
-Raw per-item outputs stay out of git (workstation: `/home/alp/ssdm-direction/experiments/channel_probe/raw/`).
+Raw per-item outputs stay out of git (workstation: `$SSDM_PRIVATE/experiments/channel_probe/raw/`, default `~/ssdm/private`).
 
 ## Reproduce
 ```bash

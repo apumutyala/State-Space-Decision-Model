@@ -17,10 +17,11 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[2]))
 
 from keel.card.metrics import compare_arms, summarize  # noqa: E402
+from keel.paths import private_root  # noqa: E402
 
 RUNS = {
-    "stock": Path("/home/alp/ssdm-direction/card/outputs.jsonl"),
-    "student": Path("/home/alp/ssdm-direction/card-student/outputs.jsonl"),
+    "stock": private_root() / "card" / "outputs.jsonl",
+    "student": private_root() / "card-student" / "outputs.jsonl",
 }
 KEEP = {("stock", "one_pass_trust"): "stock_one_pass_trust", ("stock", "think_trust"): "stock_think_trust",
         ("stock", "teacher_9b_think_trust"): "teacher_9b_think_trust",

@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from jevkit.items import load_public
+from keel.paths import private_root
 from keel.protocol.render import decision_of, render
 from keel.protocol.types import DecisionRequest, from_jevbench_item
 from .units import (CardUnit, attack_request, benchmark_probs, make_static_units, render_attack,
@@ -245,7 +246,7 @@ def main(argv=None):
     parser.add_argument("--model", default="qwen3.5-4b")
     parser.add_argument("--arms", default="one_pass_base,one_pass_trust,think_trust")
     parser.add_argument("--tiers", default="t1,t3")
-    parser.add_argument("--cache-dir", type=Path, default=Path("/home/alp/ssdm-direction/card/"))
+    parser.add_argument("--cache-dir", type=Path, default=private_root() / "card")
     parser.add_argument("--output-dir", type=Path, default=Path("direction/experiments/card_v0/"))
     parser.add_argument("--search-units", type=int, default=60)
     parser.add_argument("--search-arms", default="one_pass_trust", help="Comma-separated arms attacked by T3/T3L")

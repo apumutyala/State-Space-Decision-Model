@@ -15,7 +15,7 @@ This package runs a real tool-using agent against AgentDojo's simulated banking 
 
 ## Architecture and dependencies
 
-A single Modal H100 runs a localhost vLLM OpenAI-compatible server for Qwen3.5-9B (55% GPU memory) and an in-process Qwen3.5-4B label judge (30%). Both use 32,768-token contexts, eager execution and the shared `ssdm-hf-cache` volume. This avoids cross-container per-call latency and paying for a second GPU. The judge is not a concurrent agent: episodes and their calls run sequentially. Raw logs persist on `keel-results` under `workflow/<run-id>` and are downloaded to `/home/alp/ssdm-direction/workflow/<run-id>/`.
+A single Modal H100 runs a localhost vLLM OpenAI-compatible server for Qwen3.5-9B (55% GPU memory) and an in-process Qwen3.5-4B label judge (30%). Both use 32,768-token contexts, eager execution and the shared `ssdm-hf-cache` volume. This avoids cross-container per-call latency and paying for a second GPU. The judge is not a concurrent agent: episodes and their calls run sequentially. Raw logs persist on `keel-results` under `workflow/<run-id>` and are downloaded to `$SSDM_PRIVATE/workflow/<run-id>/` (default `~/ssdm/private`).
 
 Pinned dependencies: `agentdojo==0.1.35`, `vllm==0.30.0`; shared Modal environment uses Modal 1.5.3. Agent and judge revisions are read from `keel.runtime.modal_app.MODELS` and written to every run record. The native Qwen3.5 chat template is paired with `qwen3_coder` tool-call parser and `qwen3` reasoning parser, as recommended by the [Qwen model card](https://huggingface.co/Qwen/Qwen3.5-9B#deployment). Agent thinking is disabled, generation is greedy (`temperature=0`, seed 0, at most 1,024 output tokens). AgentDojo maps system messages to OpenAI's developer role; the endpoint adapter maps these back to Qwen's system role and explicitly sends zero temperature for **all** arms and tool-filter queries.
 
@@ -23,20 +23,19 @@ Sources: [AgentDojo pipelines and defenses](https://agentdojo.spylab.ai/concepts
 
 ## Reproduction
 
-From the repository root, with the configured Python environment. Current code uses the v0.1 host-kernel cutover; the original v0 source revisions are recorded with the historical results.
+From the repository root, after `source ~/ssdm/env.sh` (workspace venv with `agentdojo==0.1.35` pinned in `~/ssdm/requirements.txt`). Current code uses the v0.1 host-kernel cutover; the original v0 source revisions are recorded with the historical results.
 
 ```sh
-uv pip install --python /home/alp/ssdm-venv/bin/python agentdojo==0.1.35
-/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests
-/home/alp/ssdm-venv/bin/python -X utf8 -m keel.workflows.modal_run \
+python -X utf8 -m pytest -q keel/tests
+python -X utf8 -m keel.workflows.modal_run \
   --config direction/experiments/workflow_v0/pilot_config.json --run-id UNIQUE-pilot
-/home/alp/ssdm-venv/bin/python -X utf8 -m keel.workflows.modal_run \
+python -X utf8 -m keel.workflows.modal_run \
   --config direction/experiments/workflow_v0/config.json --run-id UNIQUE-main
-/home/alp/ssdm-venv/bin/python -X utf8 -m keel.workflows.modal_run \
+python -X utf8 -m keel.workflows.modal_run \
   --config direction/experiments/workflow_v0/think_config.json --run-id UNIQUE-think
-/home/alp/ssdm-venv/bin/python -X utf8 -m keel.workflows.aggregate \
-  --episodes /home/alp/ssdm-direction/workflow/UNIQUE-main/episodes.jsonl \
-  --episodes /home/alp/ssdm-direction/workflow/UNIQUE-think/episodes.jsonl \
+python -X utf8 -m keel.workflows.aggregate \
+  --episodes $SSDM_PRIVATE/workflow/UNIQUE-main/episodes.jsonl \
+  --episodes $SSDM_PRIVATE/workflow/UNIQUE-think/episodes.jsonl \
   --output direction/experiments/workflow_v0/aggregate.json
 ```
 
@@ -66,7 +65,7 @@ Every paid allocation uses `keel.workflows.modal_run.evaluate` on one H100, esti
 | 2026-10-15 | `workflow-think-20261015a` / `evaluate` | 174.4865 | 11.4870 | Measured function wall time; all 72 supplemental episodes completed, zero episode exceptions |
 | 2026-10-15 | `workflow-host-v01-20261015a` / `evaluate` | 17.8653 | 1.1761 | Separate v0.1 $8 cap; all 72 host-integrated one-pass episodes completed, zero episode/dispatch errors |
 
-The original v0 allocations total **252.2991 GPU-minutes / $16.6097** estimated. Including the cancelled-startup reserve gives **$16.9389**, below that assignment's **$25 cap**. Raw logs are under `/home/alp/ssdm-direction/workflow/`; aggregate v0 allocation records are in `direction/experiments/workflow_v0/run_summary.json`. The separate v0.1 integration assignment has an $8 cap.
+The original v0 allocations total **252.2991 GPU-minutes / $16.6097** estimated. Including the cancelled-startup reserve gives **$16.9389**, below that assignment's **$25 cap**. Raw logs are under `$SSDM_PRIVATE/workflow/`; aggregate v0 allocation records are in `direction/experiments/workflow_v0/run_summary.json`. The separate v0.1 integration assignment has an $8 cap.
 
 ## v0.1: host-kernel integration
 
@@ -75,21 +74,21 @@ This closes the workflow-to-host integration gap without changing the model-faci
 Each episode verifies the run's receipt chain and records its cumulative checkpoint plus receipt IDs in the private episode log. `keel.workflows.audit` verifies the complete run, checks every episode-to-receipt link, and replay-checks a seeded random sample of 20 saved requests. Replay checks input/prompt identity, not regenerated probabilities. Protect the checkpoint independently; these hashes are not signatures, and a host that can rewrite both chain and checkpoint is outside the guarantee.
 
 ```sh
-/home/alp/ssdm-venv/bin/python -X utf8 -m keel.workflows.modal_run \
+python -X utf8 -m keel.workflows.modal_run \
   --config direction/experiments/workflow_v0/host_config.json --run-id UNIQUE-host
-/home/alp/ssdm-venv/bin/python -X utf8 -m keel.workflows.audit \
-  --run-dir /home/alp/ssdm-direction/workflow/UNIQUE-host \
-  --reference /home/alp/ssdm-direction/workflow/workflow-v0-20261015b \
+python -X utf8 -m keel.workflows.audit \
+  --run-dir $SSDM_PRIVATE/workflow/UNIQUE-host \
+  --reference $SSDM_PRIVATE/workflow/workflow-v0-20261015b \
   --output direction/experiments/workflow_v0/host_audit.json
 ```
 
 The comparison reads the historical v0 journal only as immutable reference evidence; new runs write only `receipts.jsonl` as their decision log. Host configuration authorizes all suite tools, not a task-ground-truth oracle: it structurally rejects out-of-suite tools, but the model must still judge whether an in-suite tool and its arguments are needed. No argument-level correctness or matched-utility robustness claim follows from the integration.
 
-CPU acceptance for the host-integrated cutover: `/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests` — **414 passed**. New coverage includes real kernel-mediated dispatch after receipt persistence, structural denial despite a forced-allow judge, one receipt for a hold, shared chains across episode hosts, disk tampering detection, saved-request replay, episode/receipt linkage, and both thinking prompt stages. Replay request files deliberately preserve dictionary insertion order: the canonical request fingerprint is order-insensitive, but the existing renderer preserves JSON-content key order in prompt bytes.
+CPU acceptance for the host-integrated cutover: `python -X utf8 -m pytest -q keel/tests` — **414 passed**. New coverage includes real kernel-mediated dispatch after receipt persistence, structural denial despite a forced-allow judge, one receipt for a hold, shared chains across episode hosts, disk tampering detection, saved-request replay, episode/receipt linkage, and both thinking prompt stages. Replay request files deliberately preserve dictionary insertion order: the canonical request fingerprint is order-insensitive, but the existing renderer preserves JSON-content key order in prompt bytes.
 
 The measured v0.1 run completed all **72 episodes**: **335 receipts verified**, **72 episode checkpoints verified**, and **20/20 sampled receipts replayed**, both in the container and against the downloaded chain's pinned checkpoint. **72/72 outcomes match v0 exactly on all compared non-timing fields; all 335 prompt hashes and probability pairs are identical.** The same 20 receipts are replayed twice, not 40 unique samples. There are 30 actual executions and 305 holds.
 
 The full CIs and latency/cost tables are in the results README's v0.1 section and `host_aggregate.json`. Benign utility remains banking **41.7% [16.7, 66.7]** and Slack **0% [0, 0]**, despite measured targeted ASR **0/24 [0%, 0%]** per suite: structural enforcement and replayability do not repair the stock judge's over-holding. Separate allocations prevent attributing latency differences to kernel overhead.
 
-This follow-up's sole paid allocation used **17.8653 H100-minutes / $1.1761 estimated**, below its separate **$8 cap**; no other v0.1 allocations were launched. `host_run_summary.json` records exact accounting and `host_audit.json` pins the receipt head and comparison totals. Executable source for the rerun is `6ae7af5f`; private logs are at `/home/alp/ssdm-direction/workflow/workflow-host-v01-20261015a/`. The original v0 tables, aggregate and $25-cap ledger remain unchanged as historical evidence.
+This follow-up's sole paid allocation used **17.8653 H100-minutes / $1.1761 estimated**, below its separate **$8 cap**; no other v0.1 allocations were launched. `host_run_summary.json` records exact accounting and `host_audit.json` pins the receipt head and comparison totals. Executable source for the rerun is `6ae7af5f`; private logs are at `$SSDM_PRIVATE/workflow/workflow-host-v01-20261015a/`. The original v0 tables, aggregate and $25-cap ledger remain unchanged as historical evidence.
 

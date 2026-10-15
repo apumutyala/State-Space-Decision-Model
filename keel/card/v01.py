@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 from jevkit.items import load_public
+from keel.paths import private_root
 from .metrics import summarize
 from .run import ARMS, CachedJudge, SpendLedger, _pct, adaptive_units, evaluation_rows
 from .units import CardUnit, units_digest
@@ -106,7 +107,7 @@ def followup_markdown(report: dict) -> str:
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--cache-dir", type=Path, default=Path("/home/alp/ssdm-direction/card"))
+    parser.add_argument("--cache-dir", type=Path, default=private_root() / "card")
     parser.add_argument("--output-dir", type=Path, default=Path("direction/experiments/card_v0"))
     parser.add_argument("--spend-cap", type=float, default=12.0)
     args = parser.parse_args(argv)

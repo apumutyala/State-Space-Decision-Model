@@ -1,6 +1,6 @@
 """Smoke check of the Keel judge runtime on a few public JevBench items (EVAL-ONLY; nothing is fitted).
 
-    SSDM_DATA=/home/alp/ssdm-data python -X utf8 -m keel.runtime.smoke_judge --n 4 --model qwen3.5-4b
+    SSDM_DATA=~/ssdm/data python -X utf8 -m keel.runtime.smoke_judge --n 4 --model qwen3.5-4b
 
 Prints, per item and arm (one-pass / think), the gold, the decision and its probability.
 """

@@ -49,7 +49,7 @@ Full per-condition output: `results_Qwen3.5-4B.txt`, `results_Qwen3.5-9B.txt`.
   next arm.
 - Public decision items, not agent-action monitoring data; one sampling seed; stock models only.
 
-Raw per-item outputs (log-probs, trace tails) stay out of git (workstation: `/home/alp/ssdm-direction/experiments/steering_probe/raw/`).
+Raw per-item outputs (log-probs, trace tails) stay out of git (workstation: `$SSDM_PRIVATE/experiments/steering_probe/raw/`, default `~/ssdm/private`).
 
 ## Reproduce
 ```bash

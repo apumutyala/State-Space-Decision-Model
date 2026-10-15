@@ -42,7 +42,6 @@ def answer(typ, names, lp, t, floor):
 
 def main(d: str) -> None:
     d = pathlib.Path(d)
-    items = {json.loads(l)["id"]: json.loads(l) for l in open("/tmp/ssdm-scratch/cos/public231.jsonl", encoding="utf-8")}
     summary = []
     for f in sorted(d.glob("*.json")):
         if f.name.count(".") > 2 or f.name.startswith("_"):
@@ -90,7 +89,7 @@ def main(d: str) -> None:
     from jevkit import scoring as SC
 
     pub = IT.load_public()
-    fam = {k: v["family"] for k, v in items.items()}
+    fam = {it.id: it.family for it in pub}
     for mname in sorted({s[0] for s in summary}):
         reps = {(a, v): r for m, a, v, r in summary if m == mname}
         tabs, sc = {}, {}

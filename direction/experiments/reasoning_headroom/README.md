@@ -59,10 +59,10 @@ cd direction/experiments/reasoning_headroom
 modal run rh_modal.py --models "Qwen/Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a,h2oai/h2o-lightning-4b@193ad740925b176a3b70a5a13a7cff2f2fadd01e" \
   --items-path public231.jsonl --out-dir full          # public231.jsonl = the pinned items + a _tier field
 # from the repo root:
-SSDM_DATA=<data dir> python -X utf8 <path>/score_rh.py <path>/full
-SSDM_DATA=<data dir> python -X utf8 <path>/gate_rh.py Qwen3.5-4B h2o-lightning-4b
+SSDM_DATA=~/ssdm/data python -X utf8 direction/experiments/reasoning_headroom/score_rh.py <out-dir>
+SSDM_DATA=~/ssdm/data python -X utf8 direction/experiments/reasoning_headroom/gate_rh.py Qwen3.5-4B h2o-lightning-4b
 ```
 `reports/` holds the jevkit reports (aggregates) committed here. Per-item outputs (`raw/`: log-probs, token counts,
-trace tails) and `public231.jsonl` (the public item text) stay out of git; on the workstation they live in
-`/home/alp/ssdm-direction/experiments/reasoning_headroom/`. `score_rh.py`/`gate_rh.py` import from the repo root and
-read `public231.jsonl` from `/tmp/ssdm-scratch/cos/` — adjust those paths when reproducing elsewhere.
+trace tails) and `public231.jsonl` (the public item text) stay out of git, in
+`$SSDM_PRIVATE/experiments/reasoning_headroom/` (default `~/ssdm/private`). `gate_rh.py` reads `raw/` from there;
+both scripts import from the repo root.

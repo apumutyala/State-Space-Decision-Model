@@ -27,8 +27,10 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO))
 
-CACHE = Path("/home/alp/ssdm-direction/gate_cert_v0")
-DISTILL_DATA = Path("/home/alp/ssdm-direction/distill_v0/data")
+from keel.paths import private_root  # noqa: E402
+
+CACHE = private_root() / "gate_cert_v0"
+DISTILL_DATA = private_root() / "distill_v0" / "data"
 
 PLAN = {
     "experiment": "keel gate_cert_v0",
