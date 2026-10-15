@@ -7,6 +7,7 @@ perturb     make  (--items I.jsonl | --public) --out P.jsonl [--ops a,b] [--seed
             score (--items I.jsonl | --public) --perturbed P.jsonl --pred B.jsonl --pred-perturbed Q.jsonl [--out R]
 guarantees  conformal (--items | --public) --pred P.jsonl [--cal-frac 0.5] [--alpha .1 --epsilon .05 --delta .05]
             injection --cal-items I --cal-pred P --test T.jsonl [--alpha .1]
+            injection --mode matched --cal-intervals CAL.jsonl --test TEST.jsonl (g16sym records)
 board       --api api_v161.json [--out R.json]           reproduce the published board from its sub-fields
 items       [--data-dir D] [--fingerprints F.json]       verify the pinned public items (offline)
 fetch       [--dest D]                                   download + verify the pinned public items (network)
@@ -170,6 +171,13 @@ def cmd_guarantees(a: argparse.Namespace) -> int:
                                           split_seed=a.seed, fit_frac=a.fit_frac)
         rep["split"] = {"cal_frac": a.cal_frac, "seed": a.seed, "n_cal": len(cal), "n_test": len(test),
                         "test_ids_sha256": guarantees.ids_sha256(r.id for r in test)}
+    elif a.inj_mode == "matched":
+        # calibrate and test on the same trusted-only bound s_lo (ssdm.g16sym.export.v1 records; cal needs gold)
+        if not (a.cal_intervals and a.test):
+            raise SystemExit("--mode matched needs --cal-intervals CAL.jsonl and --test TEST.jsonl (g16sym records)")
+        rep = guarantees.injection_robust_report(_read_jsonl(a.cal_intervals), _read_jsonl(a.test), a.alpha,
+                                                 mode="matched", epsilon=a.epsilon, delta=a.delta,
+                                                 split_seed=a.seed, fit_frac=a.fit_frac)
     else:
         cal_items = IT.load_items(a.cal_items, tier=a.tier)
         cal = guarantees.scored_from_answers(cal_items, systemone.preds_to_answers(_read_jsonl(a.cal_pred)))
@@ -256,6 +264,10 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--cal-items")
     g.add_argument("--cal-pred")
     g.add_argument("--test")
+    g.add_argument("--mode", dest="inj_mode", choices=("clean", "matched"), default="clean",
+                   help="injection only: clean = q_hat from clean calibration predictions (default); matched = "
+                        "q_hat from s_lo of ssdm.g16sym.export.v1 calibration records (--cal-intervals)")
+    g.add_argument("--cal-intervals", help="matched mode: calibration JSONL of g16sym export records with gold")
     g.add_argument("--out")
     g.set_defaults(fn=cmd_guarantees)
 

@@ -164,20 +164,28 @@ def ids_sha256(ids: Iterable[str]) -> str:
     return hashlib.sha256("\n".join(sorted(ids)).encode("utf-8")).hexdigest()
 
 
-def split_calibration(cal: Sequence[Scored], seed: int = 0,
-                      fit_frac: float = 0.5) -> tuple[list[Scored], list[Scored], dict]:
+def split_calibration(cal: Sequence[Scored], seed: int = 0, fit_frac: float = 0.5,
+                      cluster_of: Callable[[Scored], str] | None = None) -> tuple[list[Scored], list[Scored], dict]:
     """Deterministic, answer-independent split of the calibration decisions into a FIT half (conformal q_hat) and a
-    disjoint LTT half (act / abstain rule). Membership is a function of (seed, id) only."""
+    disjoint LTT half (act / abstain rule). Membership is a function of (seed, id) only, or of (seed, cluster) when
+    ``cluster_of`` is given. Use a cluster key (e.g. the row / source case of a multi-decision row) whenever
+    decisions share an input: a per-decision split puts correlated decisions of one row on both sides, so q_hat is
+    no longer independent of the LTT half (docs/guarantees/CONFORMAL.md, discrepancy D1). Default: per id (unchanged)."""
     ids = [r.id for r in cal]
     if len(set(ids)) != len(ids):
         raise ValueError("calibration ids must be unique")
     fit, ltt = [], []
     for r in cal:
-        u = int(hashlib.sha256(f"{seed}|conformal-ltt|{r.id}".encode()).hexdigest()[:12], 16) / float(16 ** 12)
+        key = r.id if cluster_of is None else str(cluster_of(r))
+        u = int(hashlib.sha256(f"{seed}|conformal-ltt|{key}".encode()).hexdigest()[:12], 16) / float(16 ** 12)
         (fit if u < fit_frac else ltt).append(r)
-    rec = {"rule": "sha256(seed|conformal-ltt|id) < fit_frac -> fit half, else ltt half", "seed": seed,
+    rule = "id" if cluster_of is None else "cluster"
+    rec = {"rule": f"sha256(seed|conformal-ltt|{rule}) < fit_frac -> fit half, else ltt half", "seed": seed,
            "fit_frac": fit_frac, "n_fit": len(fit), "n_ltt": len(ltt),
            "fit_ids_sha256": ids_sha256(r.id for r in fit), "ltt_ids_sha256": ids_sha256(r.id for r in ltt)}
+    if cluster_of is not None:
+        rec["n_fit_clusters"] = len({str(cluster_of(r)) for r in fit})
+        rec["n_ltt_clusters"] = len({str(cluster_of(r)) for r in ltt})
     return fit, ltt, rec
 
 
@@ -268,8 +276,112 @@ def _acts(r: Scored, fit: dict, lam: float) -> tuple[bool, str | None]:
 DEFAULT_LAMBDAS = tuple(round(1.0 - i * 0.01, 2) for i in range(101))  # 1.00, 0.99, ..., 0.00 (descending)
 
 
+def _pick_u(seed: int, decision_id: str) -> str:
+    return hashlib.sha256(f"{seed}|ltt-cluster-pick|{decision_id}".encode()).hexdigest()
+
+
+def cluster_pick(cal: Sequence[Scored], cluster_of: Callable[[Scored], str], seed: int = 0) -> list[Scored]:
+    """One decision per cluster: the one with the smallest sha256(seed|ltt-cluster-pick|id). A function of the ids
+    only (never of probabilities or labels), fixed once for every lambda. If clusters are i.i.d., the kept decisions
+    are independent, so the LTT binomial on them is exactly valid for the cluster-weighted acted risk (a uniformly
+    random decision of a uniformly random cluster). docs/guarantees/CONFORMAL.md, D1 part 2."""
+    best: dict[str, tuple[str, Scored]] = {}
+    for r in cal:
+        c, u = str(cluster_of(r)), _pick_u(seed, r.id)
+        if c not in best or u < best[c][0]:
+            best[c] = (u, r)
+    return [best[c][1] for c in sorted(best)]
+
+
+CRR_BET_CAP = 0.75  # betting fraction cap, as a share of the largest bet that keeps capital nonnegative
+
+
+def crr_betting_pvalue(y: Sequence[float], epsilon: float, level: float) -> tuple[float, float]:
+    """One-sided betting (hedged-capital, Waudby-Smith & Ramdas 2024) p-value for H0: E[Y] > 0, Y_i i.i.d. in
+    [-epsilon, 1 - epsilon], taken in the given (answer-free) order.
+
+    Capital K_t = prod_{i<=t} (1 - b_i Y_i), b_i = min(CRR_BET_CAP / (1 - epsilon), sqrt(2 ln(1/level) / (n var_i))),
+    var_i = (1/4 + sum_{j<i} (Y_j - mu_j)^2) / i, mu_j = mean(Y_1..Y_{j-1}) (0 for j = 1). b_i depends on Y_1..Y_{i-1}
+    only and 1 - b_i Y_i >= 1 - CRR_BET_CAP > 0, so under H0 K_t is a nonnegative supermartingale and Ville's
+    inequality gives P(max_t K_t >= 1/a) <= a: p = min(1, 1 / max_t K_t) is valid for any n. Returns (p, ln max K)."""
+    n = len(y)
+    if n == 0:
+        return 1.0, 0.0
+    bmax = CRR_BET_CAP / (1.0 - epsilon)
+    c0 = 2.0 * math.log(1.0 / level) / n
+    s_mu, s_var, logk, best = 0.0, 0.25, 0.0, 0.0
+    for i, yi in enumerate(y, start=1):
+        if not -epsilon - 1e-12 <= yi <= 1.0 - epsilon + 1e-12:
+            raise ValueError(f"Y_{i} = {yi} outside [-epsilon, 1 - epsilon]")
+        mu = s_mu / (i - 1) if i > 1 else 0.0
+        b = min(bmax, math.sqrt(c0 * i / s_var))
+        logk += math.log1p(-b * yi)
+        best = max(best, logk)
+        s_var += (yi - mu) ** 2
+        s_mu += yi
+    return min(1.0, math.exp(-best)), best
+
+
+def _crr_order(seed: int, cluster: str) -> str:
+    return hashlib.sha256(f"{seed}|crr-order|{cluster}".encode()).hexdigest()
+
+
+def _ltt_crr(cal: Sequence[Scored], fit: dict, epsilon: float, level: float, lambdas: Sequence[float], method: str,
+             cluster_of: Callable[[Scored], str], cap: float, cluster_size: Callable[[str], int] | None,
+             order_seed: int) -> tuple[list[dict], dict]:
+    """Cluster-robust ratio test of R_c(lambda) = E[w_r L_r] / E[w_r n_r] <= epsilon (w_r = min(1, cap / s_r))."""
+    if not cap >= 1:
+        raise ValueError("crr_cap must be >= 1")
+    by: dict[str, list[Scored]] = {}
+    for r in cal:
+        by.setdefault(str(cluster_of(r)), []).append(r)
+    keys = sorted(by, key=lambda c: (_crr_order(order_seed, c), c))
+    size = {c: (len(by[c]) if cluster_size is None else int(cluster_size(c))) for c in keys}
+    for c in keys:
+        if size[c] < len(by[c]):
+            raise ValueError(f"cluster {c}: cluster_size {size[c]} < {len(by[c])} decisions present")
+    w = {c: min(1.0, cap / size[c]) for c in keys}
+    # _acts(r, fit, lam) is (singleton and p_y >= lam): precompute (p_y, wrong) per singleton decision once
+    thr: dict[str, list[tuple[float, bool]]] = {}
+    for c in keys:
+        thr[c] = []
+        for r in by[c]:
+            s = prediction_set(r.probs, _qhat_for(fit, r))
+            if len(s) == 1:
+                thr[c].append((r.probs[s[0]], s[0] != r.label))
+    valid: list[dict] = []
+    for lam in sorted(lambdas, reverse=True):
+        y, n_act, err, wn, wl = [], 0, 0, 0.0, 0.0
+        for c in keys:
+            a = e = 0
+            for p, wrong in thr[c]:
+                if p >= lam:
+                    a += 1
+                    e += wrong
+            n_act, err, wn, wl = n_act + a, err + e, wn + w[c] * a, wl + w[c] * e
+            y.append(w[c] * (e - epsilon * a) / cap)
+        if n_act == 0:
+            continue
+        pval, logk = crr_betting_pvalue(y, epsilon, level)
+        if pval <= level:
+            valid.append({"lambda": lam, "n_act": n_act, "errors": err, "p_value": pval, "log_capital": logk,
+                          "weighted_error": wl / wn})
+        elif method == "fixed_sequence":
+            break
+    info = {"cluster_test": "crr: Waudby-Smith-Ramdas betting on Y_r = w_r (L_r - eps n_r) / cap, "
+                            "w_r = min(1, cap / s_r), clusters in sha256(seed|crr-order|cluster) order",
+            "crr_cap": cap, "crr_order_seed": order_seed, "crr_bet_cap": CRR_BET_CAP, "n_clusters": len(keys),
+            "n_decisions": len(cal), "cluster_size_source": "given" if cluster_size is not None else "present",
+            "max_cluster_size": max(size.values(), default=0),
+            "n_clusters_above_cap": sum(s > cap for s in size.values())}
+    return valid, info
+
+
 def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
-               lambdas: Sequence[float] = DEFAULT_LAMBDAS, method: str = "bonferroni") -> dict:
+               lambdas: Sequence[float] = DEFAULT_LAMBDAS, method: str = "bonferroni",
+               cluster_of: Callable[[Scored], str] | None = None, pick_seed: int = 0,
+               cluster_test: str = "pick", crr_cap: float = 8, cluster_size: Callable[[str], int] | None = None,
+               crr_seed: int = 0) -> dict:
     """Learn-then-Test over a data-independent lambda grid: H0(lambda): P(error | act) > epsilon.
 
     p(lambda) = P(Bin(n_act, epsilon) <= errors) on the acted calibration decisions (a lambda that acts on nothing
@@ -277,13 +389,45 @@ def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
     p <= delta / |grid|. ``fixed_sequence``: test in descending grid order at level delta and stop at the first
     non-rejection (more power when the top of the grid has enough acted decisions; it stalls when it does not).
     Either way P(acted-on risk of the selected lambda > epsilon) <= delta. Returns the smallest certified lambda.
+
+    ``cluster_of`` (default None = unchanged per-decision test): decisions that share an input (one row's fields,
+    one source case) are correlated, so counting them as independent trials is anti-conservative. With a cluster
+    key, the test runs on ONE decision per cluster (``cluster_pick``, seeded by ``pick_seed``); the certified risk
+    is then the cluster-weighted acted risk, valid when clusters (not decisions) are i.i.d.
+
+    ``cluster_test="crr"`` (opt-in, needs ``cluster_of``; PREREG B-PREREG-GUAR-CRR): keeps EVERY decision and tests
+    the ratio risk R_c(lambda) = E[w_r L_r] / E[w_r n_r] over i.i.d. clusters (L_r, n_r = the cluster's acted errors
+    and acts; w_r = min(1, crr_cap / s_r), s_r = ``cluster_size(key)`` or the number of decisions present) with the
+    betting p-value ``crr_betting_pvalue`` on Y_r = w_r (L_r - epsilon n_r) / crr_cap. crr_cap = 1 targets the
+    cluster-weighted risk, crr_cap >= every s_r the decision-weighted risk. Valid for any within-cluster dependence.
     """
     if method not in ("bonferroni", "fixed_sequence"):
         raise ValueError("method must be bonferroni or fixed_sequence")
+    if cluster_test not in ("pick", "crr"):
+        raise ValueError("cluster_test must be pick or crr")
     reused = fit.get("_ids", frozenset()) & {r.id for r in cal}
     if reused:
         raise ValueError(f"LTT data overlaps the conformal fit data ({len(reused)} ids): the bound needs disjoint "
                          "halves (split_calibration)")
+    if cluster_test == "crr":
+        if cluster_of is None:
+            raise ValueError("cluster_test='crr' needs cluster_of")
+        level = delta / len(lambdas) if method == "bonferroni" else delta
+        valid, info = _ltt_crr(cal, fit, epsilon, level, lambdas, method, cluster_of, crr_cap, cluster_size,
+                               crr_seed)
+        base = {"epsilon": epsilon, "delta": delta, "method": method, "test_level": level, "n_cal": len(cal),
+                "ltt_ids_sha256": ids_sha256(r.id for r in cal), "fit_ids_sha256": fit.get("ids_sha256"),
+                "grid": [min(lambdas), max(lambdas), len(lambdas)], **info}
+        if not valid:
+            return {**base, "lambda": None, "n_valid_lambdas": 0, "note": "no lambda certified: abstain on everything"}
+        best = min(valid, key=lambda v: v["lambda"])
+        return {**base, "lambda": best["lambda"], "act_rate_cal": best["n_act"] / len(cal),
+                "accepted_error_cal": best["errors"] / best["n_act"],
+                "accepted_error_cal_weighted": best["weighted_error"], "p_value": best["p_value"],
+                "log_capital": best["log_capital"], "n_valid_lambdas": len(valid)}
+    cal_all = cal
+    if cluster_of is not None:
+        cal = cluster_pick(cal_all, cluster_of, pick_seed)
     level = delta / len(lambdas) if method == "bonferroni" else delta
     valid: list[dict] = []
     for lam in sorted(lambdas, reverse=True):
@@ -297,8 +441,12 @@ def ltt_select(cal: Sequence[Scored], fit: dict, epsilon: float, delta: float,
         elif method == "fixed_sequence":
             break
     base = {"epsilon": epsilon, "delta": delta, "method": method, "test_level": level, "n_cal": len(cal),
-            "ltt_ids_sha256": ids_sha256(r.id for r in cal), "fit_ids_sha256": fit.get("ids_sha256"),
+            "ltt_ids_sha256": ids_sha256(r.id for r in cal_all), "fit_ids_sha256": fit.get("ids_sha256"),
             "grid": [min(lambdas), max(lambdas), len(lambdas)]}
+    if cluster_of is not None:
+        base.update({"cluster_test": "one decision per cluster: min sha256(pick_seed|ltt-cluster-pick|id)",
+                     "pick_seed": pick_seed, "n_decisions": len(cal_all), "n_clusters": len(cal),
+                     "picked_ids_sha256": ids_sha256(r.id for r in cal)})
     if not valid:
         return {**base, "lambda": None, "n_valid_lambdas": 0, "note": "no lambda certified: abstain on everything"}
     best = min(valid, key=lambda v: v["lambda"])
@@ -327,14 +475,22 @@ GUARANTEE = ("split conformal: P(y in C(x)) >= 1 - alpha (marginal, exchangeable
 
 def conformal_report(cal: Sequence[Scored], test: Sequence[Scored], alpha: float = 0.1, epsilon: float = 0.05,
                      delta: float = 0.05, mondrian: bool = True, method: str = "bonferroni", split_seed: int = 0,
-                     fit_frac: float = 0.5) -> dict:
-    """``cal`` is split into disjoint FIT / LTT halves (``split_calibration``); ``test`` is held out from both."""
-    fit_half, ltt_half, split = split_calibration(cal, split_seed, fit_frac)
+                     fit_frac: float = 0.5, cluster_of: Callable[[Scored], str] | None = None,
+                     cluster_ltt: bool = False) -> dict:
+    """``cal`` is split into disjoint FIT / LTT halves (``split_calibration``, by cluster when ``cluster_of`` is
+    given); ``test`` is held out from both. ``cluster_ltt`` (needs ``cluster_of``) also runs the LTT binomial on
+    one decision per cluster (``ltt_select(cluster_of=...)``)."""
+    if cluster_ltt and cluster_of is None:
+        raise ValueError("cluster_ltt needs cluster_of")
+    fit_half, ltt_half, split = split_calibration(cal, split_seed, fit_frac, cluster_of)
     overlap = {r.id for r in test} & {r.id for r in cal}
     if overlap:
         raise ValueError(f"test decisions overlap the calibration decisions ({len(overlap)} ids)")
     fit = fit_conformal(fit_half, alpha, mondrian)
-    ltt = ltt_select(ltt_half, fit, epsilon, delta, method=method)
+    if cluster_ltt:
+        ltt = ltt_select(ltt_half, fit, epsilon, delta, method=method, cluster_of=cluster_of)
+    else:
+        ltt = ltt_select(ltt_half, fit, epsilon, delta, method=method)
     return {"guarantee": GUARANTEE, "calibration_split": split, "fit": public_fit(fit),
             "sets": evaluate_sets(test, fit), "ltt": ltt, "selective": selective_eval(test, fit, ltt["lambda"])}
 
@@ -373,9 +529,134 @@ def _inside(logits: dict[str, float], intervals: dict[str, Sequence[float]], tol
                                                  for k, v in logits.items())
 
 
+G16SYM_SCHEMA = "ssdm.g16sym.export.v1"
+
+
+def g16sym_intervals(rec: dict, need_gold: bool = False) -> dict[str, list[float]]:
+    """Parse + validate one ``ssdm.g16sym.export.v1`` record (lead's docs/G16_EXPORT.md; JSON only, no torch).
+    Returns {option id: [lo, hi]} over the host-allowed options. Refuses: wrong schema, missing decision_id, empty
+    options, duplicate option ids, non-finite or lo > hi intervals, score outside [lo, hi], vetoed ids that are also
+    options, a gold that is neither an option nor vetoed, and (``need_gold``) a missing gold."""
+    if not isinstance(rec, dict) or rec.get("schema") != G16SYM_SCHEMA:
+        raise ValueError(f"record schema must be {G16SYM_SCHEMA!r}")
+    did = rec.get("decision_id")
+    if not isinstance(did, str) or not did:
+        raise ValueError("decision_id must be a non-empty string")
+    opts = rec.get("options")
+    if not isinstance(opts, list) or not opts:
+        raise ValueError(f"{did}: options must be a non-empty list")
+    iv: dict[str, list[float]] = {}
+    for o in opts:
+        oid = o.get("id") if isinstance(o, dict) else None
+        if not isinstance(oid, str) or oid in iv:
+            raise ValueError(f"{did}: option ids must be unique strings ({oid!r})")
+        try:
+            lo, hi, s = float(o["lo"]), float(o["hi"]), float(o["score"])
+        except (KeyError, TypeError, ValueError) as e:
+            raise ValueError(f"{did}: option {oid!r} needs numeric lo, hi, score") from e
+        if not all(math.isfinite(v) for v in (lo, hi, s)) or not lo <= hi or not lo <= s <= hi:
+            raise ValueError(f"{did}: option {oid!r} needs finite lo <= score <= hi")
+        iv[oid] = [lo, hi]
+    vetoed = rec.get("vetoed", [])
+    if not isinstance(vetoed, list) or any(not isinstance(v, str) for v in vetoed) or set(vetoed) & set(iv):
+        raise ValueError(f"{did}: vetoed must be a list of ids disjoint from options")
+    gold = rec.get("gold")
+    if gold is None:
+        if need_gold:
+            raise ValueError(f"{did}: calibration records need gold")
+    elif gold not in iv and gold not in vetoed:
+        raise ValueError(f"{did}: gold must be an option id or a vetoed id")
+    return iv
+
+
+def _box_min_prob(iv: dict[str, list[float]], y: str) -> float:
+    """pi^lo_y: the smallest softmax probability of y over the box (y at lo, every other option at hi)."""
+    return softmax({k: (v[0] if k == y else v[1]) for k, v in iv.items()})[y]
+
+
+def _matched_score(iv: dict[str, list[float]], gold: str) -> float:
+    return robust_min_score(iv, gold) if gold in iv else math.inf  # a vetoed gold can never be covered: +inf
+
+
+def injection_matched_report(cal: Sequence[dict], test: Sequence[dict], alpha: float = 0.1, epsilon: float = 0.05,
+                             delta: float = 0.05, lambdas: Sequence[float] = DEFAULT_LAMBDAS, split_seed: int = 0,
+                             fit_frac: float = 0.5) -> dict:
+    """MATCHED injection-robust conformal (docs/guarantees/INJECTION_ROBUST_CONFORMAL.md, Theorem A / Corollary A', E).
+
+    ``cal`` and ``test`` are ``ssdm.g16sym.export.v1`` records; calibration records need ``gold``. Calibration is cut
+    into FIT / LTT halves by ``split_calibration`` (on decision ids). q_hat = Q_alpha(s_lo(intervals_i, gold_i)) on
+    FIT; set C(x) = {y : s_lo(x, y) <= q_hat}. Act rule: act iff |C| = 1 and pi^lo(singleton) >= lambda; the action is
+    the singleton (never the attacked argmax). lambda is certified by LTT (Bonferroni over ``lambdas``) on the LTT
+    half. Everything is a function of the trusted intervals, so sets, acts and actions are identical for every
+    untrusted text."""
+    cal_iv = [(r["decision_id"], g16sym_intervals(r, need_gold=True), r["gold"]) for r in cal]
+    test_iv = [(r["decision_id"], g16sym_intervals(r), r.get("gold")) for r in test]
+    for name, rows in (("calibration", cal_iv), ("test", test_iv)):
+        if len({d for d, _, _ in rows}) != len(rows):
+            raise ValueError(f"{name} decision_ids must be unique")
+    if {d for d, _, _ in cal_iv} & {d for d, _, _ in test_iv}:
+        raise ValueError("test decisions overlap the calibration decisions")
+    by_id = {d: (iv, g) for d, iv, g in cal_iv}
+    fit_h, ltt_h, split = split_calibration([Scored(d, "g16sym", {}, g) for d, _, g in cal_iv], split_seed, fit_frac)
+    qhat = conformal_qhat([_matched_score(*by_id[r.id]) for r in fit_h], alpha)
+
+    def decide(iv: dict[str, list[float]]) -> tuple[list[str], float | None]:
+        cs = robust_set(iv, qhat)
+        return cs, (_box_min_prob(iv, cs[0]) if len(cs) == 1 else None)
+
+    ltt_rows = [(decide(by_id[r.id][0]), by_id[r.id][1]) for r in ltt_h]
+    level = delta / len(lambdas)
+    valid = []
+    for lam in sorted(lambdas, reverse=True):
+        acted = [(cs[0], g) for (cs, kap), g in ltt_rows if kap is not None and kap >= lam]
+        n, err = len(acted), sum(y != g for y, g in acted)
+        if n and binom_cdf(err, n, epsilon) <= level:
+            valid.append({"lambda": lam, "n_act": n, "errors": err})
+    best = min(valid, key=lambda v: v["lambda"]) if valid else None
+    lam_hat = best["lambda"] if best else None
+    ltt = {"epsilon": epsilon, "delta": delta, "method": "bonferroni", "test_level": level, "n_cal": len(ltt_h),
+           "grid": [min(lambdas), max(lambdas), len(lambdas)], "lambda": lam_hat, "n_valid_lambdas": len(valid),
+           "act_rule": "act iff |C_lo| == 1 and pi_lo(singleton) >= lambda; action = the singleton"}
+    if best:
+        ltt.update({"act_rate_cal": best["n_act"] / len(ltt_h), "accepted_error_cal": best["errors"] / best["n_act"],
+                    "accepted_error_ucb": clopper_pearson_upper(best["errors"], best["n_act"], level)})
+    n = len(test_iv)
+    n_gold = cov = size = single = indep = n_act = act_err = act_gold = 0
+    for _d, iv, g in test_iv:
+        cs, kap = decide(iv)
+        size += len(cs)
+        single += len(cs) == 1
+        indep += independent_label(iv) is not None
+        acts = lam_hat is not None and kap is not None and kap >= lam_hat
+        n_act += acts
+        if g is not None:
+            n_gold += 1
+            cov += g in cs
+            if acts:
+                act_gold += 1
+                act_err += cs[0] != g
+    return {"mode": "matched", "schema": G16SYM_SCHEMA, "alpha": alpha, "target_coverage": 1 - alpha, "qhat": qhat,
+            "calibration_split": split, "n": n, "n_with_gold": n_gold,
+            "coverage": cov / n_gold if n_gold else None, "mean_set_size": size / n if n else None,
+            "singleton_rate": single / n if n else None, "independence_rate": indep / n if n else None,
+            "ltt": ltt, "act_rate": n_act / n if n else None,
+            "acted_error": act_err / act_gold if act_gold else None,
+            "guarantee": ("Theorem A: P(gold in C) >= 1 - alpha for every untrusted text (sets read the trusted-only "
+                          "intervals only); LTT: P(acted-on risk of the selected rule > epsilon) <= delta. Assumes "
+                          "(P, gold) exchangeable, i.i.d. decisions (one per input; see CONFORMAL.md D1), fixed "
+                          "weights and box scale c chosen before calibration (A9), trusted option set (A10).")}
+
+
 def injection_robust_report(cal: Sequence[Scored], test: Sequence[dict], alpha: float = 0.1,
-                            mondrian: bool = True) -> dict:
-    """``test`` rows: {id, type, label, intervals: {y: [lo, hi]}, clean_logits?: {y: v}, attacked_logits?: [{y: v}]}."""
+                            mondrian: bool = True, mode: str = "clean", **matched_kw: Any) -> dict:
+    """``test`` rows: {id, type, label, intervals: {y: [lo, hi]}, clean_logits?: {y: v}, attacked_logits?: [{y: v}]}.
+
+    ``mode="matched"``: ``cal`` and ``test`` are ``ssdm.g16sym.export.v1`` records instead; delegates to
+    ``injection_matched_report`` (``matched_kw``: epsilon, delta, lambdas, split_seed, fit_frac). Default unchanged."""
+    if mode == "matched":
+        return injection_matched_report(cal, test, alpha, **matched_kw)  # type: ignore[arg-type]
+    if mode != "clean":
+        raise ValueError("mode must be clean or matched")
     fit = fit_conformal(cal, alpha, mondrian)
     n = cov = size = single = indep = 0
     clean_out = clean_not_subset = clean_checked = att_out = att_checked = 0
