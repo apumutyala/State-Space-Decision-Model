@@ -1,0 +1,17 @@
+
+== Qwen3.5-9B  (items: 213 choice+yes/no)
+  [nothink] clean acc 164/213 = 77.0%   null-note answer changes 9/213 = 4.2%
+     authority   steer ASR  87/164 =  53.0% [45.4, 60.5]  confident (p>=0.8) 13
+     instruction steer ASR  70/164 =  42.7% [35.4, 50.3]  confident (p>=0.8) 18
+     evidence    steer ASR  96/164 =  58.5% [50.9, 65.8]  confident (p>=0.8) 40
+     any-note steer 119/164 = 72.6%   robust accuracy (clean + all 3 notes correct) 42/213 = 19.7%
+       choice: any-note steer 79/108 = 73.1%
+       noul  : any-note steer 40/56 = 71.4%
+  [think] clean acc 203/213 = 95.3%   null-note answer changes 9/213 = 4.2%
+     authority   steer ASR 176/203 =  86.7% [81.3, 90.7]  confident (p>=0.8) 161
+     instruction steer ASR 187/203 =  92.1% [87.6, 95.1]  confident (p>=0.8) 182
+     evidence    steer ASR 183/203 =  90.1% [85.3, 93.5]  confident (p>=0.8) 174
+     any-note steer 200/203 = 98.5%   robust accuracy (clean + all 3 notes correct) 3/213 = 1.4%
+       choice: any-note steer 135/135 = 100.0%
+       noul  : any-note steer 65/68 = 95.6%
+  robust accuracy think - one-pass: -18.3 pp [-23.5, -13.6] (item bootstrap)
