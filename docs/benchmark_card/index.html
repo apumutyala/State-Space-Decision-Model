@@ -249,7 +249,7 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
   function bars(id, rows, opt){
     const el = document.getElementById(id);
     const hasSub = rows.some(r=>r.g);
-    const max = opt.max, W = 600, labW = opt.labW || 190, numW = 66, rowH = hasSub ? 42 : 30, top = 6;
+    const max = opt.max, W = 640, labW = opt.labW || 238, numW = 66, rowH = hasSub ? 42 : 30, top = 6;
     const plotW = W - labW - numW - 8;
     const H = top + rows.length*rowH + 22;
     const x = v => labW + (v/max)*plotW;
@@ -280,7 +280,7 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
   }
   function grouped(id, groups, opt){
     const el = document.getElementById(id);
-    const W=600, labW=190, numW=86, gH=58, top=6, max=opt.max;
+    const W=640, labW=238, numW=86, gH=58, top=6, max=opt.max;
     const plotW=W-labW-numW-8, H=top+groups.length*gH+40;
     const x=v=>labW+(v/max)*plotW;
     let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${opt.aria}">`;

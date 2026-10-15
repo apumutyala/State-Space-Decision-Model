@@ -1,13 +1,12 @@
 <!doctype html>
-<html lang="en">
-<head>
+<html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}</style>
 <title>SSDM Benchmark Card</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
 <style>
 /* Layout: single reading column of evidence panels; ours = orange, every other system = teal-blue; each of our models carries its guarantee in its name */
 :root{
@@ -138,12 +137,12 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
   <div class="grid2">
     <section class="panel">
       <div class="head"><h3>Unseen injection attacks · lower is better</h3><span class="tag same">same harness</span></div>
-      <div class="chart" id="c-atk"></div>
+      <div class="chart" id="c-atk"><svg viewBox="0 0 640 220" role="img" aria-label="Held-out injection attack success rates"><line x1="238" x2="238" y1="6" y2="182" style="stroke:var(--line)"></line><text class="axis" x="238" y="196" text-anchor="middle">0%</text><line x1="289.3333333333333" x2="289.3333333333333" y1="6" y2="182" style="stroke:var(--line)"></line><text class="axis" x="289.3333333333333" y="196" text-anchor="middle">5%</text><line x1="340.66666666666663" x2="340.66666666666663" y1="6" y2="182" style="stroke:var(--line)"></line><text class="axis" x="340.66666666666663" y="196" text-anchor="middle">10%</text><line x1="392" x2="392" y1="6" y2="182" style="stroke:var(--line)"></line><text class="axis" x="392" y="196" text-anchor="middle">15%</text><line x1="443.3333333333333" x2="443.3333333333333" y1="6" y2="182" style="stroke:var(--line)"></line><text class="axis" x="443.3333333333333" y="196" text-anchor="middle">20%</text><line x1="494.6666666666667" x2="494.6666666666667" y1="6" y2="182" style="stroke:var(--line)"></line><text class="axis" x="494.6666666666667" y="196" text-anchor="middle">25%</text><line x1="546" x2="546" y1="6" y2="182" style="stroke:var(--line)"></line><text class="axis" x="546" y="196" text-anchor="middle">30%</text><text class="lab" x="228" y="29" text-anchor="end" style="font-weight:600;fill:var(--ours)">Injection-Hardened RWKV 13B</text><text class="gl" x="228" y="42" text-anchor="end">measured · attention-free</text><rect x="238" y="12" width="25.666666666666686" height="14" rx="2" style="fill:var(--ours)" opacity="1"></rect><line x1="238" x2="324.24" y1="19" y2="19" style="stroke:var(--fg)" stroke-width="1.1" opacity=".5"></line><text class="num" x="330.24" y="24">hijack 2.5%</text><rect x="238" y="33" width="3.0800000000000125" height="14" rx="2" style="fill:var(--ours)" opacity="0.5"></rect><line x1="238" x2="252.37333333333333" y1="40" y2="40" style="stroke:var(--fg)" stroke-width="1.1" opacity=".5"></line><text class="num" x="258.37333333333333" y="45">steer 0.3%</text><text class="lab" x="228" y="93" text-anchor="end" style="">Clef 27B</text><rect x="238" y="70" width="13.346666666666664" height="14" rx="2" style="fill:var(--them)" opacity="1"></rect><line x1="238" x2="279.06666666666666" y1="77" y2="77" style="stroke:var(--fg)" stroke-width="1.1" opacity=".5"></line><text class="num" x="285.06666666666666" y="82">hijack 1.3%</text><rect x="238" y="91" width="18.480000000000018" height="14" rx="2" style="fill:var(--them)" opacity="0.5"></rect><line x1="238" x2="290.36" y1="98" y2="98" style="stroke:var(--fg)" stroke-width="1.1" opacity=".5"></line><text class="num" x="296.36" y="103">steer 1.8%</text><text class="lab" x="228" y="151" text-anchor="end" style="">Clef-flash</text><rect x="238" y="128" width="118.06666666666666" height="14" rx="2" style="fill:var(--them)" opacity="1"></rect><line x1="257.50666666666666" x2="517.2533333333333" y1="135" y2="135" style="stroke:var(--fg)" stroke-width="1.1" opacity=".5"></line><text class="num" x="523.2533333333333" y="140">hijack 11.5%</text><rect x="238" y="149" width="91.37333333333333" height="14" rx="2" style="fill:var(--them)" opacity="0.5"></rect><line x1="248.26666666666665" x2="452.5733333333333" y1="156" y2="156" style="stroke:var(--fg)" stroke-width="1.1" opacity=".5"></line><text class="num" x="458.5733333333333" y="161">steer 8.9%</text><rect x="238" y="206" width="12" height="10" style="fill:var(--them)"></rect><text class="axis" x="254" y="215">Hijack (solid)</text><rect x="358" y="206" width="12" height="10" style="fill:var(--them)" opacity=".5"></rect><text class="axis" x="374" y="215">Steer (faded)</text></svg></div>
       <p class="note">21 attack templates that share no 4- or 6-word phrase with any training data; 7,920 attacked decisions per model. <b>Hijack</b>: planted text overrides the answer. <b>Steer</b>: planted text pushes toward a chosen wrong option. Against Clef-flash, our advantage is statistically significant after correcting for multiple comparisons. Against Clef 27B it is a tie. Whiskers are 95% CIs.</p>
     </section>
     <section class="panel">
       <div class="head"><h3>Answer flips under harmless edits · lower is better</h3><span class="tag same">same harness</span></div>
-      <div class="chart" id="c-flip"></div>
+      <div class="chart" id="c-flip"><svg viewBox="0 0 640 196" role="img" aria-label="Average answer flip rate"><line x1="238" x2="238" y1="6" y2="176" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="238" y="190" text-anchor="middle">0%</text><line x1="303.6" x2="303.6" y1="6" y2="176" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="303.6" y="190" text-anchor="middle">2%</text><line x1="369.20000000000005" x2="369.20000000000005" y1="6" y2="176" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="369.20000000000005" y="190" text-anchor="middle">4%</text><line x1="434.79999999999995" x2="434.79999999999995" y1="6" y2="176" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="434.79999999999995" y="190" text-anchor="middle">6%</text><line x1="500.40000000000003" x2="500.40000000000003" y1="6" y2="176" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="500.40000000000003" y="190" text-anchor="middle">8%</text><line x1="566" x2="566" y1="6" y2="176" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="566" y="190" text-anchor="middle">10%</text><text class="lab" x="228" y="31" text-anchor="end" style="">MD1 (self-reported)</text><rect x="238" y="18.5" width="42.639999999999986" height="17" rx="2" style="fill:var(--them)"></rect><text class="num" x="286.64" y="31">1.30%</text><text class="lab" x="228" y="73" text-anchor="end" style="">H2O-Lightning-4B</text><rect x="238" y="60.5" width="80.03199999999998" height="17" rx="2" style="fill:var(--them)"></rect><line x1="279.328" x2="361" y1="69" y2="69" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="279.328" x2="279.328" y1="65" y2="73" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="361" x2="361" y1="65" y2="73" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><text class="num" x="367" y="73">2.44%</text><text class="lab" x="228" y="109" text-anchor="end" style="font-weight:600;fill:var(--ours)">Symmetry-Locked 4B</text><text class="gl" x="228" y="122" text-anchor="end">proof: 0 reorder/relabel flips</text><rect x="238" y="102.5" width="119.392" height="17" rx="2" style="fill:var(--ours)"></rect><text class="num" x="363.392" y="115">3.64%</text><text class="lab" x="228" y="157" text-anchor="end" style="">Stock Qwen3.5-4B</text><rect x="238" y="144.5" width="247.64" height="17" rx="2" style="fill:var(--them)"></rect><line x1="425.288" x2="555.1759999999999" y1="153" y2="153" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="425.288" x2="425.288" y1="149" y2="157" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="555.1759999999999" x2="555.1759999999999" y1="149" y2="157" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><text class="num" x="561.1759999999999" y="157">7.55%</text></svg></div>
       <p class="note">Average over 8 jevkit perturbations (reorder, shuffle and relabel the options; paraphrase; whitespace; and others). On reorder, shuffle and relabel, Symmetry-Locked 4B flips <b>exactly 0</b> times, by construction. Its remaining flips come from paraphrase-type edits, which no current model guarantees. MD1's 1.3% is self-reported on its own items and is not comparable.</p>
     </section>
   </div>
@@ -151,7 +150,7 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
   <section class="panel">
     <div class="head"><h3>Guarantee matrix</h3><span class="tag same">proven or measured</span></div>
     <div class="scroll"><table>
-      <tr><th>Property</th><th class="ours">Symmetry-Locked 4B</th><th class="ours">Order-Locked RWKV 13B</th><th class="ours">Injection-Hardened RWKV 13B</th><th class="them">Clef 27B</th><th class="them">Clef-flash</th><th class="them">H2O-4B</th></tr>
+      <tbody><tr><th>Property</th><th class="ours">Symmetry-Locked 4B</th><th class="ours">Order-Locked RWKV 13B</th><th class="ours">Injection-Hardened RWKV 13B</th><th class="them">Clef 27B</th><th class="them">Clef-flash</th><th class="them">H2O-4B</th></tr>
       <tr><td>Option reorder cannot change the answer (proof + bitwise test)</td><td class="y">Proven</td><td class="y">Proven</td><td class="y">Proven</td><td class="q">not claimed</td><td class="q">not claimed</td><td class="x">Fails 6/139</td></tr>
       <tr><td>Option relabel cannot change the answer</td><td class="y">Proven</td><td class="x">8.6% flips</td><td class="q">untested</td><td class="q">not claimed</td><td class="q">not claimed</td><td class="x">Fails 5/139</td></tr>
       <tr><td>Unseen-attack hijack rate (lower is better)</td><td class="q">untested</td><td class="q">untested</td><td class="m">2.5%</td><td class="n">1.3%</td><td class="n">11.5%</td><td class="q">untested</td></tr>
@@ -161,7 +160,7 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
       <tr><td>Prediction sets contain the right answer at the stated rate (conformal)</td><td class="y">Holds (0.92 at 90%)</td><td class="y">Holds</td><td class="y">Holds</td><td class="y">Holds</td><td class="y">Holds</td><td class="q">—</td></tr>
       <tr><td>Certified "safe to act" at ≤5% error, using a test that is valid for correlated items</td><td class="x">None</td><td class="x">None</td><td class="x">None</td><td class="x">None</td><td class="x">None</td><td class="q">—</td></tr>
       <tr><td>Injection-robust prediction sets</td><td colspan="3">Mechanism proven on CPU with the real tokenizer (1,000/1,000); not yet trained into a model</td><td colspan="3" class="q">not offered</td></tr>
-    </table></div>
+    </tbody></table></div>
     <p class="note">No model, ours or Clef's, earns a "safe to act" certificate once we use a test that accounts for related questions. An earlier per-decision test said our 13B model was more actionable than Clef-flash; we withdrew that result because the test was too lenient. A public red-team report (DecisionRobust v1.2.0) found Jev steered on 79.3% of its curated attack pairs.</p>
   </section>
 
@@ -176,7 +175,7 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
       <span class="chip meas">False-certificate rate 0.2% at nominal 5%</span>
       <span class="chip fail">Adaptive attacks steer 90–100% of 4B judges</span>
     </div>
-    <div class="chart" id="c-keel"></div>
+    <div class="chart" id="c-keel"><svg viewBox="0 0 640 154" role="img" aria-label="Keel static steering rate"><line x1="238" x2="238" y1="6" y2="134" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="238" y="148" text-anchor="middle">0%</text><line x1="292.6666666666667" x2="292.6666666666667" y1="6" y2="134" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="292.6666666666667" y="148" text-anchor="middle">5%</text><line x1="347.3333333333333" x2="347.3333333333333" y1="6" y2="134" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="347.3333333333333" y="148" text-anchor="middle">10%</text><line x1="402" x2="402" y1="6" y2="134" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="402" y="148" text-anchor="middle">15%</text><line x1="456.66666666666663" x2="456.66666666666663" y1="6" y2="134" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="456.66666666666663" y="148" text-anchor="middle">20%</text><line x1="511.33333333333337" x2="511.33333333333337" y1="6" y2="134" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="511.33333333333337" y="148" text-anchor="middle">25%</text><line x1="566" x2="566" y1="6" y2="134" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="566" y="148" text-anchor="middle">30%</text><text class="lab" x="228" y="31" text-anchor="end" style="">Stock 4B, one pass</text><rect x="238" y="18.5" width="273.33333333333337" height="17" rx="2" style="fill:var(--them)"></rect><text class="num" x="517.3333333333334" y="31">25.0%</text><text class="lab" x="228" y="73" text-anchor="end" style="">Stock 4B, thinking</text><rect x="238" y="60.5" width="150.88" height="17" rx="2" style="fill:var(--them)"></rect><text class="num" x="394.88" y="73">13.8%</text><text class="lab" x="228" y="109" text-anchor="end" style="font-weight:600;fill:var(--ours)">Trust-Distilled 4B</text><text class="gl" x="228" y="122" text-anchor="end">one token · host-enforced authority</text><rect x="238" y="102.5" width="107.1466666666667" height="17" rx="2" style="fill:var(--ours)"></rect><text class="num" x="351.1466666666667" y="115">9.8%</text></svg></div>
     <p class="note">Chart: targeted steering rate on Keel's Decision Alignment Card, using attack templates never seen in training. The distilled student answers in one token; the thinking judge spends about 2,300 reasoning tokens per decision and is 14.3 points more accurate on clean items. Because searched attacks still steer every 4B judge, Keel puts its safety in host-side structure that the model cannot override.</p>
   </section>
 
@@ -184,12 +183,12 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
   <div class="grid2">
     <section class="panel">
       <div class="head"><h3>Decision Index · full dev set · higher is better</h3><span class="tag same">same harness</span></div>
-      <div class="chart" id="c-di"></div>
+      <div class="chart" id="c-di"><svg viewBox="0 0 640 196" role="img" aria-label="Decision Index full dev scores"><line x1="238" x2="238" y1="6" y2="176" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="238" y="190" text-anchor="middle">0</text><line x1="284.85714285714283" x2="284.85714285714283" y1="6" y2="176" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="284.85714285714283" y="190" text-anchor="middle">10</text><line x1="331.7142857142857" x2="331.7142857142857" y1="6" y2="176" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="331.7142857142857" y="190" text-anchor="middle">20</text><line x1="378.57142857142856" x2="378.57142857142856" y1="6" y2="176" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="378.57142857142856" y="190" text-anchor="middle">30</text><line x1="425.42857142857144" x2="425.42857142857144" y1="6" y2="176" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="425.42857142857144" y="190" text-anchor="middle">40</text><line x1="472.2857142857143" x2="472.2857142857143" y1="6" y2="176" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="472.2857142857143" y="190" text-anchor="middle">50</text><line x1="519.1428571428571" x2="519.1428571428571" y1="6" y2="176" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="519.1428571428571" y="190" text-anchor="middle">60</text><line x1="566" x2="566" y1="6" y2="176" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="566" y="190" text-anchor="middle">70</text><text class="lab" x="228" y="31" text-anchor="end" style="">Clef 27B</text><rect x="238" y="18.5" width="289.9988571428571" height="17" rx="2" style="fill:var(--them)"></rect><line x1="520.4548571428572" x2="534.512" y1="27" y2="27" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="520.4548571428572" x2="520.4548571428572" y1="23" y2="31" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="534.512" x2="534.512" y1="23" y2="31" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><text class="num" x="540.512" y="31">61.9</text><text class="lab" x="228" y="73" text-anchor="end" style="">Clef-flash</text><rect x="238" y="60.5" width="268.4445714285714" height="17" rx="2" style="fill:var(--them)"></rect><line x1="499.8377142857143" x2="512.9108571428571" y1="69" y2="69" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="499.8377142857143" x2="499.8377142857143" y1="65" y2="73" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="512.9108571428571" x2="512.9108571428571" y1="65" y2="73" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><text class="num" x="518.9108571428571" y="73">57.3</text><text class="lab" x="228" y="109" text-anchor="end" style="font-weight:600;fill:var(--ours)">Order-Locked RWKV 13B</text><text class="gl" x="228" y="122" text-anchor="end">proof: reorder-invariant</text><rect x="238" y="102.5" width="231.89600000000002" height="17" rx="2" style="fill:var(--ours)"></rect><line x1="461.83657142857146" x2="476.0342857142857" y1="111" y2="111" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="461.83657142857146" x2="461.83657142857146" y1="107" y2="115" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="476.0342857142857" x2="476.0342857142857" y1="107" y2="115" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><text class="num" x="482.0342857142857" y="115">49.5</text><text class="lab" x="228" y="151" text-anchor="end" style="font-weight:600;fill:var(--ours)">Injection-Hardened RWKV 13B</text><text class="gl" x="228" y="164" text-anchor="end">measured: unseen-attack robust</text><rect x="238" y="144.5" width="202.4697142857143" height="17" rx="2" style="fill:var(--ours)"></rect><text class="num" x="446.4697142857143" y="157">43.2</text></svg></div>
       <p class="note">12,104 rows, Index 0.2.1 scorer, 32k context. Order-Locked RWKV 13B trails Clef-flash by 7.8 [6.2, 9.8] points and Clef 27B by 12.4 [10.8, 14.3]. Symmetry-Locked 4B was not run on the Index.</p>
     </section>
     <section class="panel">
       <div class="head"><h3>JevBench Composite · public 231 items · higher is better</h3><span class="tag same">same harness</span></div>
-      <div class="chart" id="c-jev"></div>
+      <div class="chart" id="c-jev"><svg viewBox="0 0 640 280" role="img" aria-label="JevBench Composite local scores"><line x1="238" x2="238" y1="6" y2="260" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="238" y="274" text-anchor="middle">0</text><line x1="292.6666666666667" x2="292.6666666666667" y1="6" y2="260" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="292.6666666666667" y="274" text-anchor="middle">15</text><line x1="347.3333333333333" x2="347.3333333333333" y1="6" y2="260" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="347.3333333333333" y="274" text-anchor="middle">30</text><line x1="402" x2="402" y1="6" y2="260" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="402" y="274" text-anchor="middle">45</text><line x1="456.66666666666663" x2="456.66666666666663" y1="6" y2="260" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="456.66666666666663" y="274" text-anchor="middle">60</text><line x1="511.33333333333337" x2="511.33333333333337" y1="6" y2="260" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="511.33333333333337" y="274" text-anchor="middle">75</text><line x1="566" x2="566" y1="6" y2="260" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="566" y="274" text-anchor="middle">90</text><text class="lab" x="228" y="31" text-anchor="end" style="">H2O-Lightning-4B</text><rect x="238" y="18.5" width="279.16444444444437" height="17" rx="2" style="fill:var(--them)"></rect><line x1="503.31555555555553" x2="523.36" y1="27" y2="27" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="503.31555555555553" x2="503.31555555555553" y1="23" y2="31" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="523.36" x2="523.36" y1="23" y2="31" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><text class="num" x="529.36" y="31">76.6</text><text class="lab" x="228" y="73" text-anchor="end" style="">torchcast-12b*</text><rect x="238" y="60.5" width="266.4088888888889" height="17" rx="2" style="fill:var(--them)"></rect><line x1="490.9244444444445" x2="511.6977777777778" y1="69" y2="69" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="490.9244444444445" x2="490.9244444444445" y1="65" y2="73" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="511.6977777777778" x2="511.6977777777778" y1="65" y2="73" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><text class="num" x="517.6977777777778" y="73">73.1</text><text class="lab" x="228" y="115" text-anchor="end" style="">decider-12b-v1</text><rect x="238" y="102.5" width="263.8577777777778" height="17" rx="2" style="fill:var(--them)"></rect><line x1="488.00888888888886" x2="509.1466666666667" y1="111" y2="111" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="488.00888888888886" x2="488.00888888888886" y1="107" y2="115" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="509.1466666666667" x2="509.1466666666667" y1="107" y2="115" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><text class="num" x="515.1466666666668" y="115">72.4</text><text class="lab" x="228" y="157" text-anchor="end" style="">decider-12b v2</text><rect x="238" y="144.5" width="258.75555555555553" height="17" rx="2" style="fill:var(--them)"></rect><line x1="481.8133333333334" x2="506.59555555555556" y1="153" y2="153" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="481.8133333333334" x2="481.8133333333334" y1="149" y2="157" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="506.59555555555556" x2="506.59555555555556" y1="149" y2="157" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><text class="num" x="512.5955555555556" y="157">71.0</text><text class="lab" x="228" y="193" text-anchor="end" style="font-weight:600;fill:var(--ours)">Symmetry-Locked 4B</text><text class="gl" x="228" y="206" text-anchor="end">proof: reorder + relabel invariant</text><rect x="238" y="186.5" width="244.06844444444442" height="17" rx="2" style="fill:var(--ours)"></rect><text class="num" x="488.0684444444444" y="199">67.0</text><text class="lab" x="228" y="235" text-anchor="end" style="font-weight:600;fill:var(--ours)">Order-Locked RWKV 13B</text><text class="gl" x="228" y="248" text-anchor="end">proof: reorder-invariant</text><rect x="238" y="228.5" width="227.04888888888888" height="17" rx="2" style="fill:var(--ours)"></rect><line x1="398.72" x2="474.5244444444445" y1="237" y2="237" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="398.72" x2="398.72" y1="233" y2="241" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><line x1="474.5244444444445" x2="474.5244444444445" y1="233" y2="241" style="stroke:var(--fg)" stroke-width="1.2" opacity=".55"></line><text class="num" x="480.5244444444445" y="241">62.3</text></svg></div>
       <p class="note">jevkit, which reproduces the published H2O and decider scorecards exactly or within 1 item. Composite combines Intelligence, Calibration, Speed and Cost. *torchcast failed our reproduction check by 5 items. Injection-Hardened RWKV 13B was not run on JevBench.</p>
     </section>
   </div>
@@ -199,7 +198,7 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
     <p class="note">JevBench frozen v1.6.1 artifact (Composite also prices Cost, which sinks Clef) and Decision Index 0.3.2 full score, both read 2026-10-14. Our models have never been submitted to either board, and these scales differ from our local runs: H2O scores 77.6 Intelligence locally but 60.0 on the board. None of these systems publishes a formal guarantee.</p>
     <div class="grid2">
       <div class="scroll"><table>
-        <tr><th>JevBench system</th><th style="text-align:right">Composite</th><th style="text-align:right">Capability</th></tr>
+        <tbody><tr><th>JevBench system</th><th style="text-align:right">Composite</th><th style="text-align:right">Capability</th></tr>
         <tr><td>Sage 1.3.0</td><td class="n">74.05</td><td class="n">78.60</td></tr>
         <tr><td>H2O-Lightning-4B v1.1</td><td class="n">72.52</td><td class="n">75.00</td></tr>
         <tr><td>decisio v0.8.0</td><td class="n">71.69</td><td class="n">79.57</td></tr>
@@ -209,9 +208,9 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
         <tr><td>Perplexity Decider 27B (top Capability)</td><td class="n">20.62</td><td class="n">82.79</td></tr>
         <tr><td>Clef-flash</td><td class="n">36.64</td><td class="n">63.82</td></tr>
         <tr><td>Clef</td><td class="n">16.75</td><td class="n">75.33</td></tr>
-      </table></div>
+      </tbody></table></div>
       <div class="scroll"><table>
-        <tr><th>Decision Index system</th><th style="text-align:right">Full score</th></tr>
+        <tbody><tr><th>Decision Index system</th><th style="text-align:right">Full score</th></tr>
         <tr><td>d3</td><td class="n">66.26</td></tr>
         <tr><td>Linne Oak</td><td class="n">65.61</td></tr>
         <tr><td>Decider-31B</td><td class="n">64.62</td></tr>
@@ -220,7 +219,7 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
         <tr><td>Jev</td><td class="n">60.11</td></tr>
         <tr><td>Clef</td><td class="n">53.08</td></tr>
         <tr><td>Clef-flash</td><td class="n">47.61</td></tr>
-      </table></div>
+      </tbody></table></div>
     </div>
   </section>
 
@@ -228,18 +227,18 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
   <div class="grid2">
     <section class="panel">
       <div class="head"><h3>Serving cost per 1,000 Index decisions</h3><span class="tag">projection</span></div>
-      <div class="chart" id="c-cost"></div>
+      <div class="chart" id="c-cost"><svg viewBox="0 0 640 154" role="img" aria-label="Projected serving cost per thousand decisions"><line x1="238" x2="238" y1="6" y2="134" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="238" y="148" text-anchor="middle">$0.00</text><line x1="303.6" x2="303.6" y1="6" y2="134" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="303.6" y="148" text-anchor="middle">$0.05</text><line x1="369.20000000000005" x2="369.20000000000005" y1="6" y2="134" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="369.20000000000005" y="148" text-anchor="middle">$0.10</text><line x1="434.79999999999995" x2="434.79999999999995" y1="6" y2="134" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="434.79999999999995" y="148" text-anchor="middle">$0.15</text><line x1="500.40000000000003" x2="500.40000000000003" y1="6" y2="134" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="500.40000000000003" y="148" text-anchor="middle">$0.20</text><line x1="566" x2="566" y1="6" y2="134" style="stroke:var(--line)" stroke-width="1"></line><text class="axis" x="566" y="148" text-anchor="middle">$0.25</text><text class="lab" x="228" y="31" text-anchor="end" style="">Clef-flash (9B)</text><rect x="238" y="18.5" width="80.03199999999998" height="17" rx="2" style="fill:var(--them)"></rect><text class="num" x="324.032" y="31">$0.061</text><text class="lab" x="228" y="73" text-anchor="end" style="">Clef 27B</text><rect x="238" y="60.5" width="219.10400000000004" height="17" rx="2" style="fill:var(--them)"></rect><text class="num" x="463.10400000000004" y="73">$0.167</text><text class="lab" x="228" y="109" text-anchor="end" style="font-weight:600;fill:var(--ours)">Order-Locked RWKV 13B</text><text class="gl" x="228" y="122" text-anchor="end">projected, with prefix sharing</text><rect x="238" y="102.5" width="240.096" height="17" rx="2" style="fill:var(--ours)"></rect><text class="num" x="484.096" y="115">$0.183</text></svg></div>
       <p class="note">Max-batch H100 projection from token counts (cost-latency analysis, 2026-10-08), for our 13.3B RWKV-7 class with exact prefix sharing and fast kernels. This is a projection, not a measured invoice. Clef's API list prices are $0.24/M input tokens (27B) and $0.038/M (flash).</p>
     </section>
     <section class="panel">
       <div class="head"><h3>JevBench Speed and Cost axes · higher is better</h3><span class="tag same">same harness</span></div>
       <div class="scroll"><table>
-        <tr><th>System</th><th>Size</th><th style="text-align:right">Speed</th><th style="text-align:right">Cost</th></tr>
+        <tbody><tr><th>System</th><th>Size</th><th style="text-align:right">Speed</th><th style="text-align:right">Cost</th></tr>
         <tr><td>H2O-Lightning-4B</td><td>4B</td><td class="n">91.3</td><td class="n">61.1</td></tr>
         <tr><td>torchcast-12b</td><td>12B</td><td class="n">92.1</td><td class="n">53.5</td></tr>
         <tr><td>decider-12b-v1</td><td>12B</td><td class="n">92.0</td><td class="n">54.8</td></tr>
         <tr class="ours"><td>Order-Locked RWKV 13B</td><td>13.3B</td><td class="n">78.6</td><td class="n">52.6</td></tr>
-      </table></div>
+      </tbody></table></div>
       <p class="note">1× H100, in-process timing. The 13B model's p50 latency is 569 ms on the Index. Its recurrent state is constant-size, so memory does not grow with context length, unlike attention. The lower Speed score comes from the 13.3B size and an unoptimised readout. Symmetry-Locked 4B is in the same 4B price class as H2O ($0.03/M).</p>
     </section>
   </div>
@@ -251,111 +250,7 @@ footer{font-size:12px;color:var(--muted);display:grid;gap:6px}
   </footer>
 </div>
 
-<script>
-(function(){
-  // rows: {l, g (guarantee sub-label), v, lo, hi, ours}
-  function bars(id, rows, opt){
-    const el = document.getElementById(id);
-    const hasSub = rows.some(r=>r.g);
-    const max = opt.max, W = 600, labW = opt.labW || 190, numW = 66, rowH = hasSub ? 42 : 30, top = 6;
-    const plotW = W - labW - numW - 8;
-    const H = top + rows.length*rowH + 22;
-    const x = v => labW + (v/max)*plotW;
-    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${opt.aria}">`;
-    (opt.ticks||[]).forEach(t=>{
-      s += `<line x1="${x(t)}" x2="${x(t)}" y1="${top}" y2="${H-20}" stroke="var(--line)" stroke-width="1"/>`;
-      s += `<text class="axis" x="${x(t)}" y="${H-6}" text-anchor="middle">${opt.tickFmt?opt.tickFmt(t):t}</text>`;
-    });
-    rows.forEach((r,i)=>{
-      const y = top + i*rowH, mid = y + rowH/2, bh = 17, by = mid - bh/2;
-      const col = r.ours ? 'var(--ours)' : 'var(--them)';
-      const ly = r.g ? mid - 2 : mid + 4;
-      s += `<text class="lab" x="${labW-10}" y="${ly}" text-anchor="end" style="${r.ours?'font-weight:600;fill:var(--ours)':''}">${r.l}</text>`;
-      if(r.g) s += `<text class="gl" x="${labW-10}" y="${mid+11}" text-anchor="end">${r.g}</text>`;
-      s += `<rect x="${labW}" y="${by}" width="${Math.max(1.5,x(r.v)-labW)}" height="${bh}" rx="2" fill="${col}"/>`;
-      if(r.lo!=null){
-        [['lo','hi']].forEach(()=>{
-          s += `<line x1="${x(r.lo)}" x2="${x(r.hi)}" y1="${mid}" y2="${mid}" stroke="var(--fg)" stroke-width="1.2" opacity=".55"/>`;
-          s += `<line x1="${x(r.lo)}" x2="${x(r.lo)}" y1="${mid-4}" y2="${mid+4}" stroke="var(--fg)" stroke-width="1.2" opacity=".55"/>`;
-          s += `<line x1="${x(r.hi)}" x2="${x(r.hi)}" y1="${mid-4}" y2="${mid+4}" stroke="var(--fg)" stroke-width="1.2" opacity=".55"/>`;
-        });
-      }
-      const end = Math.max(x(r.v), r.hi!=null?x(r.hi):0);
-      s += `<text class="num" x="${end+6}" y="${mid+4}">${opt.fmt(r.v)}</text>`;
-    });
-    s += `</svg>`;
-    el.innerHTML = s;
-  }
-  function grouped(id, groups, opt){
-    const el = document.getElementById(id);
-    const W=600, labW=190, numW=86, gH=58, top=6, max=opt.max;
-    const plotW=W-labW-numW-8, H=top+groups.length*gH+40;
-    const x=v=>labW+(v/max)*plotW;
-    let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${opt.aria}">`;
-    opt.ticks.forEach(t=>{
-      s+=`<line x1="${x(t)}" x2="${x(t)}" y1="${top}" y2="${H-38}" stroke="var(--line)"/>`;
-      s+=`<text class="axis" x="${x(t)}" y="${H-24}" text-anchor="middle">${t}%</text>`;
-    });
-    groups.forEach((g,gi)=>{
-      const y0=top+gi*gH, mid=y0+gH/2-4;
-      const col = g.ours ? 'var(--ours)' : 'var(--them)';
-      s+=`<text class="lab" x="${labW-10}" y="${g.g?mid-2:mid+4}" text-anchor="end" style="${g.ours?'font-weight:600;fill:var(--ours)':''}">${g.l}</text>`;
-      if(g.g) s+=`<text class="gl" x="${labW-10}" y="${mid+11}" text-anchor="end">${g.g}</text>`;
-      ['hijack','steer'].forEach((nm,si)=>{
-        const v=g.v[si], lo=g.lo[si], hi=g.hi[si], y=y0+6+si*21, bh=14;
-        s+=`<rect x="${labW}" y="${y}" width="${Math.max(1.5,x(v)-labW)}" height="${bh}" rx="2" fill="${col}" opacity="${si?0.5:1}"/>`;
-        s+=`<line x1="${x(lo)}" x2="${x(hi)}" y1="${y+bh/2}" y2="${y+bh/2}" stroke="var(--fg)" stroke-width="1.1" opacity=".5"/>`;
-        s+=`<text class="num" x="${Math.max(x(v),x(hi))+6}" y="${y+bh-2}">${nm} ${v.toFixed(1)}%</text>`;
-      });
-    });
-    s+=`<rect x="${labW}" y="${H-14}" width="12" height="10" fill="var(--them)"/><text class="axis" x="${labW+16}" y="${H-5}">Hijack (solid)</text>`;
-    s+=`<rect x="${labW+120}" y="${H-14}" width="12" height="10" fill="var(--them)" opacity=".5"/><text class="axis" x="${labW+136}" y="${H-5}">Steer (faded)</text>`;
-    s+=`</svg>`;
-    el.innerHTML=s;
-  }
-  const f1 = v=>v.toFixed(1);
 
-  grouped('c-atk',[
-    {l:'Injection-Hardened RWKV 13B', g:'measured · attention-free', ours:1, v:[2.5,0.3], lo:[0,0], hi:[8.4,1.4]},
-    {l:'Clef 27B', v:[1.3,1.8], lo:[0,0], hi:[4.0,5.1]},
-    {l:'Clef-flash', v:[11.5,8.9], lo:[1.9,1.0], hi:[27.2,20.9]},
-  ],{max:30, ticks:[0,5,10,15,20,25,30], aria:'Held-out injection attack success rates'});
 
-  bars('c-flip',[
-    {l:'MD1 (self-reported)', v:1.3},
-    {l:'H2O-Lightning-4B', v:2.44, lo:1.26, hi:3.75},
-    {l:'Symmetry-Locked 4B', g:'proof: 0 reorder/relabel flips', v:3.64, ours:1},
-    {l:'Stock Qwen3.5-4B', v:7.55, lo:5.71, hi:9.67},
-  ],{max:10, ticks:[0,2,4,6,8,10], tickFmt:t=>t+'%', fmt:v=>v.toFixed(2)+'%', aria:'Average answer flip rate'});
 
-  bars('c-keel',[
-    {l:'Stock 4B, one pass', v:25.0},
-    {l:'Stock 4B, thinking', v:13.8},
-    {l:'Trust-Distilled 4B', g:'one token · host-enforced authority', v:9.8, ours:1},
-  ],{max:30, ticks:[0,5,10,15,20,25,30], tickFmt:t=>t+'%', fmt:v=>v.toFixed(1)+'%', aria:'Keel static steering rate'});
-
-  bars('c-di',[
-    {l:'Clef 27B', v:61.89, lo:60.28, hi:63.28},
-    {l:'Clef-flash', v:57.29, lo:55.88, hi:58.67},
-    {l:'Order-Locked RWKV 13B', g:'proof: reorder-invariant', v:49.49, lo:47.77, hi:50.80, ours:1},
-    {l:'Injection-Hardened RWKV 13B', g:'measured: unseen-attack robust', v:43.21, ours:1},
-  ],{max:70, ticks:[0,10,20,30,40,50,60,70], fmt:f1, aria:'Decision Index full dev scores'});
-
-  bars('c-jev',[
-    {l:'H2O-Lightning-4B', v:76.6, lo:72.8, hi:78.3},
-    {l:'torchcast-12b*', v:73.1, lo:69.4, hi:75.1},
-    {l:'decider-12b-v1', v:72.4, lo:68.6, hi:74.4},
-    {l:'decider-12b v2', v:71.0, lo:66.9, hi:73.7},
-    {l:'Symmetry-Locked 4B', g:'proof: reorder + relabel invariant', v:66.97, ours:1},
-    {l:'Order-Locked RWKV 13B', g:'proof: reorder-invariant', v:62.3, lo:44.1, hi:64.9, ours:1},
-  ],{max:90, ticks:[0,15,30,45,60,75,90], fmt:f1, aria:'JevBench Composite local scores'});
-
-  bars('c-cost',[
-    {l:'Clef-flash (9B)', v:0.061},
-    {l:'Clef 27B', v:0.167},
-    {l:'Order-Locked RWKV 13B', g:'projected, with prefix sharing', v:0.183, ours:1},
-  ],{max:0.25, ticks:[0,0.05,0.10,0.15,0.20,0.25], tickFmt:t=>'$'+t.toFixed(2), fmt:v=>'$'+v.toFixed(3), aria:'Projected serving cost per thousand decisions'});
-})();
-</script>
-</body>
-</html>
+</body></html>
