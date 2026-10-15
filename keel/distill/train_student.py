@@ -111,6 +111,7 @@ def train(rows: list[dict], output: str, *, smoke: bool = False, batch_size: int
     from transformers import AutoModelForImageTextToText, AutoTokenizer
     import transformers
     import peft
+    from keel.distill.checkpoint import save_processor_assets
     from keel.runtime.modal_app import MODELS
 
     if not rows or batch_size < 1 or accumulation < 1:
@@ -174,6 +175,7 @@ def train(rows: list[dict], output: str, *, smoke: bool = False, batch_size: int
         merged = model.merge_and_unload()
         merged.save_pretrained(out / "merged", safe_serialization=True, max_shard_size="4GB")
         tok.save_pretrained(out / "merged")
+        result["processor_assets"] = save_processor_assets(out / "merged")
         result["checkpoint"] = str(out / "merged")
     result["wall_s"] = time.time() - start
     return result

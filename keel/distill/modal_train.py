@@ -8,7 +8,7 @@ from pathlib import Path
 
 import modal
 
-from keel.runtime.modal_app import HF_CACHE, hf_cache, results_vol
+from keel.runtime.modal_app import HF_CACHE, hf_cache, results_vol, vllm_image
 
 APP = modal.App("keel-distill-train")
 training_image = (
@@ -36,6 +36,31 @@ def train_remote(rows: list[dict], run: str, smoke: bool = False, batch_size: in
     dest.mkdir(parents=True, exist_ok=True)
     (dest / ("smoke.json" if smoke else "train.json")).write_text(json.dumps(result, indent=2) + "\n")
     results_vol.commit()
+    return result
+
+
+@APP.function(image=vllm_image.add_local_python_source("keel"), timeout=600,
+              volumes={HF_CACHE: hf_cache, "/results": results_vol}, memory=8192, cpu=2)
+def repair_processor_remote(run: str) -> dict:
+    """Backfill processor metadata only; never load or modify trained weights."""
+    from transformers import AutoProcessor
+    from keel.distill.checkpoint import save_processor_assets
+
+    if not run or "/" in run or run in (".", ".."):
+        raise ValueError("run must be one path component")
+    results_vol.reload()
+    output = Path(f"/results/students/{run}/merged")
+    if not (output / "config.json").is_file() or not (output / "model.safetensors.index.json").is_file():
+        raise ValueError("repair requires an existing full sharded checkpoint")
+    result = save_processor_assets(output)
+    processor = AutoProcessor.from_pretrained(output, local_files_only=True)
+    result.update(checkpoint=str(output), processor_class=type(processor).__name__,
+                  image_processor_class=type(processor.image_processor).__name__,
+                  video_processor_class=type(processor.video_processor).__name__,
+                  weights_modified=False, gpu_minutes=0)
+    (output.parent / "processor-assets.json").write_text(json.dumps(result, indent=2) + "\n")
+    results_vol.commit()
+    print(json.dumps(result, indent=2))
     return result
 
 

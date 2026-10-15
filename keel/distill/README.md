@@ -181,6 +181,19 @@ guard: **zero overlap hits**. The unavailable Decision Index document-overlap
 guard is not counted as a pass. See committed `train.json` and
 `train-guards.json` for aggregates.
 
+The original export omitted the image/video processor configurations. vLLM
+requires them even for this text-only workload, so its initialization repeatedly
+failed; the first client call ultimately exited with a DNS/connection error,
+not a usable result. The permanent exporter now preserves the pinned base
+`preprocessor_config.json`, `video_preprocessor_config.json` and
+`chat_template.jinja`. A CPU-only backfill repaired the existing checkpoint
+without modifying any trained weights, and `AutoProcessor.from_pretrained`
+loaded all three processor components locally. Asset hashes and the repair
+record are in `processor-assets.json`. The repair command for older exports is
+`modal run -m keel.distill.modal_train::repair_processor_remote --run <run>`.
+Student GPU load checks have a 900-second remote limit; pilot student calls
+have a 1,800-second remote limit and a 60-second idle shutdown window.
+
 ## Pilot definitions
 
 The pilot compares student 4B one-pass trust, stock 4B one-pass trust, and
@@ -241,7 +254,11 @@ python -X utf8 -m keel.distill.modal_train \
 python -X utf8 -m keel.distill.modal_train \
   --labels /home/alp/ssdm-direction/distill_v0/teacher-train-screened/labels.jsonl.gz \
   --run distill-v0-20261015 --out /home/alp/ssdm-direction/distill_v0/train.json
-python -X utf8 -m keel.distill.pilot \
+timeout --kill-after=30s 900 python -X utf8 -m keel.distill.checkpoint \
+  --train-sources /home/alp/ssdm-direction/distill_v0/data/train.jsonl.gz \
+  --checkpoint /results/students/distill-v0-20261015/merged \
+  --out /home/alp/ssdm-direction/distill_v0/checkpoint-smoke.json
+timeout --kill-after=30s 1800 python -X utf8 -m keel.distill.pilot \
   --train-sources /home/alp/ssdm-direction/distill_v0/data/train.jsonl.gz \
   --pilot-sources /home/alp/ssdm-direction/distill_v0/data/pilot.jsonl.gz \
   --teacher-dir /home/alp/ssdm-direction/distill_v0/teacher-pilot-screened \
@@ -277,6 +294,10 @@ conservatively overstate actual GPU billing; they are not invoice amounts.
 | 2026-10-15 | 9B training evidence authorship + two-sample labels | 66.015 | $4.346 | 3,107 sources; 14,885 scored units; 9,075 labels before the stricter evidence screen. |
 | 2026-10-15 | 4B-thinking training evidence crosscheck | 3.260 | $0.215 | 1,207 teacher-accepted → 248 executable-event candidates → 237 cross-model validated; 8,105 total training labels. |
 | 2026-10-15 | Full `train_remote`, one epoch | 18.348 | $1.208 | 8,105 rows, 507 optimizer updates, full merged HF checkpoint saved and volume committed. |
+| 2026-10-15 | Failed student checkpoint load/pilot | 176.247 | $11.603 | No returned outputs. Missing processor metadata caused repeated initialization failures; client later failed with DNS/ConnectionError. |
+| 2026-10-15 | Failed app shutdown reserve | 1.953 | $0.129 | Difference between observed app lifetime and the failed local-call wall time; avoids silently ignoring disconnect cleanup. |
+| 2026-10-15 | Cancelled pre-repair bounded retry | 1.500 | $0.099 | Explicitly stopped after diagnosing missing assets; no returned outputs. |
+| 2026-10-15 | `repair_processor_remote` | 0 (CPU-only) | $0.025 | 22.92 seconds; ledger conservatively charges CPU wall at the H100 rate. Pinned processor assets copied and locally loaded; trained weights untouched. |
 
 The initial numerical check exposed FLA's explicit correctness guard for
 Hopper's `chunk_bwd_dqkwg` kernel with Triton 3.4–3.7.0. The fix upgrades the
