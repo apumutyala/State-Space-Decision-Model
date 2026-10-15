@@ -127,7 +127,7 @@ ordinary for-profits are not expected to qualify, and it filters AI-generated su
 
 ## 6. Next two weeks
 
-1. **Decide** the reframe and the applicant (TML, individuals, or a fiscal sponsor). Settle publication and
+1. **Decide** the reframe and the applicant (a company, individuals, or a fiscal sponsor). Settle publication and
    comparator permissions with Apuroop, including the 2026-10-11 directive and GOAL.md's "never re-run MD1".
 2. **Preliminary result (≤ $40 GPU):** the manipulability gap of 4–5 small monitors on agent-action data.
    - Measure TPR at 2% FPR, clean vs universal and probability-guided injections, with evidence-retention controls.
