@@ -11,7 +11,10 @@ Shared rules for every Keel subpackage. Owned by the chief of staff; propose cha
 | `keel/protocol/receipts.py`, `keel/host/`, `PROTOCOL.md` | protocol/host slice | new |
 | `keel/gate/` | gate slice | new |
 | `keel/card/` | card slice | new |
-| `keel/distill/` | distill slice | new |
+| `keel/distill/` | distill slice (v1: capability data authoring extends it; keep v0 modules working) | active |
+| `keel/workflows/` | workflow slice | active |
+| `keel/monitor/` | monitor slice (Card for trusted monitors in a control setting) | new |
+| `keel/paths.py` | chief of staff | frozen — request changes |
 | `keel/tests/test_<slice>*.py` | each slice | new |
 
 ## Core types (`keel.protocol`)
