@@ -5,8 +5,11 @@ Method: `git branch -r --no-merged origin/agent-main`, commits ahead, last commi
 
 **Bottom line:**
 - 156 branches are already merged into `agent-main`, so their code is there.
-- Of the 214 unmerged code branches, about 16 carry something Keel needs: 8 to build on, 8 as tools or references.
-  The other ~198 are history.
+- Of the 214 unmerged code branches, 25 matter for Keel:
+  - 8 to build on;
+  - 5 more already contained in the top one;
+  - 12 as tools or references.
+  The other 189 are history.
 - Nothing is deleted; branch deletion needs the owner's approval.
 
 ## Build on (Tier 1)
@@ -34,7 +37,7 @@ Method: `git branch -r --no-merged origin/agent-main`, commits ahead, last commi
 | `claude/ev-review-stability`, `claude/lead-state-stability`, `stack/rwkv7/sym-contractive` | State-stability theorems, their review, and the contractive RWKV-7 variant; relevant only to bet E (long-horizon state-space monitors) |
 | `claude/ev-evidence-report-v2`, `claude/lead-tech-report`, `claude/lead-gap-attribution` | The most complete written record of what was measured and why it failed |
 
-## Leave as history (Tier 3, ~198 branches)
+## Leave as history (Tier 3, 189 branches)
 
 | Group | Count | Why not |
 |---|---|---|
@@ -42,10 +45,10 @@ Method: `git branch -r --no-merged origin/agent-main`, commits ahead, last commi
 | `codex/*` Track L language growth | 45 | frozen; no qualified level |
 | `codex/*` runner, lint and launch-policy fixes | 20 | SF Compute job runner, replaced by per-second GPUs |
 | `stack/q9*` attention→GDN conversion | 5 | recall collapse; closed |
-| `claude/b-*` Index-era agent-b work | 16 | Index-targeted draws, readouts and receipts (except the two listed above) |
-| `claude/ev-*` rescore and receipt branches | ~25 | landed numbers, recorded on `state` and in the evidence report |
-| Older 4B cells (`jev1-*`, `jev2-*`, H2O-host `jev2-h2o`, `jev3-h2o`) | 6 | superseded by `jev3-lm-r`; H2O-host only if a control cell is approved |
-| Misc (`artifact-size-cap-*`, scouts, onboarding, backups) | ~25 | infrastructure or one-off |
+| `claude/b-*` Index-era agent-b work | 16 | Index-targeted draws, readouts and receipts |
+| `claude/ev-*` rescore and receipt branches | 24 | landed numbers, recorded on `state` and in the evidence report |
+| Older 4B cells (`jev1-4b`, `jev1-diag`, `jev2-4b`, `jev3-typed`, H2O-host `jev2-h2o`, `jev3-h2o`) | 6 | superseded by `jev3-lm-r`; H2O-host only if a control cell is approved |
+| Misc (`artifact-size-cap-*`, CPU-test and runner branches, scouts, onboarding, backup, two `stack/clef` baselines) | 20 | infrastructure or one-off |
 
 ## Proposed consolidation
 
