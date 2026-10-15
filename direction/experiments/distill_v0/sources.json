@@ -1,0 +1,28 @@
+{
+  "requested": 3300,
+  "built": 3299,
+  "duplicates_removed": 1,
+  "train": 3107,
+  "pilot": 192,
+  "seed": 20261010,
+  "type_mix": {"noul": 1107, "score": 1152, "choice": 1040},
+  "family_mix": {"policy": 1100, "severity": 1100, "state_tracking": 1099},
+  "train_sha256": "453fc1df45b700694c14dbe55ce0d5b11f2c835ba2d5820e93559a6c4538133a",
+  "pilot_sha256": "8b5b0e26ebb5decb6b9f370104a10fa2788ae4a1bce7070dec658755cb5c5e64",
+  "builder_attempt": "jev3 policy generator needs an unavailable Windows-only prior jev1 pool; used the repository's jev1 synthetic access_policy, severity and event_state builders directly",
+  "jevbench_guard": {
+    "pin_sha256": "e317bbb6aa541f5b9c26e038359036dc9d3f7039b410060fafa3bfe1bf2db49f",
+    "source_commit": "b6b8fff7e345b98c060ad26c13308860ddc67004",
+    "train_checked": 3107,
+    "pilot_checked": 192,
+    "document_failures": 0,
+    "exact_segment_failures": 0,
+    "fingerprint_failures": 0
+  },
+  "attack_guard": {
+    "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+    "evaluation_templates": 38,
+    "source_rows_hit": 0
+  },
+  "decision_index_document_guard": {"run": false, "reason": "index unavailable on this workstation"}
+}
