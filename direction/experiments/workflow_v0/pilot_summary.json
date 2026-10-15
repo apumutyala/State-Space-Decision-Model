@@ -24,7 +24,7 @@
   "cost_usd_estimate": 0.24413766656256947,
   "notes": [
     "Qwen3.5 native template and qwen3_coder parser produced successfully executed banking and Slack calls without dispatch errors.",
-    "The upstream tool_filter implementation is technically callable but the agent continued answering its filter request instead of executing the original task; retain as an explicitly noncompetitive diagnostic baseline.",
+    "The upstream tool_filter implementation is technically callable but on these two pilot tasks the agent continued answering its filter request instead of executing the original task; retain the unchanged baseline and report utility alongside security.",
     "One-pass gate rejected legitimate calls; no prompt or threshold was tuned after this pilot."
   ]
 }

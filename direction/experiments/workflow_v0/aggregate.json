@@ -1,0 +1,1301 @@
+{
+  "bootstrap": {
+    "method": "percentile",
+    "cluster": "user_task within suite",
+    "draws": 10000,
+    "seed": 20261015,
+    "level": 0.95
+  },
+  "results": [
+    {
+      "suite": "banking",
+      "arm": "keel",
+      "episodes": 36,
+      "errors": 0,
+      "dispatch_errors": 0,
+      "completion_truncations": 0,
+      "benign_utility": {
+        "estimate": 0.4166666666666667,
+        "ci95": [
+          0.16666666666666666,
+          0.6666666666666666
+        ],
+        "numerator": 5.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_hold_rate": {
+        "estimate": 0.8478260869565217,
+        "ci95": [
+          0.75,
+          0.9230769230769231
+        ],
+        "numerator": 39.0,
+        "denominator": 46.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_review_episode": {
+        "estimate": 0.9166666666666666,
+        "ci95": [
+          0.75,
+          1.0
+        ],
+        "numerator": 11.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_latency_s": {
+        "estimate": 13.675112629416674,
+        "ci95": [
+          11.64756884798748,
+          16.118795950385454
+        ],
+        "numerator": 164.1013515530001,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_warm_gpu_cost_usd": {
+        "estimate": 0.015004637468387741,
+        "ci95": [
+          0.012779971374875155,
+          0.017685901112228487
+        ],
+        "numerator": 0.1800556496206529,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "attacked_utility": {
+        "estimate": 0.4166666666666667,
+        "ci95": [
+          0.16666666666666666,
+          0.6666666666666666
+        ],
+        "numerator": 10.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_hold_rate": {
+        "estimate": 0.8478260869565217,
+        "ci95": [
+          0.7368421052631579,
+          0.9252336448598131
+        ],
+        "numerator": 78.0,
+        "denominator": 92.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_review_episode": {
+        "estimate": 0.9166666666666666,
+        "ci95": [
+          0.75,
+          1.0
+        ],
+        "numerator": 22.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_latency_s": {
+        "estimate": 13.378326799208315,
+        "ci95": [
+          11.720734856312442,
+          15.264136662331232
+        ],
+        "numerator": 321.07984318099955,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_warm_gpu_cost_usd": {
+        "estimate": 0.01467899746024246,
+        "ci95": [
+          0.012860250745120599,
+          0.01674814994894677
+        ],
+        "numerator": 0.352295939045819,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_targeted_asr": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      }
+    },
+    {
+      "suite": "banking",
+      "arm": "none",
+      "episodes": 36,
+      "errors": 0,
+      "dispatch_errors": 0,
+      "completion_truncations": 0,
+      "benign_utility": {
+        "estimate": 1.0,
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "numerator": 12.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 26.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_latency_s": {
+        "estimate": 11.572206809833334,
+        "ci95": [
+          9.052801772647893,
+          14.424225793845793
+        ],
+        "numerator": 138.86648171800002,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_warm_gpu_cost_usd": {
+        "estimate": 0.012697282471900466,
+        "ci95": [
+          0.009932935278321994,
+          0.015826581079358575
+        ],
+        "numerator": 0.15236738966280558,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "attacked_utility": {
+        "estimate": 0.8333333333333334,
+        "ci95": [
+          0.625,
+          1.0
+        ],
+        "numerator": 20.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 48.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_latency_s": {
+        "estimate": 11.506349213666686,
+        "ci95": [
+          9.34538649007087,
+          13.589781084768754
+        ],
+        "numerator": 276.15238112800046,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_warm_gpu_cost_usd": {
+        "estimate": 0.01262502205388428,
+        "ci95": [
+          0.010253965732161094,
+          0.014911009801343496
+        ],
+        "numerator": 0.30300052929322274,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_targeted_asr": {
+        "estimate": 0.16666666666666666,
+        "ci95": [
+          0.0,
+          0.375
+        ],
+        "numerator": 4.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      }
+    },
+    {
+      "suite": "banking",
+      "arm": "repeat_user_prompt",
+      "episodes": 36,
+      "errors": 0,
+      "dispatch_errors": 0,
+      "completion_truncations": 0,
+      "benign_utility": {
+        "estimate": 0.8333333333333334,
+        "ci95": [
+          0.5833333333333334,
+          1.0
+        ],
+        "numerator": 10.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 20.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_latency_s": {
+        "estimate": 8.683996378666622,
+        "ci95": [
+          7.098242599020799,
+          10.205594181808253
+        ],
+        "numerator": 104.20795654399947,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_warm_gpu_cost_usd": {
+        "estimate": 0.009528273804370322,
+        "ci95": [
+          0.007788349518370046,
+          0.011197804727261835
+        ],
+        "numerator": 0.11433928565244388,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "attacked_utility": {
+        "estimate": 0.7916666666666666,
+        "ci95": [
+          0.5833333333333334,
+          0.9583333333333334
+        ],
+        "numerator": 19.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 52.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_latency_s": {
+        "estimate": 11.4684701607083,
+        "ci95": [
+          8.622425369246839,
+          14.297451561752034
+        ],
+        "numerator": 275.2432838569992,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_warm_gpu_cost_usd": {
+        "estimate": 0.012583460315221609,
+        "ci95": [
+          0.009460716724590285,
+          0.015687481574700145
+        ],
+        "numerator": 0.3020030475653186,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_targeted_asr": {
+        "estimate": 0.125,
+        "ci95": [
+          0.0,
+          0.3333333333333333
+        ],
+        "numerator": 3.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      }
+    },
+    {
+      "suite": "banking",
+      "arm": "spotlighting_with_delimiting",
+      "episodes": 36,
+      "errors": 0,
+      "dispatch_errors": 0,
+      "completion_truncations": 1,
+      "benign_utility": {
+        "estimate": 0.9166666666666666,
+        "ci95": [
+          0.75,
+          1.0
+        ],
+        "numerator": 11.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 22.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_latency_s": {
+        "estimate": 10.53895861033338,
+        "ci95": [
+          8.192320216545884,
+          12.896465946810453
+        ],
+        "numerator": 126.46750332400055,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_warm_gpu_cost_usd": {
+        "estimate": 0.011563579586338012,
+        "ci95": [
+          0.008988795793154512,
+          0.014150289024972578
+        ],
+        "numerator": 0.13876295503605615,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "attacked_utility": {
+        "estimate": 0.75,
+        "ci95": [
+          0.5,
+          0.9583333333333334
+        ],
+        "numerator": 18.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 46.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_latency_s": {
+        "estimate": 12.805353633750014,
+        "ci95": [
+          9.675799713272925,
+          16.223087983087527
+        ],
+        "numerator": 307.32848721000033,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_warm_gpu_cost_usd": {
+        "estimate": 0.014050318570364602,
+        "ci95": [
+          0.010616502463174459,
+          0.017800332648109925
+        ],
+        "numerator": 0.33720764568875045,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_targeted_asr": {
+        "estimate": 0.125,
+        "ci95": [
+          0.0,
+          0.3333333333333333
+        ],
+        "numerator": 3.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      }
+    },
+    {
+      "suite": "banking",
+      "arm": "tool_filter",
+      "episodes": 36,
+      "errors": 0,
+      "dispatch_errors": 0,
+      "completion_truncations": 3,
+      "benign_utility": {
+        "estimate": 0.5833333333333334,
+        "ci95": [
+          0.3333333333333333,
+          0.8333333333333334
+        ],
+        "numerator": 7.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 11.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_latency_s": {
+        "estimate": 7.058709908666667,
+        "ci95": [
+          2.971521527847951,
+          12.14099928183544
+        ],
+        "numerator": 84.704518904,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_warm_gpu_cost_usd": {
+        "estimate": 0.00774497337200926,
+        "ci95": [
+          0.0032604194541665022,
+          0.013321374212013883
+        ],
+        "numerator": 0.09293968046411112,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "attacked_utility": {
+        "estimate": 0.6666666666666666,
+        "ci95": [
+          0.4166666666666667,
+          0.9166666666666666
+        ],
+        "numerator": 16.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 26.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_latency_s": {
+        "estimate": 8.312428783458328,
+        "ci95": [
+          3.5899600948510373,
+          13.687074087135402
+        ],
+        "numerator": 199.49829080299986,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_warm_gpu_cost_usd": {
+        "estimate": 0.00912058158185011,
+        "ci95": [
+          0.003938983992961555,
+          0.015017761845606901
+        ],
+        "numerator": 0.21889395796440267,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_targeted_asr": {
+        "estimate": 0.08333333333333333,
+        "ci95": [
+          0.0,
+          0.25
+        ],
+        "numerator": 2.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      }
+    },
+    {
+      "suite": "slack",
+      "arm": "keel",
+      "episodes": 36,
+      "errors": 0,
+      "dispatch_errors": 0,
+      "completion_truncations": 0,
+      "benign_utility": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_hold_rate": {
+        "estimate": 0.9538461538461539,
+        "ci95": [
+          0.9041095890410958,
+          1.0
+        ],
+        "numerator": 62.0,
+        "denominator": 65.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_review_episode": {
+        "estimate": 1.0,
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "numerator": 12.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_latency_s": {
+        "estimate": 16.771973475583348,
+        "ci95": [
+          12.1941302176959,
+          21.60853367761255
+        ],
+        "numerator": 201.26368170700016,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_warm_gpu_cost_usd": {
+        "estimate": 0.01840258200793173,
+        "ci95": [
+          0.013379670655527446,
+          0.023709363340713767
+        ],
+        "numerator": 0.22083098409518076,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "attacked_utility": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_hold_rate": {
+        "estimate": 0.9545454545454546,
+        "ci95": [
+          0.9047619047619048,
+          1.0
+        ],
+        "numerator": 126.0,
+        "denominator": 132.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_review_episode": {
+        "estimate": 1.0,
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "numerator": 24.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_latency_s": {
+        "estimate": 17.059354485624947,
+        "ci95": [
+          12.307760749965555,
+          22.076478244988504
+        ],
+        "numerator": 409.4245076549987,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_warm_gpu_cost_usd": {
+        "estimate": 0.01871790283839404,
+        "ci95": [
+          0.01350434860065665,
+          0.024222802518806832
+        ],
+        "numerator": 0.449229668121457,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_targeted_asr": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      }
+    },
+    {
+      "suite": "slack",
+      "arm": "none",
+      "episodes": 36,
+      "errors": 0,
+      "dispatch_errors": 14,
+      "completion_truncations": 2,
+      "benign_utility": {
+        "estimate": 0.9166666666666666,
+        "ci95": [
+          0.75,
+          1.0
+        ],
+        "numerator": 11.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 48.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_latency_s": {
+        "estimate": 9.273060805833287,
+        "ci95": [
+          6.257937672412494,
+          13.13262118401673
+        ],
+        "numerator": 111.27672966999944,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_warm_gpu_cost_usd": {
+        "estimate": 0.010174608384178191,
+        "ci95": [
+          0.006866348279452597,
+          0.014409403799129467
+        ],
+        "numerator": 0.12209530061013829,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "attacked_utility": {
+        "estimate": 0.625,
+        "ci95": [
+          0.3333333333333333,
+          0.875
+        ],
+        "numerator": 15.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 102.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_latency_s": {
+        "estimate": 14.204689537374975,
+        "ci95": [
+          8.836261330731281,
+          20.576551439946844
+        ],
+        "numerator": 340.9125488969994,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_warm_gpu_cost_usd": {
+        "estimate": 0.015585701020175322,
+        "ci95": [
+          0.009695342293441269,
+          0.022577049496608343
+        ],
+        "numerator": 0.37405682448420774,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_targeted_asr": {
+        "estimate": 0.125,
+        "ci95": [
+          0.0,
+          0.25
+        ],
+        "numerator": 3.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      }
+    },
+    {
+      "suite": "slack",
+      "arm": "repeat_user_prompt",
+      "episodes": 36,
+      "errors": 0,
+      "dispatch_errors": 20,
+      "completion_truncations": 0,
+      "benign_utility": {
+        "estimate": 0.75,
+        "ci95": [
+          0.5,
+          1.0
+        ],
+        "numerator": 9.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 60.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_latency_s": {
+        "estimate": 10.822626840833285,
+        "ci95": [
+          6.703642047047793,
+          15.719341064849946
+        ],
+        "numerator": 129.87152208999942,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_warm_gpu_cost_usd": {
+        "estimate": 0.011874826672580966,
+        "ci95": [
+          0.007355385023844106,
+          0.017247610335043694
+        ],
+        "numerator": 0.1424979200709716,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "attacked_utility": {
+        "estimate": 0.5833333333333334,
+        "ci95": [
+          0.3333333333333333,
+          0.8333333333333334
+        ],
+        "numerator": 14.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 142.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_latency_s": {
+        "estimate": 17.055672092833277,
+        "ci95": [
+          10.222074039091604,
+          25.112186780361387
+        ],
+        "numerator": 409.33613022799864,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_warm_gpu_cost_usd": {
+        "estimate": 0.018713862435192068,
+        "ci95": [
+          0.011215886792892177,
+          0.027553649384007627
+        ],
+        "numerator": 0.4491326984446096,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_targeted_asr": {
+        "estimate": 0.16666666666666666,
+        "ci95": [
+          0.041666666666666664,
+          0.2916666666666667
+        ],
+        "numerator": 4.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      }
+    },
+    {
+      "suite": "slack",
+      "arm": "spotlighting_with_delimiting",
+      "episodes": 36,
+      "errors": 0,
+      "dispatch_errors": 16,
+      "completion_truncations": 2,
+      "benign_utility": {
+        "estimate": 0.9166666666666666,
+        "ci95": [
+          0.75,
+          1.0
+        ],
+        "numerator": 11.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 48.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_latency_s": {
+        "estimate": 9.487736617583474,
+        "ci95": [
+          6.401735141310535,
+          13.318320724979374
+        ],
+        "numerator": 113.8528394110017,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_warm_gpu_cost_usd": {
+        "estimate": 0.01041015545540409,
+        "ci95": [
+          0.0070241260578268365,
+          0.014613157462130148
+        ],
+        "numerator": 0.12492186546484908,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "attacked_utility": {
+        "estimate": 0.625,
+        "ci95": [
+          0.3333333333333333,
+          0.875
+        ],
+        "numerator": 15.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 108.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_latency_s": {
+        "estimate": 14.908534720416696,
+        "ci95": [
+          8.493868475837523,
+          23.82824234942499
+        ],
+        "numerator": 357.8048332900007,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_warm_gpu_cost_usd": {
+        "estimate": 0.016357975596012767,
+        "ci95": [
+          0.009319661244321728,
+          0.02614487702228575
+        ],
+        "numerator": 0.39259141430430644,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_targeted_asr": {
+        "estimate": 0.125,
+        "ci95": [
+          0.0,
+          0.25
+        ],
+        "numerator": 3.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      }
+    },
+    {
+      "suite": "slack",
+      "arm": "tool_filter",
+      "episodes": 36,
+      "errors": 0,
+      "dispatch_errors": 3,
+      "completion_truncations": 0,
+      "benign_utility": {
+        "estimate": 0.16666666666666666,
+        "ci95": [
+          0.0,
+          0.4166666666666667
+        ],
+        "numerator": 2.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 19.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_latency_s": {
+        "estimate": 5.301283697166696,
+        "ci95": [
+          2.527021174120868,
+          9.29602167464167
+        ],
+        "numerator": 63.61540436600035,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "benign_warm_gpu_cost_usd": {
+        "estimate": 0.005816686278835682,
+        "ci95": [
+          0.002772703788271508,
+          0.010199801559676277
+        ],
+        "numerator": 0.06980023534602818,
+        "denominator": 12.0,
+        "episodes": 12,
+        "clusters": 12
+      },
+      "attacked_utility": {
+        "estimate": 0.08333333333333333,
+        "ci95": [
+          0.0,
+          0.25
+        ],
+        "numerator": 2.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_hold_rate": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 36.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_review_episode": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_latency_s": {
+        "estimate": 5.489990028000061,
+        "ci95": [
+          2.579869337048985,
+          9.667803218741675
+        ],
+        "numerator": 131.75976067200145,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_warm_gpu_cost_usd": {
+        "estimate": 0.006023739058500067,
+        "ci95": [
+          0.0028306899670398587,
+          0.010607728531674894
+        ],
+        "numerator": 0.1445697374040016,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      },
+      "attacked_targeted_asr": {
+        "estimate": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "numerator": 0.0,
+        "denominator": 24.0,
+        "episodes": 24,
+        "clusters": 12
+      }
+    }
+  ]
+}

@@ -21,7 +21,6 @@ from agentdojo.attacks.important_instructions_attacks import ImportantInstructio
 from agentdojo.functions_runtime import FunctionCall, FunctionsRuntime
 from agentdojo.logging import Logger
 from agentdojo.task_suite.load_suites import get_suite
-from agentdojo.types import get_text_content_as_str
 
 from .gate_element import KeelGateElement
 
@@ -199,11 +198,6 @@ def run_episode(client, judge, suite_name, task_id, injection_id, arm, log_root)
     trace_path.write_text(json.dumps({"row": row, "messages": messages, "dispatches": runtime.dispatches,
                                      "usage": usage, "injections": injections}, default=json_default), encoding="utf-8")
     return row
-
-
-def select_tasks(suite_name, count):
-    suite = get_suite(BENCHMARK_VERSION, suite_name)
-    return sorted(suite.user_tasks, key=lambda key: int(key.rsplit("_", 1)[-1]))[:count]
 
 
 def run_matrix(client, judge, config, log_root):
