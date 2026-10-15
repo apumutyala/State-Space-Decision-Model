@@ -42,16 +42,22 @@ Shared rules for every Keel subpackage. Owned by the chief of staff; propose cha
 ## GPU runtime (`keel.runtime`)
 
 - Modal image `vllm_image` (vLLM 0.30.0); model cache volume `ssdm-hf-cache` at `/root/.cache/huggingface`.
-- `MODELS` holds the pinned revisions (`qwen3.5-4b`, `qwen3.5-9b`, `qwen3.5-2b`, `h2o-lightning-4b`).
-- `vllm_judge.score.remote(model_id, revision, jobs, think, n_samples, ...)`:
+- `MODELS` holds the pinned revisions (`qwen3.5-4b`, `qwen3.5-9b`, `qwen3.5-2b`, `h2o-lightning-4b`). A model
+  argument is a `MODELS` key or a checkpoint path on the `keel-results` volume, which is mounted at `/results`. A
+  merged student, for example, lives at `/results/students/<run>/merged` and must be a full HF checkpoint vLLM can load.
+- `vllm_judge.score.remote(model, jobs, think=, n_samples=, max_think=, temperature=, seed=, keep_reasoning=)` is a
+  one-shot batch call:
   - `jobs` = `[{"id", "prompt", "labels"}]`;
-  - returns per job `samples[{logprobs, missing, think_tokens, truncated, reasoning}]`.
-- `vllm_judge.judge(requests, model_key, mode=, think=, canonical=, n_samples=)`:
+  - returns per job `samples[{logprobs, missing, think_tokens, truncated, reasoning}]` plus run metadata.
+- `vllm_judge.JudgeServer(model=...)` is a warm Modal class (`.score.remote(jobs, **same kwargs)`). Use it for
+  adaptive search and other repeated calls; it stays up for 10 minutes after the last call.
+- `vllm_judge.judge(requests, model, mode=, think=, canonical=, n_samples=, server=None)`:
   - call it inside `with vllm_judge.APP.run():`;
   - returns per request `{"probs", "samples", "option_ids", "think_tokens", "reasoning", "meta"}`;
   - it raises if a label log-prob is missing.
+- Smoke check: `python -X utf8 -m keel.runtime.smoke_judge --n 4`.
 - Training images and functions belong to the slice that needs them (e.g. `keel/distill/modal_train.py`). They reuse
-  `hf_cache`.
+  `hf_cache` and write checkpoints to `results_vol`.
 
 ## Data rules
 
