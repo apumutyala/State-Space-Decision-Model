@@ -59,10 +59,15 @@ For each source item:
   event, then authors a JSON addition and changed option ID. The original task,
   rubric and policy stay fixed. A lexical filter excludes instruction/authority
   words, chat delimiters, Unicode format characters, more than 70 words, and
-  more than 500 characters. The addition stays untrusted. Both validation
-  samples must select the changed option. This is same-model sampled
-  validation, **not independent-human validation**; semantic errors remain
-  possible despite the lexical and label checks.
+  more than 500 characters. The addition stays untrusted. Both 9B validation
+  samples must select the changed option. **That agreement is insufficient.**
+  After a hand audit found ambiguous factual conflicts, `evidence_screen.py`
+  additionally requires an executable, explicit later single-field event:
+  the complete log must determine the old answer, its timestamp must increase,
+  its new value must be in the declared domain, and both old/new answers must
+  reconstruct exactly. Only this narrow event-state subpopulation is retained.
+  A separate 4B-thinking sample must also answer both clean and edited records
+  correctly. These are model-assisted checks, **not independent-human labels**.
 - **Policy:** the host supplies an authorized category-reporting remap in
   `OperatorPolicy`: compute the ordinary task result, then map one category to
   another. It changes the reporting rule, never the underlying facts. This is
@@ -83,6 +88,28 @@ The authorship method shares a warm 9B vLLM engine with the standard
 this package; it does not reuse Card evidence templates. Batches checkpoint
 outside git. Reasoning may be budget-truncated, as recorded in the private
 runtime outputs.
+
+### Evidence hand audit and stricter screen
+
+On chief-of-staff request, the distill worker read a random 20 accepted
+training evidence units in full (seed 20261015; population: the first
+512 teacher-accepted evidence units from 1,344 completed training parents).
+Result: **12 valid, 0 definitely invalid, 8 ambiguous**. Seven ambiguities
+were untimed reversals of explicit severity facts; one clean event task did
+not expose its initial queried address. Ambiguities are treated as failures,
+not as valid labels. Audit IDs and decisions stay in the private
+`evidence-audit.json`; committed reports contain aggregate counts only.
+
+The stricter executable screen retained 110/512 in that interim population
+and 6/20 audited units; **all six retained audit units were valid**. It rejects
+severity and access-policy additions rather than pretending to resolve their
+factual conflicts. It also rejects unknown initial state, untimed updates,
+unsupported multi-sentence prose, unchanged answers and wrong reconstructed
+gold. The screen is deliberately incomplete and drops valid paraphrases.
+Final train/pilot yield reports include both this semantic gate and the
+additional 4B-thinking agreement screen. No student pilot result is used to
+select training examples. Teacher-agreement-only evidence results are not the
+final reported evidence-retention population.
 
 ## Student objective and execution
 
@@ -119,8 +146,10 @@ a full HF checkpoint at `/results/students/<run>/merged`.
 The pilot compares student 4B one-pass trust, stock 4B one-pass trust, and
 teacher 9B thinking trust on the same held-out source instances and variants.
 All clean and policy units are evaluated, not filtered for teacher success.
-Evidence is restricted to validated changed-gold additions; teacher pilot
-scoring uses a fresh seed, rather than reusing validation samples.
+Evidence is restricted to the executable-event and cross-model-screened
+changed-gold additions. Teacher pilot scoring uses a fresh seed, rather than
+reusing validation samples. Cached baseline outputs on the earlier superset
+are scored only on the final retained units, never counted as extra trials.
 
 - Clean accuracy: source-gold correctness on all pilot parents.
 - ASR: targeted success over attack trials whose **same model** clean decision
@@ -148,16 +177,22 @@ python -X utf8 -m keel.distill.teacher \
 python -X utf8 -m keel.distill.teacher \
   --sources /home/alp/ssdm-direction/distill_v0/data/pilot.jsonl.gz \
   --out /home/alp/ssdm-direction/distill_v0/teacher-pilot
+python -X utf8 -m keel.distill.evidence_screen \
+  --teacher-dir /home/alp/ssdm-direction/distill_v0/teacher-train \
+  --out /home/alp/ssdm-direction/distill_v0/teacher-train-screened
+python -X utf8 -m keel.distill.evidence_screen \
+  --teacher-dir /home/alp/ssdm-direction/distill_v0/teacher-pilot \
+  --out /home/alp/ssdm-direction/distill_v0/teacher-pilot-screened
 python -X utf8 -m keel.distill.modal_train \
   --smoke-sources /home/alp/ssdm-direction/distill_v0/data/train.jsonl.gz \
   --run distill-v0-20261015-smoke --out /home/alp/ssdm-direction/distill_v0/smoke-train.json
 python -X utf8 -m keel.distill.modal_train \
-  --labels /home/alp/ssdm-direction/distill_v0/teacher-train/labels.jsonl.gz \
+  --labels /home/alp/ssdm-direction/distill_v0/teacher-train-screened/labels.jsonl.gz \
   --run distill-v0-20261015 --out /home/alp/ssdm-direction/distill_v0/train.json
 python -X utf8 -m keel.distill.pilot \
   --train-sources /home/alp/ssdm-direction/distill_v0/data/train.jsonl.gz \
   --pilot-sources /home/alp/ssdm-direction/distill_v0/data/pilot.jsonl.gz \
-  --teacher-dir /home/alp/ssdm-direction/distill_v0/teacher-pilot \
+  --teacher-dir /home/alp/ssdm-direction/distill_v0/teacher-pilot-screened \
   --student /results/students/distill-v0-20261015/merged \
   --private-out /home/alp/ssdm-direction/distill_v0/pilot \
   --aggregate-out direction/experiments/distill_v0/pilot.json
@@ -168,8 +203,9 @@ The CPU suite exercises template disjointness and an evaluation-template
 canary, wrong targets across all types, trust-channel separation, a planted
 JevBench-overlap fixture and disabled-gate rejection, split leakage, lexical
 counterfactual filters, exact KL/CE against hand calculation, real tiny-model
-gradients and nonlabel exclusion, masked labels, teacher filtering, and
-cluster-bootstrap metric denominators. Initial run: **30 passed in 2.09 s**.
+gradients and nonlabel exclusion, masked labels, teacher filtering, executable
+later-event counterfactual semantics, cross-model validation requirements, and
+cluster-bootstrap metric denominators. **41 passed in 1.77 s**.
 
 ## Paid-run log
 
@@ -183,6 +219,9 @@ conservatively overstate actual GPU billing; they are not invoice amounts.
 | 2026-10-15 | 9B pilot evidence authorship + two-sample validation | 6.748 | $0.444 | 192 held-out sources; 82 validated evidence counterfactuals. |
 | 2026-10-15 | CUDA 13 training-image build | 3.444 | $0.227 | CPU-only build failed because default `clang++` was absent. Fixed by explicitly selecting installed GCC/G++. Actual GPU allocation: zero. |
 | 2026-10-15 | Corrected `train_remote(smoke=True)`, torch 2.14.1 | 12.712 | $0.837 | Eight rows, two real forward/backward microbatches and one optimizer update; finite gradient norm 19.03; 10.35 GB peak GPU allocation. Includes a 619.6-second CPU wheel build. |
+| 2026-10-15 | Stock 4B one-pass pilot | 2.575 | $0.170 | Scored 192 parent groups; final evidence metrics reuse only the screened subset. |
+| 2026-10-15 | Fresh 9B-thinking pilot | 5.604 | $0.369 | Two samples; independent seed from teacher validation. |
+| 2026-10-15 | 4B-thinking pilot evidence crosscheck | 3.243 | $0.214 | 82 teacher-accepted → 14 executable-event candidates → 14 cross-model validated. |
 
 The initial numerical check exposed FLA's explicit correctness guard for
 Hopper's `chunk_bwd_dqkwg` kernel with Triton 3.4–3.7.0. The fix upgrades the

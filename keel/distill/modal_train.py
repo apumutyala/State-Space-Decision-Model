@@ -61,6 +61,8 @@ def main() -> None:
             rows.append(u)
     else:
         rows = read_rows(a.labels)
+        from keel.distill.evidence_screen import require_screened_evidence
+        require_screened_evidence(rows)
     start = time.time()
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)

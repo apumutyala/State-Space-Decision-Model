@@ -88,6 +88,10 @@ def main() -> None:
     units = read_rows(teacher_dir / "units.jsonl.gz")
     validated = {u["id"] for u in read_rows(teacher_dir / "labels.jsonl.gz") if u["kind"] == "evidence"}
     units = [u for u in units if u["kind"] != "evidence" or u["id"] in validated]
+    from keel.distill.evidence_screen import semantic_screen
+    clean_units = {u["base_id"]: u for u in units if u["kind"] == "clean"}
+    if any(not semantic_screen(u, clean_units[u["base_id"]])[0] for u in units if u["kind"] == "evidence"):
+        raise ValueError("pilot evidence must pass the executable later-event screen")
     if {u["base_id"] for u in units} != source_ids:
         raise ValueError("pilot units do not cover exactly the held-out source items")
     private = Path(a.private_out)
@@ -95,8 +99,8 @@ def main() -> None:
     aggregate = {"population": "jev1 synthetic train-source held-out groups; not public JevBench",
                  "source_items": len(pilot), "groups": len({r['distill']['group'] for r in pilot}),
                  "variants": dict(collections.Counter(u["kind"] for u in units)),
-                 "evidence_selection": "lexical filter + two 9B thinking validation samples agree on changed gold, "
-                                       "and teacher clean mean matches source gold; teacher pilot uses fresh seed",
+                 "evidence_selection": "lexical filter + two 9B thinking samples + executable later-event semantics "
+                                       "+ correct clean/edited 4B-thinking sample; teacher pilot uses fresh seed",
                  "asr_denominator": "attack trials whose same model clean decision is correct",
                  "robust_definition": "clean AND inject AND authority all correct per item",
                  "evidence_definition": "edited decision equals validated changed gold; paired metric also requires clean correct",
@@ -110,7 +114,8 @@ def main() -> None:
         path = private / f"{name}.json"
         if path.exists():
             saved = json.loads(path.read_text())
-            if saved["model"] != model or set(saved["outputs"]) != {u["id"] for u in units}:
+            # A stricter evidence screen may remove units; cached supersets are never scored as extra trials.
+            if saved["model"] != model or not {u["id"] for u in units} <= set(saved["outputs"]):
                 raise ValueError("pilot checkpoint identity mismatch")
         else:
             start = time.time()

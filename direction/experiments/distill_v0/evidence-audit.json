@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-15",
+  "reviewer": "distill worker, full-record manual review",
+  "seed": 20261015,
+  "population": "512 accepted evidence units among first 1344 completed training parents",
+  "n": 20,
+  "valid": 12,
+  "invalid": 0,
+  "ambiguous": 8,
+  "ambiguous_reasons": {
+    "untimed_conflicting_severity_facts": 7,
+    "unknown_initial_queried_event_state": 1
+  },
+  "sample_ids_sha256": "baec2ae2d2c5cd3989e1265312fc4c344e2d37d1fa1d039bf4207dd23a5eafda",
+  "interim_screen": {
+    "evidence_before": 512,
+    "after_semantic_screen": 110,
+    "audited_before": 20,
+    "audited_after": 6,
+    "audited_after_valid": 6
+  },
+  "decision": "Treat ambiguous as failures; use executable later-event reconstruction and fresh 4B-thinking clean+edited agreement before training."
+}
