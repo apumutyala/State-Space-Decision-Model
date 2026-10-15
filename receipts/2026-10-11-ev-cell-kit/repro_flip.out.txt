@@ -1,0 +1,1 @@
+﻿REPRODUCED: 77/77 flip values exactly equal (qwen35_4b_shim average 7.55%)

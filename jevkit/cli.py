@@ -131,7 +131,8 @@ def cmd_perturb(a: argparse.Namespace) -> int:
         seeds = [int(x) for x in a.seeds.split(",")]
         ps = perturb.make_perturbations(items, ops, seeds)
         with open(a.out, "w", encoding="utf-8", newline="\n") as fh:
-            fh.writelines(json.dumps(p.to_dict(), ensure_ascii=False, sort_keys=True) + "\n" for p in ps)
+            # no sort_keys: sorted keys undid option_reverse / option_shuffle on disk (B-PREREG-FLIP amendment 1)
+            fh.writelines(json.dumps(p.to_dict(), ensure_ascii=False) + "\n" for p in ps)
         counts: dict[str, int] = {}
         for p in ps:
             counts[p.op] = counts.get(p.op, 0) + 1
