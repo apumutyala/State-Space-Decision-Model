@@ -1,4 +1,4 @@
-"""One H100: vLLM OpenAI agent server (55%) + in-process Keel judge (30%)."""
+"""One H100: local vLLM agent; a 4B judge is loaded only for judgment arms."""
 from __future__ import annotations
 
 import argparse
@@ -101,6 +101,7 @@ def evaluate(config: dict, run_id: str):
             meta["agent_load_s"] = time.monotonic() - start
             judge = (LocalJudge(config.get("judge_max_think", 1024))
                      if any(arm in ("keel", "keel_think") for arm in config["arms"]) else None)
+            meta["judge_used"] = judge is not None
             meta["total_load_s"] = time.monotonic() - start
             client = EndpointClient("http://127.0.0.1:8000/v1", model, max_tokens=config.get("max_tokens", 1024))
             rows = run_matrix(client, judge, config, root)
@@ -108,7 +109,7 @@ def evaluate(config: dict, run_id: str):
             meta["errors"] = sum(row["error"] is not None for row in rows)
             meta["executed_calls"] = sum(row["executed_calls"] for row in rows)
             meta["dispatch_errors"] = sum(row["dispatch_errors"] for row in rows)
-            if judge is not None:
+            if any(row["receipt_chain_verified_count"] is not None for row in rows):
                 from .audit import verify_run
                 meta["receipt_verification"] = verify_run(root, sample_size=20, seed=20261015)
             meta["completed"] = True

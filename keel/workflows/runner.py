@@ -25,10 +25,11 @@ from keel.protocol.receipts import ReceiptLog
 from keel.runtime.modal_app import MODELS
 
 from .gate_element import KeelGateElement
+from .oracle import ORACLE_ARMS, OracleAuthorityElement, task_argument_policy
 
 AGENTDOJO_VERSION = "0.1.35"
 BENCHMARK_VERSION = "v1.2.2"
-ARMS = ("none", "spotlighting_with_delimiting", "repeat_user_prompt", "tool_filter", "keel", "keel_think")
+ARMS = ("none", "spotlighting_with_delimiting", "repeat_user_prompt", "tool_filter", "keel", "keel_think", *ORACLE_ARMS)
 
 
 def json_default(value):
@@ -110,24 +111,31 @@ class CountProposals:
         return self.executor.query(query, runtime, env, messages, extra_args)
 
 
-def make_pipeline(client, arm, user_task, episode_id, log_root, judge=None, *, authorized_actions):
+def make_pipeline(client, arm, user_task, episode_id, log_root, judge=None, *, authorized_actions, argument_policy=None):
     if arm not in ARMS:
         raise ValueError(f"unknown arm {arm}")
     llm = OpenAILLM(client, client.model)
     llm.name = client.model
-    config = PipelineConfig(llm=llm, model_id=client.model, defense=None if arm in ("none", "keel", "keel_think") else arm,
+    config = PipelineConfig(llm=llm, model_id=client.model,
+                            defense=None if arm in ("none", "keel", "keel_think", *ORACLE_ARMS) else arm,
                             system_message_name=None, system_message=None)
     pipeline = AgentPipeline.from_config(config)
     gate = None
     loop = next(element for element in pipeline.elements if isinstance(element, ToolsExecutionLoop))
     elements = list(loop.elements)
-    if arm in ("keel", "keel_think"):
+    if arm in ORACLE_ARMS:
+        if argument_policy is None:
+            raise ValueError("ORACLE arm requires trusted task-ground-truth grants")
+        gate = OracleAuthorityElement(user_task, ReceiptLog(Path(log_root) / "receipts.jsonl"), episode_id,
+                                      arm=arm, argument_policy=argument_policy)
+    elif arm in ("keel", "keel_think"):
         if judge is None:
             raise ValueError("Keel arm requires a judge")
         model_id, revision = MODELS["qwen3.5-4b"]
         gate = KeelGateElement(user_task, judge, ReceiptLog(Path(log_root) / "receipts.jsonl"), episode_id,
                                authorized_actions=authorized_actions, model_id=model_id, model_revision=revision,
                                think=arm == "keel_think")
+    if gate is not None:
         elements[0] = gate
     counter = CountProposals(elements[0])
     elements[0] = counter
@@ -151,8 +159,10 @@ def run_episode(client, judge, suite_name, task_id, injection_id, arm, log_root)
     task = suite.get_user_task_by_id(task_id)
     injection = suite.get_injection_task_by_id(injection_id) if injection_id else None
     episode_id = f"{suite_name}/{arm}/{task_id}/{injection_id or 'benign'}"
+    oracle_policy = task_argument_policy(suite, task) if arm in ORACLE_ARMS else None
     pipeline, gate, counter = make_pipeline(client, arm, task.PROMPT, episode_id, log_root, judge,
-                                           authorized_actions=tuple(tool.name for tool in suite.tools))
+                                           authorized_actions=tuple(tool.name for tool in suite.tools),
+                                           argument_policy=oracle_policy)
     injections = standard_attack(suite, pipeline).attack(task, injection) if injection else {}
     env = task.init_environment(suite.load_and_inject_default_environment(injections))
     pre = env.model_copy(deep=True)
@@ -187,6 +197,10 @@ def run_episode(client, judge, suite_name, task_id, injection_id, arm, log_root)
         "targeted_asr": target if injection else None, "proposed_calls": counter.proposals,
         "executed_calls": len(runtime.executed), "dispatch_errors": sum(d["error"] is not None for d in runtime.dispatches),
         "gated_calls": len(outcomes), "held_calls": holds, "review_episode": holds > 0,
+        # held_calls retains v0's combined-block convention. These disjoint
+        # fields distinguish policy holds from structural tool-name denials.
+        "policy_held_calls": sum(o.status in ("held", "deferred") for o in outcomes),
+        "denied_calls": sum(o.status == "denied" for o in outcomes),
         "hold_rate": holds / counter.proposals if counter.proposals else 0.0,
         "latency_s": elapsed, "warm_gpu_cost_usd": elapsed * 3.95 / 3600,
         "agent_requests": len(usage), "completion_truncations": sum(u["finish_reason"] == "length" for u in usage),

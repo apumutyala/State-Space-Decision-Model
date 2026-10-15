@@ -79,9 +79,11 @@ class KeelGateElement(BasePipelineElement):
     No human reviews are serviced: capacity zero holds every deferred call.
     """
 
-    def __init__(self, user_task: str, judge: Callable[[Rendered], JudgeEvaluation], receipt_log: ReceiptLog,
+    def __init__(self, user_task: str, judge: Callable[[Rendered], JudgeEvaluation] | None, receipt_log: ReceiptLog,
                  episode_id: str, *, authorized_actions: Sequence[str], model_id: str, model_revision: str,
-                 executor=None, think: bool = False):
+                 executor=None, think: bool = False, policy: OperatorPolicy = POLICY,
+                 gate_version: str = "keel-workflow-gate/0.1",
+                 calibration_id: str = "uncertified-label-argmax-tie-holds"):
         if receipt_log.path is None:
             raise ValueError("workflow receipts require a disk-backed ReceiptLog")
         self.user_task = user_task
@@ -96,14 +98,37 @@ class KeelGateElement(BasePipelineElement):
         self._executed = None
         actions = tuple(sorted(authorized_actions))
         self.kernel = HostKernel(
-            Authority(replace(POLICY, authorized_actions=actions), {"suite-agent": actions},
+            Authority(replace(policy, authorized_actions=actions), {"suite-agent": actions},
                       {"agent": ("suite-agent",)}),
             principal="agent", executor=self._dispatch, receipt_log=receipt_log, review_capacity=0,
-            model_id=model_id, model_revision=model_revision, gate_version="keel-workflow-gate/0.1",
-            calibration_id="uncertified-label-argmax-tie-holds",
+            model_id=model_id, model_revision=model_revision, gate_version=gate_version,
+            calibration_id=calibration_id,
         )
         self.request_dir = receipt_log.path.parent / "requests"
         self.request_dir.mkdir(parents=True, exist_ok=True)
+
+    def _request(self, history, call):
+        return build_request(self.kernel, self.user_task, history, call,
+                             f"{self.episode_id}:{len(self.outcomes)}")
+
+    def _evaluate(self, request, call):
+        if self.judge is None:
+            raise ValueError("Keel judgment requires a judge")
+        rendered = render(request, mode="trust", think=self.think)
+        start = time.perf_counter()
+        evaluated = self.judge(rendered)
+        self.judge_latency_s += time.perf_counter() - start
+        probs = dict(evaluated.probabilities)
+        if (set(probs) != {"allow", "hold"} or
+                any(not math.isfinite(p) or not 0 <= p <= 1 for p in probs.values()) or
+                not math.isclose(sum(probs.values()), 1, abs_tol=1e-8, rel_tol=0)):
+            raise ValueError("judge must return finite normalized allow/hold probabilities")
+        nested = _has_nested_call(call.args)
+        allow = probs["allow"] > probs["hold"] and not nested
+        reasons = [] if allow else ["nested_calls_not_supported" if nested else "judge_hold_or_tie"]
+        decision = DecisionResult(request.request_id, {"q": Answer("q", probs, "allow" if allow else "hold")},
+                                  act=allow, defer_reasons=reasons)
+        return decision, evaluated.prompts
 
     def _dispatch(self, proposal: ActionProposal):
         """Kernel callback; dispatch its snapshotted arguments, not mutable model data."""
@@ -121,22 +146,8 @@ class KeelGateElement(BasePipelineElement):
         history = list(messages)
         assistant = messages[-1]
         for call in assistant["tool_calls"]:
-            request = build_request(self.kernel, self.user_task, history, call,
-                                    f"{self.episode_id}:{len(self.outcomes)}")
-            rendered = render(request, mode="trust", think=self.think)
-            start = time.perf_counter()
-            evaluated = self.judge(rendered)
-            self.judge_latency_s += time.perf_counter() - start
-            probs = dict(evaluated.probabilities)
-            if (set(probs) != {"allow", "hold"} or
-                    any(not math.isfinite(p) or not 0 <= p <= 1 for p in probs.values()) or
-                    not math.isclose(sum(probs.values()), 1, abs_tol=1e-8, rel_tol=0)):
-                raise ValueError("judge must return finite normalized allow/hold probabilities")
-            nested = _has_nested_call(call.args)
-            allow = probs["allow"] > probs["hold"] and not nested
-            reasons = [] if allow else ["nested_calls_not_supported" if nested else "judge_hold_or_tie"]
-            decision = DecisionResult(request.request_id, {"q": Answer("q", probs, "allow" if allow else "hold")},
-                                      act=allow, defer_reasons=reasons)
+            request = self._request(history, call)
+            decision, prompts = self._evaluate(request, call)
             proposal = ActionProposal(call.function, call.model_dump(mode="json")["args"], "agent",
                                       tuple(segment.segment_id for segment in request.segments))
             # Retain replay inputs separately from the sole decision log (ReceiptLog).
@@ -148,7 +159,7 @@ class KeelGateElement(BasePipelineElement):
             self._pending = (query, runtime, env, history, assistant, call.id, extra_args)
             self._executed = None
             try:
-                outcome = self.kernel.process(request, proposal, decision, prompts=evaluated.prompts)
+                outcome = self.kernel.process(request, proposal, decision, prompts=prompts)
             finally:
                 self._pending = None
             self.outcomes.append(outcome)

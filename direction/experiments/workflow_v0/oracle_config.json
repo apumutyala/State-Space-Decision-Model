@@ -1,0 +1,32 @@
+{
+  "purpose": "v0.2 ORACLE task-scoped authority: upper bounds assuming a perfect trusted planner, not deployable defenses",
+  "agentdojo": "0.1.35",
+  "benchmark_version": "v1.2.2",
+  "vllm": "0.30.0",
+  "agent": {"model": "Qwen/Qwen3.5-9B", "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a", "thinking": false},
+  "judge": null,
+  "arms": ["oracle_tool_authority", "oracle_arg_authority"],
+  "arm_labels": {"oracle_tool_authority": "ORACLE tool authority", "oracle_arg_authority": "ORACLE argument authority"},
+  "attack": "important_instructions",
+  "attack_model_name_substitution": "Qwen3.5-9B",
+  "max_tokens": 1024,
+  "temperature": 0.0,
+  "seed": 0,
+  "tool_loop_max_iters": 15,
+  "max_model_len": 32768,
+  "gpu": "H100",
+  "memory_fractions": {"agent_server": 0.55, "judge_in_process": 0},
+  "tool_call_parser": "qwen3_coder",
+  "reasoning_parser": "qwen3",
+  "chat_template": "Model-native pinned revision, enable_thinking=false",
+  "authority": {"source": "User-task ground_truth() on an isolated clean task-initialized environment, before any attack injection", "principal": "agent", "role": "suite-agent", "policy_authorized_actions": "ground-truth call tool names", "role_grants": "same ground-truth tool names", "review_capacity": 0},
+  "argument_policy": {"version": "oracle-ground-truth-arguments/1", "rule": "Match all fixed arguments from at least one complete ground-truth call; no cross-product of independently allowed values", "fixed": "All supplied literal arguments, including dates, subjects, read limits and literal message bodies", "free": "Omitted ground-truth arguments; body equal to '<summary>' or '...' only in send_direct_message/send_channel_message ground truth", "missing_proposal_arguments": "Use trusted tool-schema defaults where present, without coercing explicitly supplied values", "numeric_equality": "Equal int/float JSON numbers; booleans and strings never coerced", "ordering_and_multiplicity": "Unconstrained", "denial_reason": "argument-policy: outside oracle grant"},
+  "receipts": {"schema": "keel-receipt/1", "path": "receipts.jsonl", "disk_backed": true, "verify_after_each_episode": true, "random_replay_count": 20, "replay_seed": 20261015, "model_id": "none:oracle-policy", "prompt_manifest": "Audit-only deterministic render required by receipt v1; no model queried; 0/1 values encode policy outcomes, not probabilities"},
+  "function_timeout_seconds": 4800,
+  "spend_cap_usd": 6,
+  "bootstrap": {"cluster": "user_task", "draws": 10000, "seed": 20261015, "level": 0.95},
+  "suites": {
+    "banking": {"user_tasks": ["user_task_0", "user_task_1", "user_task_2", "user_task_3", "user_task_4", "user_task_5", "user_task_6", "user_task_7", "user_task_8", "user_task_9", "user_task_10", "user_task_11"], "injection_tasks": ["injection_task_0", "injection_task_1"]},
+    "slack": {"user_tasks": ["user_task_0", "user_task_1", "user_task_2", "user_task_3", "user_task_4", "user_task_5", "user_task_6", "user_task_7", "user_task_8", "user_task_9", "user_task_10", "user_task_11"], "injection_tasks": ["injection_task_1", "injection_task_2"]}
+  }
+}

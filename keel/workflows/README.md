@@ -4,6 +4,8 @@ This package runs a real tool-using agent against AgentDojo's simulated banking 
 
 ## Implementation
 
+The following bullets describe judgment arms; the v0.2 section below describes no-judge ORACLE references.
+
 - `gate_element.py` replaces AgentDojo's `ToolsExecutor`. It judges **each proposed call before dispatch**, including calls before the first tool output and each member of a multi-call batch, then routes it through `keel.host.HostKernel`. Only the kernel's executor callback can invoke the real AgentDojo dispatcher. Earlier outputs in the same batch are visible to later decisions.
 - All segments come from `kernel.inputs`: the authenticated user task is trusted metadata; every prior tool result is untrusted `tool_output`; the proposed call is derived through `.derive` from untrusted outputs (or no parents before any output). Host policy text is unchanged from v0, but structural `authorized_actions` and the host-bound `agent` role grants are explicitly the suite's tool names. Neither injected tool names nor model approval can expand that set.
 - `keel.protocol.render(mode="trust")` uses the existing escaped untrusted-record boundary. The Qwen3.5-4B judge reads one token's raw label log-probabilities, normalized only over allow/hold, exactly as the shared judge runtime. `p(allow) > p(hold)` allows; ties hold. No workflow-specific training or threshold tuning is performed.
@@ -15,7 +17,7 @@ This package runs a real tool-using agent against AgentDojo's simulated banking 
 
 ## Architecture and dependencies
 
-A single Modal H100 runs a localhost vLLM OpenAI-compatible server for Qwen3.5-9B (55% GPU memory) and an in-process Qwen3.5-4B label judge (30%). Both use 32,768-token contexts, eager execution and the shared `ssdm-hf-cache` volume. This avoids cross-container per-call latency and paying for a second GPU. The judge is not a concurrent agent: episodes and their calls run sequentially. Raw logs persist on `keel-results` under `workflow/<run-id>` and are downloaded to `$SSDM_PRIVATE/workflow/<run-id>/` (default `~/ssdm/private`).
+For judgment arms, a single Modal H100 runs a localhost vLLM OpenAI-compatible server for Qwen3.5-9B (55% GPU memory) and an in-process Qwen3.5-4B label judge (30%). Both use 32,768-token contexts, eager execution and the shared `ssdm-hf-cache` volume. This avoids cross-container per-call latency and paying for a second GPU. The judge is not a concurrent agent: episodes and their calls run sequentially. Raw logs persist on `keel-results` under `workflow/<run-id>` and are downloaded to `$SSDM_PRIVATE/workflow/<run-id>/` (default `~/ssdm/private`).
 
 Pinned dependencies: `agentdojo==0.1.35`, `vllm==0.30.0`; shared Modal environment uses Modal 1.5.3. Agent and judge revisions are read from `keel.runtime.modal_app.MODELS` and written to every run record. The native Qwen3.5 chat template is paired with `qwen3_coder` tool-call parser and `qwen3` reasoning parser, as recommended by the [Qwen model card](https://huggingface.co/Qwen/Qwen3.5-9B#deployment). Agent thinking is disabled, generation is greedy (`temperature=0`, seed 0, at most 1,024 output tokens). AgentDojo maps system messages to OpenAI's developer role; the endpoint adapter maps these back to Qwen's system role and explicitly sends zero temperature for **all** arms and tool-filter queries.
 
@@ -92,3 +94,26 @@ The full CIs and latency/cost tables are in the results README's v0.1 section an
 
 This follow-up's sole paid allocation used **17.8653 H100-minutes / $1.1761 estimated**, below its separate **$8 cap**; no other v0.1 allocations were launched. `host_run_summary.json` records exact accounting and `host_audit.json` pins the receipt head and comparison totals. Executable source for the rerun is `6ae7af5f`; private logs are at `$SSDM_PRIVATE/workflow/workflow-host-v01-20261015a/`. The original v0 tables, aggregate and $25-cap ledger remain unchanged as historical evidence.
 
+
+## v0.2: oracle task-scoped authority
+
+`oracle.py` adds **ORACLE tool authority** and **ORACLE argument authority**: privileged upper-bound references assuming a perfect trusted planner, **not deployable defenses**. Both derive host grants from the user task's `ground_truth()` on isolated clean state before any attack injection, never from model output or attacked environment. Only the pinned 9B actor is loaded; there is no judge. The actor's prompt, generation parameters, available tool schemas and held response remain unchanged.
+
+The tool arm structurally denies names outside ground truth and passes every in-grant proposal through the existing kernel-only dispatcher. The argument arm additionally uses versioned `ArgumentPolicy` (`oracle-ground-truth-arguments/1`) to match all fixed values from one complete ground-truth call. Mismatches submit `act=False` with `argument-policy: outside oracle grant`; kernel receipts and hold/no-dispatch apply normally. Missing proposal fields use trusted tool defaults; explicit values are never type-coerced. Omitted ground-truth fields and Slack message-body placeholders `<summary>`/`...` remain free. Order and multiplicity are unconstrained. The full per-suite argument inventory and ground-truth-quality caveats are in the results README.
+
+Host/protocol code is unchanged. Receipt v1's required render manifest is an **audit-only serialization**, explicitly identified by `model_id=none:oracle-policy`; its one-hot fields encode a deterministic policy result, not judge predictions. Trusted grant metadata binds the constraints to the saved request. `audit.py` verifies chains and replay inputs without a `--reference` argument; the optional reference comparison remains available for the historical v0.1 experiment.
+
+```sh
+source ~/ssdm/env.sh
+python -X utf8 -m pytest -q keel/tests
+python -X utf8 -m keel.workflows.modal_run \
+  --config direction/experiments/workflow_v0/oracle_config.json --run-id UNIQUE-oracle
+python -X utf8 -m keel.workflows.audit \
+  --run-dir "$SSDM_PRIVATE/workflow/UNIQUE-oracle" \
+  --output direction/experiments/workflow_v0/oracle_audit.json
+python -X utf8 -m keel.workflows.aggregate \
+  --episodes "$SSDM_PRIVATE/workflow/UNIQUE-oracle/episodes.jsonl" \
+  --output direction/experiments/workflow_v0/oracle_aggregate.json
+```
+
+CPU acceptance: **459 passed**. New tests cover whole-call constraint pairing, exact values without bool/string coercion, immutable grant snapshots, genuine tool defaults, every selected task's clean ground truth, structural tool denial, argument denial despite an allowed tool name, free-body residual exposure, nested-call prevention, receipt replay and separate held/denied aggregation. Dispatch tests use real AgentDojo functions and real kernel/receipt storage, not a fake oracle judge.

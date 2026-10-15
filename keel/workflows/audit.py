@@ -79,15 +79,16 @@ def compare_v0(root, reference):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-dir", required=True)
-    parser.add_argument("--reference", required=True)
+    parser.add_argument("--reference", help="Optional frozen v0 run for the one-pass integration comparison.")
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
     run = json.loads((Path(args.run_dir) / "run.json").read_text())
     expected = LogCheckpoint(**run["receipt_verification"]["checkpoint"])
     report = {"receipts": verify_run(args.run_dir, expected=expected),
-              "comparison": compare_v0(args.run_dir, args.reference),
               "run_id": run["run_id"], "gpu_minutes_estimate": run["gpu_minutes_estimate"],
               "cost_usd_estimate": run["cost_usd_estimate"]}
+    if args.reference:
+        report["comparison"] = compare_v0(args.run_dir, args.reference)
     Path(args.output).write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))
 

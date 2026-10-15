@@ -43,15 +43,22 @@ def summarize(rows, *, draws=10000, seed=20261015):
         groups[(row["suite"], row["arm"])].append(row)
     results = []
     for (suite, arm), group in sorted(groups.items()):
-        result = {"suite": suite, "arm": arm, "episodes": len(group),
+        result = {"suite": suite, "arm": arm, "arm_label": f"ORACLE {arm}" if arm.startswith("oracle_") else arm,
+                  "episodes": len(group),
                   "errors": sum(row["error"] is not None for row in group),
                   "dispatch_errors": sum(row["dispatch_errors"] for row in group),
                   "completion_truncations": sum(row["completion_truncations"] for row in group)}
+        if "policy_held_calls" in group[0]:
+            result["call_counts"] = {key: sum(row[key] for row in group) for key in
+                                     ("proposed_calls", "executed_calls", "policy_held_calls", "denied_calls")}
         for attacked, prefix in [(False, "benign"), (True, "attacked")]:
             subset = [row for row in group if row["attacked"] == attacked]
             metrics = {"utility": ("utility", None), "hold_rate": ("held_calls", "proposed_calls"),
                        "review_episode": ("review_episode", None), "latency_s": ("latency_s", None),
                        "warm_gpu_cost_usd": ("warm_gpu_cost_usd", None)}
+            if "policy_held_calls" in subset[0]:
+                metrics["policy_hold_rate"] = ("policy_held_calls", "proposed_calls")
+                metrics["denied_rate"] = ("denied_calls", "proposed_calls")
             if attacked:
                 metrics["targeted_asr"] = ("targeted_asr", None)
             for name, (numerator, denominator) in metrics.items():
@@ -76,17 +83,27 @@ def main():
     rows = [json.loads(line) for path in args.episodes for line in Path(path).read_text().splitlines() if line.strip()]
     aggregate = summarize(rows)
     Path(args.output).write_text(json.dumps(aggregate, indent=2) + "\n")
-    print("| Suite | Arm | Benign utility | Attacked utility | Targeted ASR | Hold benign | Hold attacked |")
+    print("| Suite | Arm | Benign utility | Attacked utility | Targeted ASR | Blocked benign | Blocked attacked |")
     print("|---|---|---:|---:|---:|---:|---:|")
     keys = ("benign_utility", "attacked_utility", "attacked_targeted_asr", "benign_hold_rate", "attacked_hold_rate")
     for result in aggregate["results"]:
-        print("| " + " | ".join([result["suite"], result["arm"], *[format_stat(result[k]) for k in keys]]) + " |")
+        print("| " + " | ".join([result["suite"], result["arm_label"], *[format_stat(result[k]) for k in keys]]) + " |")
     print("\n| Suite | Arm | Benign seconds | Attacked seconds | Benign warm GPU $ | Attacked warm GPU $ |")
     print("|---|---|---:|---:|---:|---:|")
     for result in aggregate["results"]:
         times = [format_stat(result[f"{condition}_latency_s"], percent=False) for condition in ("benign", "attacked")]
         costs = [f"{result[f'{condition}_warm_gpu_cost_usd']['estimate']:.4f}" for condition in ("benign", "attacked")]
-        print("| " + " | ".join([result["suite"], result["arm"], *times, *costs]) + " |")
+        print("| " + " | ".join([result["suite"], result["arm_label"], *times, *costs]) + " |")
+    if any("benign_policy_hold_rate" in result for result in aggregate["results"]):
+        print("\n| Suite | Arm | Held benign | Held attacked | Denied benign | Denied attacked |")
+        print("|---|---|---:|---:|---:|---:|")
+        keys = ("benign_policy_hold_rate", "attacked_policy_hold_rate", "benign_denied_rate", "attacked_denied_rate")
+        for result in aggregate["results"]:
+            if "benign_policy_hold_rate" not in result:
+                continue
+            values = [f"{int(result[k]['numerator'])}/{int(result[k]['denominator'])}; {format_stat(result[k])}"
+                      for k in keys]
+            print("| " + " | ".join([result["suite"], result["arm_label"], *values]) + " |")
 
 
 if __name__ == "__main__":
