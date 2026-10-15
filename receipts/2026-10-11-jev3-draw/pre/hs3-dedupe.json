@@ -1,0 +1,6 @@
+{
+ "hs3_rows": 1508,
+ "dropped_prompt_in_helpsteer2": 20,
+ "helpsteer2_prompt_turns": 25860,
+ "rule": "any user turn of the HelpSteer3 context equals (jev1.norm) a HelpSteer2 train/preference prompt turn"
+}

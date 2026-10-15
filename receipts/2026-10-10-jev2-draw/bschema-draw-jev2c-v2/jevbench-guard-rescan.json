@@ -1,0 +1,28 @@
+{
+ "identity": {
+  "enabled": true,
+  "index_sha256": "0fe994c40dfc70fa3a0cd711fa88abb7f439cb8f2546ecffd53e5ca232d3934b",
+  "fingerprint_arrays_sha256": "211da3f1d3c68fbfc48fc3dbdd72cfd0c6dcf723f47e4628a7f6f5f506c2c55c",
+  "exact_segments_sha256": "f9b94122d36e8b730cc18dc122d4fe65ff789a42072ca86ecebee207fdb5049d",
+  "pin_sha256": "e317bbb6aa541f5b9c26e038359036dc9d3f7039b410060fafa3bfe1bf2db49f",
+  "source_commit": "b6b8fff7e345b98c060ad26c13308860ddc67004"
+ },
+ "draws": {
+  "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\bschema-draw-jev2c-v2\\records.jsonl.gz": {
+   "n_records": 1500,
+   "records_sha256": "42976c8f11c99aa32556d709cf12d49f88eb2f12ffc77473fdab60bd8d9c9dea",
+   "jevbench_doc_fail": 0,
+   "jevbench_doc_fails": [],
+   "jevbench_exact_segment_rows": 0,
+   "jevbench_training_gate_fail": 0,
+   "jevbench_training_gate_fail_ids": [],
+   "jevbench_exact_segment_ids": [],
+   "jevbench_fingerprint_rows_hit": 0,
+   "jevbench_fingerprint_hits_by_matcher": {},
+   "jevbench_fingerprint_examples": [],
+   "fingerprint_records_checked": 1500,
+   "n_boilerplate": 0,
+   "n_template_grams": 0
+  }
+ }
+}

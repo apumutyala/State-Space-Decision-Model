@@ -1,0 +1,1304 @@
+{
+ "records": [
+  "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw-jev3-work/checked.jsonl.gz"
+ ],
+ "n": 11800,
+ "n_hit": 171,
+ "by_family_matcher": {
+  "ambiguous/minhash": 47,
+  "ambiguous/exact": 29,
+  "ambiguous/edit": 1,
+  "temporal_numeric/exact": 77,
+  "temporal_numeric/minhash": 114,
+  "temporal_numeric/edit": 10,
+  "long_policy/minhash": 6,
+  "long_policy/exact": 1
+ },
+ "index_fingerprint": {
+  "version": "ssdm-dedup-v3",
+  "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+  "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+  "rows": 155390
+ },
+ "rule": "data.dedup.Fingerprint.check(state, questions) on the full row (all matchers: exact, ngram13, minhash, edit, contain)",
+ "hits": {
+  "m2:ambignq:6302408864264805884~view:jev3-amb-k3": {
+   "minhash": [
+    61
+   ]
+  },
+  "m2:ambignq:-2307081186930621387~view:jev3-amb-k3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    6,
+    24
+   ]
+  },
+  "m2:ambignq:4818571790297253202~view:jev3-amb-k4": {
+   "exact": [
+    33
+   ],
+   "minhash": [
+    33
+   ]
+  },
+  "m2:ambignq:-2861795212072688014~view:jev3-amb-k3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:ambignq:-4546806507424732896~view:jev3-amb-k4": {
+   "minhash": [
+    57
+   ]
+  },
+  "m2:ambignq:1465689918294318359~view:jev3-amb-k4": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    6,
+    24
+   ]
+  },
+  "m2:ambignq:7323199689457042710~view:jev3-amb-k3": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    36
+   ]
+  },
+  "m2:ambignq:5609293372375247595~view:jev3-amb-k3": {
+   "exact": [
+    61
+   ],
+   "minhash": [
+    61
+   ]
+  },
+  "m2:ambignq:-6700877099364323465~view:jev3-amb-k4": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24,
+    33,
+    57
+   ]
+  },
+  "m2:ambignq:3308502966192156971~view:jev3-amb-k3": {
+   "exact": [
+    58
+   ],
+   "minhash": [
+    58
+   ]
+  },
+  "m2:ambignq:-4907091518570783051~view:jev3-amb-k3": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:ambignq:7891513171270960342~view:jev3-amb-k3": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:ambignq:-2217498512577759142~view:jev3-amb-k4": {
+   "minhash": [
+    45
+   ]
+  },
+  "m2:ambignq:-923766602881761866~view:jev3-amb-k4": {
+   "minhash": [
+    11,
+    36
+   ]
+  },
+  "m2:ambignq:-913594406484968768~view:jev3-amb-k4": {
+   "minhash": [
+    6,
+    24,
+    26
+   ]
+  },
+  "m2:ambignq:2934059820742618035~view:jev3-amb-k3": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:ambignq:-5116872207689637626~view:jev3-amb-k4": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:ambignq:254708509269681632~view:jev3-amb-k3": {
+   "minhash": [
+    24
+   ]
+  },
+  "m2:ambignq:8661958888800151358~view:jev3-amb-k4": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:ambignq:8503458167621021690~view:jev3-amb-k3": {
+   "exact": [
+    61
+   ],
+   "minhash": [
+    61
+   ]
+  },
+  "m2:ambignq:2366633757941060008~view:jev3-amb-k3": {
+   "minhash": [
+    37,
+    61
+   ]
+  },
+  "m2:ambignq:3100008921217478811~view:jev3-amb-k4": {
+   "minhash": [
+    24
+   ]
+  },
+  "m2:ambignq:-1373430681738496875~view:jev3-amb-k4": {
+   "minhash": [
+    24
+   ]
+  },
+  "m2:ambignq:-9159545440783312998~view:jev3-amb-k4": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:ambignq:8822853518747458834~view:jev3-amb-k4": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:ambignq:4151457444320734787~view:jev3-amb-k3": {
+   "exact": [
+    61
+   ],
+   "minhash": [
+    61
+   ]
+  },
+  "m2:ambignq:-110212191849231958~view:jev3-amb-k4": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    6,
+    24
+   ]
+  },
+  "m2:ambignq:-2295186136684060602~view:jev3-amb-k3": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1,
+    6
+   ]
+  },
+  "m2:ambignq:3721977521704338106~view:jev3-amb-k3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:ambignq:9190907501129039633~view:jev3-amb-k3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:ambignq:-8676060886208158138~view:jev3-amb-k3": {
+   "minhash": [
+    37
+   ]
+  },
+  "m2:ambignq:-609626293868508634~view:jev3-amb-k4": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1,
+    6
+   ]
+  },
+  "m2:ambignq:5694395508556331288~view:jev3-amb-k4": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1
+   ]
+  },
+  "m2:ambignq:7515689879528202178~view:jev3-amb-k3": {
+   "exact": [
+    61
+   ],
+   "minhash": [
+    61
+   ]
+  },
+  "m2:ambignq:1629180192157073012~view:jev3-amb-k4": {
+   "exact": [
+    61
+   ],
+   "minhash": [
+    61
+   ]
+  },
+  "m2:ambignq:7311779918324800431~view:jev3-amb-k3": {
+   "minhash": [
+    33
+   ]
+  },
+  "m2:ambignq:3752577279185437554~view:jev3-amb-k4": {
+   "minhash": [
+    45
+   ]
+  },
+  "m2:ambignq:8192816078384267476~view:jev3-amb-k4": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:ambignq:8112562675843440149~view:jev3-amb-k4": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:ambignq:-257548144941246472~view:jev3-amb-k3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:ambignq:-3605586579678909970~view:jev3-amb-k3": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1,
+    6
+   ]
+  },
+  "m2:ambignq:-5059481908479479020~view:jev3-amb-k3": {
+   "minhash": [
+    45
+   ]
+  },
+  "m2:ambignq:-3333969266260785760~view:jev3-amb-k3": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:ambignq:-5935201915465864479~view:jev3-amb-k4": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:ambignq:6971665841936848118~view:jev3-amb-k4": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ],
+   "edit": [
+    24
+   ]
+  },
+  "m2:ambignq:1697246317085361210~view:jev3-amb-k3": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:ambignq:8276531352488547585~view:jev3-amb-k4": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:tatqa:71477cc4-dfb0-4b37-8dd5-802eb26c7d2b~view:jev3-tn-c4": {
+   "exact": [
+    24,
+    57
+   ],
+   "minhash": [
+    24,
+    57
+   ]
+  },
+  "m2:tatqa:8bdf2aac-857c-4b3e-a984-1594e740d0f4~view:jev3-tn-c5": {
+   "exact": [
+    26
+   ],
+   "minhash": [
+    26
+   ]
+  },
+  "m2:tatqa:b83b14aa-3589-4c69-9c3a-f3dd5950e9aa~view:jev3-tn-c4": {
+   "exact": [
+    33
+   ],
+   "minhash": [
+    33
+   ]
+  },
+  "m2:tatqa:28278057-c24f-41a4-b889-d5e148f95d8f~view:jev3-tn-count": {
+   "minhash": [
+    24,
+    33
+   ]
+  },
+  "m2:tatqa:d9712dd9-d020-4370-9ae4-e3f05babf44d~view:jev3-tn-c5": {
+   "minhash": [
+    33,
+    36
+   ]
+  },
+  "m2:tatqa:cede49ab-ac4a-4e41-8393-19d238b883c1~view:jev3-tn-c5": {
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:78750ee7-2ac6-4ad5-a14c-406057cc731e~view:jev3-tn-yn": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    36
+   ]
+  },
+  "m2:tatqa:b0c8063b-bc5f-4741-949b-3150643eeac8~view:jev3-tn-c4": {
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:785a771a-5024-4ae5-959c-579b9830dea7~view:jev3-tn-c6": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:tatqa:f777e2ca-42e4-4fca-9ae7-e2fc936c2534~view:jev3-tn-c5": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24,
+    33
+   ]
+  },
+  "m2:tatqa:cbf0aeb3-509c-4859-98e2-8b9037f1aa03~view:jev3-tn-c3": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:tatqa:86305122-ffc6-487e-934d-7e103abb0041~view:jev3-tn-c4": {
+   "minhash": [
+    45
+   ]
+  },
+  "m2:tatqa:7caec602-dba1-4ef0-bf3f-ac65262ff856~view:jev3-tn-c6": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24,
+    57
+   ]
+  },
+  "m2:tatqa:e41b25f4-b3a0-458c-ad89-5ffb519c5641~view:jev3-tn-c5": {
+   "exact": [
+    11
+   ],
+   "minhash": [
+    11
+   ],
+   "edit": [
+    11
+   ]
+  },
+  "m2:tatqa:eb161ea7-cd3a-4d19-bf94-9c00033ea4ad~view:jev3-tn-c5": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1,
+    36
+   ]
+  },
+  "m2:tatqa:ca23b5ea-5191-4c32-8193-4322d63c5471~view:jev3-tn-c5": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    6,
+    24,
+    36,
+    37
+   ]
+  },
+  "m2:tatqa:1770b431-5b3f-4374-a3c3-87d8a79bab5c~view:jev3-tn-yn": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1,
+    6
+   ]
+  },
+  "m2:tatqa:cf77f5f9-8963-4d42-844f-7302c1cf0c94~view:jev3-tn-yn": {
+   "exact": [
+    1,
+    24
+   ],
+   "minhash": [
+    1,
+    6,
+    24
+   ]
+  },
+  "m2:tatqa:3e109c2f-13e5-436c-970b-08679db63bb7~view:jev3-tn-c5": {
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:6302b92c-c3e6-47e3-8673-26fe63324cd5~view:jev3-tn-c3": {
+   "minhash": [
+    41
+   ]
+  },
+  "m2:tatqa:b2720a1f-6657-4372-b48f-6975bf91fc6e~view:jev3-tn-count": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:61c55dc6-06c8-4968-8adb-90a467875fe0~view:jev3-tn-c5": {
+   "minhash": [
+    45
+   ]
+  },
+  "m2:tatqa:bb51c119-a606-400f-a1ca-ea161dd53503~view:jev3-tn-yn": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1
+   ]
+  },
+  "m2:tatqa:7cd3bc97-89ad-4cd2-a067-bcb994bf29e1~view:jev3-tn-count": {
+   "exact": [
+    33,
+    57
+   ],
+   "minhash": [
+    33,
+    57
+   ]
+  },
+  "m2:tatqa:ea729c84-3bd8-46dd-acf2-ddc18c9e876b~view:jev3-tn-c4": {
+   "exact": [
+    24,
+    57
+   ],
+   "minhash": [
+    24,
+    57
+   ]
+  },
+  "m2:tatqa:8bb5a9d9-9c61-493b-8065-1dd51b629efe~view:jev3-tn-c4": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24,
+    36
+   ]
+  },
+  "m2:tatqa:e1224b78-d37e-43c4-b4dd-c50560f09bbe~view:jev3-tn-yn": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:tatqa:3d2f21d3-7370-41c4-b515-b5a559e2f9b5~view:jev3-tn-c5": {
+   "minhash": [
+    33
+   ]
+  },
+  "m2:tatqa:1a153890-b70e-4746-947b-de2ff48027ce~view:jev3-tn-c6": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    6,
+    24,
+    36,
+    37
+   ]
+  },
+  "m2:tatqa:8c026f9b-5a1c-47bf-9660-e70ca3d93acf~view:jev3-tn-c3": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:tatqa:2871c709-66f8-407b-8230-8d42b00bf3da~view:jev3-tn-yn": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:c6b3d6ec-3f89-4e60-8d6f-f87c0c7c1887~view:jev3-tn-c5": {
+   "exact": [
+    24,
+    57
+   ],
+   "minhash": [
+    24,
+    26,
+    57
+   ]
+  },
+  "m2:tatqa:bb41b75f-2685-4ed3-931b-e71d558dfe6a~view:jev3-tn-c3": {
+   "exact": [
+    33
+   ],
+   "minhash": [
+    33
+   ]
+  },
+  "m2:tatqa:a4c414d6-3a17-4b5e-bcbc-9fdf9f5990dd~view:jev3-tn-yn": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:tatqa:24ff90f9-79ee-4e0e-a1ec-1d94abe7bc8b~view:jev3-tn-c5": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    11,
+    24,
+    57
+   ]
+  },
+  "m2:tatqa:a682a4bf-b507-47db-9879-60204f791edb~view:jev3-tn-yn": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24,
+    57
+   ]
+  },
+  "m2:tatqa:f82b2860-0046-469c-b31a-b4ec654f06c4~view:jev3-tn-c3": {
+   "minhash": [
+    26
+   ]
+  },
+  "m2:tatqa:d50b788b-2bfe-4d5a-9cc4-13cca3f2042f~view:jev3-tn-count": {
+   "minhash": [
+    1
+   ]
+  },
+  "m2:tatqa:22f7b8e6-f450-49ed-9063-d0699c80e3b6~view:jev3-tn-c4": {
+   "exact": [
+    24,
+    57
+   ],
+   "minhash": [
+    24,
+    57
+   ]
+  },
+  "m2:tatqa:9fe12426-9e0e-4323-ae33-57da1e8d3e4d~view:jev3-tn-c3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:2266f020-d5ef-4343-86d3-64f3fe883976~view:jev3-tn-c5": {
+   "exact": [
+    33
+   ],
+   "minhash": [
+    33
+   ]
+  },
+  "m2:tatqa:8d844211-bfdc-49d9-af10-e7bbc3c8d2ed~view:jev3-tn-c6": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:cf76fd76-f5db-41dd-bfaf-d73ece5a7486~view:jev3-tn-yn": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1
+   ]
+  },
+  "m2:tatqa:37065362-223a-42e0-b9f7-699ea0e75ba0~view:jev3-tn-c5": {
+   "exact": [
+    33
+   ],
+   "minhash": [
+    33
+   ]
+  },
+  "m2:tatqa:7a249c43-5e24-447e-9da1-3d5982aca590~view:jev3-tn-count": {
+   "exact": [
+    33
+   ],
+   "minhash": [
+    1,
+    11,
+    33
+   ]
+  },
+  "m2:tatqa:6ff8f202-92bf-4828-9de8-62c4d0aad2ff~view:jev3-tn-c4": {
+   "exact": [
+    11
+   ],
+   "minhash": [
+    11
+   ]
+  },
+  "m2:tatqa:9660d82d-c76a-4afd-b56a-cfb62b051f56~view:jev3-tn-c5": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:tatqa:c989956b-232d-4461-9d53-245d1380d310~view:jev3-tn-yn": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:47c93661-bc97-4a99-9189-93196277cefc~view:jev3-tn-c5": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:tatqa:b2845bab-b5fd-4da0-af55-c679a8c10f1f~view:jev3-tn-count": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:04b0b64e-7f90-44c9-a899-9bfbd6400fe9~view:jev3-tn-c5": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ],
+   "edit": [
+    24
+   ]
+  },
+  "m2:tatqa:e568fccf-2685-4598-baa9-1e8b1431fbc2~view:jev3-tn-yn": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1
+   ]
+  },
+  "m2:tatqa:047e02b1-4379-4774-9cb4-8428498c677f~view:jev3-tn-c3": {
+   "minhash": [
+    33
+   ]
+  },
+  "m2:tatqa:8634831d-011c-4b6f-8416-fcd5a05146f4~view:jev3-tn-yn": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    24,
+    36
+   ]
+  },
+  "m2:tatqa:56dcaa45-660c-406c-be71-9c3e6869db8a~view:jev3-tn-yn": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24,
+    36
+   ]
+  },
+  "m2:tatqa:99f24ed1-6222-4707-a170-bac3de607798~view:jev3-tn-c5": {
+   "exact": [
+    33,
+    57
+   ],
+   "minhash": [
+    33,
+    57
+   ]
+  },
+  "m2:tatqa:a3b40fa6-2877-441f-94e0-af9d888b2d99~view:jev3-tn-count": {
+   "minhash": [
+    57
+   ]
+  },
+  "m2:tatqa:9579443c-5f82-449a-b7e0-a5386e818ffe~view:jev3-tn-c4": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:tatqa:5d9f57b7-eed9-4039-8a04-03772d26cb55~view:jev3-tn-c3": {
+   "edit": [
+    57
+   ]
+  },
+  "m2:tatqa:87ab4c1e-930b-4ea1-97c3-419ff17e2b03~view:jev3-tn-c5": {
+   "minhash": [
+    33
+   ]
+  },
+  "m2:tatqa:c5b624e7-4b57-4d1b-a70c-080ce250aa2c~view:jev3-tn-c4": {
+   "minhash": [
+    57
+   ]
+  },
+  "m2:tatqa:a404cc70-06e6-4595-83b1-0a6fffd6eb94~view:jev3-tn-yn": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:ae14ec63-faf3-4fb4-a97c-a3bd504aab42~view:jev3-tn-c4": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:5a81c914-64a5-47d6-84a6-b2267f9c0ef4~view:jev3-tn-c3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:8fb1c5fa-32d4-4852-b4f2-5302648adb66~view:jev3-tn-count": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:db1f199b-feb7-43a3-8008-957e4368ca85~view:jev3-tn-yn": {
+   "exact": [
+    24,
+    33
+   ],
+   "minhash": [
+    24,
+    33,
+    57
+   ]
+  },
+  "m2:tatqa:85059872-fcc3-442b-9f89-7cda70720e49~view:jev3-tn-c4": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:119777cc-d8cf-4e69-8f78-a0c26b7abfbd~view:jev3-tn-yn": {
+   "minhash": [
+    26
+   ]
+  },
+  "m2:tatqa:1217f03d-6c02-4897-8533-24148ed591ae~view:jev3-tn-yn": {
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:21225c27-382c-4341-8f72-39d4c7236456~view:jev3-tn-c5": {
+   "minhash": [
+    33
+   ]
+  },
+  "m2:tatqa:5bbb3de7-0143-4f18-bfbf-bf5e1d54721f~view:jev3-tn-c3": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1
+   ]
+  },
+  "m2:tatqa:3d9053b5-ec12-413a-8a73-269a01fd9a2e~view:jev3-tn-c4": {
+   "minhash": [
+    11
+   ]
+  },
+  "m2:tatqa:d8659ef0-577b-41f0-9133-7f44aedf6f13~view:jev3-tn-c3": {
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:4fe86b4f-954d-4203-a55a-c9d46d5e96b5~view:jev3-tn-count": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:tatqa:9d4c417b-5a33-459c-9600-5c3c52036930~view:jev3-tn-count": {
+   "edit": [
+    24
+   ]
+  },
+  "m2:tatqa:728b8de8-edab-43d7-bf1c-bc7964a159f8~view:jev3-tn-c5": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:0ff0cf82-61d7-4100-a22a-6535235f4b49~view:jev3-tn-c3": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:tatqa:260aa4f2-4001-43c1-b028-ee4f27c1ac76~view:jev3-tn-c3": {
+   "minhash": [
+    36,
+    57
+   ]
+  },
+  "m2:tatqa:0ff0244d-7a27-4650-94ab-9cd26268e656~view:jev3-tn-yn": {
+   "exact": [
+    33
+   ],
+   "minhash": [
+    33
+   ]
+  },
+  "m2:tatqa:b57ef29d-d41e-46e2-a0c4-6be91bec69ab~view:jev3-tn-c4": {
+   "minhash": [
+    57
+   ]
+  },
+  "m2:tatqa:76a3eadc-1a62-4415-a925-1bffac2508a9~view:jev3-tn-c4": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:457b25d2-bfdf-4e31-95cf-61407e59f8d9~view:jev3-tn-c5": {
+   "exact": [
+    33
+   ],
+   "minhash": [
+    33
+   ]
+  },
+  "m2:tatqa:3abc4a6d-e546-4b6e-86cb-7b537597903b~view:jev3-tn-c6": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24,
+    33
+   ]
+  },
+  "m2:tatqa:6d277ec5-5e5c-4cea-8c71-b53dca5aa44b~view:jev3-tn-c5": {
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:7add94b7-dbd7-4de6-998b-c05a7b617811~view:jev3-tn-c5": {
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:e1f014af-a8d8-4c0f-b2fa-8cdfd66197dd~view:jev3-tn-count": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ],
+   "edit": [
+    24
+   ]
+  },
+  "m2:tatqa:a2e041f8-755f-4463-8cb3-ab2958832a9b~view:jev3-tn-c5": {
+   "exact": [
+    26
+   ],
+   "minhash": [
+    26
+   ]
+  },
+  "m2:tatqa:09d9549a-8f4f-42bf-8a6b-a598fc06ef39~view:jev3-tn-c5": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24,
+    36
+   ]
+  },
+  "m2:tatqa:5d4a7843-bc81-4a76-b8a7-1b96e1754e57~view:jev3-tn-c3": {
+   "exact": [
+    36
+   ],
+   "minhash": [
+    36
+   ]
+  },
+  "m2:tatqa:f77930d9-10f3-4ea3-8557-c6554fc9c823~view:jev3-tn-c4": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:tatqa:14ac5755-27ec-4065-84b7-02ed27c236e7~view:jev3-tn-c3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    6,
+    24,
+    36,
+    37
+   ]
+  },
+  "m2:tatqa:62167bd9-5b0e-4942-bf9f-b19b1f1f284c~view:jev3-tn-c6": {
+   "exact": [
+    33,
+    57
+   ],
+   "minhash": [
+    33,
+    57
+   ]
+  },
+  "m2:tatqa:f9e53efd-8a06-4f4e-9024-71543f8333d4~view:jev3-tn-c5": {
+   "minhash": [
+    24
+   ],
+   "edit": [
+    24
+   ]
+  },
+  "m2:tatqa:d865bb1b-8064-4ef4-971d-2c01e26bb975~view:jev3-tn-c3": {
+   "minhash": [
+    24
+   ],
+   "edit": [
+    24
+   ]
+  },
+  "m2:tatqa:74e08028-f3b1-4668-8406-1b615ef51629~view:jev3-tn-c3": {
+   "edit": [
+    36
+   ]
+  },
+  "m2:tatqa:d34f5a48-3d43-4dd6-88bb-9717710da038~view:jev3-tn-c6": {
+   "edit": [
+    57
+   ]
+  },
+  "m2:tatqa:c83c3a82-fb5e-403b-a73b-d3b1628092ef~view:jev3-tn-c5": {
+   "minhash": [
+    24
+   ],
+   "edit": [
+    24
+   ]
+  },
+  "m2:tatqa:b72a5f07-e89d-4fe6-81d6-819f01d4c580~view:jev3-tn-c5": {
+   "minhash": [
+    26
+   ]
+  },
+  "m2:tatqa:7ed029b9-1a15-4fba-a37d-6809693e1898~view:jev3-tn-c4": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:749e0b5b-951b-4136-9e73-ecef2d01b2e0~view:jev3-tn-c4": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:f44f047d-bb89-4559-afaa-048842efa47d~view:jev3-tn-c3": {
+   "minhash": [
+    24
+   ]
+  },
+  "m2:tatqa:167c3469-e980-4380-bad7-562e6e75c041~view:jev3-tn-yn": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1
+   ]
+  },
+  "m2:tatqa:cf60adbb-1fc0-4917-8564-b227fd900886~view:jev3-tn-c4": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:tatqa:67c8f293-ec58-4b02-a0bc-d1abadcbbede~view:jev3-tn-c4": {
+   "exact": [
+    26
+   ],
+   "minhash": [
+    26
+   ]
+  },
+  "m2:timeqa:48b2f26222-2~view:jev3-tn-time-c5": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:timeqa:a88239d90d-0~view:jev3-tn-time-c3": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1,
+    6
+   ]
+  },
+  "m2:timeqa:48b2f26222-0~view:jev3-tn-time-c4": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:timeqa:e276b08302-1~view:jev3-tn-time-c3": {
+   "exact": [
+    2
+   ],
+   "minhash": [
+    2,
+    24
+   ]
+  },
+  "m2:timeqa:d57cd19e0e-0~view:jev3-tn-time-c3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    6,
+    24
+   ]
+  },
+  "m2:timeqa:48b2f26222-1~view:jev3-tn-time-c4": {
+   "exact": [
+    57
+   ],
+   "minhash": [
+    57
+   ]
+  },
+  "m2:timeqa:a88239d90d-3~view:jev3-tn-time-c3": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1,
+    6
+   ]
+  },
+  "m2:timeqa:9cfffdbc53-0~view:jev3-tn-time-c4": {
+   "exact": [
+    1,
+    10,
+    24
+   ],
+   "minhash": [
+    1,
+    6,
+    10,
+    24
+   ]
+  },
+  "m2:timeqa:a88239d90d-2~view:jev3-tn-time-c3": {
+   "exact": [
+    1
+   ],
+   "minhash": [
+    1,
+    6
+   ]
+  },
+  "m2:timeqa:9cfffdbc53-1~view:jev3-tn-time-c4": {
+   "exact": [
+    1,
+    10,
+    24
+   ],
+   "minhash": [
+    1,
+    6,
+    10,
+    24
+   ]
+  },
+  "m2:timeqa:9cfffdbc53-3~view:jev3-tn-time-c3": {
+   "exact": [
+    10,
+    24
+   ],
+   "minhash": [
+    10,
+    24
+   ]
+  },
+  "m2:timeqa:9cfffdbc53-2~view:jev3-tn-time-c3": {
+   "exact": [
+    1,
+    10
+   ],
+   "minhash": [
+    1,
+    6,
+    10
+   ]
+  },
+  "m2:timeqa:d57cd19e0e-2~view:jev3-tn-time-c3": {
+   "exact": [
+    24
+   ],
+   "minhash": [
+    6,
+    24
+   ]
+  },
+  "m2:timeqa:e276b08302-2~view:jev3-tn-time-c3": {
+   "exact": [
+    2
+   ],
+   "minhash": [
+    2,
+    24
+   ]
+  },
+  "m2:privacyqa:389b9ad8c2~view:jev3-lp-choice-r0": {
+   "minhash": [
+    62
+   ]
+  },
+  "m2:privacyqa:6bf44cfb1d~view:jev3-lp-choice-r0": {
+   "minhash": [
+    62
+   ]
+  },
+  "m2:privacyqa:fd90f16799~view:jev3-lp-choice-r0": {
+   "minhash": [
+    36
+   ]
+  },
+  "m2:privacyqa:cc006e27ca~view:jev3-lp-score-r1": {
+   "exact": [
+    62
+   ],
+   "minhash": [
+    62
+   ]
+  },
+  "m2:privacyqa:0f14ddb0ce~view:jev3-lp-score-r1": {
+   "minhash": [
+    11
+   ]
+  },
+  "m2:privacyqa:fd90f16799~view:jev3-lp-score-r1": {
+   "minhash": [
+    36
+   ]
+  }
+ }
+}

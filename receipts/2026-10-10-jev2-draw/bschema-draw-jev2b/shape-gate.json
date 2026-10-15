@@ -1,0 +1,247 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw-jev2b/records.jsonl.gz",
+ "fingerprint": "receipts/2026-10-10-jev2-draw/public-shape-fingerprint.json",
+ "families": {
+  "adversarial": {
+   "draw": {
+    "n": 1500,
+    "string_state_share": 1.0,
+    "types": {
+     "choice": 411,
+     "noul": 217,
+     "score": 872
+    },
+    "choice_K": {
+     "4": 411
+    },
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 178,
+     "p50": 192,
+     "p90": 216,
+     "max": 233
+    }
+   },
+   "public": {
+    "n": 6,
+    "string_state_share": 1.0,
+    "types": {
+     "choice": 3,
+     "noul": 2,
+     "score": 1
+    },
+    "choice_K": {
+     "4": 3
+    },
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 244,
+     "p50": 267,
+     "p90": 321,
+     "max": 326
+    }
+   },
+   "checks": {
+    "types": true,
+    "K": true,
+    "criteria": true,
+    "string": true,
+    "length_p90": false
+   },
+   "pass": false
+  },
+  "ambiguous": {
+   "draw": {
+    "n": 1500,
+    "string_state_share": 0.586,
+    "types": {
+     "choice": 1022,
+     "score": 478
+    },
+    "choice_K": {
+     "3": 755,
+     "4": 267
+    },
+    "noul_criteria_filled_share": null,
+    "tokens": {
+     "p10": 203,
+     "p50": 239,
+     "p90": 310,
+     "max": 415
+    }
+   },
+   "public": {
+    "n": 7,
+    "string_state_share": 0.8571,
+    "types": {
+     "choice": 7
+    },
+    "choice_K": {
+     "3": 6,
+     "4": 1
+    },
+    "noul_criteria_filled_share": null,
+    "tokens": {
+     "p10": 423,
+     "p50": 518,
+     "p90": 624,
+     "max": 656
+    }
+   },
+   "checks": {
+    "types": true,
+    "K": true,
+    "criteria": true,
+    "string": true,
+    "length_p90": false
+   },
+   "pass": false
+  },
+  "probability": {
+   "draw": {
+    "n": 1500,
+    "string_state_share": 1.0,
+    "types": {
+     "score": 523,
+     "choice": 939,
+     "noul": 38
+    },
+    "choice_K": {
+     "3": 939
+    },
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 163,
+     "p50": 191,
+     "p90": 223,
+     "max": 255
+    }
+   },
+   "public": {
+    "n": 10,
+    "string_state_share": 1.0,
+    "types": {
+     "noul": 3,
+     "choice": 7
+    },
+    "choice_K": {
+     "3": 7
+    },
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 417,
+     "p50": 622,
+     "p90": 1239,
+     "max": 1940
+    }
+   },
+   "checks": {
+    "types": true,
+    "K": true,
+    "criteria": true,
+    "string": true,
+    "length_p90": false
+   },
+   "pass": false
+  },
+  "tradeoff": {
+   "draw": {
+    "n": 1500,
+    "string_state_share": 1.0,
+    "types": {
+     "score": 543,
+     "choice": 755,
+     "noul": 202
+    },
+    "choice_K": {
+     "4": 138,
+     "5": 406,
+     "6": 211
+    },
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 331,
+     "p50": 365,
+     "p90": 403,
+     "max": 420
+    }
+   },
+   "public": {
+    "n": 6,
+    "string_state_share": 1.0,
+    "types": {
+     "choice": 4,
+     "noul": 2
+    },
+    "choice_K": {
+     "4": 1,
+     "5": 3
+    },
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 616,
+     "p50": 741,
+     "p90": 816,
+     "max": 863
+    }
+   },
+   "checks": {
+    "types": true,
+    "K": true,
+    "criteria": true,
+    "string": true,
+    "length_p90": false
+   },
+   "pass": false
+  },
+  "trap": {
+   "draw": {
+    "n": 1500,
+    "string_state_share": 1.0,
+    "types": {
+     "noul": 535,
+     "score": 740,
+     "choice": 225
+    },
+    "choice_K": {
+     "4": 225
+    },
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 143,
+     "p50": 170,
+     "p90": 191,
+     "max": 203
+    }
+   },
+   "public": {
+    "n": 8,
+    "string_state_share": 1.0,
+    "types": {
+     "noul": 4,
+     "score": 1,
+     "choice": 3
+    },
+    "choice_K": {
+     "4": 3
+    },
+    "noul_criteria_filled_share": 1.0,
+    "tokens": {
+     "p10": 224,
+     "p50": 300,
+     "p90": 368,
+     "max": 373
+    }
+   },
+   "checks": {
+    "types": true,
+    "K": true,
+    "criteria": true,
+    "string": true,
+    "length_p90": false
+   },
+   "pass": false
+  }
+ },
+ "all_pass": false
+}

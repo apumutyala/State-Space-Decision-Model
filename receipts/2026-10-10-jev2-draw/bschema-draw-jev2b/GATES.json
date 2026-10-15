@@ -1,0 +1,510 @@
+{
+ "build": "bschema-draw-jev2b",
+ "n_records": 7500,
+ "records_uncompressed_sha256": "9406ae088c20f1c2916c35053042974d61dca1fe101601f078b46067f60d69c0",
+ "row_gates_in_build_check_stage": {
+  "what": "scripts/jev2_build.py check = jev1_build.cmd_check (gold-once, Checker: cohort v2/v3 + SplitGuard + harness.heldout + Index DEV/TEST content/text/item text, production Index Fingerprint, JevBench fingerprint + exact segment, attack_guard); failing rows are DROPPED before final",
+  "n_pool": 11000,
+  "n_kept": 10868,
+  "drops_by_family": {
+   "probability": {
+    "kept": 2159,
+    "checker:dup_text_other_item": 29,
+    "checker:dup_content": 12
+   },
+   "trap": {
+    "kept": 2120,
+    "jevbench_fingerprint": 55,
+    "checker:dup_content": 25
+   },
+   "ambiguous": {
+    "kept": 2200
+   },
+   "tradeoff": {
+    "kept": 2200
+   },
+   "adversarial": {
+    "kept": 2189,
+    "checker:dup_content": 11
+   }
+  },
+  "index_fingerprint_identity": {
+   "version": "ssdm-dedup-v3",
+   "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+   "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+   "rows": 155390
+  },
+  "jevbench_identity": {
+   "enabled": true,
+   "index_sha256": "0fe994c40dfc70fa3a0cd711fa88abb7f439cb8f2546ecffd53e5ca232d3934b",
+   "fingerprint_arrays_sha256": "211da3f1d3c68fbfc48fc3dbdd72cfd0c6dcf723f47e4628a7f6f5f506c2c55c",
+   "exact_segments_sha256": "f9b94122d36e8b730cc18dc122d4fe65ff789a42072ca86ecebee207fdb5049d",
+   "pin_sha256": "e317bbb6aa541f5b9c26e038359036dc9d3f7039b410060fafa3bfe1bf2db49f",
+   "source_commit": "b6b8fff7e345b98c060ad26c13308860ddc67004"
+  }
+ },
+ "final_draw_rescans_must_be_0": {
+  "doc_overlap_guard_index_fail": 0,
+  "doc_overlap_guard_index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+  "doc_overlap_guard_jevbench_fail": 0,
+  "doc_overlap_guard_jevbench_exact_fail": 0,
+  "attack_guard_hits": 0,
+  "attack_guard_templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+  "jevbench_guard_rescan": {
+   "jevbench_doc_fail": 0,
+   "jevbench_exact_segment_rows": 0,
+   "jevbench_training_gate_fail": 0,
+   "jevbench_fingerprint_rows_hit": 0,
+   "fingerprint_records_checked": 7500
+  },
+  "row_gates_fails": {},
+  "row_gates_pass": true,
+  "frozen_heldout_refused": 0,
+  "generators_checked": {
+   "jev2_ref_chase": "ok",
+   "jev2_judge_check": "ok",
+   "jev2_temporal": "ok",
+   "jev2_fact_record": "ok",
+   "jev2_tool_pick": "ok",
+   "jev2_prob": "ok",
+   "jev2_trap": "ok",
+   "jev2_ambig": "ok",
+   "jev2_tradeoff": "ok",
+   "jev2_adv": "ok",
+   "jev2_long_handbook": "ok"
+  },
+  "d1b_heldout_hits": 0,
+  "cohort_identity": {
+   "v2": {
+    "cohort": "m2-dev-cohort-v2",
+    "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+    "n": {
+     "dev": 835,
+     "calibration": 1000,
+     "retention": 1670,
+     "steer_dev": 1800,
+     "steer_gate": 1000
+    }
+   },
+   "v3": {
+    "cohort": "m2-dev-cohort-v3",
+    "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+    "n": {
+     "dev": 835,
+     "calibration": 1000,
+     "retention": 39872,
+     "steer_dev": 1800,
+     "steer_gate": 1000
+    }
+   },
+   "heldout_150k_dropped": [
+    "m2:mmlu_aux:21118",
+    "m2:mmlu_aux:39640",
+    "m2:mmlu_aux:39643"
+   ]
+  },
+  "index_fingerprint": {
+   "version": "ssdm-dedup-v3",
+   "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+   "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+   "rows": 155390
+  },
+  "gold_once_fail": 0
+ },
+ "gold_position_chi2_presented": {
+  "probability": {
+   "n": 939,
+   "chi2": 0.0,
+   "df": 2,
+   "chi2_per_df": 0.01,
+   "p": 0.978792
+  },
+  "trap": {
+   "n": 225,
+   "chi2": 0.7,
+   "df": 3,
+   "chi2_per_df": 0.23,
+   "p": 0.87536
+  },
+  "ambiguous": {
+   "n": 1022,
+   "chi2": 7.6,
+   "df": 5,
+   "chi2_per_df": 1.512,
+   "p": 0.180839
+  },
+  "tradeoff": {
+   "n": 755,
+   "chi2": 17.5,
+   "df": 12,
+   "chi2_per_df": 1.457,
+   "p": 0.131679
+  },
+  "adversarial": {
+   "n": 411,
+   "chi2": 2.6,
+   "df": 3,
+   "chi2_per_df": 0.859,
+   "p": 0.463947
+  }
+ },
+ "gold_position_gate_p_ge_0.001": {
+  "probability": true,
+  "trap": true,
+  "ambiguous": true,
+  "tradeoff": true,
+  "adversarial": true
+ },
+ "tokens_jrt_h2o_shim_qwen35_4b": {
+  "probability": {
+   "n": 1500,
+   "min": 130,
+   "p10": 163,
+   "p50": 191,
+   "p90": 223,
+   "p99": 249,
+   "max": 255,
+   "t_window": [
+    0,
+    2048
+   ],
+   "n_over_cap": 0,
+   "n_over_2048": 0,
+   "histogram_500": {
+    "0-499": 1500
+   }
+  },
+  "trap": {
+   "n": 1500,
+   "min": 134,
+   "p10": 143,
+   "p50": 170,
+   "p90": 191,
+   "p99": 203,
+   "max": 203,
+   "t_window": [
+    0,
+    2048
+   ],
+   "n_over_cap": 0,
+   "n_over_2048": 0,
+   "histogram_500": {
+    "0-499": 1500
+   }
+  },
+  "ambiguous": {
+   "n": 1500,
+   "min": 180,
+   "p10": 203,
+   "p50": 239,
+   "p90": 310,
+   "p99": 362,
+   "max": 415,
+   "t_window": [
+    0,
+    2048
+   ],
+   "n_over_cap": 0,
+   "n_over_2048": 0,
+   "histogram_500": {
+    "0-499": 1500
+   }
+  },
+  "tradeoff": {
+   "n": 1500,
+   "min": 308,
+   "p10": 331,
+   "p50": 365,
+   "p90": 403,
+   "p99": 416,
+   "max": 420,
+   "t_window": [
+    0,
+    2048
+   ],
+   "n_over_cap": 0,
+   "n_over_2048": 0,
+   "histogram_500": {
+    "0-499": 1500
+   }
+  },
+  "adversarial": {
+   "n": 1500,
+   "min": 166,
+   "p10": 178,
+   "p50": 192,
+   "p90": 216,
+   "p99": 226,
+   "max": 233,
+   "t_window": [
+    0,
+    2048
+   ],
+   "n_over_cap": 0,
+   "n_over_2048": 0,
+   "histogram_500": {
+    "0-499": 1500
+   }
+  }
+ },
+ "token_template_identity": {
+  "_identity": {
+   "id": "jrt-h2o-shim:qwen3.5-4b",
+   "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+  },
+  "_pinned": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+ },
+ "all_pass": true,
+ "shape_gate": {
+  "all_pass": false,
+  "families": {
+   "adversarial": {
+    "pass": false,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": false
+    },
+    "draw": {
+     "n": 1500,
+     "string_state_share": 1.0,
+     "types": {
+      "choice": 411,
+      "noul": 217,
+      "score": 872
+     },
+     "choice_K": {
+      "4": 411
+     },
+     "noul_criteria_filled_share": 1.0,
+     "tokens": {
+      "p10": 178,
+      "p50": 192,
+      "p90": 216,
+      "max": 233
+     }
+    },
+    "public": {
+     "n": 6,
+     "string_state_share": 1.0,
+     "types": {
+      "choice": 3,
+      "noul": 2,
+      "score": 1
+     },
+     "choice_K": {
+      "4": 3
+     },
+     "noul_criteria_filled_share": 1.0,
+     "tokens": {
+      "p10": 244,
+      "p50": 267,
+      "p90": 321,
+      "max": 326
+     }
+    }
+   },
+   "ambiguous": {
+    "pass": false,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": false
+    },
+    "draw": {
+     "n": 1500,
+     "string_state_share": 0.586,
+     "types": {
+      "choice": 1022,
+      "score": 478
+     },
+     "choice_K": {
+      "3": 755,
+      "4": 267
+     },
+     "noul_criteria_filled_share": null,
+     "tokens": {
+      "p10": 203,
+      "p50": 239,
+      "p90": 310,
+      "max": 415
+     }
+    },
+    "public": {
+     "n": 7,
+     "string_state_share": 0.8571,
+     "types": {
+      "choice": 7
+     },
+     "choice_K": {
+      "3": 6,
+      "4": 1
+     },
+     "noul_criteria_filled_share": null,
+     "tokens": {
+      "p10": 423,
+      "p50": 518,
+      "p90": 624,
+      "max": 656
+     }
+    }
+   },
+   "probability": {
+    "pass": false,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": false
+    },
+    "draw": {
+     "n": 1500,
+     "string_state_share": 1.0,
+     "types": {
+      "score": 523,
+      "choice": 939,
+      "noul": 38
+     },
+     "choice_K": {
+      "3": 939
+     },
+     "noul_criteria_filled_share": 1.0,
+     "tokens": {
+      "p10": 163,
+      "p50": 191,
+      "p90": 223,
+      "max": 255
+     }
+    },
+    "public": {
+     "n": 10,
+     "string_state_share": 1.0,
+     "types": {
+      "noul": 3,
+      "choice": 7
+     },
+     "choice_K": {
+      "3": 7
+     },
+     "noul_criteria_filled_share": 1.0,
+     "tokens": {
+      "p10": 417,
+      "p50": 622,
+      "p90": 1239,
+      "max": 1940
+     }
+    }
+   },
+   "tradeoff": {
+    "pass": false,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": false
+    },
+    "draw": {
+     "n": 1500,
+     "string_state_share": 1.0,
+     "types": {
+      "score": 543,
+      "choice": 755,
+      "noul": 202
+     },
+     "choice_K": {
+      "4": 138,
+      "5": 406,
+      "6": 211
+     },
+     "noul_criteria_filled_share": 1.0,
+     "tokens": {
+      "p10": 331,
+      "p50": 365,
+      "p90": 403,
+      "max": 420
+     }
+    },
+    "public": {
+     "n": 6,
+     "string_state_share": 1.0,
+     "types": {
+      "choice": 4,
+      "noul": 2
+     },
+     "choice_K": {
+      "4": 1,
+      "5": 3
+     },
+     "noul_criteria_filled_share": 1.0,
+     "tokens": {
+      "p10": 616,
+      "p50": 741,
+      "p90": 816,
+      "max": 863
+     }
+    }
+   },
+   "trap": {
+    "pass": false,
+    "checks": {
+     "types": true,
+     "K": true,
+     "criteria": true,
+     "string": true,
+     "length_p90": false
+    },
+    "draw": {
+     "n": 1500,
+     "string_state_share": 1.0,
+     "types": {
+      "noul": 535,
+      "score": 740,
+      "choice": 225
+     },
+     "choice_K": {
+      "4": 225
+     },
+     "noul_criteria_filled_share": 1.0,
+     "tokens": {
+      "p10": 143,
+      "p50": 170,
+      "p90": 191,
+      "max": 203
+     }
+    },
+    "public": {
+     "n": 8,
+     "string_state_share": 1.0,
+     "types": {
+      "noul": 4,
+      "score": 1,
+      "choice": 3
+     },
+     "choice_K": {
+      "4": 3
+     },
+     "noul_criteria_filled_share": 1.0,
+     "tokens": {
+      "p10": 224,
+      "p50": 300,
+      "p90": 368,
+      "max": 373
+     }
+    }
+   }
+  }
+ },
+ "score_rows": {
+  "probability": 523,
+  "trap": 740,
+  "ambiguous": 478,
+  "tradeoff": 543,
+  "adversarial": 872
+ }
+}

@@ -1,0 +1,39 @@
+{
+ "by_gate": {
+  "prov": 0,
+  "strict_fp": 171,
+  "exact_leaves": 0,
+  "doc_overlap": 0,
+  "attack": 0,
+  "jevbench": 0
+ },
+ "files": {
+  "drop-prov.txt": 0,
+  "drop-strictfp.txt": 171,
+  "drop-leaves.txt": 0,
+  "drop-hs3.txt": 20
+ },
+ "by_gate_and_family": {
+  "strict_fp": {
+   "ambiguous": 47,
+   "long_policy": 6,
+   "temporal_numeric": 118
+  },
+  "drop-strictfp.txt": {
+   "ambiguous": 47,
+   "long_policy": 6,
+   "temporal_numeric": 118
+  },
+  "drop-hs3.txt": {
+   "adequacy": 20
+  }
+ },
+ "n_drop": 191,
+ "n_drop_by_family": {
+  "ambiguous": 47,
+  "adequacy": 20,
+  "long_policy": 6,
+  "temporal_numeric": 118
+ },
+ "sha256": "6413dd77096136ab3c15cc5d9dbaa8d279796b1bae89c2d153c308ccae56989b"
+}

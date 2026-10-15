@@ -1,0 +1,495 @@
+{
+ "build": "bschema-draw-jev2a-v2",
+ "n_records": 7500,
+ "type_mix": {
+  "choice": 0.5045,
+  "noul": 0.4589,
+  "score": 0.0365
+ },
+ "families": {
+  "multi_hop": {
+   "rows": 1500,
+   "target": 1500,
+   "sources": {
+    "jev2synth": 1134,
+    "musique": 366
+   },
+   "licenses": {
+    "jev2synth: own generator (repo)": 1134,
+    "musique: CC-BY-4.0 (MuSiQue v1.0, StonyBrookNLP; HF mirror bdsaglam/musique)": 366
+   },
+   "subfamilies": {
+    "musique": 366,
+    "ref_chase_city": 279,
+    "ref_chase_city_yn": 53,
+    "ref_chase_contact": 197,
+    "ref_chase_contact_yn": 47,
+    "ref_chase_count": 116,
+    "ref_chase_owner": 374,
+    "ref_chase_owner_yn": 68
+   },
+   "types": {
+    "choice": 1216,
+    "noul": 168,
+    "score": 116
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.5238,
+     "true": 0.4762
+    },
+    "score": {
+     "0": 0.4828,
+     "1": 0.319,
+     "2": 0.181,
+     "3": 0.0172
+    }
+   },
+   "choice_K": {
+    "4": 670,
+    "5": 339,
+    "6": 207
+   },
+   "gold_position_chi2_presented": {
+    "n": 1216,
+    "chi2": 6.9,
+    "df": 12,
+    "chi2_per_df": 0.577,
+    "p": 0.862861
+   },
+   "gold_position_chi2_sorted_ids": {
+    "n": 1216,
+    "chi2": 4.4,
+    "df": 12,
+    "chi2_per_df": 0.364,
+    "p": 0.975243
+   },
+   "tokens_shim_qwen35_4b": {
+    "n": 1500,
+    "min": 378,
+    "p10": 610,
+    "p50": 1875,
+    "p90": 2168,
+    "p99": 2363,
+    "max": 2581,
+    "t_window": [
+     0,
+     4096
+    ],
+    "n_over_cap": 0,
+    "n_over_2048": 350,
+    "histogram_500": {
+     "0-499": 36,
+     "500-999": 310,
+     "1000-1499": 27,
+     "1500-1999": 666,
+     "2000-2499": 459,
+     "2500-2999": 2
+    }
+   },
+   "filter": {
+    "fit": 1988,
+    "trimmed": 488,
+    "kept": 1500
+   }
+  },
+  "judge_hard": {
+   "rows": 1500,
+   "target": 1500,
+   "sources": {
+    "gsm8k": 369,
+    "jev2synth": 1131
+   },
+   "licenses": {
+    "gsm8k: MIT": 369,
+    "jev2synth: own generator (repo)": 1131
+   },
+   "subfamilies": {
+    "gsm_final": 275,
+    "gsm_steps": 94,
+    "judge_date": 139,
+    "judge_json": 125,
+    "judge_letters": 110,
+    "judge_price": 120,
+    "judge_sort": 129,
+    "judge_subject": 128,
+    "judge_sum": 122,
+    "judge_units": 136,
+    "judge_weekday": 122
+   },
+   "types": {
+    "noul": 1500
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.4913,
+     "true": 0.5087
+    }
+   },
+   "choice_K": {},
+   "gold_position_chi2_presented": {
+    "n": 0,
+    "chi2": 0,
+    "df": 0,
+    "chi2_per_df": null,
+    "p": null
+   },
+   "gold_position_chi2_sorted_ids": {
+    "n": 0,
+    "chi2": 0,
+    "df": 0,
+    "chi2_per_df": null,
+    "p": null
+   },
+   "tokens_shim_qwen35_4b": {
+    "n": 1500,
+    "min": 117,
+    "p10": 129,
+    "p50": 148,
+    "p90": 258,
+    "p99": 361,
+    "max": 494,
+    "t_window": [
+     0,
+     4096
+    ],
+    "n_over_cap": 0,
+    "n_over_2048": 0,
+    "histogram_500": {
+     "0-499": 1500
+    }
+   },
+   "filter": {
+    "fit": 1669,
+    "trimmed": 169,
+    "kept": 1500
+   }
+  },
+  "temporal_numeric": {
+   "rows": 1500,
+   "target": 1500,
+   "sources": {
+    "gsm8k": 253,
+    "jev2synth": 1247
+   },
+   "licenses": {
+    "gsm8k: MIT": 253,
+    "jev2synth: own generator (repo)": 1247
+   },
+   "subfamilies": {
+    "gsm_choice": 253,
+    "temporal_days_late": 158,
+    "temporal_late_fee": 164,
+    "temporal_prorate": 151,
+    "temporal_return": 58,
+    "temporal_return_yn": 92,
+    "temporal_sla": 114,
+    "temporal_sla_yn": 34,
+    "temporal_tenure_yn": 148,
+    "temporal_tz": 177,
+    "temporal_warranty": 151
+   },
+   "types": {
+    "choice": 1068,
+    "noul": 274,
+    "score": 158
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.5292,
+     "true": 0.4708
+    },
+    "score": {
+     "0": 0.4937,
+     "1": 0.2025,
+     "2": 0.1392,
+     "3": 0.1646
+    }
+   },
+   "choice_K": {
+    "3": 160,
+    "4": 245,
+    "5": 408,
+    "6": 255
+   },
+   "gold_position_chi2_presented": {
+    "n": 1068,
+    "chi2": 12.3,
+    "df": 14,
+    "chi2_per_df": 0.879,
+    "p": 0.582167
+   },
+   "gold_position_chi2_sorted_ids": {
+    "n": 1068,
+    "chi2": 149.0,
+    "df": 14,
+    "chi2_per_df": 10.642,
+    "p": 0.0
+   },
+   "tokens_shim_qwen35_4b": {
+    "n": 1500,
+    "min": 131,
+    "p10": 146,
+    "p50": 207,
+    "p90": 273,
+    "p99": 304,
+    "max": 324,
+    "t_window": [
+     0,
+     4096
+    ],
+    "n_over_cap": 0,
+    "n_over_2048": 0,
+    "histogram_500": {
+     "0-499": 1500
+    }
+   },
+   "filter": {
+    "fit": 1736,
+    "trimmed": 236,
+    "kept": 1500
+   }
+  },
+  "fact": {
+   "rows": 1500,
+   "target": 1500,
+   "sources": {
+    "boolq": 386,
+    "jev2synth": 1114
+   },
+   "licenses": {
+    "boolq: CC-BY-SA-3.0": 386,
+    "jev2synth: own generator (repo)": 1114
+   },
+   "subfamilies": {
+    "boolq": 386,
+    "fact_account": 150,
+    "fact_flight": 123,
+    "fact_invoice": 138,
+    "fact_loan": 134,
+    "fact_order": 163,
+    "fact_product": 150,
+    "fact_room": 141,
+    "fact_staff": 115
+   },
+   "types": {
+    "noul": 1500
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.4773,
+     "true": 0.5227
+    }
+   },
+   "choice_K": {},
+   "gold_position_chi2_presented": {
+    "n": 0,
+    "chi2": 0,
+    "df": 0,
+    "chi2_per_df": null,
+    "p": null
+   },
+   "gold_position_chi2_sorted_ids": {
+    "n": 0,
+    "chi2": 0,
+    "df": 0,
+    "chi2_per_df": null,
+    "p": null
+   },
+   "tokens_shim_qwen35_4b": {
+    "n": 1500,
+    "min": 105,
+    "p10": 110,
+    "p50": 122,
+    "p90": 234,
+    "p99": 339,
+    "max": 479,
+    "t_window": [
+     0,
+     4096
+    ],
+    "n_over_cap": 0,
+    "n_over_2048": 0,
+    "histogram_500": {
+     "0-499": 1500
+    }
+   },
+   "filter": {
+    "fit": 1759,
+    "trimmed": 259,
+    "kept": 1500
+   }
+  },
+  "tool_selection": {
+   "rows": 1500,
+   "target": 1500,
+   "sources": {
+    "glaive_fc": 726,
+    "jev2synth": 774
+   },
+   "licenses": {
+    "glaive_fc: Apache-2.0": 726,
+    "jev2synth: own generator (repo)": 774
+   },
+   "subfamilies": {
+    "glaive": 726,
+    "tool_calendar": 75,
+    "tool_email": 81,
+    "tool_finance": 71,
+    "tool_food": 67,
+    "tool_home": 72,
+    "tool_media": 71,
+    "tool_shopping": 88,
+    "tool_travel": 79,
+    "tool_weather": 73,
+    "tool_work": 97
+   },
+   "types": {
+    "choice": 1500
+   },
+   "label_rates": {},
+   "choice_K": {
+    "5": 1500
+   },
+   "gold_position_chi2_presented": {
+    "n": 1500,
+    "chi2": 0.8,
+    "df": 4,
+    "chi2_per_df": 0.203,
+    "p": 0.934748
+   },
+   "gold_position_chi2_sorted_ids": {
+    "n": 1500,
+    "chi2": 27.7,
+    "df": 4,
+    "chi2_per_df": 6.932,
+    "p": 2.2e-05
+   },
+   "tokens_shim_qwen35_4b": {
+    "n": 1500,
+    "min": 130,
+    "p10": 138,
+    "p50": 147,
+    "p90": 168,
+    "p99": 186,
+    "max": 210,
+    "t_window": [
+     0,
+     4096
+    ],
+    "n_over_cap": 0,
+    "n_over_2048": 0,
+    "histogram_500": {
+     "0-499": 1500
+    }
+   },
+   "filter": {
+    "fit": 1905,
+    "trimmed": 405,
+    "kept": 1500
+   }
+  }
+ },
+ "gold_once_fail": 0,
+ "gold_position_gate_p_ge_0.001": {
+  "multi_hop": true,
+  "judge_hard": true,
+  "temporal_numeric": true,
+  "fact": true,
+  "tool_selection": true
+ },
+ "token_template": {
+  "template": "jrt-h2o-shim:qwen3.5-4b",
+  "identity": {
+   "_identity": {
+    "id": "jrt-h2o-shim:qwen3.5-4b",
+    "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+   },
+   "_pinned": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+  },
+  "t_min": 0,
+  "t_max": 4096
+ },
+ "uncompressed_sha256": {
+  "records": "00a1d722310f8923b8d7e998243bf7632909bb4fd03a0edfff1bc7a573dbdf27",
+  "manifest": "ce92cf8a973e5dbd11081cbc9e64f291ceef5499a25d0aa307d0c878a001911f",
+  "content": "35c5cb2e6285b3672cab85ed8179f92950f050eb5ec9ce693866055a77e0fa68"
+ },
+ "pool": {
+  "n": 10000,
+  "by_family": {
+   "multi_hop": 2000,
+   "judge_hard": 2000,
+   "temporal_numeric": 2000,
+   "fact": 2000,
+   "tool_selection": 2000
+  },
+  "pool_uncompressed_sha256": "65aefb3faabe803cdc27b8bedcecbca6b610685eb1249e1157ca68069c7e9c21",
+  "plan": {
+   "multi_hop": {
+    "ref_chase": 1500,
+    "musique": 500
+   },
+   "judge_hard": {
+    "gsm8k": 700,
+    "synth": 1300
+   },
+   "temporal_numeric": {
+    "synth": 1500,
+    "gsm8k": 500
+   },
+   "fact": {
+    "synth": 1300,
+    "boolq": 700
+   },
+   "tool_selection": {
+    "glaive": 1000,
+    "synth": 1000
+   }
+  },
+  "seed": 20261011,
+  "stage": "a2"
+ },
+ "check": {
+  "n_pool": 10000,
+  "n_kept": 9057,
+  "checked_uncompressed_sha256": "8fdfaf8dd44ed24faf79d1edf546f286b8ee595a2f6dc344d46dc6ff2f322eaf",
+  "reasons": {
+   "multi_hop": {
+    "kept": 1988,
+    "index_fingerprint": 12
+   },
+   "judge_hard": {
+    "index_fingerprint": 116,
+    "kept": 1669,
+    "checker:cohort_id_or_item": 170,
+    "checker:index_item_text": 2,
+    "checker:dup_text_other_item": 22,
+    "checker:dup_content": 21
+   },
+   "temporal_numeric": {
+    "kept": 1736,
+    "jevbench_fingerprint": 15,
+    "index_fingerprint": 85,
+    "checker:dup_content": 27,
+    "checker:cohort_id_or_item": 136,
+    "checker:index_item_text": 1
+   },
+   "fact": {
+    "kept": 1759,
+    "index_fingerprint": 14,
+    "checker:cohort_id_or_item": 223,
+    "checker:dup_text_other_item": 4
+   },
+   "tool_selection": {
+    "kept": 1905,
+    "index_fingerprint": 42,
+    "jevbench_fingerprint": 2,
+    "checker:cohort_id_or_item": 36,
+    "checker:index_item_text": 15
+   }
+  }
+ },
+ "drop_ids_files": {},
+ "commit": "1be151687ccb52c1a9c0151f4b3de1a08d9437f4"
+}

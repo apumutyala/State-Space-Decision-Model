@@ -1,0 +1,62 @@
+{
+ "records": {
+  "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw-jev3-slice/records.jsonl.gz": "1f184bb925129e83d87dd295b2efead5f500640c6543f9924d1ec649a7c4ca69"
+ },
+ "rows_by_source": {
+  "aegis2": 200,
+  "ambignq": 200,
+  "helpsteer2": 80,
+  "helpsteer3": 120,
+  "privacyqa": 200,
+  "prm800k": 200,
+  "tatqa": 143,
+  "timeqa": 57
+ },
+ "fails": {},
+ "fail_ids": {},
+ "pass": true,
+ "prm800k": {
+  "stream_stats": {
+   "lines": 97782,
+   "not_math_train": 31468,
+   "qc_or_screen": 14992,
+   "finish_other": 2035,
+   "diverged": 25,
+   "eligible": 49262
+  },
+  "stream_sha256": "1110237feeb51d1bc200cb37b8f965cfdc1036eac7d506094049366fe7dc1089",
+  "cached_problems": 6755,
+  "cache_vs_official_math": {
+   "in_math_train": 6755,
+   "in_math_test": 0,
+   "in_neither": 0
+  },
+  "rows_vs_official_math": {
+   "rows": 200
+  },
+  "rule": "problem text (whitespace-normalised, casefolded) in MATH TRAIN and NOT in MATH TEST (MATH-500 is a subset of MATH TEST); PRM800K math_splits unique_id starts with train/",
+  "math_reference": {
+   "repo": "EleutherAI/hendrycks_math",
+   "revision": "21a5633873b6a120296cce3e2df9d5550074f4a3",
+   "files": {
+    "algebra-train.parquet": "73347f5b55869f21ff094361025dbd12d291e971aa4d72142eacee10438e449f",
+    "counting_and_probability-train.parquet": "d37ae017930df41678edee50dcde18c17fb06afaff9eb505c1b95f1002bfcb31",
+    "geometry-train.parquet": "9dbf5e5b55499e696e0ba72da9d85d4f0be3acbf7eaa6cb014b0fc78bb63784f",
+    "intermediate_algebra-train.parquet": "0c87f3798ebdfb915b1f9b6fc13c1a8d064c3cb91631ccbe85b83ed5d71150f6",
+    "number_theory-train.parquet": "81c08649149b39811f2d1d7ddf5dfccf6c4c8044a2e169cfb24db09160c941f4",
+    "prealgebra-train.parquet": "765b526fb5c0b8385cb7be2c16bf4f6f28cf71f2bc15c826abfbb5fa7f8616cc",
+    "precalculus-train.parquet": "28bb1ff95525c8d32521509bef91de76339659f5467a381e6e8deea204538f0e",
+    "algebra-test.parquet": "0e04a850dac9cfc758eac0c80afd2d0cc65e29ea72f916c8ac1045b12af937f5",
+    "counting_and_probability-test.parquet": "c324818949c75a6227c0328a8499d58023cbbf6757cfc1736f5ab24cc8d87966",
+    "geometry-test.parquet": "98720f3a8134ad9784fd8951195245264495df03ffc5c9485a9a54ff5ae2431a",
+    "intermediate_algebra-test.parquet": "e859f72486c951c2017da880541ca729940eaa986b0364eb23e238983df9bfeb",
+    "number_theory-test.parquet": "ba156c9c9fa2040836ba12135fd964e6e67d6bccd8c469ec4a3ad941f8f6fbe9",
+    "prealgebra-test.parquet": "301e5d8ade5c7b5038032532e498bdc9dca799e7f1061a63f2e7d980803240cc",
+    "precalculus-test.parquet": "da37474ba3761ae5727af3844a7ba963a735bd6a14c65e6137593669a4fe3b9c"
+   },
+   "n_train": 7499,
+   "n_test": 5000
+  }
+ },
+ "ambignq_dev_ids_excluded": 2002
+}

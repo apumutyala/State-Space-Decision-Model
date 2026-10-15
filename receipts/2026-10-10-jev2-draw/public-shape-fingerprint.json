@@ -1,0 +1,326 @@
+{
+ "what": "JevBench v1.2 public items (eval-only): per-family SHAPE statistics only (no text)",
+ "template": {
+  "id": "jrt-h2o-shim:qwen3.5-4b",
+  "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+ },
+ "families": {
+  "adequacy": {
+   "n": 12,
+   "string_state_share": 1.0,
+   "types": {
+    "noul": 12
+   },
+   "choice_K": {},
+   "noul_criteria_filled_share": 1.0,
+   "tokens": {
+    "p10": 112,
+    "p50": 118,
+    "p90": 122,
+    "max": 129
+   }
+  },
+  "adversarial": {
+   "n": 6,
+   "string_state_share": 1.0,
+   "types": {
+    "choice": 3,
+    "noul": 2,
+    "score": 1
+   },
+   "choice_K": {
+    "4": 3
+   },
+   "noul_criteria_filled_share": 1.0,
+   "tokens": {
+    "p10": 244,
+    "p50": 267,
+    "p90": 321,
+    "max": 326
+   }
+  },
+  "ambiguous": {
+   "n": 7,
+   "string_state_share": 0.8571,
+   "types": {
+    "choice": 7
+   },
+   "choice_K": {
+    "3": 6,
+    "4": 1
+   },
+   "noul_criteria_filled_share": null,
+   "tokens": {
+    "p10": 423,
+    "p50": 518,
+    "p90": 624,
+    "max": 656
+   }
+  },
+  "extraction": {
+   "n": 24,
+   "string_state_share": 1.0,
+   "types": {
+    "choice": 24
+   },
+   "choice_K": {
+    "4": 21,
+    "5": 3
+   },
+   "noul_criteria_filled_share": null,
+   "tokens": {
+    "p10": 107,
+    "p50": 113,
+    "p90": 123,
+    "max": 126
+   }
+  },
+  "fact": {
+   "n": 12,
+   "string_state_share": 1.0,
+   "types": {
+    "noul": 12
+   },
+   "choice_K": {},
+   "noul_criteria_filled_share": 1.0,
+   "tokens": {
+    "p10": 106,
+    "p50": 115,
+    "p90": 122,
+    "max": 135
+   }
+  },
+  "intent": {
+   "n": 24,
+   "string_state_share": 1.0,
+   "types": {
+    "choice": 24
+   },
+   "choice_K": {
+    "5": 24
+   },
+   "noul_criteria_filled_share": null,
+   "tokens": {
+    "p10": 131,
+    "p50": 134,
+    "p90": 148,
+    "max": 154
+   }
+  },
+  "judge_hard": {
+   "n": 17,
+   "string_state_share": 0.0,
+   "types": {
+    "noul": 17
+   },
+   "choice_K": {},
+   "noul_criteria_filled_share": 1.0,
+   "tokens": {
+    "p10": 229,
+    "p50": 313,
+    "p90": 380,
+    "max": 418
+   }
+  },
+  "long_policy": {
+   "n": 19,
+   "string_state_share": 1.0,
+   "types": {
+    "choice": 12,
+    "noul": 5,
+    "score": 2
+   },
+   "choice_K": {
+    "4": 7,
+    "5": 4,
+    "6": 1
+   },
+   "noul_criteria_filled_share": 1.0,
+   "tokens": {
+    "p10": 2360,
+    "p50": 2658,
+    "p90": 3606,
+    "max": 3953
+   }
+  },
+  "multi_hop": {
+   "n": 18,
+   "string_state_share": 0.5556,
+   "types": {
+    "choice": 16,
+    "score": 1,
+    "noul": 1
+   },
+   "choice_K": {
+    "4": 14,
+    "6": 2
+   },
+   "noul_criteria_filled_share": 1.0,
+   "tokens": {
+    "p10": 2097,
+    "p50": 2201,
+    "p90": 2648,
+    "max": 2986
+   }
+  },
+  "ordinal": {
+   "n": 12,
+   "string_state_share": 1.0,
+   "types": {
+    "score": 12
+   },
+   "choice_K": {},
+   "noul_criteria_filled_share": null,
+   "tokens": {
+    "p10": 143,
+    "p50": 145,
+    "p90": 148,
+    "max": 155
+   }
+  },
+  "policy": {
+   "n": 12,
+   "string_state_share": 1.0,
+   "types": {
+    "noul": 12
+   },
+   "choice_K": {},
+   "noul_criteria_filled_share": 1.0,
+   "tokens": {
+    "p10": 125,
+    "p50": 129,
+    "p90": 137,
+    "max": 139
+   }
+  },
+  "probability": {
+   "n": 10,
+   "string_state_share": 1.0,
+   "types": {
+    "noul": 3,
+    "choice": 7
+   },
+   "choice_K": {
+    "3": 7
+   },
+   "noul_criteria_filled_share": 1.0,
+   "tokens": {
+    "p10": 417,
+    "p50": 622,
+    "p90": 1239,
+    "max": 1940
+   }
+  },
+  "routing": {
+   "n": 12,
+   "string_state_share": 1.0,
+   "types": {
+    "choice": 12
+   },
+   "choice_K": {
+    "6": 12
+   },
+   "noul_criteria_filled_share": null,
+   "tokens": {
+    "p10": 156,
+    "p50": 157,
+    "p90": 161,
+    "max": 164
+   }
+  },
+  "routing_hard": {
+   "n": 5,
+   "string_state_share": 0.0,
+   "types": {
+    "choice": 5
+   },
+   "choice_K": {
+    "5": 5
+   },
+   "noul_criteria_filled_share": null,
+   "tokens": {
+    "p10": 288,
+    "p50": 305,
+    "p90": 307,
+    "max": 324
+   }
+  },
+  "temporal_numeric": {
+   "n": 15,
+   "string_state_share": 0.7333,
+   "types": {
+    "noul": 4,
+    "choice": 10,
+    "score": 1
+   },
+   "choice_K": {
+    "3": 2,
+    "4": 3,
+    "5": 4,
+    "6": 1
+   },
+   "noul_criteria_filled_share": 1.0,
+   "tokens": {
+    "p10": 271,
+    "p50": 618,
+    "p90": 1009,
+    "max": 1326
+   }
+  },
+  "tool_selection": {
+   "n": 12,
+   "string_state_share": 1.0,
+   "types": {
+    "choice": 12
+   },
+   "choice_K": {
+    "5": 12
+   },
+   "noul_criteria_filled_share": null,
+   "tokens": {
+    "p10": 142,
+    "p50": 146,
+    "p90": 149,
+    "max": 150
+   }
+  },
+  "tradeoff": {
+   "n": 6,
+   "string_state_share": 1.0,
+   "types": {
+    "choice": 4,
+    "noul": 2
+   },
+   "choice_K": {
+    "4": 1,
+    "5": 3
+   },
+   "noul_criteria_filled_share": 1.0,
+   "tokens": {
+    "p10": 616,
+    "p50": 741,
+    "p90": 816,
+    "max": 863
+   }
+  },
+  "trap": {
+   "n": 8,
+   "string_state_share": 1.0,
+   "types": {
+    "noul": 4,
+    "score": 1,
+    "choice": 3
+   },
+   "choice_K": {
+    "4": 3
+   },
+   "noul_criteria_filled_share": 1.0,
+   "tokens": {
+    "p10": 224,
+    "p50": 300,
+    "p90": 368,
+    "max": 373
+   }
+  }
+ }
+}

@@ -1,0 +1,146 @@
+{
+ "build": "bschema-draw-jev2c",
+ "n_records": 1500,
+ "type_mix": {
+  "choice": 0.5187,
+  "noul": 0.4313,
+  "score": 0.05
+ },
+ "families": {
+  "long_policy": {
+   "rows": 1500,
+   "target": 1500,
+   "sources": {
+    "jev2synth": 1500
+   },
+   "licenses": {
+    "jev2synth: own generator (repo)": 1500
+   },
+   "subfamilies": {
+    "lpl_access": 122,
+    "lpl_building": 121,
+    "lpl_equipment": 123,
+    "lpl_expense": 133,
+    "lpl_latefee": 132,
+    "lpl_leave": 131,
+    "lpl_overtime": 121,
+    "lpl_procurement": 124,
+    "lpl_returns": 125,
+    "lpl_subscription": 119,
+    "lpl_travel": 126,
+    "lpl_warranty": 123
+   },
+   "types": {
+    "choice": 778,
+    "noul": 647,
+    "score": 75
+   },
+   "label_rates": {
+    "noul": {
+     "false": 0.4807,
+     "true": 0.5193
+    },
+    "score": {
+     "0": 0.4533,
+     "1": 0.28,
+     "2": 0.2667
+    }
+   },
+   "choice_K": {
+    "3": 122,
+    "4": 282,
+    "5": 193,
+    "6": 181
+   },
+   "gold_position_chi2_presented": {
+    "n": 778,
+    "chi2": 8.7,
+    "df": 14,
+    "chi2_per_df": 0.624,
+    "p": 0.847851
+   },
+   "gold_position_chi2_sorted_ids": {
+    "n": 778,
+    "chi2": 32.5,
+    "df": 14,
+    "chi2_per_df": 2.323,
+    "p": 0.003459
+   },
+   "tokens_shim_qwen35_4b": {
+    "n": 1500,
+    "min": 2001,
+    "p10": 2124,
+    "p50": 2642,
+    "p90": 3158,
+    "p99": 3291,
+    "max": 3347,
+    "t_window": [
+     2000,
+     4096
+    ],
+    "n_over_cap": 0,
+    "n_over_2048": 1448,
+    "histogram_500": {
+     "2000-2499": 575,
+     "2500-2999": 592,
+     "3000-3499": 333
+    }
+   },
+   "filter": {
+    "fit": 1692,
+    "under_2000": 108,
+    "trimmed": 192,
+    "kept": 1500
+   }
+  }
+ },
+ "gold_once_fail": 0,
+ "gold_position_gate_p_ge_0.001": {
+  "long_policy": true
+ },
+ "token_template": {
+  "template": "jrt-h2o-shim:qwen3.5-4b",
+  "identity": {
+   "_identity": {
+    "id": "jrt-h2o-shim:qwen3.5-4b",
+    "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+   },
+   "_pinned": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
+  },
+  "t_min": 2000,
+  "t_max": 4096
+ },
+ "uncompressed_sha256": {
+  "records": "0a297a5886b0b3318344165acbf44c7f1cbe187639dae6de1312aeb91e4ad50c",
+  "manifest": "aefdc2e63d93eb55344834b413fe7ca08054ccfbe9f9062dc7b59c93cc0f7244",
+  "content": "d2e9d344925d808ef150514e91757af83a0acb7708e5fc01172219f36041209f"
+ },
+ "pool": {
+  "n": 2103,
+  "by_family": {
+   "long_policy": 2103
+  },
+  "pool_uncompressed_sha256": "14e587cfaf37671af5cc075e7c505ca854d66b82fc8748067636018c4290fd29",
+  "plan": {
+   "long_policy": {
+    "handbook": 1800,
+    "contractnli": 300
+   }
+  },
+  "seed": 20261011,
+  "stage": "c"
+ },
+ "check": {
+  "n_pool": 2103,
+  "n_kept": 1800,
+  "checked_uncompressed_sha256": "7ca65afebf71fb51baf2d5b7f63f587201279e694152e88ebd9df90921239a6f",
+  "reasons": {
+   "long_policy": {
+    "kept": 1800,
+    "index_fingerprint": 303
+   }
+  }
+ },
+ "drop_ids_files": {},
+ "commit": "32d31d7d64d7a8455b45e6d57e811815e012c466"
+}
