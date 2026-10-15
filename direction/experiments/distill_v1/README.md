@@ -52,12 +52,30 @@ public-overlap fingerprint and disabled-guard failure, bounded arithmetic/date
 audits, blind verifier inputs, two-sample agreement, and a no-public,
 group-disjoint v0/capability training union.
 
+### Serialization amendment before any student/public scoring
+
+The initial 7,200-item attempt produced 3,797 schema-valid items (498 noul).
+The major failure was 1,505 pair jobs omitting the required literal factual
+slot; some final JSON solutions contained unfinished self-correction. All
+3,797 valid items passed both contamination guards with zero hits. This is
+not treated as a completed 7,200-item draw.
+
+Re-author **only schema-rejected job IDs**, without changing the family plan,
+student outcomes or acceptance rules. The final JSON stage now uses the
+declared object schema, including a required literal factual slot for noul;
+the author thinking budget rises from 256 to 1,536 tokens. Existing valid
+items are unchanged. This repairs format compliance, not labels: both blind
+thinking verifications still decide acceptance. The initial outputs and
+first-pass yield report remain in the private audit trail.
+
+
 ## Commands
 
 ```bash
 source ~/ssdm/env.sh
 python -X utf8 -m keel.distill.v1_pipeline smoke-oss
 python -X utf8 -m keel.distill.v1_pipeline author
+python -X utf8 -m keel.distill.v1_pipeline repair  # only if schema rejection left an incomplete draw
 python -X utf8 -m keel.distill.v1_pipeline verify
 python -X utf8 -m keel.distill.v1_pipeline label
 python -X utf8 -m pytest -q keel/tests
@@ -73,3 +91,4 @@ Modal ceiling: **$35**. H100 estimate: $3.95/hour; pipeline charges conservative
 | Date | Function | H100 minutes (upper estimate) | USD (upper estimate) |
 |---|---|---:|---:|
 | 2026-10-15 | gpt-oss-20b compatibility smoke | 4.345 | 0.286 |
+| 2026-10-15 | initial Qwen9B authorship (5,400 jobs) | 31.774 | 2.092 |

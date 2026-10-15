@@ -62,6 +62,20 @@ def prompt(job: dict) -> str:
             "Return a JSON object with exactly these fields: " + json.dumps(schema))
 
 
+def author_schema(qtype: str) -> dict:
+    """Constrain serialization, not the scenario's substantive content or gold."""
+    fields = {k: {"type": "string"} for k in
+              ("state", "instructions", "answer", "criterion", "fact_a", "fact_b", "answer_b", "solution")}
+    fields["options"] = {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 6}
+    if qtype == "noul":
+        fields["state"]["pattern"] = r"[\s\S]*\{\{FACT\}\}[\s\S]*"
+        fields["answer"]["enum"] = ["yes", "no"]
+        fields["answer_b"]["enum"] = ["yes", "no"]
+        fields["options"] = {"type": "array", "items": {"type": "string", "enum": ["yes", "no"]},
+                             "minItems": 2, "maxItems": 2}
+    return {"type": "object", "properties": fields, "required": list(fields), "additionalProperties": False}
+
+
 def _norm(text: str) -> str:
     return " ".join(unicodedata.normalize("NFKC", text).casefold().split())
 

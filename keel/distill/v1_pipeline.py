@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 import time
 
-from keel.distill.authoring import materialize, plan, prompt, summarize
+from keel.distill.authoring import author_schema, materialize, plan, prompt, summarize
 from keel.distill.sources import digest, guard_draw, read_rows, write_rows
 from keel.distill.verification import VERIFY_PROMPT, blind_payload, capability_labels, guard_authored
 
@@ -71,9 +71,10 @@ def make_app(model: str):
                     # Harmony analysis ends before a separate final-channel message.
                     text = text.split("<|start|>assistant<|channel|>final")[0]
                     finals.append(p + text + "<|end|><|start|>assistant<|channel|>final<|message|>")
-            outputs = self.llm.generate(finals, SamplingParams(max_tokens=max_output, temperature=0.7,
-                                        top_p=0.95, seed=seed + 1,
-                                        structured_outputs=StructuredOutputsParams(json_object=True)), use_tqdm=False)
+            sampling = [SamplingParams(max_tokens=max_output, temperature=0.7, top_p=0.95, seed=seed + 1,
+                        structured_outputs=(StructuredOutputsParams(json=m["schema"]) if "schema" in m
+                                            else StructuredOutputsParams(json_object=True))) for m in messages]
+            outputs = self.llm.generate(finals, sampling, use_tqdm=False)
             results = []
             for trace, output in zip(traces, outputs):
                 o, t = output.outputs[0], trace.outputs[0]
@@ -114,8 +115,16 @@ def run_phase(args):
     phase = args.phase
     model = "oss" if phase in {"smoke-oss", "verify"} else "qwen"
     app, cls = make_app(model)
-    if phase == "author":
+    existing = []
+    if phase in {"author", "repair"}:
         jobs = plan(args.items)
+        if phase == "repair":
+            original = out / "original-authored.jsonl.gz"
+            if not original.exists():
+                write_rows(original, read_rows(out / "authored.jsonl.gz"))
+            existing = read_rows(original)
+            done = {r["distill"]["group"] for r in existing}
+            jobs = [j for j in jobs if j["id"] not in done]
     elif phase in {"verify", "label"}:
         jobs = read_rows(out / "authored.jsonl.gz")
     else:
@@ -124,7 +133,7 @@ def run_phase(args):
     costs = {"date": "2026-10-15", "function": phase, "model": model, "status": "running"}
     start = time.time()
     results = {}
-    authored, failures = [], collections.Counter()
+    authored, failures = list(existing), collections.Counter()
     try:
         with modal.enable_output(), app.run():
             server = cls()
@@ -139,9 +148,12 @@ def run_phase(args):
                 else:
                     if spending(out) + (time.time() - start) * RATE + args.reserve >= args.cap:
                         raise RuntimeError("spend ceiling reached before next batch")
-                    if phase == "author":
-                        messages = [{"system": prompt(j), "user": "Invent and solve the scenario, then emit the complete JSON object."} for j in batch]
-                        got = server.generate.remote(messages, max_think=256, max_output=2800, seed=20000 + offset)
+                    if phase in {"author", "repair"}:
+                        messages = [{"system": prompt(j), "user": "Solve BOTH cases fully before the final JSON. "
+                                     "The final object is the finished item, not a plan or revision. "
+                                     "The state must contain the literal {{FACT}} slot for a noul pair.",
+                                     "schema": author_schema(j["type"])} for j in batch]
+                        got = server.generate.remote(messages, max_think=1536, max_output=2800, seed=20000 + offset)
                     elif phase == "verify":
                         messages = [{"system": VERIFY_PROMPT, "user": json.dumps(blind_payload(r), ensure_ascii=False)} for r in batch]
                         got = server.generate.remote(messages, max_think=768, max_output=640, seed=30000 + offset)
@@ -153,7 +165,7 @@ def run_phase(args):
                     saved = {"input_sha256": identity, "result": got}
                     saved_path.write_text(json.dumps(saved))
                 got = saved["result"]
-                if phase == "author":
+                if phase in {"author", "repair"}:
                     for job, result in zip(batch, got["results"]):
                         try:
                             if result["output_truncated"]:
@@ -172,14 +184,14 @@ def run_phase(args):
                     (out / "oss-smoke.json").write_text(json.dumps(got, indent=2))
                 print(json.dumps({"phase": phase, "completed": offset + len(batch), "total": len(jobs),
                                   "wall_s": round(time.time() - start)}), flush=True)
-        if phase == "author":
+        if phase in {"author", "repair"}:
             kept, guard_counts = guard_authored(authored)
             write_rows(out / "authored-unguarded.jsonl.gz", authored)
             write_rows(out / "authored.jsonl.gz", kept)
             guards = guard_draw(out / "authored.jsonl.gz")
             report = {"planned_items": args.items, "parsed": summarize(authored), "guarded": summarize(kept),
                       "schema_rejections": dict(failures), "guard_rejections": guard_counts, "guards": guards}
-            (out / "author-yield.json").write_text(json.dumps(report, indent=2))
+            (out / f"{phase}-yield.json").write_text(json.dumps(report, indent=2))
         elif phase in {"verify", "label"}:
             (out / f"{phase}-results.json").write_text(json.dumps(results))
             if phase == "label":
@@ -199,7 +211,7 @@ def run_phase(args):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("phase", choices=["smoke-oss", "author", "verify", "label"])
+    p.add_argument("phase", choices=["smoke-oss", "author", "repair", "verify", "label"])
     p.add_argument("--out")
     p.add_argument("--items", type=int, default=7200)
     p.add_argument("--batch", type=int, default=96)
