@@ -181,6 +181,26 @@ guard: **zero overlap hits**. The unavailable Decision Index document-overlap
 guard is not counted as a pass. See committed `train.json` and
 `train-guards.json` for aggregates.
 
+The original export omitted the image/video processor configurations. vLLM
+requires them even for this text-only workload, so its initialization repeatedly
+failed; the first client call ultimately exited with a DNS/connection error,
+not a usable result. The permanent exporter now preserves the pinned base
+`preprocessor_config.json`, `video_preprocessor_config.json` and
+`chat_template.jinja`. A CPU-only backfill repaired the existing checkpoint
+without modifying any trained weights, and `AutoProcessor.from_pretrained`
+loaded all three processor components locally. Asset hashes and the repair
+record are in `processor-assets.json`. The repair command for older exports is
+`modal run -m keel.distill.modal_train::repair_processor_remote --run <run>`.
+Student GPU load checks have a 900-second remote limit; pilot student calls
+have a 1,800-second remote limit and a 60-second idle shutdown window.
+
+The repaired checkpoint **passed a real vLLM load and `judge(...)` call on four
+TRAIN-source rows**, one-pass trust mode. All four returned finite normalized
+option distributions. vLLM 0.30.0 loaded it in 116.26 seconds and scored the
+warm four-row batch in 0.485 seconds; total local wall time was 143.99 seconds.
+This verifies compatibility, not held-out accuracy. Aggregate:
+`direction/experiments/distill_v0/checkpoint-smoke.json`.
+
 ## Pilot definitions
 
 The pilot compares student 4B one-pass trust, stock 4B one-pass trust, and
@@ -217,6 +237,20 @@ retention. The 4B/9B validators are related Qwen models. No adaptive attacks,
 new attack families, real-world policy changes, or human-label guarantees are
 established by this experiment.
 
+### Measured pilot
+
+The bounded student pilot completed on 192 held-out groups, 782 total variants.
+Student clean and robust accuracy were both **82.81% [77.60%, 88.02%]**,
+versus stock 4B clean 61.46% [54.69%, 68.23%] and robust
+24.48% [18.75%, 30.73%]. Combined targeted ASR was **0/318** for the student,
+106/236 for stock 4B, and 24/300 for 9B thinking. Student evidence retention was
+14/14 and narrow policy compliance 192/192. The corresponding percentile
+bootstrap boundary intervals are [0%, 0%] and [100%, 100%], **not population
+guarantees**. These are new instances of training-source and attack-template
+families, not unseen-family generalization. The complete three-arm table,
+counts, 95% CIs and limitations are in
+[`direction/experiments/distill_v0/README.md`](../../direction/experiments/distill_v0/README.md).
+
 ## Reproduction
 
 Run from the repository root with `/home/alp/ssdm-venv/bin/python -X utf8`:
@@ -241,7 +275,11 @@ python -X utf8 -m keel.distill.modal_train \
 python -X utf8 -m keel.distill.modal_train \
   --labels /home/alp/ssdm-direction/distill_v0/teacher-train-screened/labels.jsonl.gz \
   --run distill-v0-20261015 --out /home/alp/ssdm-direction/distill_v0/train.json
-python -X utf8 -m keel.distill.pilot \
+timeout --kill-after=30s 900 python -X utf8 -m keel.distill.checkpoint \
+  --train-sources /home/alp/ssdm-direction/distill_v0/data/train.jsonl.gz \
+  --checkpoint /results/students/distill-v0-20261015/merged \
+  --out /home/alp/ssdm-direction/distill_v0/checkpoint-smoke.json
+timeout --kill-after=30s 1800 python -X utf8 -m keel.distill.pilot \
   --train-sources /home/alp/ssdm-direction/distill_v0/data/train.jsonl.gz \
   --pilot-sources /home/alp/ssdm-direction/distill_v0/data/pilot.jsonl.gz \
   --teacher-dir /home/alp/ssdm-direction/distill_v0/teacher-pilot-screened \
@@ -256,8 +294,11 @@ canary, wrong targets across all types, trust-channel separation, a planted
 JevBench-overlap fixture and disabled-gate rejection, split leakage, lexical
 counterfactual filters, exact KL/CE against hand calculation, real tiny-model
 gradients and nonlabel exclusion, masked labels, teacher filtering, executable
-later-event counterfactual semantics, cross-model validation requirements, and
-cluster-bootstrap metric denominators. **41 passed in 1.77 s**.
+later-event counterfactual semantics, cross-model validation requirements,
+cluster-bootstrap metric denominators, and complete pinned processor-asset
+export without modifying trained weights. Final command:
+`/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests`
+— **46 passed in 1.75 s**.
 
 ## Paid-run log
 
@@ -277,6 +318,16 @@ conservatively overstate actual GPU billing; they are not invoice amounts.
 | 2026-10-15 | 9B training evidence authorship + two-sample labels | 66.015 | $4.346 | 3,107 sources; 14,885 scored units; 9,075 labels before the stricter evidence screen. |
 | 2026-10-15 | 4B-thinking training evidence crosscheck | 3.260 | $0.215 | 1,207 teacher-accepted → 248 executable-event candidates → 237 cross-model validated; 8,105 total training labels. |
 | 2026-10-15 | Full `train_remote`, one epoch | 18.348 | $1.208 | 8,105 rows, 507 optimizer updates, full merged HF checkpoint saved and volume committed. |
+| 2026-10-15 | Failed student checkpoint load/pilot | 176.247 | $11.603 | No returned outputs. Missing processor metadata caused repeated initialization failures; client later failed with DNS/ConnectionError. |
+| 2026-10-15 | Failed app shutdown reserve | 1.953 | $0.129 | Difference between observed app lifetime and the failed local-call wall time; avoids silently ignoring disconnect cleanup. |
+| 2026-10-15 | Cancelled pre-repair bounded retry | 1.500 | $0.099 | Explicitly stopped after diagnosing missing assets; no returned outputs. |
+| 2026-10-15 | `repair_processor_remote` | 0 (CPU-only) | $0.025 | 22.92 seconds; ledger conservatively charges CPU wall at the H100 rate. Pinned processor assets copied and locally loaded; trained weights untouched. |
+| 2026-10-15 | Repaired checkpoint `judge(...)` smoke | 2.400 | $0.158 | Four TRAIN-source rows, valid distributions, vLLM 0.30.0; bounded to 900 seconds. |
+| 2026-10-15 | Repaired student one-pass pilot | 3.069 | $0.202 | 782 held-out variants plus the four-row train-source load check; both baseline arms reused cached outputs. |
+
+**Total conservative upper estimate: $20.72 of the $45 cap**, including the
+failed-run exposure and shutdown reserve. The machine-readable consolidated
+ledger is `direction/experiments/distill_v0/costs.json`.
 
 The initial numerical check exposed FLA's explicit correctness guard for
 Hopper's `chunk_bwd_dqkwg` kernel with Triton 3.4–3.7.0. The fix upgrades the

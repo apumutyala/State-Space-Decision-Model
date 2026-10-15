@@ -1,0 +1,138 @@
+{
+  "date": "2026-10-15",
+  "h100_hourly_usd": 3.95,
+  "cap_usd": 45,
+  "basis": "Conservative wall-time exposure, not invoices; CPU-only work is charged at the H100 wall-time rate as a bookkeeping upper estimate. Failed original call includes its separately observed app-shutdown interval.",
+  "runs": [
+    {
+      "date": "2026-10-15",
+      "function": "train_remote smoke: torch2.10",
+      "wall_s": 437.0554401874542,
+      "gpu_minutes_upper_estimate": 7.2842573364575705,
+      "usd_upper_estimate": 0.4795469413167901,
+      "outcome": "Failed safely on the FLA Hopper backward correctness guard."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "training image build: CUDA13",
+      "wall_s": 206.62206649780273,
+      "gpu_minutes_upper_estimate": 0,
+      "usd_upper_estimate": 0.2267103229628669,
+      "outcome": "CPU build failed on absent clang++; fixed by selecting GCC/G++."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "train_remote corrected smoke",
+      "wall_s": 762.6980090141296,
+      "gpu_minutes_upper_estimate": 12.711633483568827,
+      "usd_upper_estimate": 0.8368492043349478,
+      "outcome": "Eight rows, two backward microbatches, one update; includes CPU image build."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "9B pilot authorship and labels",
+      "wall_s": 404.88399839401245,
+      "gpu_minutes_upper_estimate": 6.748066639900207,
+      "usd_upper_estimate": 0.44424772046009703,
+      "outcome": "192 held-out sources; validation outputs remain private."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "9B training authorship and labels",
+      "wall_s": 3960.8978810310364,
+      "gpu_minutes_upper_estimate": 66.01496468385061,
+      "usd_upper_estimate": 4.345985175020165,
+      "outcome": "3107 sources; 9075 labels before strict evidence screening."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "4B thinking pilot evidence screen",
+      "wall_s": 194.59812760353088,
+      "gpu_minutes_upper_estimate": 3.243302126725515,
+      "usd_upper_estimate": 0.2135173900094297,
+      "outcome": "82 accepted evidence ->14 semantic ->14 cross-model."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "4B thinking training evidence screen",
+      "wall_s": 195.59675478935242,
+      "gpu_minutes_upper_estimate": 3.2599459131558737,
+      "usd_upper_estimate": 0.21461310594942837,
+      "outcome": "1207 accepted evidence ->248 semantic ->237 cross-model."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "train_remote full epoch",
+      "wall_s": 1100.8920464515686,
+      "gpu_minutes_upper_estimate": 18.34820077419281,
+      "usd_upper_estimate": 1.20792321763436,
+      "outcome": "8105 labels; 507 updates; full merged checkpoint."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "student pilot failed: missing processor assets",
+      "wall_s": 10574.81,
+      "gpu_minutes_upper_estimate": 176.2468333333333,
+      "usd_upper_estimate": 11.602916527777777,
+      "outcome": "No outputs; repeated initialization failures, then client connection failure."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "failed app shutdown reserve",
+      "wall_s": 117.19000000000051,
+      "gpu_minutes_upper_estimate": 1.9531666666666752,
+      "usd_upper_estimate": 0.12858347222222277,
+      "outcome": "Additional lifetime after local wall-time exposure."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "cancelled pre-repair retry",
+      "wall_s": 90,
+      "gpu_minutes_upper_estimate": 1.5,
+      "usd_upper_estimate": 0.09875,
+      "outcome": "Known-bad retry cancelled and app explicitly stopped."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "CPU checkpoint processor repair",
+      "wall_s": 22.92,
+      "gpu_minutes_upper_estimate": 0,
+      "usd_upper_estimate": 0.025148333333333335,
+      "outcome": "Pinned processor assets backfilled, no weight changes."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "repaired checkpoint four-row smoke",
+      "wall_s": 143.99445781599206,
+      "gpu_minutes_upper_estimate": 2.3999076302665343,
+      "usd_upper_estimate": 0.15799391899254686,
+      "outcome": "Four TRAIN-source rows returned valid distributions."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "runtime.judge: stock_4b pilot",
+      "model": "qwen3.5-4b",
+      "gpu_minutes_upper_estimate": 2.5748885830243426,
+      "usd_upper_estimate": 0.16951349838243593,
+      "outcome": "Successful held-out scoring; baseline supersets restricted to the final screened evidence population."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "runtime.judge: student_4b pilot",
+      "model": "/results/students/distill-v0-20261015/merged",
+      "gpu_minutes_upper_estimate": 3.0685598731040953,
+      "usd_upper_estimate": 0.20201352497935296,
+      "outcome": "Successful held-out scoring; baseline supersets restricted to the final screened evidence population."
+    },
+    {
+      "date": "2026-10-15",
+      "function": "runtime.judge: teacher_9b pilot",
+      "model": "qwen3.5-9b",
+      "gpu_minutes_upper_estimate": 5.60447465578715,
+      "usd_upper_estimate": 0.3689612481726541,
+      "outcome": "Successful held-out scoring; baseline supersets restricted to the final screened evidence population."
+    }
+  ],
+  "gpu_minutes_upper_estimate": 310.9582017000335,
+  "usd_upper_estimate": 20.72327360154841
+}

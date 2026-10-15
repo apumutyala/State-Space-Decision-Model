@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-15",
+  "function": "runtime.judge student pilot",
+  "checkpoint": "/results/students/distill-v0-20261015/merged",
+  "attempts": [
+    {
+      "app_id": "ap-Ab3n7C32DCsRw5lQzKYYZW",
+      "status": "failed",
+      "cause": "Merged export omitted image/video processor assets; repeated Modal initialization failures. Client eventually exited with a DNS/ConnectionError.",
+      "returned_student_outputs": 0,
+      "wall_s": 10574.81,
+      "gpu_minutes_upper_estimate": 176.2468333333333,
+      "usd_upper_estimate": 11.602916527777777,
+      "app_lifetime_s": 10692,
+      "shutdown_reserve_s": 117.19000000000051,
+      "shutdown_reserve_usd": 0.12858347222222277
+    },
+    {
+      "app_id": "ap-859KTIBTIdcWNGHVkoFQeX",
+      "status": "cancelled",
+      "cause": "Cancelled and explicitly stopped when the missing processor assets were diagnosed, before any result returned.",
+      "returned_student_outputs": 0,
+      "app_lifetime_s": 90,
+      "gpu_minutes_upper_estimate": 1.5,
+      "usd_upper_estimate": 0.09875
+    }
+  ]
+}

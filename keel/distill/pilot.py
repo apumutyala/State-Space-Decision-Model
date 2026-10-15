@@ -79,6 +79,7 @@ def main() -> None:
     p.add_argument("--models", nargs="+", choices=("stock_4b", "student_4b", "teacher_9b"),
                    default=("stock_4b", "student_4b", "teacher_9b"))
     a = p.parse_args()
+    import modal
     from keel.runtime.vllm_judge import APP, judge
 
     train, pilot = read_rows(a.train_sources), read_rows(a.pilot_sources)
@@ -120,13 +121,13 @@ def main() -> None:
         else:
             start = time.time()
             checkpoint_smoke = None
-            with APP.run():
+            with modal.enable_output(), APP.run():
                 server = None
                 if name == "student_4b":
                     from keel.runtime.vllm_judge import JudgeServer
                     from keel.distill.triplets import request_of
 
-                    server = JudgeServer(model=model)
+                    server = JudgeServer.with_options(timeout=1800, scaledown_window=60)(model=model)
                     smoke = judge([request_of(r) for r in train[:4]], model,
                                   mode="trust", think=False, server=server)
                     if len(smoke) != 4:
