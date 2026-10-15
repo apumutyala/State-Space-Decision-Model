@@ -308,6 +308,137 @@ def test_nupi_controller_moves_lambda_and_checkpoints(tmp_path):
     assert h3[0]["cons_lambda"] == 1.0 and tr3.cons_lambda == 0.0  # KL far below epsilon: the warm start decays to 0
 
 
+@pytest.mark.parametrize("row_batch", [1, 2])
+@pytest.mark.parametrize("view_grad", [False, True])
+def test_consistency_and_constraints_share_the_objective_and_step(row_batch, view_grad):
+    """Both gradients enter one optimiser step; logs retain the two features' distinct loss conventions."""
+    torch = _torch()
+    from train.constraints import brier
+    from train.losses import decision_loss, symmetric_kl
+    from train.trainer import Trainer
+
+    items, _, _ = _toy_items(4)
+    items[1].cview = items[3].cview = None  # unpaired rows must not change either term's normalisation
+    ctl = {"epsilon": 1e-9, "kappa_p": 0.2, "kappa_i": 0.4, "nu": 0.1, "lambda_init": 0.7, "lambda_max": 5.0}
+    spec = {"lambda_init": 1.2, "items": [{"name": "brier", "kind": "calibration", "setpoint": 0.2}]}
+    cfg = _cfg(row_batch=row_batch, consistency={"controller": ctl, "view_grad": view_grad}, constraints=spec)
+    tr = Trainer(_model(), cfg, items, guard=_guard())
+    ref = Trainer(_model(), cfg, items, guard=_guard())
+    rows = [items[i] for i in tr._order(0)]
+    lp = ref.model([it.row for it in rows]).log_probs.float()
+    y = torch.tensor([it.label for it in rows])
+    paired = [i for i, it in enumerate(rows) if it.cview is not None]
+    with torch.set_grad_enabled(view_grad):
+        vlp = ref.model([rows[i].cview.row for i in paired]).log_probs.float()
+    kl = symmetric_kl(lp[paired], vlp)
+    task = decision_loss(lp, y, [it.row.qtype for it in rows], cfg.loss) + ctl["lambda_init"] * kl.sum() / len(rows)
+    penalty = spec["lambda_init"] * (brier(lp, y).mean() - 0.2)
+    objective = task + penalty
+    objective.backward()
+    torch.nn.utils.clip_grad_norm_([p for g in ref.opt.param_groups for p in g["params"]], cfg.max_grad_norm)
+
+    got = tr.train_step()
+    rec = tr.history[-1]
+    assert got == rec["loss"] == pytest.approx(float(task.detach()), abs=2e-7)
+    assert rec["lagrangian"] == pytest.approx(float(objective.detach()), abs=2e-7)
+    assert rec["cons_kl"] == pytest.approx(float(kl.detach().mean()), rel=2e-5, abs=1e-8)
+    assert rec["cons_paired"] == len(paired) and rec["cons_lambda"] == ctl["lambda_init"]
+    assert tr.cons_ctrl.n == tr.constraints.ctl["brier"].n == 1
+    assert tr.cons_lambda != ctl["lambda_init"] and tr.constraints.ctl["brier"].lam != spec["lambda_init"]
+    assert rec["constraints"]["brier"]["lam"] == tr.constraints.ctl["brier"].lam
+    ref_params = dict(ref.model.named_parameters())
+    # Compare gradients, not Adam's near-zero-gradient updates: regrouping can change the last rounding bit.
+    assert any(not torch.equal(p, ref_params[name]) for name, p in tr.model.named_parameters() if p.requires_grad)
+    for name, p in tr.model.named_parameters():
+        if p.requires_grad:
+            assert (p.grad is None) == (ref_params[name].grad is None), name
+            if p.grad is not None:
+                assert torch.allclose(p.grad, ref_params[name].grad, atol=2e-7, rtol=2e-5), name
+
+
+@pytest.mark.parametrize("row_batch", [1, 3])
+def test_consistency_and_constraints_resume_both_controllers_and_recall(tmp_path, row_batch):
+    torch = _torch()
+    from heads import ByteEncoder
+    from train.data import TOY_TEMPLATE, items_from_records
+    from train.mqar_probe import mqar_records
+    from train.trainer import Trainer
+
+    items, _, _ = _toy_items(8)
+    probe = items_from_records(mqar_records(3, n_pairs=2, n_queries=1, n_values=3, seed=1), ByteEncoder(),
+                               template=TOY_TEMPLATE)
+    ctl = {"epsilon": 1e-9, "kappa_p": 0.2, "kappa_i": 0.4, "nu": 0.1, "lambda_init": 0.7, "lambda_max": 5.0}
+    spec = {"lambda_init": 0.5, "monitor_every": 2, "monitor_rows": 6,
+            "items": [{"name": "brier", "kind": "calibration", "setpoint": 0.2},
+                      {"name": "ece", "kind": "calibration", "metric": "ece", "setpoint": 0.02, "source": "monitor"},
+                      {"name": "fam", "kind": "family_regression", "reference": "init", "source": "monitor"},
+                      {"name": "recall", "kind": "recall", "delta": 0.0, "probe_batch": 2}]}
+
+    def trainer(path):
+        cfg = _cfg(max_steps=6, row_batch=row_batch, consistency={"controller": ctl}, constraints=spec,
+                   ckpt_dir=str(path), ckpt_every=3)
+        return Trainer(_model(), cfg, items, guard=_guard(), probe_items=probe)
+
+    full = trainer(tmp_path / "full")
+    full.train()
+    first = trainer(tmp_path / "split")
+    first.train(3)
+    state = torch.load(Trainer.latest(first.cfg.ckpt_dir), map_location="cpu", weights_only=False)
+    assert state["consistency"]["controller"] == first.cons_ctrl.state_dict()
+    assert state["constraints"] == first.constraints.state_dict()
+    assert all("g" in h["constraints"]["recall"] and h["cons_paired"] == 4 for h in first.history)
+    assert first.constraints.probe_cursor == 0  # 3 steps x 2 probes wraps the three-row cycle twice
+    resumed = trainer(tmp_path / "split")
+    assert resumed.resume()
+    assert resumed.cons_lambda == first.cons_lambda and resumed.cons_ctrl.state_dict() == first.cons_ctrl.state_dict()
+    assert resumed.constraints.state_dict() == first.constraints.state_dict()
+    resumed.train()
+    assert resumed.history == full.history
+    assert resumed.cons_ctrl.state_dict() == full.cons_ctrl.state_dict()
+    assert resumed.constraints.state_dict() == full.constraints.state_dict()
+    want, got = full.trainable_state(), resumed.trainable_state()
+    assert want.keys() == got.keys() and all(torch.equal(want[k], got[k]) for k in want)
+    # A matching config hash must not conceal a lost constraint controller on resume.
+    state.pop("constraints")
+    damaged = tmp_path / "missing-constraints.pt"
+    torch.save(state, damaged)
+    with pytest.raises(ValueError, match="no constraint-controller state"):
+        trainer(tmp_path / "missing").load(damaged)
+
+
+def test_surface_consistency_and_order_constraint_keep_separate_views():
+    _torch()
+    from heads import ByteEncoder
+    from train.data import TOY_TEMPLATE, items_from_records
+    from train.order_views import reversed_record
+    from train.trainer import Trainer
+
+    recs = [rec for rec in _records(10) if rec["request"]["questions"]["q"]["type"] == "choice"]
+    for rec in recs:
+        q = rec["request"]["questions"]["q"]
+        ids = list(q["criteria"])
+        rec["labels"]["q"] = f"opt{ids.index(rec['labels']['q'])}"
+        q["criteria"] = {f"opt{i}": q["criteria"][oid] for i, oid in enumerate(ids)}
+    # These neutral IDs do not occur in descriptions; the order-view guard correctly refuses the original
+    # fixture's content-bearing IDs ("billing" occurs in "Billing issue").
+    items = items_from_records(recs, ByteEncoder(), template=TOY_TEMPLATE)
+    CV.attach_views(items, {rec["id"]: rec for rec in recs}, ByteEncoder(), layout="ordered", template=TOY_TEMPLATE,
+                    guard=_guard(), keep=lambda row: True, seed=0, view_frac=1.0)
+    for it, rec in zip(items, recs):
+        view, perm = reversed_record(rec, "q")
+        it.view = items_from_records([view], ByteEncoder(), template=TOY_TEMPLATE)[0]
+        it.view_perm = tuple(perm)
+        assert it.cview is not None and it.cview is not it.view
+    cfg = _cfg(max_steps=2, row_batch=2, consistency={"lambda": 0.5},
+               constraints={"lambda_init": 0.5, "items": [
+                   {"name": "order", "kind": "consistency", "setpoint": 1e-9}]})
+    tr = Trainer(_model(), cfg, items, guard=_guard())
+    history = tr.train()
+    assert tr.constraints.ctl["order"].n == 2
+    assert all(h["cons_paired"] == 4 and math.isfinite(h["cons_kl"]) and
+               math.isfinite(h["constraints"]["order"]["g"]) for h in history)
+
+
 # ------------------------------------------------------------------------------------------ the OFF path
 GOLDEN = r'''
 import hashlib, json, os, sys

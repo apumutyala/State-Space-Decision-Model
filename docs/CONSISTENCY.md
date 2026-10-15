@@ -78,11 +78,11 @@ targeted at all, so it serves as a within-battery control.
   `consistency: {}`. It compares losses, trainable weights, config hash, to_json, lineage and checkpoint keys, bit for
   bit.
 - `controller`: `{epsilon, kappa_p, kappa_i, nu, lambda_init, lambda_max}`. lambda_c is the nuPI multiplier of the
-  constraint "mean symKL over the step's paired rows <= epsilon". It uses `train/pi_control.py`, taken verbatim from
-  stack/qwen35/nupi @54d34df9. A full merge of that branch is NOT clean: it forks from 5e159437 and rewrites
-  trainer/losses/run_cell. So only the standalone controller file is taken. The multiplier updates once per optimiser
-  step, takes effect from the next step, and is saved in the checkpoint. `integral_min = -lambda_init / kappa_i`, so
-  `lambda_init` is a warm start that can decay to 0.
+  constraint "mean symKL over the step's paired rows <= epsilon". It uses the shared `train/pi_control.py`, taken
+  verbatim from stack/qwen35/nupi @54d34df9. The full constraint branch is now merged; surface consistency and the
+  separate `constraints` block can run together (see [merge notes](NUPI_CONSISTENCY_MERGE.md)). The multiplier updates
+  once per optimiser step, takes effect from the next step, and is saved in the checkpoint.
+  `integral_min = -lambda_init / kappa_i`, so `lambda_init` is a warm start that can decay to 0.
 - `view_grad: false` runs the view forward under no_grad. That's cheaper, but it only pulls p(orig) toward p(view).
 - consistency and order_consistency are separate arms. Enabling both is refused.
 
