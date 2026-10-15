@@ -19,5 +19,21 @@
     "audited_after": 6,
     "audited_after_valid": 6
   },
-  "decision": "Treat ambiguous as failures; use executable later-event reconstruction and fresh 4B-thinking clean+edited agreement before training."
+  "decision": "Treat ambiguous as failures; use executable later-event reconstruction and fresh 4B-thinking clean+edited agreement before training.",
+  "final_train_screen": {
+    "evidence_before": 1207,
+    "after_semantic_screen": 248,
+    "after_cross_model_screen": 237
+  },
+  "post_screen_audit": {
+    "seed": 20261016,
+    "population": 237,
+    "n": 20,
+    "valid": 20,
+    "invalid": 0,
+    "ambiguous": 0,
+    "sample_ids_sha256": "b745d2d535c6c8f3aafaa8415bbfcd152b81b8a51153fb89c89dacbe49c1a01f",
+    "scope": "One explicitly later categorical event, known original queried state, and changed answer under the record's declared last-event semantics.",
+    "independent_human_review": false
+  }
 }

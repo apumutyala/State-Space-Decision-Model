@@ -111,6 +111,32 @@ additional 4B-thinking agreement screen. No student pilot result is used to
 select training examples. Teacher-agreement-only evidence results are not the
 final reported evidence-retention population.
 
+On the complete training draw, the evidence yield was **1,207 → 248 → 237**
+(two-sample teacher validation → executable semantics → fresh 4B-thinking
+agreement). A fresh random sample of 20 final retained units, seed 20261016,
+was read in full: **20 valid, 0 invalid, 0 ambiguous**. This remains a worker
+audit, not independent human review. Pilot evidence yield was **82 → 14 → 14**.
+
+### Final training-label yield
+
+| Kind | Source parents / proposals | Teacher-filtered labels | Final training labels |
+|---|---:|---:|---:|
+| Clean | 3,107 | 2,511 | 2,511 |
+| Inject | 3,107 | 2,108 | 2,108 |
+| Authority | 3,107 | 2,008 | 2,008 |
+| Policy | 3,107 | 1,241 | 1,241 |
+| Evidence | 3,107 | 1,207 | 237 |
+| **Total** | | **9,075** | **8,105** |
+
+Evidence authorship produced 2,457 lexically accepted proposals before teacher
+validation. The 596 clean-error parents lose all descendants. Among the 2,511
+clean-correct parents, the teacher's mean decision hit the wrong attack target
+on 215 inject units (8.56%) and 282 authority units (11.23%).
+Either sample changed from clean gold on 403 inject units (16.05%) and
+503 authority units (20.03%); these units are excluded from training.
+`label-yield.json` distinguishes these conditional rates from raw unconditional
+diagnostic counters.
+
 ## Student objective and execution
 
 The student starts from `Qwen/Qwen3.5-4B` revision
@@ -141,6 +167,20 @@ not a distilled checkpoint or reported trained model. Full training uses only
 validated two-sample teacher labels, saves a LoRA adapter, merges it, and saves
 a full HF checkpoint at `/results/students/<run>/merged`.
 
+The full run `distill-v0-20261015` completed one epoch over **8,105 labels**:
+2,027 microbatches, 507 optimizer updates, mean restricted objective 0.10745,
+finite pre-clipping gradient norms 0.178–36.46, maximum prompt length 511
+tokens, and 10.75 GB peak GPU allocation. Function execution took 1,035.66
+seconds. The merged full HF checkpoint is on the **`keel-results` volume** at
+**`/results/students/distill-v0-20261015/merged`**; the adapter and training
+statistics are in the same run directory. The training run is
+[`ap-imaEXOxEwU9jwJmsGCK60p`](https://modal.com/apps/mottopanikeiku/main/ap-imaEXOxEwU9jwJmsGCK60p).
+All 8,105 final training records passed the public-item document,
+exact-segment and five fingerprint matchers, and the training/evaluation attack
+guard: **zero overlap hits**. The unavailable Decision Index document-overlap
+guard is not counted as a pass. See committed `train.json` and
+`train-guards.json` for aggregates.
+
 ## Pilot definitions
 
 The pilot compares student 4B one-pass trust, stock 4B one-pass trust, and
@@ -164,6 +204,18 @@ All rates have two-sided 95% percentile bootstrap intervals from 10,000 whole
 source-group resamples. A zero conditional denominator is `null`, not zero ASR.
 The student is not tuned on this pilot. No public JevBench scoring occurs here;
 the Card owns that integration evaluation.
+
+This is a synthetic-source pilot, not a general robustness certification.
+Source groups are individual generated scenarios, not held-out generator
+families. The original event builders can omit an initial queried value
+(as the audit found for an address); overall clean/robust metrics use generator
+gold, not independently adjudicated clean ground truth. The evidence screen
+explicitly rejects unknown original queried state. The final evidence population
+has only 14 units; a percentile-bootstrap interval of [100%, 100%] on 14/14 is
+a degenerate empirical resampling result, **not certainty** about population
+retention. The 4B/9B validators are related Qwen models. No adaptive attacks,
+new attack families, real-world policy changes, or human-label guarantees are
+established by this experiment.
 
 ## Reproduction
 
@@ -222,6 +274,9 @@ conservatively overstate actual GPU billing; they are not invoice amounts.
 | 2026-10-15 | Stock 4B one-pass pilot | 2.575 | $0.170 | Scored 192 parent groups; final evidence metrics reuse only the screened subset. |
 | 2026-10-15 | Fresh 9B-thinking pilot | 5.604 | $0.369 | Two samples; independent seed from teacher validation. |
 | 2026-10-15 | 4B-thinking pilot evidence crosscheck | 3.243 | $0.214 | 82 teacher-accepted → 14 executable-event candidates → 14 cross-model validated. |
+| 2026-10-15 | 9B training evidence authorship + two-sample labels | 66.015 | $4.346 | 3,107 sources; 14,885 scored units; 9,075 labels before the stricter evidence screen. |
+| 2026-10-15 | 4B-thinking training evidence crosscheck | 3.260 | $0.215 | 1,207 teacher-accepted → 248 executable-event candidates → 237 cross-model validated; 8,105 total training labels. |
+| 2026-10-15 | Full `train_remote`, one epoch | 18.348 | $1.208 | 8,105 rows, 507 optimizer updates, full merged HF checkpoint saved and volume committed. |
 
 The initial numerical check exposed FLA's explicit correctness guard for
 Hopper's `chunk_bwd_dqkwg` kernel with Triton 3.4–3.7.0. The fix upgrades the
