@@ -1,5 +1,11 @@
 # State-Space-Decision-Model
 
+> **Branch `collab/mottopanikeiku/keel` (2026-10-15):** this branch is the Keel master project. Keel is a
+> structure-first judgment layer — trust-labelled protocol, verified host enforcement kernel, receipts, certified
+> act/defer gate, Decision Alignment Card, discernment distillation — built on this repo's Qwen3.5-4B lineage.
+> Start with [`direction/PROPOSITION.md`](direction/PROPOSITION.md) and [`keel/README.md`](keel/README.md). The
+> sections below describe the original SSDM program and are kept as history.
+
 **Mission.** Build an attention-free state-space *decision model* (text path: no softmax over positions, no KV cache that grows with length) that beats Cloudflare's Clef and Clef-flash on the Decision Index 0.2.1 with a paired confidence interval above zero, independent reproduction and a submitted PR to the Index, while carrying control-theoretic and host-side safety guarantees stated exactly as proven (`SAFETY_SPEC.md`). Capability, calibration, steer/hijack resistance, interpretability evidence, latency and cost are always reported together. A language model is then grown from that decision parent: every text output passes through checked, typed semantic programs (Track L), never an unchecked text path. Full goal and exit conditions: `GOAL.md`.
 
 Two owning agents work the repo: **Claude = Track D** (decision model, `claude/*` branches) and **Codex = Track L** (language growth, `codex/*`). Human teammates and their coding agents work on `collab/<github-user>/<topic>` branches; see `HANDOFF.md` (humans) and `AGENT_HANDOFF.md` (agents).
