@@ -166,3 +166,27 @@ def test_rows_remap_labels_and_use_original_clean_decision():
     assert rows[0]["decision"] == unit.old_gold
     assert rows[0]["clean_decision"] == unit.old_gold
     assert rows[0]["perturbation"] == "key_relabel"
+
+
+def test_semantic_evidence_screen_is_complete_and_content_bound():
+    from keel.card.evidence import apply_evidence_audit
+    from keel.card.units import units_digest
+    unit = evidence_unit(item(), "The parcel was repainted blue after inspection.", ["other"] * 3)
+    second = replace(unit, unit_id="second")
+    units = [unit, second]
+    audit = {"candidate_manifest_sha256": units_digest(units), "verdicts": [
+        {"unit_id": unit.unit_id, "verdict": "valid", "checked_full_record": True},
+        {"unit_id": second.unit_id, "verdict": "ambiguous", "checked_full_record": True}]}
+    retained, report = apply_evidence_audit(units, audit)
+    assert retained == [unit]
+    assert report["counts"] == {"valid": 1, "invalid": 0, "ambiguous": 1}
+    assert report["selection_used_target_outputs"] is False
+    with pytest.raises(ValueError, match="manifest"):
+        apply_evidence_audit([replace(unit, expected="third"), second], audit)
+    with pytest.raises(ValueError, match="exactly one"):
+        apply_evidence_audit(units, {**audit, "verdicts": audit["verdicts"][:1]})
+    with pytest.raises(ValueError, match="exactly one"):
+        apply_evidence_audit(units, {**audit, "verdicts": [audit["verdicts"][0]] * 2})
+    with pytest.raises(ValueError, match="full-record"):
+        apply_evidence_audit(units, {**audit, "verdicts": [
+            {**v, "checked_full_record": False} for v in audit["verdicts"]]})

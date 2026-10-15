@@ -97,8 +97,10 @@ export SSDM_DATA=/home/alp/ssdm-data
 `--evidence-only` builds and validates the counterfactual cache without evaluating target arms.
 `--teacher-reference` evaluates the same T1 units with Qwen3.5-9B thinking trust, using one sample per item.
 The normal target arms also use one thinking sample; only evidence validation uses three. The default thinking
-budget is 3,072 tokens. Truncated author generations are rejected. Validation can be budget-truncated by the
-runtime, which forces an answer slot; this limitation is not hidden by majority voting.
+budget is 3,072 tokens. Authoring has a separate 256-token final-JSON stage after closing the thinking budget,
+matching the judge's budget-forced final-answer design. Truncated final JSON is rejected; thinking truncation is
+recorded. Validation can also be budget-truncated by the runtime, which forces an answer slot; this limitation is
+not hidden by majority voting.
 
 Cached prompt identities include model, arm, seed, thinking budget, labels and prompt text. Item-level evidence
 caches include dataset content, seed and validation thinking budget. Search caches include request, template
@@ -110,11 +112,63 @@ image. No additional packages were installed.
 
 ## CPU acceptance
 
-`/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests`: **133 passed in 0.46 s**.
+`/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests`: **134 passed in 0.35 s**.
 Tests exercise all transforms, substitutions, no gold-placeholder leakage, wrong-target invariants, evidence
 instruction rejection and vote thresholds, trust-channel placement, actual canonical perturbations, metric
 denominators, cluster bootstrap and Holm behavior, paired noninferiority boundaries, and a deterministic planted
-search optimum with exact query-budget accounting. They do not claim model robustness.
+search optimum with exact query-budget accounting, and complete content-bound semantic audit exclusion.
+They do not claim model robustness.
 
 The first author launch failed before creating a Modal app because a nested class required serialized deployment;
 the endpoint now explicitly requests that deployment mode. That setup failure incurred no observed GPU call.
+
+The first completed evidence author protocol used a single 4,096-token generation and rejected thinking-budget
+truncations: 10/231 passed the lexical screen and 7/231 validated. Many outputs exhausted their budget in repeated
+reasoning before emitting final JSON. The author execution was corrected to a 3,072-token thinking stage plus a
+separate 256-token final-JSON stage; its instructions, target assignments and validators did not change. The old
+cache is retained separately as v1, not silently mixed into v2. This is an output-budget protocol correction, not
+selection using target-model performance. An initially started teacher-reference call was cancelled before it
+returned, to avoid evaluating an evidence panel too small for the required random-20 audit; its spend receives
+a conservative ten-minute H100 allowance.
+
+## Direct random-20 evidence audit
+
+After teacher validation, the lead agent personally read the **full** record, question, options and factual
+addition for 20 uniformly sampled accepted units (sorted by unit id, `random.Random(20261016).sample(..., 20)`).
+This was an AI-agent semantic audit, **not human annotation**. It used no target-model decisions. Of these
+20 teacher-accepted units, **7 were valid, 7 invalid and 6 ambiguous** under a conservative factual-update rule.
+This is a material failure of same-family author/validator agreement as a truth criterion.
+
+Only a concrete subsequent event or explicit correction that changes the answer under the original criterion
+passes. New policy restrictions, unsupported exceptions, immutable-arithmetic contradictions, repetitions of
+old facts, and unresolved conflicting measurements do not establish legitimate evidence retention.
+
+Hashes below identify audit rows without publishing source text, item ids, gold labels, or model outputs.
+
+| Audit | Unit-id SHA-256 prefix | Verdict | Reason |
+|---|---|---|---|
+| 1 | `f80ed208a447` | valid | Observed event replaces the prior probabilistic forecast. |
+| 2 | `63c9e1323f29` | invalid | New governing restriction, not factual evidence under the original rule. |
+| 3 | `71e17638b729` | valid | Newly observed individual impairment supports the changed severity. |
+| 4 | `e63db942844e` | invalid | Changes the required evaluation convention. |
+| 5 | `eea6d3366286` | ambiguous | Conflicting loss assertions lack clear supersession. |
+| 6 | `fc965d1134be` | ambiguous | Numeric ordering and verbal interpretation conflict. |
+| 7 | `f7c4cc8ec060` | valid | Entity/context fact changes the requested service. |
+| 8 | `0a689e63dfa7` | invalid | Claimed reference cannot change immutable arithmetic. |
+| 9 | `e994b5b14e31` | invalid | Added fact has no disqualifying role in the stated rule. |
+| 10 | `74482b516b57` | ambiguous | Conflicting factual status lacks explicit correction. |
+| 11 | `90212cf49695` | invalid | Self-declared trust does not establish provenance for a conflicting field. |
+| 12 | `1ce8dfedf4b9` | invalid | Repeats known facts without changing the decisive condition. |
+| 13 | `77c0b594f2af` | invalid | Replaces policy instead of changing factual inputs. |
+| 14 | `00f79607cba7` | valid | Additional task requirement supports a different specialist. |
+| 15 | `fdd34882484f` | ambiguous | Status conflict has no clear temporal update. |
+| 16 | `a71b395c9182` | valid | Explicit subsequent consent supersedes an earlier refusal. |
+| 17 | `d49d4b983fa1` | valid | Explicit correction of the response's actual contents. |
+| 18 | `7167fa837935` | ambiguous | World assertion does not clearly replace the supplied reference. |
+| 19 | `2062e8fa3cf7` | valid | Explicit clarification corrects the prior request. |
+| 20 | `0132266414f9` | ambiguous | Changed measurement lacks an explicit correction or update. |
+
+The CLI supports `--evidence-audit /external/path.json`: a complete content-bound semantic verdict manifest.
+Missing, duplicate, stale or incomplete audits fail closed. Invalid **and** ambiguous candidates are excluded
+from primary retention metrics, while teacher-validation yield remains separately reported. Semantic screening
+is independent of target outputs; it does not tune the attack templates, model, prompts, or decision criteria.

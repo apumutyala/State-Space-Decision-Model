@@ -14,7 +14,7 @@ from typing import Any
 from jevkit.items import Item
 from keel.protocol.render import decision_of
 from keel.protocol.types import from_jevbench_item
-from .units import attack_request, evidence_filter, evidence_unit, target_details, target_of
+from .units import CardUnit, attack_request, evidence_filter, evidence_unit, target_details, target_of, units_digest
 
 
 def author_messages(item: Item) -> list[dict[str, str]]:
@@ -44,6 +44,30 @@ def parse_addition(text: str) -> str | None:
     return value["addition"].strip() if isinstance(value["addition"], str) else None
 
 
+def apply_evidence_audit(units: list[CardUnit], audit: dict[str, Any]) -> tuple[list[CardUnit], dict[str, Any]]:
+    """Exclude ambiguous/invalid labels using a complete, content-bound semantic audit.
+
+    This screen is independent of target-model outcomes. Missing, duplicate, stale
+    or incomplete verdict files fail closed instead of selectively dropping units.
+    """
+    if audit.get("candidate_manifest_sha256") != units_digest(units):
+        raise ValueError("evidence audit does not match the complete candidate manifest")
+    verdicts = audit.get("verdicts", [])
+    mapped = {v["unit_id"]: v for v in verdicts}
+    if len(mapped) != len(verdicts) or set(mapped) != {u.unit_id for u in units}:
+        raise ValueError("evidence audit requires exactly one verdict per candidate")
+    counts = {"valid": 0, "invalid": 0, "ambiguous": 0}
+    for verdict in verdicts:
+        if verdict.get("verdict") not in counts or verdict.get("checked_full_record") is not True:
+            raise ValueError("evidence audit requires a full-record semantic verdict")
+        counts[verdict["verdict"]] += 1
+    retained = [u for u in units if mapped[u.unit_id]["verdict"] == "valid"]
+    return retained, {"status": "complete_semantic_screen", "counts": counts,
+                      "candidate_manifest_sha256": audit["candidate_manifest_sha256"],
+                      "reviewer": audit.get("reviewer", "unspecified"),
+                      "selection_used_target_outputs": False}
+
+
 def modal_author_class():
     """Define the paid endpoint lazily so CPU unit tests need no Modal credentials."""
     import modal
@@ -57,14 +81,22 @@ def modal_author_class():
             self.engine = _Engine("qwen3.5-9b")
 
         @modal.method()
-        def generate(self, messages: list[list[dict[str, str]]], seed: int = 0, max_tokens: int = 4096) -> dict[str, Any]:
+        def generate(self, messages: list[list[dict[str, str]]], seed: int = 0, max_tokens: int = 3072) -> dict[str, Any]:
             from vllm import SamplingParams
+            from keel.runtime.vllm_judge import BUDGET_TAIL
             start = time.time()
             prompts = [self.engine.tok.apply_chat_template(m, tokenize=False, add_generation_prompt=True, enable_thinking=True) for m in messages]
-            params = SamplingParams(temperature=.6, top_p=.95, top_k=20, max_tokens=max_tokens, seed=seed)
-            outputs = self.engine.llm.generate(prompts, params, use_tqdm=False)
+            thinking = self.engine.llm.generate(prompts, SamplingParams(
+                temperature=.6, top_p=.95, top_k=20, max_tokens=max_tokens, seed=seed, stop=["</think>"]), use_tqdm=False)
+            prefixes = [o.outputs[0].text.rstrip() + (BUDGET_TAIL if o.outputs[0].finish_reason == "length" else "\n") + "</think>\n\n" for o in thinking]
+            outputs = self.engine.llm.generate([p + t for p, t in zip(prompts, prefixes, strict=True)],
+                SamplingParams(temperature=.6, top_p=.95, top_k=20, max_tokens=256, seed=seed + 1), use_tqdm=False)
             return {"meta": {**self.engine.meta, "wall_s": time.time() - start}, "outputs": [
-                {"text": o.outputs[0].text, "tokens": len(o.outputs[0].token_ids), "truncated": o.outputs[0].finish_reason == "length"} for o in outputs]}
+                {"text": prefix + o.outputs[0].text,
+                 "tokens": len(thought.outputs[0].token_ids) + len(o.outputs[0].token_ids),
+                 "think_truncated": thought.outputs[0].finish_reason == "length",
+                 "truncated": o.outputs[0].finish_reason == "length"}
+                for prefix, thought, o in zip(prefixes, thinking, outputs, strict=True)]}
 
         @modal.method()
         def score(self, jobs: list[dict[str, Any]], **kwargs: Any) -> dict[str, Any]:
@@ -74,7 +106,8 @@ def modal_author_class():
 
 
 def build_evidence(items: list[Item], author: Any, call, cache_dir: Path, *, seed: int = 0,
-                   max_think: int = 3072, batch_size: int = 64):
+                   max_think: int = 3072, batch_size: int = 64, audit_path: Path | None = None,
+                   n_boot: int = 2000):
     """Generate once per item; filter; validate 2/3 sampled trust decisions.
 
     ``call(label, function, *args, **kwargs)`` records/enforces the caller's budget.
@@ -82,14 +115,15 @@ def build_evidence(items: list[Item], author: Any, call, cache_dir: Path, *, see
     """
     import hashlib
     from keel.runtime.vllm_judge import judge
+    from .metrics import cluster_rate
     cache_dir.mkdir(parents=True, exist_ok=True)
     digest = hashlib.sha256(json.dumps([i.to_dict() for i in items], sort_keys=True).encode()).hexdigest()[:16]
-    path = cache_dir / f"evidence-{digest}-s{seed}-t{max_think}.json"
+    path = cache_dir / f"evidence-v2-{digest}-s{seed}-t{max_think}.json"
     saved = json.loads(path.read_text()) if path.exists() else {"authored": {}, "validated": {}}
     pending = [i for i in items if i.id not in saved["authored"]]
     for offset in range(0, len(pending), batch_size):
         batch = pending[offset:offset + batch_size]
-        result = call("evidence_author.generate", author.generate.remote, [author_messages(i) for i in batch], seed=seed)
+        result = call("evidence_author.generate", author.generate.remote, [author_messages(i) for i in batch], seed=seed, max_tokens=max_think)
         for item, output in zip(batch, result["outputs"], strict=True):
             addition = None if output["truncated"] else parse_addition(output["text"])
             reasons = evidence_filter(addition, item.labels) if addition is not None else ["no_parseable_addition"]
@@ -110,12 +144,25 @@ def build_evidence(items: list[Item], author: Any, call, cache_dir: Path, *, see
         decisions = saved["validated"][item.id]["decisions"]
         if decisions.count(target_of(item)) >= 2:
             accepted.append(evidence_unit(item, saved["authored"][item.id]["addition"], decisions))
+    teacher_accepted = len(accepted)
+    teacher_ids = {u.item_id for u in accepted}
+    yield_interval = cluster_rate([i.id in teacher_ids for i in items], [i.family for i in items],
+                                  n_boot=n_boot, seed=seed)
+    audit_report = {"status": "not_semantically_screened"}
+    if audit_path is not None:
+        accepted, audit_report = apply_evidence_audit(accepted, json.loads(audit_path.read_text(encoding="utf-8")))
     report = {"attempted": len(items), "lexical_pass": len(filtered), "accepted": len(accepted),
-              "validation_yield": len(accepted) / len(items) if items else None,
-              "conditional_validation_yield": len(accepted) / len(filtered) if filtered else None,
+              "teacher_accepted": teacher_accepted,
+              "validation_yield": teacher_accepted / len(items) if items else None,
+              "conditional_validation_yield": teacher_accepted / len(filtered) if filtered else None,
+              "retained_yield": len(accepted) / len(items) if items else None,
+              "validation_yield_cluster_bootstrap": yield_interval,
               "rejections": {}, "samples_per_validation": 3, "acceptance_votes": 2,
               "author": "qwen3.5-9b", "validator": "qwen3.5-9b", "seed": seed,
-              "cache_file": str(path), "audit_status": "requires_manual_read"}
+              "author_protocol": "thinking_3072_or_configured_then_final_json_256/v2",
+              "author_thinking_truncated": sum(bool(x.get("think_truncated")) for x in saved["authored"].values()),
+              "author_final_truncated": sum(bool(x["truncated"]) for x in saved["authored"].values()),
+              "cache_file": str(path), "audit": audit_report}
     for entry in saved["authored"].values():
         for reason in entry["rejections"]:
             report["rejections"][reason] = report["rejections"].get(reason, 0) + 1
