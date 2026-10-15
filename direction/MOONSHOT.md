@@ -1,132 +1,153 @@
-# Keel — a moonshot for aligned decision models and workflows (draft, 2026-10-15)
+# Keel — a moonshot for aligned decision models and workflows (v2, 2026-10-15)
 
-*Working name: a keel keeps a boat on course against the wind.* Builds on `DIRECTION_MEMO.md`, `GRANTS.md`, and the
-evidence in `experiments/` and `research/`.
+*A keel keeps a boat on course against the wind.* v2 folds in the channel probe (`experiments/channel_probe/`) and the
+independent review (`research/keel-review.md`). Git history holds v1.
 
 ## 1. The moonshot
 
-**Build the open judgment layer for AI workflows.** These are decision models that cannot be talked off course by
-the content they judge, that know when to hand a decision to a human, and that prove both with numbers anyone can
-reproduce. The point is to make it safe to give AI agents real authority.
+**Build the open, auditable judgment protocol for AI workflows.** It has three parts:
 
-## 2. Why this, why now
+- **A reference judge:** a small open decision model that lets *authorized evidence* influence its decisions and
+  resists *unauthorized authority transfer* from the content it reads.
+- **A narrow verified host component:** only the host assigns authority, untrusted content can never expand the
+  operator-authorized action set, and "defer" means no side effect.
+- **Replayable receipts:** every act/defer decision can be replayed under a declared threat model.
 
-- **Decision models are becoming the control plane of AI workflows.** They route requests, approve tool calls, flag
-  and moderate content, triage tickets, and monitor agents. Jev, Clef, Microsoft-Decision-1 (MD1), OpenAI Decisions
-  and H2O-Lightning all launched between September and October 2026. Frontier labs already run language-model
-  monitors over their internal agents.
-- **The content a judge reads is often written by the party being judged:** an agent's own output, a customer's
-  message, a web page, a tool result. A judgment layer is only as aligned as it is unmanipulable.
-- **Today's decision models are easy to manipulate.**
-  - Published attacks redirect 61–73% of initially correct decisions across four decision systems.
-  - Our probe (`experiments/steering_probe/`): one planted sentence steers 43–63% of correct one-pass decisions, and
-    92–97% when the model thinks first, with high confidence.
-  - Across 30 models, steerability rises with accuracy (Spearman +0.55).
-  - No vendor publishes steering numbers or offers guarantees.
-- **The scientific core is the capability–manipulability coupling.** The models that read evidence more carefully
-  also obey planted instructions more readily. Breaking that coupling — judgment without obedience — is the moonshot.
+**Stretch result:** at least **10× fewer executed unauthorized actions** than the strongest preregistered,
+same-budget defended baseline, at matched useful task completion and human-review load, in **two distinct
+workflows**. **Adoption bar:** three independent groups reproduce and use the protocol.
 
-## 3. What "done" looks like (12-month targets)
+Empirical robustness, structural guarantees and statistical certificates are separate claims with separate
+assumptions.
 
-| # | Target | Bar | Today (our probe, stock 4B) |
+## 2. Why this, why now — and what we measured
+
+- **Decision models are becoming the control plane of AI workflows.** They route, approve tool calls, flag,
+  moderate, triage and monitor agents; Jev, Clef, MD1, OpenAI Decisions and H2O-Lightning launched in Sep–Oct 2026.
+  The content a judge reads is often written by the party being judged.
+- **Our pilots (static attacks, stock Qwen3.5 4B/9B, public decision items):**
+
+| Condition | Injection steers | Authority claim steers | Robust accuracy | Trusted operator note followed |
+|---|---|---|---|---|
+| one pass, no trust policy | 42–63% | 53–72% | 17–28% | — |
+| thinking, no trust policy | 95–98% | 86–94% | 2–3% | — |
+| one pass, trust policy + delimited record | 6–35% | 31–44% | 35–52% | 14–30% |
+| **thinking, trust policy + delimited record** | **2.5–6.6%** | 10–25% | **68–83%** | 36–88% |
+
+- **Reading, scoped to these pilots:**
+  - Without a trust boundary, thinking makes these models obey a planted note.
+  - With an explicit trust policy, thinking becomes discernment, at no clean-accuracy cost.
+  - One-pass models cannot use the policy: they follow an authority claim planted in the record more often than the
+    same sentence from the trusted operator channel.
+  - So the gap Keel closes is **fast judgment that is as channel-aware as slow, policy-guided judgment**, plus a
+    workflow that never lets content grant itself authority.
+- **What this does not show:** a general law that capability causes manipulability (the 30-model correlation is
+  descriptive and selection-confounded). Nor robustness to adaptive attacks, legitimate-evidence retention (no
+  counterfactual yet), or agent-workflow outcomes.
+
+## 3. Targets (scoped; comparators, budgets, denominators and populations frozen in preregistration)
+
+| # | Target | Bar | Status |
 |---|---|---|---|
-| 1 | **Unswayable** | adaptive steer success ≤ 5% (95% upper ≤ 8%) under a preregistered attack budget: static, transfer, probability-guided and white-box tiers | 63% one pass / 97% thinking, static notes |
-| 2 | **Still listening** | evidence retention ≥ 90%, and trusted-operator compliance ≥ 95%, so robustness never comes from ignoring the input | not yet measured; channel probe landing |
-| 3 | **Capable** | clean decision quality within 2 points of the best open decision model of its size on a sealed set; stretch: half of the thinking gain recovered in one pass | 54 vs 78 local I (H2O) |
-| 4 | **Knows when to defer** | cluster-valid certified act-rate ≥ 60% at ≤ 5% acted-on error on unseen data; unfloored, honest probabilities | 0% (nothing certifies) |
-| 5 | **Consistent** | reorder/relabel invariance exactly 0 by construction; 8-operator flip rate ≤ 1.3% | 0 bitwise / 3.6–4.1% |
-| 6 | **Cheap and open** | one forward pass, ≤ 50 ms p50 on one GPU, open 4B hybrid weights | ≈ 30 ms |
-| 7 | **The yardstick** | the Decision Alignment Card benchmark and harness reported by ≥ 3 outside groups or vendors | — |
-
-**Stretch:** long-horizon monitoring. A state-space or hybrid monitor streams a whole agent trajectory of 1M tokens or
-more, with measured poisoning resistance.
+| 1 | **Unauthorized-authority resistance** | adaptive steer success ≤ 5% (95% upper ≤ 8%) under a stated attack-access/budget curve and at least one defense-aware held-out attack family; a stretch, not a commitment | static pilots only |
+| 2 | **Authorized evidence still counts** | evidence-counterfactual retention ≥ 90% (validated labels); authorized operator *policy* followed ≥ 95%; factual conflicts between operator and evidence → defer, scored separately | not measured |
+| 3 | **Capable** | clean quality within 2 points of the best open decision model of its size on a sealed set; stretch: beat H2O's one-pass quality, which needs ≈ 78% of the thinking gain | gap to H2O ≈ 23 I |
+| 4 | **Honest deferral** | cluster-valid certificate on the *complete* gate (judge + detector + filters), stated loss, population and δ; full risk–coverage and review-load curves; ≥ 60% certified act-rate as a stretch | shipping code is not cluster-valid yet |
+| 5 | **Consistent** | reorder/relabel exactly 0 under stated kernel/tie assumptions; 8-operator flips ≤ 1.3% on our published operators | 0 bitwise / 3.6–4.1% |
+| 6 | **Deployable** | full-pipeline cold and warm latency and memory published at fixed lengths; one pass by default; open weights | warm-cache estimates only |
+| 7 | **Adopted** | the protocol reproduced and used by three independent groups across two workflows | — |
 
 ## 4. The bets
 
-**A. Judgment, not obedience.** Train decision models to treat content as evidence, never as instruction.
+**A. Distill discernment.** The teacher is the model thinking under an explicit trust policy; the student is the
+one-pass judge.
 
-- **Data.** Triplets in which the same sentence appears in three roles:
-  1. an injection inside untrusted content, which must be ignored;
-  2. legitimate evidence that must change the decision;
-  3. a trusted operator instruction, which must be followed.
+- **Data:** validated triplets. The same text appears as (i) an unauthorized instruction inside untrusted content,
+  (ii) legitimate evidence carried by untrusted content, which must change the decision, and (iii) an authorized
+  operator policy. Evidence counterfactuals are label-checked independently.
+- **Training:** constrained by νPI only if it beats fixed penalties.
+- **Causal design before any scale-up:**
+  - arms: triplet data × {fixed penalty, νPI} × a matched RAISED-style control;
+  - same parent, budget and confirmation units; two seeds.
+- **Novelty is the measured joint frontier, not hierarchy training itself.** RAISED (Oct 2026) and IH-Challenge
+  (2026) already cover parts of this ground.
 
-  This is an instruction hierarchy for typed decisions. Open-weight attacker models generate fresh attacks each
-  round, and a held-out attacker family is reserved for evaluation.
-- **Objective.** Maximise clean accuracy subject to three constraints: steer success ≤ ε, evidence retention ≥ ρ,
-  trusted compliance ≥ κ. The constraints are held by the already-built νPI (PID-Lagrangian) controller. This is the
-  project's control-theory idea, used for what it is good at: holding constraints during training.
-- **Deliberation.** "Think, but don't obey." Distil reasoning traces that name and discount planted instructions,
-  because raw thinking follows them 92–97% of the time today.
+**B. A narrow verified host component.**
+- Provenance propagation; authority assigned only by the authenticated host; "defer ⇒ no side effect".
+- An explicit trusted computing base; reuses `decide/provenance.py`.
+- The claim is that untrusted content cannot expand the authorized action set, not that every permitted action is
+  correct. It builds on CaMeL and Fides design lessons.
 
-**B. Channels by construction.** Typed, trust-labelled decision requests: delimited untrusted fields, provenance,
-and a trusted operator channel. The bounded-influence head is used only where the trusted fields carry the decision.
-Certificates are claimed only after the trusted-only information-gap test shows they are not vacuous.
+**C. Manipulation-aware deferral.**
+- Escalation on uncertainty *and* on a separate manipulation signal, because confident attacks evade confidence
+  gates.
+- Certified on the complete gate with cluster-valid splitting: merge `claude/ev-guarantee-proofs` first.
+- Review-queue saturation blocks or holds risky actions; it never auto-approves them.
 
-**C. Deferral as a first-class output.**
-- Calibrated act/defer with cluster-valid risk control.
-- Escalation on two separate signals: uncertainty, and a manipulation-attempt detector. A separate detector is
-  needed because confident attacks evade confidence gates.
+**D. The Decision Alignment Card as a protocol, not a leaderboard.**
+- Paired units, adaptive and defense-aware tiers, evidence-retention controls, matched-budget baselines and
+  versioned receipts.
+- Confirmation sets are replaced after release.
+- It assumes attackers train against everything public.
 
-**D. Measurement as a product.** The Decision Alignment Card:
-- adaptive attack tiers, evidence retention, trusted compliance and capability matching;
-- cluster bootstrap, preregistration and independent rescoring;
-- an open harness, and incumbents measured on identical units once permitted.
+**E. Long-horizon state-space monitors (conditional).** One matched 128K cost–recall–poisoning experiment, hybrid vs
+transformer monitor. It proceeds only if recall holds and poisoning does not collapse it; otherwise the negative is
+published and E stops. No constant-total-memory claim is made for attention-containing hybrids.
 
-**E. A long-horizon state-space monitor (bet).** Stream long trajectories with constant memory, test HiSPA-style state
-poisoning, and use trusted state snapshots for cheap erase-and-check. This is the one place the original state-space
-identity could matter. It is an add-on with a kill rule, not the headline.
-
-## 5. Stepping stones (each worth publishing if the moonshot stalls)
+## 5. Stepping stones
 
 | When | Stone | Output |
 |---|---|---|
-| now | Steering + channel probes | note: "Thinking makes decision models obey planted instructions" |
-| month 1–2 | Decision Alignment Card v1 | open benchmark + harness + measurements of open decision models |
-| month 2–4 | Keel-4B v0 | first constraint-trained decision model; paired results against its own base and incumbents |
-| month 4–6 | Workflow SDK | trust-labelled typed requests, act/defer contracts, System One API compatibility, ControlArena adapter |
-| month 6–12 | Keel v1 + external red team | adaptive-attack results, audit, long-horizon monitor bet |
+| now | Steering + channel pilots | note: one-pass judges cannot use trust policies that deliberative judges can (scoped) |
+| week 1–2 | Protocol sketch + partner check | two-page contract + one replayable example shown to three prospective evaluators; build only what changes a real deployment decision |
+| month 1–2 | Card v1 + adaptive baseline | frozen task semantics, trust-labelled prompted baseline, attack budget curves |
+| month 2–4 | Reference judge v0 | distilled one-pass judge with causal ablations; paper |
+| month 4–6 | Host component + receipts | verified authority/defer enforcement on one workflow; ControlArena-compatible adapter |
+| month 6–12 | Two workflows, external red team, adoption | the 10× stretch tested at matched budget; independent reproductions |
 
-## 6. Phases, gates, kill rules
+## 6. Phases and gates
 
-| Phase | Work | Gate to continue | Kill / pivot |
+| Phase | Work | Gate | Kill / pivot |
 |---|---|---|---|
-| 0 (now → 2 weeks) | Measure the problem: steering, channel discrimination, evidence retention, trusted compliance on stock 4B/9B; Card v0 | The problem survives trust-labelled prompting (if a prompt fixes it at no cost, raise the bar to adaptive attacks) | — |
-| 1 (weeks 2–8) | Triplet data + νPI-constrained training pilot on Qwen3.5-4B (two seeds) | ≥ 50% relative cut in steer success on held-out attacks at ≤ 2 points clean cost, evidence retention ≥ 90% | robustness only by ignoring evidence |
-| 2 (months 2–6) | Adaptive tiers, deferral, workflow SDK, Card release | ≤ 10% steer success at tier 3 (probability-guided) | defence broken at tier 1–2 with no fix |
-| 3 (months 6–12) | Scale, external red team, long-horizon monitor bet | targets in §3 | publish what holds |
+| 0 (≤ 2 weeks) | Merge the Keel base branch (`BRANCHES.md`); evidence-counterfactual set; adaptive attack plan; protocol sketch to three evaluators | baselines and attack budgets frozen; at least one evaluator would use the contract | nobody would use it → narrow to Card + judge |
+| 1 (weeks 2–8) | Discernment distillation with causal ablations | defense-aware held-out frontier improves over the trust-prompted and RAISED-style baselines at ≤ 2 points clean cost and ≥ 90% evidence retention | gains only via ignoring evidence, or νPI adds nothing (drop νPI, keep the rest) |
+| 2 (months 2–6) | Host component, complete-gate certification, Card v1 release, workflow one | ≤ 10% steer success at the probability-guided tier; valid complete-gate certificate | defense broken at the first two tiers with no fix |
+| 3 (months 6–12) | Workflow two, external red team, adoption, conditional E | §1 stretch and adoption bar | publish what holds |
 
 ## 7. How we work
 
-- **One lane.** The chief of staff runs a single research lane with worker agents. Every change is committed. Each
-  run gets a run card (hypothesis, kill rule, cost cap, data hashes). A decision log is kept weekly.
-- **Compute.** Per-second H100s on Modal: evaluation runs $1–5 and minutes long; short training cells $3–10.
-- **Evidence tiers.** Exploratory runs are light. Confirmatory runs need preregistration, sealed splits, two seeds
-  and independent rescoring. Negative results are published.
-- **Open by default:** code, benchmark and weights, subject to the owner's approval.
+One research lane run by the chief of staff with worker agents. Every change is committed and pushed. Each run gets a
+run card (hypothesis, kill rule, cost cap, data hashes). Exploratory runs stay light. Confirmatory runs need
+preregistration, sealed splits, two seeds and independent rescoring. Negative results are published. Compute is
+per-second H100s on Modal.
 
-## 8. Funding the moonshot
+## 8. Funding
 
 | Phase | Need | Source |
 |---|---|---|
-| 0–1 | ≈ $200 compute, agent time | tranche from the owners |
-| 1–2 | $50–150k people + compute | Transformative AI Fund, BlueDot, Manifund, Foresight (Oct 31), SFF Speculation; API-credit programmes for comparators |
-| 2–3 | institution-scale | only after the Phase-1 gate; some routes (e.g. Coefficient Tailwind) need a nonprofit or public-benefit structure |
+| 0–1 | capped $200 exploratory compute, only after data access, baselines, adaptive plan and an all-in estimate are documented; people, annotation and red-teaming budgeted separately | owners |
+| 1–2 | $80–150k people + compute + external attack round | safety grants (Transformative AI Fund, BlueDot, Manifund, Foresight, SFF Speculation); API credits |
+| 2–3 | institution-scale | after the Phase-1 gate; some routes need a nonprofit/PBC structure |
 
 ## 9. Decisions needed
 
-1. Adopt Keel as the north star, replacing "JevBench Composite first"?
-2. The owner's permission to measure incumbents (Jev/Clef/MD1/H2O/Quyet) on the Card and to publish code and
-   benchmark.
-3. Tranche 1 (≈ $200) for Phases 0–1.
-4. Access to `ssdm-data` (training draws, sealed sets, checkpoints), or a rebuild.
-5. Who fronts grant applications (founders must author them).
+1. Adopt Keel v2 as the north star (instead of JevBench Composite first).
+2. The owner's permission to measure incumbents on common units and to publish protocol, code and benchmark.
+3. The capped $200 exploratory tranche, under the condition in §8.
+4. Access to `ssdm-data`, or a rebuild with a new seal.
+5. A named human lead who owns commitments and authors grant applications.
 
-## 10. Risks
+## 10. Risks and safeguards
 
-| Risk | Mitigation |
+| Risk | Safeguard |
 |---|---|
-| The attacker moves second: adaptive attacks break most published defences | claims capped at measured attack budgets; tiered preregistered attacks; external red team; publish breaks |
-| Robustness by ignoring the input | evidence retention and trusted compliance are mandatory, co-equal metrics |
-| Capability externality | judgment robustness first; no capability recipes released beyond what the safety claim needs |
-| Being scooped | publish stepping stones early (probe note, Card v1) |
-| Small team | agents + strict scope; one lane; kill rules |
+| The attacker moves second | budget-scoped claims; defense-aware held-out attacks; external red team; published breaks |
+| Robustness by ignoring evidence | evidence counterfactuals and operator-policy compliance as co-equal metrics |
+| Multi-judge "consensus" without independence | evaluate homogeneous vs heterogeneous judges at equal cost; measure joint failures |
+| Actor–judge collusion, forged reasoning | separate tests for shared-family pairs, identity cues and role-forged reasoning; teacher, attacker and adjudicator never the same authority |
+| Provenance laundering, unreplayable decisions | only the authenticated host assigns authority; derived evidence keeps labels; full receipts |
+| Attackers training against the public Card | held-out task families, mechanisms and an external attacker; versioned confirmation sets |
+| Label artefacts | attacks must preserve the task label unless scored as evidence updates; blind adjudication |
+| Shift, rare harms, repeated attempts | per-role and episode-level risk; revalidation after changes; no lifetime guarantees |
+| Review exhaustion | escalation curves at 2/10/40% review budgets; saturation blocks |
+| Capability externality | judgment robustness first; no capability recipes released beyond the safety claim |
