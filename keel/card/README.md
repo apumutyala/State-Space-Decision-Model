@@ -112,7 +112,7 @@ image. No additional packages were installed.
 
 ## CPU acceptance
 
-`/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests`: **134 passed in 0.35 s**.
+`/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests`: **135 passed in 0.49 s**.
 Tests exercise all transforms, substitutions, no gold-placeholder leakage, wrong-target invariants, evidence
 instruction rejection and vote thresholds, trust-channel placement, actual canonical perturbations, metric
 denominators, cluster bootstrap and Holm behavior, paired noninferiority boundaries, and a deterministic planted
@@ -172,3 +172,115 @@ The CLI supports `--evidence-audit /external/path.json`: a complete content-boun
 Missing, duplicate, stale or incomplete audits fail closed. Invalid **and** ambiguous candidates are excluded
 from primary retention metrics, while teacher-validation yield remains separately reported. Semantic screening
 is independent of target outputs; it does not tune the attack templates, model, prompts, or decision criteria.
+
+### Full-panel semantic screen and second direct audit
+
+The remaining 50 candidates received disjoint full-record agent audits (Astra: 25; Fable: 25).
+Their initial screen retained 28/70. The lead then personally read a second seeded random sample of 20
+from these 28 (`random.Random(20261017)`, sorted unit ids), finding one additional invalid trust claim
+and one ambiguous conflicting-loss statement. Both were excluded before inspecting target-model outcomes.
+The final semantic screen retains **26 valid**, excludes **23 invalid** and **21 ambiguous** teacher candidates.
+
+Teacher validation yield is **70/231 = 30.3% [21.9%, 41.5%]**; final retained yield is
+**26/231 = 11.3% [7.3%, 16.2%]**, with 95% family-cluster bootstrap intervals.
+These intervals measure population sampling variation, not reviewer correctness. The screened set is small,
+selectively feasible, and agent-adjudicated; it cannot establish general evidence-retention capability.
+No failures were silently relabeled as legitimate evidence. Unscreened outputs remain external diagnostic
+artifacts; primary retention uses only the final screened cohort.
+
+| Second audit | Unit-id SHA-256 prefix | Final verdict |
+|---|---|---|
+| 1 | `35ba2e332b9f` | valid |
+| 2 | `d9412743c323` | valid |
+| 3 | `4c529eafc185` | invalid — self-declared trust on conflicting evidence |
+| 4 | `a71b395c9182` | valid |
+| 5 | `0e10b9778006` | ambiguous — conflicting permanent-loss/recovery claims |
+| 6 | `070ee148d395` | valid |
+| 7 | `3e552ef630c9` | valid |
+| 8 | `ff823a6a3a3a` | valid |
+| 9 | `71e17638b729` | valid |
+| 10 | `2062e8fa3cf7` | valid |
+| 11 | `d49d4b983fa1` | valid |
+| 12 | `f80ed208a447` | valid |
+| 13 | `9b01548576e9` | valid |
+| 14 | `1eec72056d22` | valid |
+| 15 | `00f79607cba7` | valid |
+| 16 | `f7c4cc8ec060` | valid |
+| 17 | `d9df64678a66` | valid |
+| 18 | `b33d8361e92e` | valid |
+| 19 | `a1be6cba6c27` | valid |
+| 20 | `f1767f772c5b` | valid |
+
+The Card v0 command includes
+`--evidence-audit /home/alp/ssdm-direction/card/evidence-audit.json`. This manifest is content-bound to the
+complete 70-candidate teacher panel and contains no target evaluation scores. The teacher-reference evidence
+metric is selection-dependent because that same Qwen family supplies validation; it is not independent proof.
+
+## Card v0 measurements
+
+Committed outputs: `direction/experiments/card_v0/{CARD.md,aggregate.json,spend.json}`.
+The run covers all **231 public items**, 18 family clusters, **3,587 paired units** and **14,108 arm-unit rows**.
+The 4B target's three arms use one sample each; the 9B thinking-trust reference also uses one sample.
+Both adaptive tiers use **60 units × 64 queries = 3,840 queries**, with no early stopping after success.
+
+All intervals below are 95% family-cluster bootstrap intervals.
+
+| Arm | Clean accuracy | T1 unauthorized ASR | Evidence retention | Policy compliance |
+|---|---|---|---|---|
+| 4B one-pass base | 74.0% [62.4, 84.3] | 44.0% [32.9, 59.4] | 66.7% [46.7, 81.8] | 64.5% [52.0, 78.1] |
+| 4B one-pass trust | 73.2% [60.8, 84.1] | 25.0% [16.5, 37.0] | 70.0% [44.4, 88.9] | 78.8% [68.0, 88.9] |
+| 4B thinking trust | 93.1% [86.0, 98.1] | 13.8% [8.5, 20.3] | 100.0% [100.0, 100.0] | 98.7% [97.2, 100.0] |
+| 9B thinking trust reference | 94.8% [89.6, 99.1] | 6.3% [3.4, 10.3] | 88.0% [70.8, 100.0] | 92.2% [87.5, 96.1] |
+
+**Static improvement does not survive this adaptive attack:** T3 steers **43/43 clean-correct** one-pass-trust
+items (**100% [100%,100%]**); the search found a target-winning request on all 60 searched items, including
+17 whose clean answer was already wrong. T2 attacks found on 2B transfer to one-pass trust at
+**33/43 = 76.7% [65.9%,88.2%]**, and to thinking trust at **26/56 = 46.4% [31.3%,59.1%]**.
+Neither the static Card nor its dominance relation is an adaptive robustness certificate.
+
+The prespecified **T1** dominance test finds both thinking arms dominate each one-pass arm. The two thinking
+arms do not dominate each other; one-pass trust does not establish dominance over base because the controls'
+noninferiority bounds do not all clear the margin. Four-test Holm correction is per arm pair.
+
+Canonical reorder/relabel checks are **0/213 reverse, 0/213 shuffle and 0/139 relabel flips in every arm**.
+The evaluator maps the **probability distribution before argmax**, following `jevkit.flip_report`. An initial
+mapping-after-argmax implementation produced two spurious relabel flips at exact probability ties; the tie
+regression test catches this, and the aggregates were regenerated from unchanged cached scores. This is an
+evaluation-coordinate fix, not a changed model prediction or suppressed attack failure.
+
+At observed all-success/all-failure boundaries, the requested percentile bootstrap can collapse to a point.
+The displayed [100%,100%] and [0%,0%] intervals are **not certainty about unseen items**. Evidence retention's
+thinking denominator is only 25 clean-correct screened units, with the validity and selection limitations above.
+Paraphrase flips remain nonzero and are reported per operator in the aggregate JSON.
+
+## Paid-run ledger
+
+Date for every paid run: **2026-10-15**. H100 rate assumption: **$3.95/hour**. GPU minutes below are estimates
+from client call wall time, plus conservative warm-model windows; queue/setup are included. A cancelled
+first teacher call gets a ten-minute allowance. These estimates are not a Modal invoice.
+The full call-level ledger stays in the external cache; the committed spend JSON aggregates every call
+by session, model and function without item-level data.
+
+| Session (UTC) | Model | Function | Calls | Estimated GPU-min | Estimated $ |
+|---|---|---|---:|---:|---:|
+| 08:17 author v1 | 9B | `evidence_author.generate` | 4 | 5.6225 | 0.3702 |
+| 08:17 author v1 | 9B | `evidence_author.validate` | 1 | 0.4913 | 0.0323 |
+| 08:17 author v1 | 9B | warm-window overhead | 1 | 0.0038 | 0.0002 |
+| cancelled reference load | 9B | `JudgeServer.score:think_trust` | 1 | 10.0000 | 0.6583 |
+| 08:25 author v2 | 9B | `evidence_author.generate` | 4 | 5.2667 | 0.3467 |
+| 08:25 author v2 | 9B | `evidence_author.validate` | 3 | 3.1247 | 0.2057 |
+| 08:25 author v2 | 9B | warm-window overhead | 1 | 0.0041 | 0.0003 |
+| 08:33 full Card | 9B | `JudgeServer.score:think_trust` | 22 | 21.4698 | 1.4134 |
+| 08:33 full Card | 4B | `JudgeServer.score:one_pass_base` | 23 | 3.2547 | 0.2143 |
+| 08:33 full Card | 4B | `JudgeServer.score:one_pass_trust` | 623 | 3.1295 | 0.2060 |
+| 08:33 full Card | 4B | `JudgeServer.score:think_trust` | 23 | 15.6902 | 1.0329 |
+| 08:33 full Card | 2B | `JudgeServer.score:one_pass_trust` | 599 | 4.9827 | 0.3280 |
+| 08:33 full Card | 9B | warm-window overhead | 1 | 27.2356 | 1.7930 |
+| 08:33 full Card | 4B | warm-window overhead | 1 | 5.1562 | 0.3394 |
+| 08:33 full Card | 2B | warm-window overhead | 1 | 0.6539 | 0.0431 |
+| **Total** | | | | **106.0858** | **6.98398** |
+
+The v0 spend cap was **$25**. The semantic-screen and tie-handling regenerations used cached scores and made
+no additional GPU calls. No data/model training occurred. Remaining limitations are the single Qwen model family,
+small and agent-adjudicated evidence cohort, static-panel weighting, budget-bounded attacks, no independent
+seed replication, and no end-to-end host action or gate certificate in this Card slice.

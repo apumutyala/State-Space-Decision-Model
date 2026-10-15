@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-15",
+  "gpu": "H100",
+  "hourly_usd": 3.95,
+  "cap_usd": 25.0,
+  "total_gpu_minutes_estimate": 106.08577885743313,
+  "total_usd_estimate": 6.983980441447681,
+  "basis": "Client call walls plus conservative warm-model windows. Queue/setup included. Interrupted first call receives a ten-minute allowance. This is not a Modal invoice.",
+  "runs": [
+    {"session":"08:17:01 UTC author v1","model":"qwen3.5-9b","function":"evidence_author.generate","calls":4,"gpu_minutes_estimate":5.622548552333562,"estimated_usd":0.3701511130286262},
+    {"session":"08:17:01 UTC author v1","model":"qwen3.5-9b","function":"evidence_author.validate","calls":1,"gpu_minutes_estimate":0.49133603928348746,"estimated_usd":0.03234628925282959},
+    {"session":"08:17:01 UTC author v1","model":"qwen3.5-9b","function":"warm-window overhead","calls":1,"gpu_minutes_estimate":0.003796203649593129,"estimated_usd":0.000249916740264881},
+    {"session":"cancelled reference load","model":"qwen3.5-9b","function":"JudgeServer.score:think_trust","calls":1,"status":"cancelled before returning first result","gpu_minutes_estimate":10.0,"estimated_usd":0.6583333333333333},
+    {"session":"08:25:00 UTC author v2","model":"qwen3.5-9b","function":"evidence_author.generate","calls":4,"gpu_minutes_estimate":5.2666845473667,"estimated_usd":0.34672339936830776},
+    {"session":"08:25:00 UTC author v2","model":"qwen3.5-9b","function":"evidence_author.validate","calls":3,"gpu_minutes_estimate":3.1247165123000737,"estimated_usd":0.20571050372642155},
+    {"session":"08:25:00 UTC author v2","model":"qwen3.5-9b","function":"warm-window overhead","calls":1,"gpu_minutes_estimate":0.004132196366602632,"estimated_usd":0.00027203626080133997},
+    {"session":"08:33:40 UTC full Card","model":"qwen3.5-9b","function":"JudgeServer.score:think_trust","calls":22,"gpu_minutes_estimate":21.469839458800074,"estimated_usd":1.4134310977043385},
+    {"session":"08:33:40 UTC full Card","model":"qwen3.5-4b","function":"JudgeServer.score:one_pass_base","calls":23,"gpu_minutes_estimate":3.2547067483996224,"estimated_usd":0.2142681942696417},
+    {"session":"08:33:40 UTC full Card","model":"qwen3.5-4b","function":"JudgeServer.score:one_pass_trust","calls":623,"gpu_minutes_estimate":3.1295072760646385,"estimated_usd":0.20602589567425542},
+    {"session":"08:33:40 UTC full Card","model":"qwen3.5-4b","function":"JudgeServer.score:think_trust","calls":23,"gpu_minutes_estimate":15.690153095750183,"estimated_usd":1.032935078803554},
+    {"session":"08:33:40 UTC full Card","model":"qwen3.5-2b","function":"JudgeServer.score:one_pass_trust","calls":599,"gpu_minutes_estimate":4.982664513465964,"estimated_usd":0.3280254138031754},
+    {"session":"08:33:40 UTC full Card","model":"qwen3.5-9b","function":"warm-window overhead","calls":1,"gpu_minutes_estimate":27.235569795516493,"estimated_usd":1.7930083448715026},
+    {"session":"08:33:40 UTC full Card","model":"qwen3.5-4b","function":"warm-window overhead","calls":1,"gpu_minutes_estimate":5.1561890128354815,"estimated_usd":0.3394491100116692},
+    {"session":"08:33:40 UTC full Card","model":"qwen3.5-2b","function":"warm-window overhead","calls":1,"gpu_minutes_estimate":0.6539349053006541,"estimated_usd":0.04305071459895973}
+  ]
+}

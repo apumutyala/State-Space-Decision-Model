@@ -190,3 +190,20 @@ def test_semantic_evidence_screen_is_complete_and_content_bound():
     with pytest.raises(ValueError, match="full-record"):
         apply_evidence_audit(units, {**audit, "verdicts": [
             {**v, "checked_full_record": False} for v in audit["verdicts"]]})
+
+
+def test_consistency_maps_probabilities_before_tie_breaking():
+    unit = next(u for u in make_static_units([item()]) if u.metadata.get("perturbation") == "key_relabel")
+    mapping = {"GOLD_SECRET": "z", "other": "a", "third": "m"}
+    q = replace(unit.clean.questions[0], criteria={
+        mapping[k]: v for k, v in unit.clean.questions[0].criteria.items()})
+    unit = replace(unit, variant=replace(unit.variant, questions=(q,)),
+                   metadata={**unit.metadata, "label_map": mapping})
+    class TiedContentScorer:
+        def score(self, requests, arm):
+            return [{"probs": {k: (.5 if v in {"Red parcel", "Blue parcel"} else 0.)
+                              for k, v in request.questions[0].criteria.items()}}
+                    for request in requests]
+    row = evaluation_rows([unit], TiedContentScorer(), ["one_pass_trust"])[0]
+    assert row["clean_decision"] == "GOLD_SECRET"
+    assert row["decision"] == row["clean_decision"]
