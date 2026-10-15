@@ -34,6 +34,7 @@ SYSTEMS = {
     "qwen9b_one_pass": RAW / "Qwen3.5-9B.nothink.shim.preds.jsonl",
     "h2o_one_pass": RAW / "h2o-lightning-4b.nothink.shim.preds.jsonl",
     "student_one_pass": EXTRA / "student.nothink.shim.preds.jsonl",
+    "student_v1": EXTRA / "student_v1.nothink.shim.preds.jsonl",
     "qwen4b_one_pass_rescored": EXTRA / "stock4b.nothink.shim.preds.jsonl",
 }
 REFERENCE, BASELINE = "h2o_one_pass", "qwen4b_one_pass"

@@ -16,6 +16,28 @@ The author receives only family descriptions derived from `receipts/2026-10-11-j
 - Training candidates are selected only using synthetic dev objective and accuracy, with fixed tie-breaks. The final artifact must be declared in a committed JSON before public scoring. Public Intelligence is scored once with the existing H2O shim (including its disclosed decisive-noul floor); Card T1/T2 use base/trust one-pass arms and the existing semantically audited evidence panel.
 - Per-item text, outputs, labels and reasoning: `$SSDM_PRIVATE/distill_v1/`. Model output is parsed as data, never executed. Model weights: `keel-results` volume. Aggregate outputs only enter git.
 
+### Synthetic-only selection rule
+
+Reserve 160 capability source groups by a label-blind SHA256 ordering; keep both
+members of a noul pair in the same split. Combine those with the already
+group-disjoint v0 pilot labels for synthetic dev. Compare three prespecified
+recipes on 1,536 union-source pilot rows:
+
+| Candidate | LoRA rank | Epochs | Capability fraction |
+|---|---:|---:|---:|
+| r16-e1-balanced | 16 | 1 | 1/2 |
+| r32-e1-balanced | 32 | 1 | 1/2 |
+| r16-e2-capability | 16 | 2 | 2/3 |
+
+Choose the lowest mean of the two source-specific dev objectives (capability
+and v0); ties break by higher balanced accuracy, then table order. Train that
+recipe from the pinned stock 4B on the complete training union. Mixing
+oversamples the underweight source rather than discarding any v0 row.
+Learning rate 1e-4, batch 4, accumulation 4, alpha twice rank, maximum 4,096
+tokens with overlength rejection rather than truncation, seed 20261015.
+Selection pilots do not export checkpoints; only the full-union artifact is
+eligible for final public evaluation.
+
 ## Execution and results
 
 Not yet measured. This file is the pre-execution protocol; final measured results and paid-run ledger will replace this paragraph after execution. No checkpoint or capability/robustness gain is claimed at registration.
@@ -29,6 +51,9 @@ python -X utf8 -m keel.distill.v1_pipeline author
 python -X utf8 -m keel.distill.v1_pipeline verify
 python -X utf8 -m keel.distill.v1_pipeline label
 python -X utf8 -m pytest -q keel/tests
+python -X utf8 -m keel.distill.assembly_v1
+python -X utf8 -m keel.distill.train_v1 select
+python -X utf8 -m keel.distill.train_v1 final
 ```
 
 ## Spend

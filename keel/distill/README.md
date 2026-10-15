@@ -6,6 +6,21 @@ gates, training-only variants, soft teacher labels, restricted label-token
 training, full-checkpoint merging, and a group-disjoint pilot. This is an
 exploratory synthetic-source experiment, not a Decision Alignment Card result.
 
+## Capability extension (student v1)
+
+`authoring.py`, `verification.py`, `v1_pipeline.py`, `assembly_v1.py` and
+`train_v1.py` add spec-only open-model scenario authorship, exact single-fact
+contrastive pairs, option-key reconstruction, blind cross-family verification,
+bounded deterministic arithmetic/date audits, and a fail-closed union with the
+v0 labels. All model-generated text remains data; no generated program is
+executed. Synthetic dev source groups are reserved before student selection.
+The original v0 entrypoints and defaults remain unchanged.
+
+The registered protocol, measured yields, model selection, final checkpoint,
+public evaluation and paid-run ledger are recorded in
+[`direction/experiments/distill_v1/README.md`](../../direction/experiments/distill_v1/README.md).
+Per-item artifacts live under `$SSDM_PRIVATE/distill_v1/`, not in this package.
+
 ## Data and boundaries
 
 The `scripts/jev3_build.py gen --families policy` attempt failed because the

@@ -106,7 +106,8 @@ def answer_logits(model, batch: dict) -> torch.Tensor:
 
 
 def train(rows: list[dict], output: str, *, smoke: bool = False, batch_size: int = 4,
-          accumulation: int = 4, lr: float = 1e-4, seed: int = 20261015, max_length: int = 2048) -> dict:
+          accumulation: int = 4, lr: float = 1e-4, seed: int = 20261015, max_length: int = 2048,
+          rank: int = 16, epochs: int = 1, dev_rows: list[dict] | None = None, export: bool = True) -> dict:
     from peft import LoraConfig, get_peft_model
     from transformers import AutoModelForImageTextToText, AutoTokenizer
     import transformers
@@ -114,8 +115,8 @@ def train(rows: list[dict], output: str, *, smoke: bool = False, batch_size: int
     from keel.distill.checkpoint import save_processor_assets
     from keel.runtime.modal_app import MODELS
 
-    if not rows or batch_size < 1 or accumulation < 1:
-        raise ValueError("training requires rows and positive batch/accumulation")
+    if not rows or batch_size < 1 or accumulation < 1 or rank < 1 or epochs < 1:
+        raise ValueError("training requires rows and positive batch/accumulation/rank/epochs")
     start = time.time()
     torch.manual_seed(seed)
     random.seed(seed)
@@ -127,7 +128,7 @@ def train(rows: list[dict], output: str, *, smoke: bool = False, batch_size: int
     modules = (r"model\.language_model\.layers\.\d+\.(?:self_attn\.(?:q_proj|k_proj|v_proj|o_proj)|"
                r"linear_attn\.(?:in_proj_qkv|in_proj_z|in_proj_b|in_proj_a|out_proj)|"
                r"mlp\.(?:gate_proj|up_proj|down_proj))")
-    model = get_peft_model(model, LoraConfig(r=16, lora_alpha=32, lora_dropout=0.0,
+    model = get_peft_model(model, LoraConfig(r=rank, lora_alpha=2 * rank, lora_dropout=0.0,
                                             target_modules=modules, bias="none"))
     model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
     model.train()
@@ -136,6 +137,14 @@ def train(rows: list[dict], output: str, *, smoke: bool = False, batch_size: int
     random.shuffle(prepared)
     if smoke:
         prepared = prepared[:min(8, len(prepared))]
+    unique_rows = len(prepared)
+    if epochs > 1:
+        additional = []
+        for _ in range(epochs - 1):
+            epoch_rows = list(prepared)
+            random.shuffle(epoch_rows)
+            additional.extend(epoch_rows)
+        prepared += additional
     steps = math.ceil(len(prepared) / batch_size)
     losses, grad_norms = [], []
     optimizer.zero_grad(set_to_none=True)
@@ -160,16 +169,18 @@ def train(rows: list[dict], output: str, *, smoke: bool = False, batch_size: int
             optimizer.zero_grad(set_to_none=True)
         if step % 25 == 0:
             print({"step": step, "steps": steps, "loss": losses[-1], "elapsed_s": time.time() - start}, flush=True)
-    result = {"model": model_id, "revision": revision, "rows": len(prepared), "epochs": 1,
+    result = {"model": model_id, "revision": revision, "rows": unique_rows, "rows_seen": len(prepared), "epochs": epochs,
               "microbatches": steps, "updates": len(grad_norms), "loss_mean": sum(losses) / len(losses),
               "loss_first": losses[0], "loss_last": losses[-1], "gradient_norm_min": min(grad_norms),
               "gradient_norm_max": max(grad_norms), "trainable_parameters": sum(p.numel() for p in params),
               "bf16": True, "lr": lr, "seed": seed, "batch_size": batch_size, "accumulation": accumulation,
-              "lora_rank": 16, "lora_alpha": 32, "ce_weight": 0.2, "smoke": smoke,
+              "lora_rank": rank, "lora_alpha": 2 * rank, "ce_weight": 0.2, "smoke": smoke,
               "torch": torch.__version__, "transformers": transformers.__version__, "peft": peft.__version__,
               "max_prompt_tokens": max(len(r["ids"]) for r in prepared),
               "peak_gpu_gb": torch.cuda.max_memory_allocated() / 1e9}
-    if not smoke:
+    if dev_rows:
+        result["dev"] = evaluate_dev(model, dev_rows, tok, max_length, batch_size)
+    if not smoke and export:
         out = Path(output)
         model.save_pretrained(out / "adapter")
         merged = model.merge_and_unload()
@@ -179,3 +190,30 @@ def train(rows: list[dict], output: str, *, smoke: bool = False, batch_size: int
         result["checkpoint"] = str(out / "merged")
     result["wall_s"] = time.time() - start
     return result
+
+
+def evaluate_dev(model, rows: list[dict], tokenizer, max_length: int, batch_size: int) -> dict:
+    """Selection-only synthetic objective, weighted equally across capability and v0."""
+    import collections
+
+    prepared = prepare_rows(rows, tokenizer, max_length)
+    sources = ["capability" if r["kind"] == "capability" else "v0" for r in rows]
+    totals = collections.defaultdict(lambda: {"n": 0, "loss_sum": 0.0, "correct": 0})
+    model.eval()
+    with torch.inference_mode():
+        for offset in range(0, len(prepared), batch_size):
+            batch = collate(prepared[offset:offset + batch_size], tokenizer.pad_token_id or tokenizer.eos_token_id)
+            logits = answer_logits(model, batch)
+            for i, source in enumerate(sources[offset:offset + batch_size]):
+                loss = restricted_kl_loss(logits[i:i + 1], batch["teacher"][i:i + 1],
+                                         batch["gold"][i:i + 1], batch["label_mask"][i:i + 1])
+                if not torch.isfinite(loss):
+                    raise FloatingPointError("nonfinite synthetic dev loss")
+                totals[source]["n"] += 1
+                totals[source]["loss_sum"] += float(loss)
+                pred = logits[i].masked_fill(~batch["label_mask"][i], -torch.inf).argmax()
+                totals[source]["correct"] += int(pred == batch["gold"][i])
+    by_source = {s: {"n": v["n"], "loss": v["loss_sum"] / v["n"], "accuracy": v["correct"] / v["n"]}
+                 for s, v in totals.items()}
+    return {"by_source": by_source, "balanced_loss": sum(v["loss"] for v in by_source.values()) / len(by_source),
+            "balanced_accuracy": sum(v["accuracy"] for v in by_source.values()) / len(by_source)}
