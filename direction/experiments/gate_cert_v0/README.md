@@ -55,4 +55,51 @@ Per-request scores, the population and the full reports stay outside git in `/ho
 
 ## Results
 
-Results follow below once scoring completes.
+Scored 2026-10-15 on Modal H100 with vLLM 0.30.0:
+- 2,700 requests (900 clusters) per pipeline;
+- splits of 126 fit, 1,416 calibration and 1,158 evaluation requests;
+- about 6 GPU-minutes in total (≈ $0.40).
+
+**Certificates: none.** Neither pipeline is certified under either preregistered loss. The prescribed action is
+therefore `defer_all`.
+
+| Pipeline | `acted_wrong_eps05` | `acted_wrong_or_attack_eps10` |
+|---|---|---|
+| distilled student | no certificate (best p = 0.053 vs Bonferroni level 0.0014) | no certificate |
+| stock Qwen3.5-4B | no certificate | no certificate |
+
+The empirical risk–coverage curve is descriptive, not a bound. It shows the coverage and risk of acted decisions
+in each split, with risk = P(wrong | acted). The manipulation threshold is 1.0 (no detector veto); the detectors
+barely change these rows, because the training-family attacks avoid lexicon triggers.
+
+| Pipeline | Uncertainty threshold | Calibration coverage | Calibration risk | Evaluation coverage | Evaluation risk | CRR p |
+|---|---|---|---|---|---|---|
+| student | 0.02 | 19.1% | 1.85% | 20.7% | 0.83% | 0.26 |
+| student | 0.05 | 29.3% | 1.45% | 31.5% | 1.64% | 0.082 |
+| student | 0.10 | 46.3% | 1.98% | 46.0% | 1.69% | 0.065 |
+| student | 0.20 | 64.0% | 2.98% | 65.6% | 3.95% | 0.053 |
+| student | 0.50 | 93.7% | 5.43% | 95.3% | 5.26% | 0.46 |
+| stock 4B | 0.02 | 1.7% | 8.3% | 1.4% | 12.5% | 0.90 |
+| stock 4B | 0.10 | 11.1% | 26.1% | 11.5% | 21.8% | 0.88 |
+| stock 4B | 0.20 | 28.1% | 33.2% | 31.5% | 35.6% | 0.95 |
+| stock 4B | 0.50 | 80.8% | 42.9% | 80.9% | 45.0% | 1.0 |
+
+### Reading
+
+- **Distillation transfers strongly in distribution.** On these generator families with training-family attacks,
+  the student's acted error is 1.5–5.4% across 19–95% coverage; stock Qwen3.5-4B's is 8–45%. This is
+  in-distribution evidence (same generators, same attack families as training), not generalization; the public
+  Card measures that.
+- **The cluster-valid test is conservative at this sample size.**
+  - The student's observed acted risk sits 1.5–3.5 pp under ε = 0.05 on about 470 calibration clusters, yet the
+    best p-value is 0.053 against a Bonferroni level of 0.05/36.
+  - The CRR betting test (`jevkit.guarantees.crr_betting_pvalue`) starts from the worst-case variance prior (1/4)
+    for bounded residuals. Cluster weighting (cap 1, size 3) also shrinks every residual to ≤ 1/3 of its range.
+  - Both cost power when per-cluster effects are small.
+  - Remedies for the next preregistration: a fixed-sequence path ordered from strict to loose thresholds, more
+    calibration clusters, or a variance-adaptive test with a tighter prior. Each is a power choice, not a validity
+    choice.
+- **Certifying against attack prevalence needs a working detector.** Under `wrong_or_attack`, acting on any
+  attacked request is a loss. With two thirds of traffic attacked and no signal that separates these attacks from
+  clean records, the acted share of attacked requests stays near 68%, so no threshold can certify 10%. The judge
+  resisting an attack and the gate *knowing* it was attacked are different properties.

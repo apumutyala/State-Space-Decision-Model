@@ -1,0 +1,10 @@
+{
+  "source_items": 900,
+  "requests": 2700,
+  "by_kind": {
+    "clean": 900,
+    "inject": 900,
+    "authority": 900
+  },
+  "plan_sha256": "ccc786827a17fb0f3a9daf9740df817c474aa01d8beac76c04248396c886c52a"
+}
