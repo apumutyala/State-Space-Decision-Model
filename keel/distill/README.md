@@ -294,8 +294,11 @@ canary, wrong targets across all types, trust-channel separation, a planted
 JevBench-overlap fixture and disabled-gate rejection, split leakage, lexical
 counterfactual filters, exact KL/CE against hand calculation, real tiny-model
 gradients and nonlabel exclusion, masked labels, teacher filtering, executable
-later-event counterfactual semantics, cross-model validation requirements, and
-cluster-bootstrap metric denominators. **41 passed in 1.77 s**.
+later-event counterfactual semantics, cross-model validation requirements,
+cluster-bootstrap metric denominators, and complete pinned processor-asset
+export without modifying trained weights. Final command:
+`/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests`
+— **46 passed in 1.75 s**.
 
 ## Paid-run log
 

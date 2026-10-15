@@ -79,3 +79,19 @@ H100 accounting rate: $3.95/hour; cap: $45. **Total upper estimate: $20.72**, in
 | 2026-10-15 | runtime.judge: teacher_9b pilot | 5.604 | $0.369 |
 
 Machine-readable ledger: `costs.json`; failed-call details: `pilot-failed.json`. The early FLA correctness refusal was fixed by upgrading the training image, never by disabling the guard. The image-build compiler failure was fixed by selecting installed GCC/G++. Processor repair was CPU-only. No billing totals or broader model capabilities are inferred from these measurements.
+
+## CPU acceptance
+
+Final command from the distill worktree:
+
+```sh
+/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests
+```
+
+**46 passed in 1.75 s.** Coverage includes attack-template disjointness,
+wrong-option targets, a planted public-item overlap failing closed, hand-checked
+restricted KL/CE values and real tiny-model gradients, nonlabel exclusion,
+teacher filtering, executable evidence semantics, group bootstrap denominators,
+and processor export with all required files present and trained-weight bytes
+unchanged. The processor regression also checks that the exact pinned base
+revision is requested and missing assets fail before partial export.
