@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-15",
+  "function": "evidence_screen: runtime.judge 4B think",
+  "evidence_before": 82,
+  "after_semantic_screen": 14,
+  "after_cross_model_screen": 14,
+  "semantic_reasons": {
+    "unsupported_non_event_record": 39,
+    "not_single_explicit_later_update": 27,
+    "verified_later_event_flip": 14,
+    "unknown_field_value": 2
+  },
+  "labels_before": 557,
+  "labels_after": 489,
+  "cross_model_samples": 1,
+  "cross_model_seed": 261015,
+  "gpu_minutes_upper_estimate": 3.243302126725515,
+  "usd_upper_estimate": 0.2135173900094297
+}

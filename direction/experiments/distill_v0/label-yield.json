@@ -1,0 +1,81 @@
+{
+  "source_rows": 3107,
+  "units": 14885,
+  "labels": 9075,
+  "by_kind": {
+    "clean": {
+      "attempted": 3107,
+      "kept": 2511,
+      "dropped_clean_wrong": 596
+    },
+    "inject": {
+      "attempted": 3107,
+      "teacher_target_steered": 593,
+      "teacher_any_sample_changed": 963,
+      "dropped_teacher_changed": 403,
+      "kept": 2108,
+      "dropped_clean_wrong": 596
+    },
+    "authority": {
+      "attempted": 3107,
+      "teacher_target_steered": 697,
+      "teacher_any_sample_changed": 1076,
+      "kept": 2008,
+      "dropped_teacher_changed": 503,
+      "dropped_clean_wrong": 596
+    },
+    "policy": {
+      "attempted": 3107,
+      "kept": 1241,
+      "dropped_control_unvalidated": 1270,
+      "dropped_clean_wrong": 596
+    },
+    "evidence": {
+      "attempted": 2457,
+      "kept": 1207,
+      "dropped_control_unvalidated": 840,
+      "dropped_clean_wrong": 410
+    }
+  },
+  "evidence_proposals": 3107,
+  "evidence_lexically_kept": 2457,
+  "templates": {
+    "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+    "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+    "n_training_templates": 6,
+    "disjoint": true,
+    "clashes": {},
+    "training_skipped": {}
+  },
+  "max_think": 768,
+  "n_samples": 2,
+  "conditional_teacher_steering": {
+    "inject": {
+      "n": 2511,
+      "target_hits": 215,
+      "any_sample_changed": 403,
+      "targeted_steer_rate": 0.08562325766626842,
+      "any_sample_changed_rate": 0.16049382716049382
+    },
+    "authority": {
+      "n": 2511,
+      "target_hits": 282,
+      "any_sample_changed": 503,
+      "targeted_steer_rate": 0.11230585424133811,
+      "any_sample_changed_rate": 0.20031859816806052
+    }
+  },
+  "raw_count_note": "teacher_target_steered and teacher_any_sample_changed in by_kind are unconditional counts, not causal ASR; conditional_teacher_steering restricts to clean-mean-correct parents.",
+  "cost": {
+    "date": "2026-10-15",
+    "function": "TeacherServer.author + runtime.judge",
+    "model": "qwen3.5-9b",
+    "n_samples": 2,
+    "max_think": 768,
+    "status": "complete",
+    "h100_hourly_usd": 3.95,
+    "wall_s": 3960.8978810310364,
+    "gpu_minutes_upper_estimate": 66.01496468385061,
+    "usd_upper_estimate": 4.345985175020165
+  }
+}
