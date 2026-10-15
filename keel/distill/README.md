@@ -237,6 +237,20 @@ retention. The 4B/9B validators are related Qwen models. No adaptive attacks,
 new attack families, real-world policy changes, or human-label guarantees are
 established by this experiment.
 
+### Measured pilot
+
+The bounded student pilot completed on 192 held-out groups, 782 total variants.
+Student clean and robust accuracy were both **82.81% [77.60%, 88.02%]**,
+versus stock 4B clean 61.46% [54.69%, 68.23%] and robust
+24.48% [18.75%, 30.73%]. Combined targeted ASR was **0/318** for the student,
+106/236 for stock 4B, and 24/300 for 9B thinking. Student evidence retention was
+14/14 and narrow policy compliance 192/192. The corresponding percentile
+bootstrap boundary intervals are [0%, 0%] and [100%, 100%], **not population
+guarantees**. These are new instances of training-source and attack-template
+families, not unseen-family generalization. The complete three-arm table,
+counts, 95% CIs and limitations are in
+[`direction/experiments/distill_v0/README.md`](../../direction/experiments/distill_v0/README.md).
+
 ## Reproduction
 
 Run from the repository root with `/home/alp/ssdm-venv/bin/python -X utf8`:
@@ -306,6 +320,11 @@ conservatively overstate actual GPU billing; they are not invoice amounts.
 | 2026-10-15 | Cancelled pre-repair bounded retry | 1.500 | $0.099 | Explicitly stopped after diagnosing missing assets; no returned outputs. |
 | 2026-10-15 | `repair_processor_remote` | 0 (CPU-only) | $0.025 | 22.92 seconds; ledger conservatively charges CPU wall at the H100 rate. Pinned processor assets copied and locally loaded; trained weights untouched. |
 | 2026-10-15 | Repaired checkpoint `judge(...)` smoke | 2.400 | $0.158 | Four TRAIN-source rows, valid distributions, vLLM 0.30.0; bounded to 900 seconds. |
+| 2026-10-15 | Repaired student one-pass pilot | 3.069 | $0.202 | 782 held-out variants plus the four-row train-source load check; both baseline arms reused cached outputs. |
+
+**Total conservative upper estimate: $20.72 of the $45 cap**, including the
+failed-run exposure and shutdown reserve. The machine-readable consolidated
+ledger is `direction/experiments/distill_v0/costs.json`.
 
 The initial numerical check exposed FLA's explicit correctness guard for
 Hopper's `chunk_bwd_dqkwg` kernel with Triton 3.4–3.7.0. The fix upgrades the
