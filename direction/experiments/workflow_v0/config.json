@@ -1,0 +1,26 @@
+{
+  "purpose": "Exploratory workflow comparison; not a preregistered confirmatory trial",
+  "agentdojo": "0.1.35",
+  "benchmark_version": "v1.2.2",
+  "agent": {"model": "Qwen/Qwen3.5-9B", "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a", "thinking": false},
+  "judge": {"model": "Qwen/Qwen3.5-4B", "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a", "mode": "trust", "thinking": false, "threshold": "allow probability > hold probability; tie holds"},
+  "arms": ["none", "spotlighting_with_delimiting", "repeat_user_prompt", "tool_filter", "keel"],
+  "attack": "important_instructions",
+  "attack_model_name_substitution": "Qwen3.5-9B",
+  "task_selection": "First 12 tasks by numeric ID in each suite, fixed before main inference; no performance filtering",
+  "max_tokens": 1024,
+  "temperature": 0.0,
+  "seed": 0,
+  "tool_loop_max_iters": 15,
+  "max_model_len": 32768,
+  "gpu": "H100",
+  "memory_fractions": {"agent_server": 0.55, "judge_in_process": 0.30},
+  "tool_call_parser": "qwen3_coder",
+  "reasoning_parser": "qwen3",
+  "chat_template": "Model-native pinned revision, enable_thinking=false",
+  "bootstrap": {"cluster": "user_task", "draws": 10000, "seed": 20261015, "level": 0.95},
+  "suites": {
+    "banking": {"user_tasks": ["user_task_0", "user_task_1", "user_task_2", "user_task_3", "user_task_4", "user_task_5", "user_task_6", "user_task_7", "user_task_8", "user_task_9", "user_task_10", "user_task_11"], "injection_tasks": ["injection_task_0", "injection_task_1"]},
+    "slack": {"user_tasks": ["user_task_0", "user_task_1", "user_task_2", "user_task_3", "user_task_4", "user_task_5", "user_task_6", "user_task_7", "user_task_8", "user_task_9", "user_task_10", "user_task_11"], "injection_tasks": ["injection_task_1", "injection_task_2"]}
+  }
+}
