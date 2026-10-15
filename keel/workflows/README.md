@@ -45,3 +45,15 @@ Results and exact matrix are in [`direction/experiments/workflow_v0`](../../dire
 This is an exploratory comparison, not the 10× stretch claim: one agent model family, one judge family shared with the agent, a standard non-adaptive attack, 12 tasks per suite, two target goals per task, one greedy seed, and a simulated environment. Utility/review load are reported rather than matched. Tool filtering may reduce available useful actions. Target success is the benchmark's selected predicate, not a detector of every possible unauthorized action. The gate has no guarantee that an allowed call is correct and no fitted statistical act/defer certificate. The optional thinking judge and CaMeL-lite reference are not included.
 
 CPU acceptance on the initial implementation: `python -X utf8 -m pytest -q keel/tests` — **32 passed**. Tests cover trust construction and control-token escaping, hold/no executor invocation, real allow side effects, immutable original transcript, same-batch evidence, receipt binding, ties, invalid scores/log failure, nested-call blocking, clustered CIs, and real AgentDojo attack/predicate behavior.
+
+## Parser pilot and spend ledger
+
+The six-episode pilot completed with no episode or tool-dispatch errors: the undefended agent completed both held-out pilot user tasks with seven executed calls. This verifies tool calling in banking and Slack, not just an artificial function schema. The Keel arm held 8/9 calls and completed neither pilot task. The unmodified upstream tool-filter arm made no calls and completed neither task: the model continued answering the filter request rather than the original user task. It remains a diagnostic arm, not evidence of a useful secure comparator. No prompt/threshold was adjusted after the pilot.
+
+Every paid allocation uses `keel.workflows.modal_run.evaluate` on one H100, estimated at $3.95/hour. Runtime estimates include model loading and episode execution but exclude image building and unobserved platform teardown; these are not provider invoices.
+
+| Date | Run / function | GPU-minutes | Estimated GPU $ | Accounting |
+|---|---|---:|---:|---|
+| 2026-10-15 | `parser-pilot-20261015a` / `evaluate` | 3.7084 | 0.2441 | Measured function wall time; six episodes |
+| 2026-10-15 | `workflow-v0-20261015a` / `evaluate` | 5.0000 reserved | 0.3292 reserved | Cancelled before server startup/episodes to remove the local shell's one-hour deadline; explicitly stopped Modal app `ap-DX8V6WsWVxGUcGOt0XX0AC`; exact billed duration unavailable |
+
