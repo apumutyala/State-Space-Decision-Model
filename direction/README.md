@@ -24,6 +24,7 @@
 | `experiments/card_student_v0/` | Public Card on the distilled student and paired comparison with stock/teacher arms |
 | `experiments/gate_cert_v0/` | Preregistered complete-gate certification on a non-public population |
 | `experiments/workflow_v0/` | AgentDojo banking + Slack: executed injection targets with and without Keel gates |
+| `experiments/gap_analysis/` | Where the one-pass Intelligence gap to H2O-Lightning-4B comes from (stock 4B, student, thinking) |
 
 Conventions: the public JevBench items are EVAL-ONLY and never committed; per-item model outputs stay out of git
 (workstation copy: `$SSDM_PRIVATE`, default `~/ssdm/private`). Paths such as `/tmp/...` or `local://...` inside
