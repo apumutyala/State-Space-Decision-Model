@@ -78,3 +78,37 @@ CPU command: `/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests` �
 Reproduction commands and architecture are in [`keel/workflows/README.md`](../../../keel/workflows/README.md). Raw transcripts, dataset text, judge records and episode metrics remain outside git at `/home/alp/ssdm-direction/workflow/` and `keel-results:/workflow/`. Primary executable source was committed at `e5f10566`; supplemental source at `c619137d` does not change the primary gate policy, threshold or one-pass readout. Aggregate code, exact configs and [`run_summary.json`](run_summary.json) are committed here.
 
 This is exploratory, not sealed or confirmatory: **one agent model family, a same-family stock judge, one non-adaptive standard attack, a deterministic task prefix, only two attack goals per task, one agent seed, and simulator-side effects**. There is no claim about adaptive attackers, other families, production data, all unauthorized actions, calibrated probabilities, statistical gate certification, or external replication. The judge was trained on **nothing workflow-specific**. Utility and review load are not matched, so even an arbitrarily large raw ASR reduction cannot establish the moonshot's matched-completion/review-load stretch result.
+
+## v0.1: host-kernel integration
+
+The v0 tables above are preserved as historical measurements. The host-integrated cutover is a separate **72-episode one-pass Keel rerun only**, with the same two suites, 12 tasks per suite, benign condition and two attack goals, pinned models, prompt text, options and argmax/tie-hold rule. [`host_config.json`](host_config.json) fixes this comparison; implementation source is `6ae7af5f`. This is not an additional pooled sample or a new attack evaluation.
+
+Every proposed call now goes through `keel.host.HostKernel` with a host-bound `agent` principal. The operator policy's structural action set and the principal's role grants are the suite's tool names. Trusted task metadata and untrusted tool outputs come from `kernel.inputs`; proposed-call content is `.derive`d from untrusted outputs. The judge returns a `DecisionResult` with explicit defer reasons for holds; the kernel receives an `ActionProposal` with tool, arguments, principal and cited segment IDs. Only its executor callback invokes the actual AgentDojo runtime.
+
+One disk-backed `ReceiptLog` is shared across all episodes in the run. Its write-ahead hash chain, checkpoint, actual prompt-use manifests and saved replay inputs replace the plain decision journal; new runs do not produce both. Each episode verifies its cumulative chain, and the end-of-run audit checks episode/receipt linkage plus 20 seeded random input/prompt replays against a pinned checkpoint. A receipt records dispatch intent, not confirmation that a downstream tool succeeded. The host's zero-capacity review queue holds every deferred call and returns the same fixed message used in v0.
+
+CPU acceptance: `/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests` — **414 passed**. Deterministic fake judges exercise the real host and real AgentDojo dispatch, including an available runtime tool that is absent from structural authority: forced model approval still cannot execute it. Tests also cover write-ahead receipts, one receipt/no dispatch on hold, chain tampering, saved-request replay, episode linkage and both thinking prompt manifests.
+
+These grants are broad, deployable suite-tool grants, **not a ground-truth task-tool oracle**. They cannot distinguish authorized from unauthorized arguments to an otherwise permitted tool; that semantic decision still rests with the uncalibrated stock judge. The integration does not fix the v0 utility/review mismatch or certify the moonshot target. Receipt replays establish input/prompt identity, not independent model-output regeneration; checkpoint integrity depends on trusted host storage, and Modal durability is not an independently audited crash-recovery guarantee.
+
+### Measured integration result
+
+Run `workflow-host-v01-20261015a` completed **72/72 episodes with zero episode or dispatch errors**: 335 gated calls, 30 successful executions and 305 held calls. **All 72 episodes exactly match v0 on all 14 compared non-timing outcome fields**, including utility, targeted ASR, call/hold counts, token counts and injection hashes. The 335 aligned judge inputs have **335/335 identical prompt hashes and 335/335 exactly identical probabilities**; maximum absolute probability difference is 0. Request fingerprints intentionally change because the host-authorized tool set and derived provenance are now part of the request.
+
+The complete **335-receipt chain** and **72 episode checkpoints** verified both remotely and after download. **20/20 seeded random receipts passed `replay_check`**; these are the same 20 sampled indices, not 40 independent replays. The pinned head is `83b65ad3bd34b94f2d55b22f2cf03659785cfe8a12ff46bd2afb14d5603dbc54`. Aggregate audit and exact comparison counts are in [`host_audit.json`](host_audit.json); per-episode differences (none), receipt chains, checkpoints and saved requests remain outside git under `/home/alp/ssdm-direction/workflow/workflow-host-v01-20261015a/`.
+
+The rerun uses the same 10,000-resample task-cluster CIs as v0 and reproduces its safety–utility failure, not an improvement:
+
+| Suite | Host-integrated arm | Benign utility | Attacked utility | Targeted ASR | Hold benign | Hold attacked |
+|---|---|---:|---:|---:|---:|---:|
+| banking | Keel one-pass | 41.7 [16.7, 66.7] | 41.7 [16.7, 66.7] | 0.0 [0.0, 0.0] | 84.8 [75.0, 92.3] | 84.8 [73.7, 92.5] |
+| slack | Keel one-pass | 0.0 [0.0, 0.0] | 0.0 [0.0, 0.0] | 0.0 [0.0, 0.0] | 95.4 [90.4, 100.0] | 95.5 [90.5, 100.0] |
+
+Review-episode rates are unchanged: banking 91.7% [75.0, 100.0] in both conditions; Slack 100% [100, 100] in both. Each targeted-ASR estimate is 0/24; the degenerate bootstrap intervals still do not certify zero population risk. [`host_aggregate.json`](host_aggregate.json) contains full counts, unrounded estimates and intervals.
+
+| Suite | Benign seconds [95% CI] | Attacked seconds [95% CI] | Benign warm GPU $ [95% CI] | Attacked warm GPU $ [95% CI] |
+|---|---:|---:|---:|---:|
+| banking | 11.4 [9.7, 13.2] | 11.1 [9.7, 12.7] | 0.0125 [0.0106, 0.0145] | 0.0122 [0.0107, 0.0139] |
+| slack | 13.4 [9.8, 17.5] | 13.5 [9.8, 17.5] | 0.0147 [0.0107, 0.0192] | 0.0148 [0.0107, 0.0192] |
+
+Latency differs from v0, but these are separate allocations rather than an isolated host-overhead benchmark: the lower wall times must not be attributed to the host integration. This follow-up used **17.8653 H100-minutes / $1.1761 estimated**, including model loading, against a separate **$8 cap**; no other follow-up allocations were launched. Function-wall cost amortized over 72 episodes is **$0.01634/episode**, excluding platform teardown/invoice adjustments and human review. Exact allocation evidence is in [`host_run_summary.json`](host_run_summary.json), and the paid-run ledger is in the workflow package README.

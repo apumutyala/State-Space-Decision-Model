@@ -18,7 +18,7 @@ IMAGE = vllm_image.pip_install("agentdojo==0.1.35").add_local_python_source("kee
 class LocalJudge:
     """Same single-label raw-logprob readout as keel.runtime.vllm_judge."""
 
-    def __init__(self, audit_path, max_think=1024):
+    def __init__(self, max_think=1024):
         from vllm import LLM
         model, revision = MODELS["qwen3.5-4b"]
         self.llm = LLM(model=model, revision=revision, max_model_len=32768, gpu_memory_utilization=0.30,
@@ -26,21 +26,21 @@ class LocalJudge:
                        enable_prefix_caching=True, max_logprobs=256, seed=0)
         self.tokenizer = self.llm.get_tokenizer()
         self.label_ids = {}
-        self.audit_path = Path(audit_path)
         self.max_think = max_think
 
     def __call__(self, rendered):
-        import hashlib
         from vllm import SamplingParams
         from keel.protocol.render import close_think, probs_from_logprobs
+        from keel.protocol.receipts import PromptUse
+        from .gate_element import JudgeEvaluation
         prompt = rendered.prompt
-        reasoning, think_tokens, truncated = None, 0, False
+        reasoning, truncated = None, False
         if rendered.think:
             sample = self.llm.generate(
                 [prompt], SamplingParams(max_tokens=self.max_think, temperature=.6, top_p=.95,
                                          top_k=20, seed=0, stop=["</think>"]), use_tqdm=False,
             )[0].outputs[0]
-            reasoning, think_tokens = sample.text, len(sample.token_ids)
+            reasoning = sample.text
             truncated = sample.finish_reason == "length"
             prompt = close_think(rendered, reasoning, truncated)
         base = self.tokenizer.encode(prompt, add_special_tokens=False)
@@ -57,13 +57,10 @@ class LocalJudge:
         if missing:
             raise RuntimeError(f"missing raw label logprobs: {missing}")
         values = [logprobs[self.label_ids[label]].logprob for label in rendered.labels]
-        audit = {"prompt_sha256": hashlib.sha256(rendered.prompt.encode()).hexdigest(),
-                 "readout_prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
-                 "labels": list(rendered.labels), "logprobs": values, "think_tokens": think_tokens,
-                 "truncated": truncated, "reasoning": reasoning}
-        with self.audit_path.open("a", encoding="utf-8") as stream:
-            stream.write(json.dumps(audit) + "\n")
-        return probs_from_logprobs(rendered, values)
+        prompts = [PromptUse.from_rendered("q", rendered)]
+        if rendered.think:
+            prompts.append(PromptUse.from_rendered("q", rendered, reasoning=reasoning, truncated=truncated))
+        return JudgeEvaluation(probs_from_logprobs(rendered, values), tuple(prompts))
 
 
 @APP.function(image=IMAGE, gpu="H100", timeout=3 * 3600,
@@ -101,7 +98,7 @@ def evaluate(config: dict, run_id: str):
             else:
                 raise TimeoutError("vLLM server startup exceeded 1200 seconds")
             meta["agent_load_s"] = time.monotonic() - start
-            judge = (LocalJudge(root / "judge_samples.jsonl", config.get("judge_max_think", 1024))
+            judge = (LocalJudge(config.get("judge_max_think", 1024))
                      if any(arm in ("keel", "keel_think") for arm in config["arms"]) else None)
             meta["total_load_s"] = time.monotonic() - start
             client = EndpointClient("http://127.0.0.1:8000/v1", model, max_tokens=config.get("max_tokens", 1024))
@@ -110,6 +107,9 @@ def evaluate(config: dict, run_id: str):
             meta["errors"] = sum(row["error"] is not None for row in rows)
             meta["executed_calls"] = sum(row["executed_calls"] for row in rows)
             meta["dispatch_errors"] = sum(row["dispatch_errors"] for row in rows)
+            if judge is not None:
+                from .audit import verify_run
+                meta["receipt_verification"] = verify_run(root, sample_size=20, seed=20261015)
             meta["completed"] = True
     except Exception as exc:
         meta["completed"] = False
@@ -157,7 +157,7 @@ def main():
     with modal.enable_output(), APP.run():
         try:
             if not args.download_only:
-                evaluate.remote(config, args.run_id)
+                evaluate.with_options(timeout=config.get("function_timeout_seconds", 3 * 3600)).remote(config, args.run_id)
         finally:
             download_run(args.run_id, Path(args.output) / args.run_id)
 

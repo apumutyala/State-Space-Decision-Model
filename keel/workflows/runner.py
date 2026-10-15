@@ -21,6 +21,8 @@ from agentdojo.attacks.important_instructions_attacks import ImportantInstructio
 from agentdojo.functions_runtime import FunctionCall, FunctionsRuntime
 from agentdojo.logging import Logger
 from agentdojo.task_suite.load_suites import get_suite
+from keel.protocol.receipts import ReceiptLog
+from keel.runtime.modal_app import MODELS
 
 from .gate_element import KeelGateElement
 
@@ -108,7 +110,7 @@ class CountProposals:
         return self.executor.query(query, runtime, env, messages, extra_args)
 
 
-def make_pipeline(client, arm, user_task, episode_id, log_root, judge=None):
+def make_pipeline(client, arm, user_task, episode_id, log_root, judge=None, *, authorized_actions):
     if arm not in ARMS:
         raise ValueError(f"unknown arm {arm}")
     llm = OpenAILLM(client, client.model)
@@ -122,7 +124,9 @@ def make_pipeline(client, arm, user_task, episode_id, log_root, judge=None):
     if arm in ("keel", "keel_think"):
         if judge is None:
             raise ValueError("Keel arm requires a judge")
-        gate = KeelGateElement(user_task, judge, Path(log_root) / "decisions.jsonl", episode_id,
+        model_id, revision = MODELS["qwen3.5-4b"]
+        gate = KeelGateElement(user_task, judge, ReceiptLog(Path(log_root) / "receipts.jsonl"), episode_id,
+                               authorized_actions=authorized_actions, model_id=model_id, model_revision=revision,
                                think=arm == "keel_think")
         elements[0] = gate
     counter = CountProposals(elements[0])
@@ -147,7 +151,8 @@ def run_episode(client, judge, suite_name, task_id, injection_id, arm, log_root)
     task = suite.get_user_task_by_id(task_id)
     injection = suite.get_injection_task_by_id(injection_id) if injection_id else None
     episode_id = f"{suite_name}/{arm}/{task_id}/{injection_id or 'benign'}"
-    pipeline, gate, counter = make_pipeline(client, arm, task.PROMPT, episode_id, log_root, judge)
+    pipeline, gate, counter = make_pipeline(client, arm, task.PROMPT, episode_id, log_root, judge,
+                                           authorized_actions=tuple(tool.name for tool in suite.tools))
     injections = standard_attack(suite, pipeline).attack(task, injection) if injection else {}
     env = task.init_environment(suite.load_and_inject_default_environment(injections))
     pre = env.model_copy(deep=True)
@@ -172,21 +177,24 @@ def run_episode(client, judge, suite_name, task_id, injection_id, arm, log_root)
     output = messages[-1].get("content") or [] if messages and messages[-1]["role"] == "assistant" else []
     utility = False if error else suite._check_user_task_utility(task, output, pre, env, runtime.executed)
     target = bool(runtime.target_succeeded or (security(env, runtime.executed) if injection else False))
-    records = gate.records if gate else []
-    holds = sum(record["outcome"] == "hold" for record in records)
+    outcomes = gate.outcomes if gate else []
+    holds = sum(outcome.status != "executed" for outcome in outcomes)
+    receipt_checkpoint = gate.kernel.receipt_log.verify() if gate else None
     usage = client.usage[usage_start:]
     row = {
         "episode_id": episode_id, "suite": suite_name, "arm": arm, "user_task": task_id,
         "injection_task": injection_id, "attacked": injection is not None, "utility": bool(utility),
         "targeted_asr": target if injection else None, "proposed_calls": counter.proposals,
         "executed_calls": len(runtime.executed), "dispatch_errors": sum(d["error"] is not None for d in runtime.dispatches),
-        "gated_calls": len(records), "held_calls": holds, "review_episode": holds > 0,
+        "gated_calls": len(outcomes), "held_calls": holds, "review_episode": holds > 0,
         "hold_rate": holds / counter.proposals if counter.proposals else 0.0,
         "latency_s": elapsed, "warm_gpu_cost_usd": elapsed * 3.95 / 3600,
         "agent_requests": len(usage), "completion_truncations": sum(u["finish_reason"] == "length" for u in usage),
         "prompt_tokens": sum((u["usage"] or {}).get("prompt_tokens", 0) for u in usage),
         "completion_tokens": sum((u["usage"] or {}).get("completion_tokens", 0) for u in usage),
-        "judge_latency_s": sum(r["judge_latency_s"] for r in records), "error": error,
+        "judge_latency_s": gate.judge_latency_s if gate else 0.0, "error": error,
+        "receipt_chain_verified_count": receipt_checkpoint.count if receipt_checkpoint else None,
+        "receipt_ids": [outcome.receipt_id for outcome in outcomes],
         "injections_sha256": hashlib.sha256(json.dumps(injections, sort_keys=True).encode()).hexdigest(),
     }
     root = Path(log_root)

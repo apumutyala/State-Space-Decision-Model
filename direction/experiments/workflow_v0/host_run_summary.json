@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-15",
+  "agentdojo": "0.1.35",
+  "vllm": "0.30.0",
+  "benchmark_version": "v1.2.2",
+  "gpu": "H100",
+  "gpu_hourly_usd_estimate": 3.95,
+  "runs": [
+    {
+      "run_id": "workflow-host-v01-20261015a",
+      "modal_app": "ap-jbsotAv7OxpfVstGlJChzz",
+      "function": "keel.workflows.modal_run.evaluate",
+      "source_commit": "6ae7af5f",
+      "included_in_original_v0_matrix": false,
+      "purpose": "One-pass host-kernel integration rerun, not a pooled additional sample",
+      "episodes": 72,
+      "episode_errors": 0,
+      "executed_calls": 30,
+      "tool_returned_errors": 0,
+      "gated_calls": 335,
+      "held_calls": 305,
+      "agent_load_s": 112.107015134,
+      "total_load_s": 180.331791602,
+      "gpu_minutes_estimate": 17.865287946933336,
+      "cost_usd_estimate": 1.1761314565064445,
+      "receipts_verified": 335,
+      "episode_checkpoints_verified": 72,
+      "receipts_replayed": 20,
+      "v0_episode_outcomes_identical": 72,
+      "v0_prompt_hashes_identical": 335,
+      "v0_probabilities_identical": 335
+    }
+  ],
+  "spend_cap_usd": 8,
+  "completed_gpu_minutes_estimate": 17.865287946933336,
+  "completed_gpu_cost_usd_estimate": 1.1761314565064445,
+  "accounting_caveat": "Function-wall estimates include model loads; image-building and unobserved platform teardown are excluded. Not a provider invoice. This is a separate follow-up cap from the original v0 assignment.",
+  "cpu_acceptance": {"command": "/home/alp/ssdm-venv/bin/python -X utf8 -m pytest -q keel/tests", "passed": 414}
+}

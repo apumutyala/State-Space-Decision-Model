@@ -1,0 +1,63 @@
+{
+  "receipts": {
+    "checkpoint": {
+      "count": 335,
+      "head_hash": "83b65ad3bd34b94f2d55b22f2cf03659785cfe8a12ff46bd2afb14d5603dbc54"
+    },
+    "receipts_verified": 335,
+    "episode_checkpoints_verified": 72,
+    "receipts_replayed": 20,
+    "replay_seed": 20261015,
+    "sample_indices": [
+      5,
+      15,
+      20,
+      29,
+      99,
+      101,
+      108,
+      119,
+      201,
+      202,
+      216,
+      225,
+      246,
+      254,
+      268,
+      282,
+      293,
+      312,
+      323,
+      334
+    ]
+  },
+  "comparison": {
+    "episodes_compared": 72,
+    "episodes_identical_on_all_outcome_fields": 72,
+    "differences_by_field": {
+      "utility": 0,
+      "targeted_asr": 0,
+      "proposed_calls": 0,
+      "executed_calls": 0,
+      "dispatch_errors": 0,
+      "gated_calls": 0,
+      "held_calls": 0,
+      "review_episode": 0,
+      "agent_requests": 0,
+      "completion_truncations": 0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "error": 0,
+      "injections_sha256": 0
+    },
+    "call_ids_compared": 335,
+    "identical_prompt_hashes": 335,
+    "v0_only_calls": 0,
+    "v01_only_calls": 0,
+    "probabilities_exactly_equal": 335,
+    "maximum_probability_absolute_difference": 0.0
+  },
+  "run_id": "workflow-host-v01-20261015a",
+  "gpu_minutes_estimate": 17.865287946933336,
+  "cost_usd_estimate": 1.1761314565064445
+}
