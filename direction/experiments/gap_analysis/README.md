@@ -35,7 +35,8 @@ standard 0.2, hard 0.4. "Share of I" is how much of I a cell carries.
 - **The stock model has a "yes" prior.** It says yes 59% of the time against a 47% gold rate. It is 80% accurate
   when the answer is yes but 59% when it is no. H2O: 97% / 82%. Thinking: 89% / 97%.
 - **It is an elicitation gap, not a knowledge gap.** H2O gets 38 choice and yes/no items right that stock one-pass
-  misses; the same 4B model thinking gets 29 of them. Thinking beats H2O overall (214 vs 205).
+  misses; the same 4B model thinking gets 29 of them. Thinking scores more items correct than H2O (214 vs 205), but
+  the I difference (+6.5, paired 95% CI −4.4 to +16.0) is not resolved; see [`eval_noise`](../eval_noise/README.md).
 
 ## Where the remaining 12.2-point gap (H2O − student) sits
 

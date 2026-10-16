@@ -519,8 +519,10 @@ These are upper bounds that assume a perfect trusted planner. They are not deplo
 All 661 receipts and 144 episode checkpoints verified, and 20/20 sampled receipts replayed. Cost: $3.13.
 
 **Reading.**
-- Scoped to the task, structural authority binds: targeted outcomes fell about 3–4× at a moderate utility cost.
-  That is still short of 10×.
+- Scoped to the task, structural authority binds: targeted outcomes fell from 7/48 to 2/48 with tool grants and to
+  1/48 with argument grants, at a moderate utility cost. The 3–4× is a point estimate. It is short of 10× and not
+  statistically resolved at this size: one-sided Fisher p = 0.079 for tool grants and 0.029 for argument grants,
+  unclustered. A confirmatory run needs about 120 attacked episodes per arm (`eval_noise/`).
 - The remaining Slack attack went through an authorized recipient with free-text content. That residual is the
   judge's job.
 - Pinning literal arguments also blocked benign alternatives.
