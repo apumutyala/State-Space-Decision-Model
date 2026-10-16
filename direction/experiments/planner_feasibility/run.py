@@ -6,7 +6,7 @@ an output-origin diagnostic; their results never enter plan_query().
 from __future__ import annotations
 
 import argparse
-from collections import Counter, defaultdict
+from collections import Counter
 import hashlib
 import importlib.metadata
 import json
@@ -21,7 +21,7 @@ from agentdojo.task_suite.load_suites import get_suites
 
 from keel.paths import private_root
 from keel.workflows.oracle import ArgumentPolicy
-from keel.workflows.query_planner import READ_PREFIXES, SCOPE_KEYS, ToolSpec, QueryGrant, plan_query
+from keel.workflows.query_planner import READ_PREFIXES, ToolSpec, QueryGrant, plan_query
 
 ARMS = ("all_tools", "tools", "literals", "literal_required", "oracle_tools", "oracle_arguments")
 # Opaque target identifiers, not free text, prices, arbitrary queries or dates.
@@ -50,11 +50,15 @@ def literal(value, prompt):
                               for v in parts)
 
 
-def in_outputs(value, outputs):
+def in_outputs(value, outputs, *, exact=False):
     parts = list(leaves(value))
-    return bool(parts) and all(any(type(v) is type(o) and v == o
-                                  or isinstance(v, str) and isinstance(o, str) and v and v in o
-                                  for o in outputs) for v in parts)
+    return bool(parts) and all(
+        v is not None and not isinstance(v, bool) and v != "" and any(
+            type(v) is type(o) and v == o
+            or not exact and isinstance(v, str) and not v.isdigit()
+            and isinstance(o, str) and literal(v, o)
+            for o in outputs)
+        for v in parts)
 
 
 def source_audit(prompt, calls, specs, runtime, env):
@@ -72,7 +76,7 @@ def source_audit(prompt, calls, specs, runtime, env):
                 category = "task_literal"
             elif isinstance(value, str) and literal(value.casefold(), prompt.casefold()):
                 category = "trusted_case_normalization"
-            elif in_outputs(value, outputs):
+            elif in_outputs(value, outputs, exact=key == "id" or key.endswith("_id")):
                 category = "observed_output_not_literal"
             elif key in by_name[call.function].defaults and value == by_name[call.function].defaults[key]:
                 category = "schema_default"
@@ -104,7 +108,8 @@ def collect():
         defaults = {s.name: s.defaults for s in specs}
         runtime = FunctionsRuntime(suite.tools)
         counts[name] = {"users": len(suite.user_tasks), "injections": len(suite.injection_tasks),
-                        "tools": len(specs), "ground_truth_calls": 0, "paired_attack_calls": 0}
+                        "tools": len(specs), "ground_truth_calls": 0, "paired_attack_calls": 0,
+                        "paired_goals": 0, "paired_empty_goals": 0}
         for task_id, task in sorted(suite.user_tasks.items()):
             # Construct all non-oracle plans before obtaining either answer key.
             grants = {arm: plan_query(task.PROMPT, specs, mode=arm)
@@ -121,6 +126,8 @@ def collect():
             attacks = {key: inj.ground_truth(clean.model_copy(deep=True))
                        for key, inj in sorted(suite.injection_tasks.items())}
             attack_calls = [call for cs in attacks.values() for call in cs]
+            counts[name]["paired_goals"] += len(attacks)
+            counts[name]["paired_empty_goals"] += sum(not cs for cs in attacks.values())
             if not attack_calls:
                 raise ValueError(f"empty suite attack ground truth: {name}")
             oracle_denied = [not permits(authorities["oracle_arguments"], c) for c in attack_calls]

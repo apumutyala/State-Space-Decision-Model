@@ -12,6 +12,11 @@ def test_output_matching_does_not_coerce_identifiers():
     assert in_outputs("DE02120300000000202051", ["IBAN: DE02120300000000202051"])
     assert not in_outputs(12, ["12"])
     assert not in_outputs("", ["anything"])
+    assert not in_outputs("26", ["2026-01-01", "visit on June 26"])
+    assert not in_outputs("r", ["arbitrary"])
+    assert not in_outputs("", [""])
+    assert in_outputs("26", ["26"], exact=True)
+    assert not in_outputs("26", ["ID 26"], exact=True)
 
 
 def test_bootstrap_resamples_tasks_not_repeated_attack_calls():
