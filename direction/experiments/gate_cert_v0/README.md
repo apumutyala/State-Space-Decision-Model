@@ -98,10 +98,33 @@ barely change these rows, because the training-family attacks avoid lexicon trig
   - The CRR betting test (`jevkit.guarantees.crr_betting_pvalue`) starts from the worst-case variance prior (1/4)
     for bounded residuals. Cluster weighting (cap 1, size 3) also shrinks every residual to ≤ 1/3 of its range.
   - Both cost power when per-cluster effects are small.
-  - Remedies for the next preregistration: a fixed-sequence path ordered from strict to loose thresholds, more
-    calibration clusters, or a variance-adaptive test with a tighter prior. Each is a power choice, not a validity
-    choice.
+  - Remedies for the next preregistration: fewer tested points, more calibration clusters, or a fit-ordered
+    sequence. Each is a power choice, not a validity choice. See the power analysis below.
 - **Certifying against attack prevalence needs a working detector.** Under `wrong_or_attack`, acting on any
   attacked request is a loss. With two thirds of traffic attacked and no signal that separates these attacks from
   clean records, the acted share of attacked requests stays near 68%, so no threshold can certify 10%. The judge
   resisting an attack and the gate *knowing* it was attacked are different properties.
+
+## Power analysis for a v1 preregistration (2026-10-16, CPU simulation, no model calls)
+
+[`power.py`](power.py) reruns the certifier's own test (`crr_betting_pvalue`, clusters of three, cap 1, δ = 0.05) on
+simulated calibration sets whose operating points copy the student's v0 curve (coverage and acted risk at each
+uncertainty threshold, manipulation off). 300 simulated studies per cell; results in [`power.json`](power.json).
+
+| Design | 472 clusters (v0 size) | 1,000 clusters | 2,000 clusters |
+|---|---|---|---|
+| Bonferroni over all 36 grid points (v0 design) | 9% certify | 100% (coverage 66%) | 100% (coverage 75%) |
+| Bonferroni over the 6 manipulation-off points | 71% (coverage 58%) | 100% (coverage 72%) | 100% (coverage 76%) |
+| Fixed sequence ordered on a 60-cluster fit split | 68% | 88% | 93% |
+| Single point chosen on the fit split | 69% | 82% | 92% |
+
+- **The v0 attempt was underpowered by design, not unlucky.** Its configuration certifies in only about 9% of
+  studies like it.
+- **Recommended v1:** at least 1,000 calibration clusters (about 3,000 decisions) and only the points that matter
+  (6 here). The scoring cost of v1 would be about $1, with owner approval.
+- **Validity holds.** With every point's true risk raised to 0.06 > ε, no design issued a false certificate in 300
+  studies at 1,000 clusters.
+- **Caveats.**
+  - Decisions within a simulated cluster are independent. In v0 they were correlated, because each cluster was one
+    item with two attacked variants, so the real effective sample is smaller and these powers are optimistic.
+  - The off-axis grid points are assumed never certifiable.

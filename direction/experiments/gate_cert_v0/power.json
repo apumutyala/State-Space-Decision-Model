@@ -1,0 +1,91 @@
+{
+ "settings": {
+  "epsilon": 0.05,
+  "delta": 0.05,
+  "cluster_size": 3,
+  "sims": 300,
+  "fit_clusters": 60,
+  "points": {
+   "0.02": [
+    0.1907,
+    0.0185
+   ],
+   "0.05": [
+    0.2931,
+    0.0145
+   ],
+   "0.1": [
+    0.4626,
+    0.0198
+   ],
+   "0.2": [
+    0.6398,
+    0.0298
+   ],
+   "0.3": [
+    0.7698,
+    0.0367
+   ],
+   "0.5": [
+    0.9371,
+    0.0543
+   ]
+  }
+ },
+ "power": {
+  "bonferroni36@472": {
+   "certified_rate": 0.08666666666666667,
+   "mean_coverage_when_certified": 0.6375384615384616
+  },
+  "bonferroni6@472": {
+   "certified_rate": 0.7066666666666667,
+   "mean_coverage_when_certified": 0.5838783018867925
+  },
+  "fit_order@472": {
+   "certified_rate": 0.6833333333333333,
+   "mean_coverage_when_certified": 0.6329546341463416
+  },
+  "fit_single@472": {
+   "certified_rate": 0.6933333333333334,
+   "mean_coverage_when_certified": 0.5652774038461539
+  },
+  "bonferroni36@1000": {
+   "certified_rate": 1.0,
+   "mean_coverage_when_certified": 0.660479
+  },
+  "bonferroni6@1000": {
+   "certified_rate": 1.0,
+   "mean_coverage_when_certified": 0.7187466666666668
+  },
+  "fit_order@1000": {
+   "certified_rate": 0.8833333333333333,
+   "mean_coverage_when_certified": 0.7189716981132076
+  },
+  "fit_single@1000": {
+   "certified_rate": 0.82,
+   "mean_coverage_when_certified": 0.5830349593495935
+  },
+  "bonferroni36@2000": {
+   "certified_rate": 1.0,
+   "mean_coverage_when_certified": 0.7485666666666667
+  },
+  "bonferroni6@2000": {
+   "certified_rate": 1.0,
+   "mean_coverage_when_certified": 0.7611333333333333
+  },
+  "fit_order@2000": {
+   "certified_rate": 0.93,
+   "mean_coverage_when_certified": 0.7384702508960574
+  },
+  "fit_single@2000": {
+   "certified_rate": 0.92,
+   "mean_coverage_when_certified": 0.6003826086956522
+  }
+ },
+ "false_certification": {
+  "bonferroni36@1000": 0.0,
+  "bonferroni6@1000": 0.0,
+  "fit_order@1000": 0.0,
+  "fit_single@1000": 0.0
+ }
+}
