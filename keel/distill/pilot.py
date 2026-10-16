@@ -78,8 +78,11 @@ def main() -> None:
     p.add_argument("--max-think", type=int, default=768)
     p.add_argument("--models", nargs="+", choices=("stock_4b", "student_4b", "teacher_9b"),
                    default=("stock_4b", "student_4b", "teacher_9b"))
+    p.add_argument("--max-usd", type=float, required=True,
+                   help="cap per scored model, within the owner's approved budget")
     a = p.parse_args()
     import modal
+    from keel.runtime.budget import approved_run
     from keel.runtime.vllm_judge import APP, judge
 
     train, pilot = read_rows(a.train_sources), read_rows(a.pilot_sources)
@@ -121,7 +124,7 @@ def main() -> None:
         else:
             start = time.time()
             checkpoint_smoke = None
-            with modal.enable_output(), APP.run():
+            with modal.enable_output(), approved_run(APP, label=f"distill.pilot.{name}", cap_usd=a.max_usd):
                 server = None
                 if name == "student_4b":
                     from keel.runtime.vllm_judge import JudgeServer

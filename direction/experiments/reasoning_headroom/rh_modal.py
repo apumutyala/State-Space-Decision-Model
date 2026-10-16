@@ -147,18 +147,23 @@ def run(model_id: str, revision: str, items: list[dict], timed_ids: list[str]) -
 
 
 @APP.local_entrypoint()
-def main(models: str, items_path: str, out_dir: str, limit: int = 0):
+def main(models: str, items_path: str, out_dir: str, max_usd: float, limit: int = 0):
     import pathlib
+    import sys
+
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
+    from keel.runtime.budget import approved_window
 
     items = [json.loads(l) for l in open(items_path, encoding="utf-8")]
     if limit:
         items = items[:limit]
     timed = [it["id"] for it in items if it["id"].startswith("std-") or it.get("_tier") == "standard"]
     specs = [m.split("@") for m in models.split(",")]
-    calls = [run.spawn(mid, rev, items, timed) for mid, rev in specs]
+    with approved_window(label="probe.reasoning_headroom", cap_usd=max_usd, gpus=len(specs)):
+        calls = [run.spawn(mid, rev, items, timed) for mid, rev in specs]
+        results = [c.get() for c in calls]
     pathlib.Path(out_dir).mkdir(parents=True, exist_ok=True)
-    for (mid, _), c in zip(specs, calls):
-        res = c.get()
+    for (mid, _), res in zip(specs, results):
         p = pathlib.Path(out_dir) / (mid.split("/")[-1] + ".json")
         p.write_text(json.dumps(res), encoding="utf-8")
         print("wrote", p, "load_s", round(res["load_s"], 1), "vllm", res["vllm"],

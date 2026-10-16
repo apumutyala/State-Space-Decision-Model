@@ -7,6 +7,10 @@ from __future__ import annotations
 
 import modal
 
+from .budget import install_guard
+
+install_guard()  # modal.App.run now refuses to start outside an owner-approved budget window
+
 HF_CACHE = "/root/.cache/huggingface"
 hf_cache = modal.Volume.from_name("ssdm-hf-cache", create_if_missing=True)
 results_vol = modal.Volume.from_name("keel-results", create_if_missing=True)

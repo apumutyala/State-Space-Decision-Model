@@ -21,6 +21,7 @@ sys.path.insert(0, str(REPO / "direction" / "experiments" / "reasoning_headroom"
 
 from jevkit import items as IT  # noqa: E402
 from keel.paths import private_root  # noqa: E402
+from keel.runtime.budget import approved_run  # noqa: E402
 from keel.runtime.vllm_judge import APP, score  # noqa: E402
 from rh_modal import chat, user_turn  # noqa: E402
 from score_rh import answer  # noqa: E402
@@ -30,6 +31,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", action="append", required=True, help="MODELS key or /results/... checkpoint")
     ap.add_argument("--tag", action="append", required=True, help="output tag, one per --model")
+    ap.add_argument("--max-usd", type=float, required=True, help="cap for this run, within the owner's approved budget")
     a = ap.parse_args()
     if len(a.model) != len(a.tag):
         ap.error("give one --tag per --model")
@@ -38,7 +40,7 @@ def main() -> None:
     jobs = [{"id": it.id, "prompt": chat(u, False), "labels": labels} for it, u, _, labels in rows]
     out_dir = private_root() / "gap_analysis"
     out_dir.mkdir(parents=True, exist_ok=True)
-    with APP.run():
+    with approved_run(APP, label="gap_analysis.score_shim", cap_usd=a.max_usd, gpus=len(a.model)):
         calls = [score.spawn(m, jobs) for m in a.model]
         results = [c.get() for c in calls]
     for tag, res in zip(a.tag, results):

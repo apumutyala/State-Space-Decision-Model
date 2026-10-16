@@ -10,6 +10,7 @@ from pathlib import Path
 import modal
 
 from keel.paths import private_root
+from keel.runtime.budget import approved_run
 from keel.runtime.modal_app import HF_CACHE, MODELS, hf_cache, results_vol, vllm_image
 
 APP = modal.App("keel-agentdojo-workflow")
@@ -153,15 +154,21 @@ def main():
     parser.add_argument("--config", required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--output", default=str(private_root() / "workflow"))
-    parser.add_argument("--download-only", action="store_true")
+    parser.add_argument("--download-only", action="store_true", help="download a finished run's logs (no GPU)")
+    parser.add_argument("--max-usd", type=float, help="cap for an evaluation run, within the owner's approved budget")
     args = parser.parse_args()
+    destination = Path(args.output) / args.run_id
+    if args.download_only:
+        download_run(args.run_id, destination)
+        return
+    if args.max_usd is None:
+        parser.error("an evaluation run needs --max-usd within the owner's approved budget")
     config = json.loads(Path(args.config).read_text())
-    with modal.enable_output(), APP.run():
+    with modal.enable_output(), approved_run(APP, label=f"workflows.{args.run_id}", cap_usd=args.max_usd):
         try:
-            if not args.download_only:
-                evaluate.with_options(timeout=config.get("function_timeout_seconds", 3 * 3600)).remote(config, args.run_id)
+            evaluate.with_options(timeout=config.get("function_timeout_seconds", 3 * 3600)).remote(config, args.run_id)
         finally:
-            download_run(args.run_id, Path(args.output) / args.run_id)
+            download_run(args.run_id, destination)
 
 
 if __name__ == "__main__":

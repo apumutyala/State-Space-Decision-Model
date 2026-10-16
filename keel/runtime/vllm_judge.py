@@ -6,10 +6,11 @@ engine:
   ``score``        a one-shot Modal function (loads the model, scores one batch, exits): batch evaluations.
   ``JudgeServer``  a Modal class that keeps the model loaded across calls: adaptive attack search, interactive use.
 
-Usage::
+Usage (paid: needs an owner-approved budget, see ``keel.runtime.budget``)::
 
+    from keel.runtime.budget import approved_run
     from keel.runtime.vllm_judge import APP, judge, JudgeServer
-    with APP.run():
+    with approved_run(APP, label="my-eval", cap_usd=2.0):
         out = judge(requests, "qwen3.5-4b", mode="trust", think=False)            # one-shot
         srv = JudgeServer(model="qwen3.5-4b")
         out = judge(requests, "qwen3.5-4b", server=srv)                            # warm server
@@ -138,7 +139,7 @@ def judge(requests: list, model: str, *, mode: str = "trust", think: bool = Fals
           **kw: Any) -> list[dict[str, Any]]:
     """Render ``requests`` locally, score them remotely (one-shot, or on ``server``), return per request the option
     probabilities (mean over samples), the per-sample probabilities and the run metadata. Call inside
-    ``with APP.run():``."""
+    ``keel.runtime.budget.approved_run(APP, ...)``."""
     from ..protocol.render import probs_from_logprobs, render
 
     rendered = [render(r, qid, mode=mode, think=think, canonical=canonical) for r in requests]

@@ -46,6 +46,8 @@ generator population. It says nothing about adaptive attackers, distribution shi
 
 ## Reproduce
 
+`score` is paid and needs `--max-usd <cap>` within an owner-approved budget (`keel/runtime/budget.py`).
+
 ```bash
 SSDM_DATA=~/ssdm/data python -X utf8 direction/experiments/gate_cert_v0/run_cert.py score
 python -X utf8 direction/experiments/gate_cert_v0/run_cert.py certify

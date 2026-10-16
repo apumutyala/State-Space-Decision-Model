@@ -71,8 +71,10 @@ def main() -> None:
     p.add_argument("--run", default="distill-v0-20261015")
     p.add_argument("--out", required=True)
     p.add_argument("--batch-size", type=int, default=4)
+    p.add_argument("--max-usd", type=float, required=True, help="cap for this run, within the owner's approved budget")
     a = p.parse_args()
     from keel.distill.sources import guard_units, read_rows
+    from keel.runtime.budget import approved_run
     if bool(a.labels) == bool(a.smoke_sources):
         p.error("supply exactly one of --labels or --smoke-sources")
     if a.smoke_sources:
@@ -95,7 +97,7 @@ def main() -> None:
     out.with_suffix(".guards.json").write_text(json.dumps(guard_report, indent=2) + "\n")
     ledger = {"date": "2026-10-15", "function": "train_remote", "status": "running", "smoke": bool(a.smoke_sources)}
     try:
-        with modal.enable_output(), APP.run():
+        with modal.enable_output(), approved_run(APP, label="distill.train", cap_usd=a.max_usd):
             result = train_remote.remote(rows, a.run, bool(a.smoke_sources), a.batch_size)
         ledger.update(result)
         ledger["status"] = "complete"

@@ -159,12 +159,18 @@ def run(model_id: str, revision: str, variants: list[dict]) -> dict:
 
 
 @APP.local_entrypoint()
-def main(model: str, items_path: str, out_dir: str):
+def main(model: str, items_path: str, out_dir: str, max_usd: float):
+    import sys
+
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
+    from keel.runtime.budget import approved_window
+
     items = [json.loads(l) for l in open(items_path, encoding="utf-8")]
     variants = variants_of(items)
     meta = {v["id"]: {k: v[k] for k in ("base_id", "gold", "target", "type", "family")} for v in variants}
     mid, rev = model.split("@")
-    res = run.remote(mid, rev, variants)
+    with approved_window(label="probe.channel", cap_usd=max_usd):
+        res = run.remote(mid, rev, variants)
     res["meta"] = meta
     p = pathlib.Path(out_dir)
     p.mkdir(parents=True, exist_ok=True)

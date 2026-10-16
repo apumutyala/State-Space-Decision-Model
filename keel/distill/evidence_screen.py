@@ -143,7 +143,9 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--teacher-dir", required=True)
     p.add_argument("--out", required=True)
+    p.add_argument("--max-usd", type=float, required=True, help="cap for this run, within the owner's approved budget")
     a = p.parse_args()
+    from keel.runtime.budget import approved_run
     from keel.runtime.vllm_judge import APP, judge
 
     root, out = Path(a.teacher_dir), Path(a.out)
@@ -163,7 +165,7 @@ def main() -> None:
     if candidates:
         requests = [DecisionRequest.from_json(x["request"])
                     for u in candidates for x in (clean[u["base_id"]], u)]
-        with APP.run():
+        with approved_run(APP, label="distill.evidence_screen", cap_usd=a.max_usd):
             scored = judge(requests, "qwen3.5-4b", mode="trust", think=True, n_samples=1,
                            max_think=768, seed=261015)
         for i, u in enumerate(candidates):

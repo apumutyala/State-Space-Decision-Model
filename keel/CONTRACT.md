@@ -58,7 +58,7 @@ Shared rules for every Keel subpackage. Owned by the chief of staff; propose cha
   - call it inside `with vllm_judge.APP.run():`;
   - returns per request `{"probs", "samples", "option_ids", "think_tokens", "reasoning", "meta"}`;
   - it raises if a label log-prob is missing.
-- Smoke check: `python -X utf8 -m keel.runtime.smoke_judge --n 4`.
+- Smoke check: `python -X utf8 -m keel.runtime.smoke_judge --n 4 --max-usd 1` (paid; needs an owner-approved budget).
 - Training images and functions belong to the slice that needs them (e.g. `keel/distill/modal_train.py`). They reuse
   `hf_cache` and write checkpoints to `results_vol`.
 
@@ -89,5 +89,12 @@ Shared rules for every Keel subpackage. Owned by the chief of staff; propose cha
   `uv pip install --python ~/ssdm/.venv/bin/python <pkg>`, refresh `requirements.txt` with `uv pip freeze`, and list
   them in your README.
 - Tests: CPU-only, deterministic, under `keel/tests/`. Test behaviour and invariants, not wiring.
-- Modal spend: each slice has its own cap (in its brief). Log every paid run (date, function, GPU time, cost estimate)
-  in the slice README.
+- **No paid compute without the owner's approval.**
+  - Every Modal entry point runs inside `keel.runtime.budget.approved_run` / `approved_window` and takes a required
+    `--max-usd` cap.
+  - A run refuses to start unless the cap fits the owner's approval in `~/ssdm/BUDGET.json`.
+  - A run is stopped when its cap's GPU time is used up.
+  - Every run is logged to `$SSDM_PRIVATE/spend.jsonl`.
+  - Only the account owner writes `BUDGET.json`; agents never create or edit it, and never raise a cap themselves.
+  - The hard limit is the owner's Modal workspace budget.
+  - `python -X utf8 -m keel.runtime.budget` shows the approval and what is left.

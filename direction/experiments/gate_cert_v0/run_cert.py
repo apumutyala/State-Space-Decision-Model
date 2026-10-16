@@ -133,6 +133,7 @@ def cmd_plan(_: argparse.Namespace) -> None:
 
 def cmd_score(args: argparse.Namespace) -> None:
     from keel.protocol import DecisionRequest
+    from keel.runtime.budget import approved_run
     from keel.runtime.vllm_judge import APP, JudgeServer, judge
 
     committed = json.loads((HERE / "plan.json").read_text(encoding="utf-8"))
@@ -143,7 +144,7 @@ def cmd_score(args: argparse.Namespace) -> None:
     (CACHE / "population.json").write_text(json.dumps(units, ensure_ascii=False), encoding="utf-8")
     print(json.dumps(report))
     reqs = [DecisionRequest.from_json(u["request"]) for u in units]
-    with APP.run():
+    with approved_run(APP, label="gate_cert_v0.score", cap_usd=args.max_usd):
         for tag, model in PLAN["pipelines"].items():
             if args.pipelines and tag not in args.pipelines:
                 continue
@@ -217,6 +218,8 @@ def main() -> None:
         if name == "score":
             p.add_argument("--pipelines", nargs="*", choices=sorted(PLAN["pipelines"]),
                            help="score only these pipelines (scores already cached are skipped)")
+            p.add_argument("--max-usd", type=float, required=True,
+                           help="cap for this run, within the owner's approved budget")
     a = ap.parse_args()
     a.fn(a)
 

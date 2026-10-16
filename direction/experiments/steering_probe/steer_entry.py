@@ -48,7 +48,10 @@ def plant(state, note):
 
 
 @APP.local_entrypoint()
-def steer(model: str, items_path: str, out_dir: str):
+def steer(model: str, items_path: str, out_dir: str, max_usd: float):
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
+    from keel.runtime.budget import approved_window
+
     items = [json.loads(l) for l in open(items_path, encoding="utf-8")]
     variants, meta = [], {}
     for it in items:
@@ -66,7 +69,8 @@ def steer(model: str, items_path: str, out_dir: str):
             v["state"] = plant(it["state"], tmpl.format(t=tgt_text))
             variants.append(v)
     mid, rev = model.split("@")
-    res = run.remote(mid, rev, variants, [])
+    with approved_window(label="probe.steering", cap_usd=max_usd):
+        res = run.remote(mid, rev, variants, [])
     res["meta"] = meta
     res["notes"] = NOTES
     p = pathlib.Path(out_dir)

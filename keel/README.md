@@ -33,8 +33,8 @@ python -X utf8 -m pytest -q keel/tests
 # bounded verification of the host kernel
 python -X utf8 -m keel.host.model_check
 
-# GPU smoke check of the judge runtime on Modal (public items, eval-only)
-SSDM_DATA=~/ssdm/data python -X utf8 -m keel.runtime.smoke_judge --n 4
+# GPU smoke check of the judge runtime on Modal (paid: needs an owner-approved budget, see keel/runtime/budget.py)
+SSDM_DATA=~/ssdm/data python -X utf8 -m keel.runtime.smoke_judge --n 4 --max-usd 1
 ```
 
 Each sub-package README states exactly what is implemented, what is verified or measured, and what is not claimed.

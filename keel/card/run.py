@@ -236,7 +236,7 @@ def markdown_card(report: dict[str, Any]) -> str:
               "## Limitations", ""]
     lines += ["- " + limitation for limitation in report["limitations"]]
     lines += ["", "## Reproducibility and spend", "", f"Unit manifest SHA-256: `{report['unit_manifest_sha256']}`.",
-              f"Client-wall plus warm-window H100 estimate: ${report['spend_estimate_usd']:.2f}; cap ${report['config']['spend_cap']:.2f}. Not an invoice.",
+              f"Client-wall plus warm-window H100 estimate: ${report['spend_estimate_usd']:.2f}; cap ${report['config'].get('max_usd', report['config'].get('spend_cap', 0)):.2f}. Not an invoice.",
               "All request text, per-item decisions and search traces remain in the external cache. Configuration and aggregate counts are public artifacts.", ""]
     return "\n".join(lines)
 
@@ -254,7 +254,8 @@ def main(argv=None):
     parser.add_argument("--seed", type=int, default=20261015)
     parser.add_argument("--max-think", type=int, default=3072)
     parser.add_argument("--n-boot", type=int, default=2000)
-    parser.add_argument("--spend-cap", type=float, default=25.0)
+    parser.add_argument("--max-usd", type=float, required=True,
+                        help="cap for this run (up to 3 warm H100 servers), within the owner's approved budget")
     parser.add_argument("--full-matrix", action="store_true")
     parser.add_argument("--evidence-only", action="store_true")
     parser.add_argument("--teacher-reference", action="store_true")
@@ -271,8 +272,9 @@ def main(argv=None):
         parser.error("unit cache must be outside the git worktree")
     cache.mkdir(parents=True, exist_ok=True)
     items = load_public()
-    ledger = SpendLedger(cache / "spend.json", args.spend_cap)
+    ledger = SpendLedger(cache / "spend.json", args.max_usd)
     from .evidence import build_evidence, modal_author_class
+    from keel.runtime.budget import approved_run
     from keel.runtime.vllm_judge import APP, JudgeServer, resolve
     resolve(args.model)
     Author = modal_author_class()
@@ -281,7 +283,7 @@ def main(argv=None):
     teacher_rows = []
     evidence_report = {}
     try:
-        with APP.run():
+        with approved_run(APP, label="card.run", cap_usd=args.max_usd, gpus=3):
             author = Author()
             ledger.model = "qwen3.5-9b"
             evidence, evidence_report = build_evidence(items, author, ledger.call, cache, seed=args.seed,

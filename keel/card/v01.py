@@ -109,7 +109,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache-dir", type=Path, default=private_root() / "card")
     parser.add_argument("--output-dir", type=Path, default=Path("direction/experiments/card_v0"))
-    parser.add_argument("--spend-cap", type=float, default=12.0)
+    parser.add_argument("--max-usd", type=float, required=True, help="cap for this run, within the owner's approved budget")
     args = parser.parse_args(argv)
     cache = args.cache_dir.resolve()
     root = Path(__file__).resolve().parents[2]
@@ -123,11 +123,12 @@ def main(argv=None):
     old_rows = compact_attack_rows(cache / "outputs.jsonl")
     config = v0["config"]
     items = load_public()
-    ledger = SpendLedger(cache / "spend_v01.json", args.spend_cap)
+    ledger = SpendLedger(cache / "spend_v01.json", args.max_usd)
+    from keel.runtime.budget import approved_run
     from keel.runtime.vllm_judge import APP, JudgeServer
     new_units, new_rows = [], []
     try:
-        with APP.run():
+        with approved_run(APP, label="card.v01", cap_usd=args.max_usd):
             scorer = CachedJudge(config["model"], JudgeServer(model=config["model"]), ledger, cache / "scores",
                 max_think=config["max_think"], seed=config["seed"])
             for search_spec in (DESIGN["thinking_t3"], DESIGN["label_t3"]):

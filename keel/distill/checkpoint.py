@@ -42,12 +42,15 @@ def main() -> None:
     from keel.distill.sources import read_rows
     from keel.distill.teacher import argmax
     from keel.distill.triplets import request_of
+    from keel.runtime.budget import approved_run
     from keel.runtime.vllm_judge import APP, JudgeServer, judge
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--train-sources", required=True)
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--out", required=True)
+    parser.add_argument("--max-usd", type=float, required=True,
+                        help="cap for this run, within the owner's approved budget")
     args = parser.parse_args()
     rows = read_rows(args.train_sources)[:4]
     if len(rows) != 4:
@@ -59,7 +62,7 @@ def main() -> None:
               "think": False, "status": "running", "remote_timeout_s": 900}
     start = time.monotonic()
     try:
-        with modal.enable_output(), APP.run():
+        with modal.enable_output(), approved_run(APP, label="distill.checkpoint_smoke", cap_usd=args.max_usd):
             server = JudgeServer.with_options(timeout=900, scaledown_window=60)(model=args.checkpoint)
             results = judge([request_of(row) for row in rows], args.checkpoint,
                             mode="trust", think=False, server=server)

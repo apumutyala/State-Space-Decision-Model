@@ -54,6 +54,8 @@ data; no evidence-retention control for legitimate untrusted evidence yet; one t
 Raw per-item outputs stay out of git (workstation: `$SSDM_PRIVATE/experiments/channel_probe/raw/`, default `~/ssdm/private`).
 
 ## Reproduce
+
+Paid: `modal run` needs `--max-usd <cap>` within an owner-approved budget (`keel/runtime/budget.py`).
 ```bash
 cd direction/experiments/channel_probe
 modal run channel_modal.py --model "Qwen/Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a" --items-path <public231.jsonl> --out-dir out

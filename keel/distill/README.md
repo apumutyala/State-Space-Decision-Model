@@ -253,7 +253,8 @@ counts, 95% CIs and limitations are in
 
 ## Reproduction
 
-Run from the repository root after `source ~/ssdm/env.sh` (venv, `SSDM_DATA`, `SSDM_PRIVATE`):
+Run from the repository root after `source ~/ssdm/env.sh` (venv, `SSDM_DATA`, `SSDM_PRIVATE`). Every GPU command
+below is paid and needs `--max-usd <cap>` within an owner-approved budget (`keel/runtime/budget.py`):
 
 ```sh
 P=$SSDM_PRIVATE/distill_v0

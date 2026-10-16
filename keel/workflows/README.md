@@ -25,7 +25,7 @@ Sources: [AgentDojo pipelines and defenses](https://agentdojo.spylab.ai/concepts
 
 ## Reproduction
 
-From the repository root, after `source ~/ssdm/env.sh` (workspace venv with `agentdojo==0.1.35` pinned in `~/ssdm/requirements.txt`). Current code uses the v0.1 host-kernel cutover; the original v0 source revisions are recorded with the historical results.
+From the repository root, after `source ~/ssdm/env.sh` (workspace venv with `agentdojo==0.1.35` pinned in `~/ssdm/requirements.txt`). Current code uses the v0.1 host-kernel cutover; the original v0 source revisions are recorded with the historical results. Evaluation runs are paid and need `--max-usd <cap>` within an owner-approved budget (`keel/runtime/budget.py`); `--download-only` is free.
 
 ```sh
 python -X utf8 -m pytest -q keel/tests

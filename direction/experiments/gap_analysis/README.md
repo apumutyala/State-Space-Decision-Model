@@ -53,6 +53,8 @@ it still says yes 59% of the time.
 
 ## Reproduce
 
+`score_shim.py` is paid and needs `--max-usd <cap>` within an owner-approved budget (`keel/runtime/budget.py`).
+
 ```bash
 source ~/ssdm/env.sh
 python -X utf8 direction/experiments/gap_analysis/score_shim.py \

@@ -52,6 +52,8 @@ Full per-condition output: `results_Qwen3.5-4B.txt`, `results_Qwen3.5-9B.txt`.
 Raw per-item outputs (log-probs, trace tails) stay out of git (workstation: `$SSDM_PRIVATE/experiments/steering_probe/raw/`, default `~/ssdm/private`).
 
 ## Reproduce
+
+Paid: `modal run` needs `--max-usd <cap>` within an owner-approved budget (`keel/runtime/budget.py`).
 ```bash
 cd direction/experiments/steering_probe          # needs ../reasoning_headroom/rh_modal.py and the public items file
 modal run steer_entry.py::steer --model "Qwen/Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a" --items-path <public231.jsonl> --out-dir steer

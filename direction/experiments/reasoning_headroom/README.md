@@ -54,6 +54,8 @@ Caveats: one sampling seed; only the last 400 characters of each trace are kept;
 dev data).
 
 ## Reproduce
+
+Paid: `modal run` needs `--max-usd <cap>` within an owner-approved budget (`keel/runtime/budget.py`).
 ```bash
 cd direction/experiments/reasoning_headroom
 modal run rh_modal.py --models "Qwen/Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a,h2oai/h2o-lightning-4b@193ad740925b176a3b70a5a13a7cff2f2fadd01e" \

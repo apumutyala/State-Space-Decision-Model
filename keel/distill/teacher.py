@@ -138,7 +138,9 @@ def main() -> None:
     p.add_argument("--batch", type=int, default=96)
     p.add_argument("--max-think", type=int, default=768)
     p.add_argument("--limit", type=int)
+    p.add_argument("--max-usd", type=float, required=True, help="cap for this run, within the owner's approved budget")
     a = p.parse_args()
+    from keel.runtime.budget import approved_run
     from keel.runtime.vllm_judge import judge
 
     template_rep = template_guard()
@@ -153,7 +155,7 @@ def main() -> None:
     (out / "cost.json").write_text(json.dumps(ledger, indent=2))
     all_units, all_results, proposals_n, lexical_kept = [], {}, 0, 0
     try:
-        with app.run():
+        with approved_run(app, label="distill.teacher", cap_usd=a.max_usd):
             server = server_cls()
             for offset in range(0, len(rows), a.batch):
                 batch = rows[offset:offset + a.batch]

@@ -85,11 +85,13 @@ No correction is claimed across the collection of different arm pairs.
 
 ## Running
 
+Paid. Every command needs `--max-usd <cap>` within an owner-approved budget (`keel/runtime/budget.py`).
+
 ```sh
 export SSDM_DATA=~/ssdm/data
 python -X utf8 -m keel.card.run \
   --model qwen3.5-4b --arms one_pass_base,one_pass_trust,think_trust \
-  --tiers t1,t2,t3 --search-units 60 --query-budget 64 --spend-cap 25 \
+  --tiers t1,t2,t3 --search-units 60 --query-budget 64 --max-usd 25 \
   --cache-dir ~/ssdm/private/card \
   --output-dir direction/experiments/card_v0
 ```
@@ -318,7 +320,7 @@ Reproduce the fixed follow-up from the completed v0 external cache:
 ```sh
 SSDM_DATA=~/ssdm/data python -X utf8 -m keel.card.v01 \
   --cache-dir ~/ssdm/private/card \
-  --output-dir direction/experiments/card_v0 --spend-cap 12
+  --output-dir direction/experiments/card_v0 --max-usd 12
 ```
 
 `v01-units.json`, `v01-outputs.jsonl`, `v01-gate-features.json`, and the separate `spend_v01.json` ledger stay

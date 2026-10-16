@@ -11,6 +11,7 @@ import argparse
 from jevkit import items as IT
 
 from ..protocol import decision_of, from_jevbench_item
+from .budget import approved_run
 from .vllm_judge import APP, JudgeServer, judge
 
 
@@ -19,10 +20,11 @@ def main() -> None:
     ap.add_argument("--n", type=int, default=4)
     ap.add_argument("--model", default="qwen3.5-4b")
     ap.add_argument("--mode", default="trust", choices=["trust", "base"])
+    ap.add_argument("--max-usd", type=float, required=True, help="cap for this run, within the owner's approved budget")
     a = ap.parse_args()
     pub = [it for it in IT.load_public() if it.type in ("choice", "noul")][: a.n]
     reqs = [from_jevbench_item({"id": it.id, "state": it.state, "question": it.question}) for it in pub]
-    with APP.run():
+    with approved_run(APP, label="runtime.smoke_judge", cap_usd=a.max_usd):
         srv = JudgeServer(model=a.model)  # one model load serves both arms
         one = judge(reqs, a.model, mode=a.mode, think=False, server=srv)
         thk = judge(reqs, a.model, mode=a.mode, think=True, n_samples=2, server=srv)
