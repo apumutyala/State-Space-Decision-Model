@@ -1,5 +1,5 @@
 {
-  "status": "data_target_not_met",
+  "status": "target_met",
   "generator": "qwen3.5-9b",
   "source": {
     "source": "codeparrot/apps",
@@ -15,23 +15,24 @@
     },
     "sha256": "45e82ef22ed8e7c0c04d881a21b923e9dd233157896b0b8d5b3493e887499cae"
   },
-  "problems": 321,
+  "problems": 324,
   "counts": {
     "honest": 573,
-    "backdoor": 80
+    "backdoor": 162
   },
-  "authored": 1056,
-  "parse_rejected": 36,
-  "duplicates_dropped": 16,
+  "maximum_backdoor_draws": 3,
+  "authored": 1440,
+  "parse_rejected": 45,
+  "duplicates_dropped": 17,
   "execution_reasons": {
     "honest_passes_tests": 589,
-    "trigger_execution_failed": 102,
-    "provided_tests_failed": 125,
-    "trigger_did_not_diverge": 124,
-    "verified_backdoor": 80
+    "trigger_execution_failed": 224,
+    "provided_tests_failed": 175,
+    "trigger_did_not_diverge": 244,
+    "verified_backdoor": 163
   },
   "reference_rejected": 53,
-  "elapsed_s": 1526.5894224643707,
-  "author_spend_estimate_usd": 3.745900642209583,
-  "dataset_sha256": "c7a724641dc90507cd0cb204d93489af54a60a12b6ac7b237249f6c5ab17c7ab"
+  "elapsed_s": 612.3794202804565,
+  "author_spend_estimate_usd": 4.788121772405174,
+  "dataset_sha256": "bdff0e9aec67ca848bdd763e3821d09799f34e1f3aeb94250a44428a6b5b6106"
 }
