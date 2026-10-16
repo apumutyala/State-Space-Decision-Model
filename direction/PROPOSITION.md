@@ -634,6 +634,28 @@ Since 2026-10-16 every paid entry point runs through `keel.runtime.budget`. A ru
 owner-written approval (`~/ssdm/BUDGET.json`), is stopped when its declared cap is used up, and is logged in one
 ledger. With no approval file present, all paid runs are disabled.
 
+### 5.7 Zero-cost research round (`direction/NEXT_PROPOSITIONS.md`)
+
+Twelve propositions were tested with CPU-only experiments ($0) and fourteen more were ranked from the literature
+(`proposition_scan/`). The results that bear on this proposition:
+
+- **Planner.** A trusted planner that reads only the task text recovers 60.9% (56.6–65.2) of ORACLE-denied attack
+  calls at 94.6% ground-truth utility, on all 97 AgentDojo tasks offline. 19.6% of tasks need write targets that
+  appear only in tool outputs; these need trusted resolution or approval.
+- **Review flooding (SIM).** Under a sustained flood of review-inducing requests, a FIFO review queue that holds
+  when full completes 37.3% of legitimate work. That is the kernel's admission rule, checked 22/22 against
+  `HostKernel`. Protected reservation restores 95.9% without executing anything harmful, but only if the host can
+  tell protected principals from Sybils.
+- **Selective labels (SIM).** When labels arrive only on reviewed cases, randomised audits of acted decisions
+  (inverse-probability weighted) keep false certificates ≤ 1.8%. Naive review-only certification fails in
+  96.7–100% of null worlds.
+- **Detector.** A synthetic-trained injection detector did not generalise: its frozen thresholds flagged every
+  held-out benign input.
+- **Monitor corpus.** It leaks labels through identifier style, and normalising layout does not fix it. Matched
+  behaviour × presentation repairs are the path (19/20 statically plausible).
+- **Resolution.** On public-231, paired differences under 8.5–19 Intelligence points are not resolvable. The
+  AgentDojo reduction is not significant at n = 48 (§5.2).
+
 ## 6. Implications
 
 ### 6.1 For safety claims about decision models
