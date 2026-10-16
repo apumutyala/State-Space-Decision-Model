@@ -13,8 +13,9 @@ scale, one open model family (Qwen3.5). The data are:
 | Status | What |
 |---|---|
 | **Built and separately checked** | protocol and renderer; host action-name enforcement kernel (bounded exhaustive check); receipt/replay library; gate and certification procedure; Card harness; distillation pipeline and one distilled checkpoint; AgentDojo adapter routed through the host kernel with verified receipt chains |
-| **Measured** | Card on stock Qwen3.5-4B (plus a 9B reference) and on the distilled student; synthetic-source distillation pilot; one preregistered certification attempt; a two-suite AgentDojo pilot |
-| **Not yet demonstrated** | a useful certified operating point; adaptive robustness of any judge; matched-utility workflow gains; independent human evidence labels at scale; sealed confirmation |
+| **Measured** | Card on stock Qwen3.5-4B (plus a 9B reference) and on the distilled student; synthetic-source distillation pilot; one preregistered certification attempt; a two-suite AgentDojo pilot including ORACLE task-scoped authority; the one-pass capability gap to H2O-Lightning-4B |
+| **Not yet demonstrated** | a useful certified operating point; adaptive robustness of any judge; matched-utility workflow gains; deployable task-scoped authority (needs a trusted planner); independent human evidence labels at scale; sealed confirmation |
+| **Paused unfinished (no results)** | trusted-monitor Card (data built: 162 verified backdoors, 573 honest programs; student and adaptive arms not run); student v1 capability distillation (6,632 guarded scenarios authored, verification incomplete). Paid compute was halted by the owner; both are preserved on their branches |
 | **Requested now** | permission for a scoped code/method/results release, a capped research tranche, data access and a named lead (§8). This is not a deployment-safety endorsement. |
 
 ## The proposition
@@ -497,6 +498,32 @@ undefended or with the upstream defenses. Of the thinking judge's traces, 90% hi
 The integration is real but did not change outcomes. With suite-wide grants, the attacks used permitted tools, so
 action-name containment was not the binding constraint. Arguments and intent still rest on the judge. Cost: $1.18.
 
+**ORACLE task-scoped authority (v0.2).** Two reference arms ran through the same kernel with no judge:
+- *tool authority:* grants only the tool names in each task's ground-truth calls;
+- *argument authority:* also pins the arguments ground truth fixes (recipients, IBANs, amounts, channels).
+
+These are upper bounds that assume a perfect trusted planner. They are not deployable defenses.
+
+| Suite | Arm | Benign utility | Utility under attack | Targeted outcome rate |
+|---|---|---|---|---|
+| banking | no defense (v0) | 100% | 83.3% | 16.7% |
+| banking | ORACLE tools | 83.3% | 87.5% | 4.2% [0, 12.5] |
+| banking | ORACLE arguments | 58.3% | 58.3% | 0/24 |
+| Slack | no defense (v0) | 91.7% | 62.5% | 12.5% |
+| Slack | ORACLE tools | 75.0% | 62.5% | 4.2% [0, 12.5] |
+| Slack | ORACLE arguments | 66.7% | 54.2% | 4.2% [0, 12.5] |
+
+All 661 receipts and 144 episode checkpoints verified, and 20/20 sampled receipts replayed. Cost: $3.13.
+
+**Reading.**
+- Scoped to the task, structural authority binds: targeted outcomes fell about 3–4× at a moderate utility cost.
+  That is still short of 10×.
+- The remaining Slack attack went through an authorized recipient with free-text content. That residual is the
+  judge's job.
+- Pinning literal arguments also blocked benign alternatives.
+- Deployable value therefore depends on a trusted planner that produces task-scoped grants. That planner is the
+  next component to build and measure.
+
 ### 5.3 The distilled student on the public Card (`direction/experiments/card_student_v0/`)
 
 The student was never trained on, tuned on or selected with public items or Card templates. All arms are in trust
@@ -560,18 +587,41 @@ fallback.
   attack-inclusive certificate therefore needs either detection *and* heavy review, or a population with realistic
   attack prevalence. Ordinary-traffic certification and adversarial stress testing must be separate populations.
 
-### 5.5 Spend
+### 5.5 One-pass capability gap (`direction/experiments/gap_analysis/`)
+
+All systems scored on public-231 with the same shim prompt; jevkit's public-only Intelligence:
+
+| Model | Intelligence |
+|---|---|
+| stock Qwen3.5-4B | 54.3 |
+| distilled student | 65.4 |
+| H2O-Lightning-4B | 77.5 |
+| stock 4B thinking | 84.1 |
+
+- Hard items carry 78% of the stock-to-H2O gap; yes/no items carry 60%.
+- The 4B model already *knows* most of what H2O gets right: thinking recovers 29 of the 38 items H2O wins.
+- The student closed 48% of the gap without any capability-targeted training data. What remains is mostly hard
+  yes/no, plus a "yes" prior (59% predicted vs 47% gold).
+- Closing the rest needs verified teacher-authored scenario data. That is student v1, now paused.
+
+### 5.6 Spend
+
+Every paid run below was charged to the owner's Modal workspace. Runs were launched under caps the chief of staff set
+himself, not under amounts the owner approved per run. That was a process failure. From now on, paid compute
+requires the owner's explicit approval of an amount.
 
 | Item | Estimated H100 cost | Ledger |
 |---|---|---|
 | Earlier probes (reasoning headroom $1.9 logged; steering and channel unlogged) | ≈ $5–6 | partial |
 | Card v0 + v0.1 | $8.46 | `card_v0/spend*.json` |
 | Workflow v0 (432 episodes) | $16.94 | `workflow_v0/run_summary.json` |
-| Distillation (labels, training, pilot, failed export retry) | $20.72 | `distill_v0/costs.json` |
-| Student Card; certification scoring | $0.54; ≈ $0.41 | `card_student_v0/aggregate.json`; wall time |
-| Workflow v0.1 host-integrated rerun | $1.18 | `workflow_v0/host_run_summary.json` |
+| Distillation v0 (labels, training, pilot; includes an $11.60 failed hung run) | $20.72 | `distill_v0/costs.json` |
+| Student Card; certification scoring; gap analysis | $0.54; ≈ $0.41; ≈ $0.30 | `card_student_v0/aggregate.json`; wall time |
+| Workflow v0.1 host-integrated rerun; v0.2 ORACLE arms | $1.18; $3.13 | `workflow_v0/host_run_summary.json`, `oracle_*.json` |
+| Monitor Card (paused; data authoring, sandbox and partial scoring) | ≈ $12.49 | `monitor_v0/spend.json` + private ledgers |
+| Student v1 (paused; authoring and partial verification; includes a ≈ $6.40 failed run) | ≈ $10.06 | private ledger |
 | Runtime smoke runs; failed first student-Card launch | ≈ $1–1.5 | unlogged estimate |
-| **Total** | **≈ $54–56** | wall-time estimates at $3.95/H100-h, not invoices |
+| **Total** | **≈ $80–82** | wall-time estimates at $3.95/H100-h, not invoices; about $18 went to failed or hung runs |
 
 ## 6. Implications
 
@@ -692,7 +742,7 @@ The criteria below are the proposed defaults.
 | **D**, months 6–12 | External red team, reproductions, publication, adoption | By month 12, three independent groups each reproduce one Card table within ±3 pp and pilot the protocol | Publish and archive |
 
 **Budget.**
-- **Measured so far:** about $55 for this phase, partly unlogged (§5.5).
+- **Measured so far:** about $81 for this phase, partly unlogged (§5.6), all on the owner's Modal workspace.
 - **Proposed caps:** Phase A–B compute $300–600; people and red team $80–150k for B–C. These are planning caps, not
   measured costs.
 - **Grant routes** (deadlines to confirm with each funder): EA Funds Transformative AI Fund, BlueDot rapid grants,
