@@ -1,0 +1,1 @@
+{"protocol_commit":"70736dca","seed":20261016,"model_version":"sparse-injection/1:dab130e4983c7c64e64c00d5aca6b153884fda6f3567b7d5d00ba5f6d3e66c71","thresholds":{"01":0.04965257811352448,"05":0.03925091307798032},"training_source_sha256":"13291dcde0fe8dd88420cc1dfb1421555af549ed189d9c7b4bc57e3c26f3ae8c","train_groups":2485,"dev_groups":622,"train_units":10120,"dev_units":2545}
