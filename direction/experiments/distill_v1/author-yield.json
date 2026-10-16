@@ -1,0 +1,112 @@
+{
+  "planned_items": 7200,
+  "parsed": {
+    "rows": 6632,
+    "families": {
+      "guardrails": 960,
+      "support": 959,
+      "documents_policies": 938,
+      "temporal_numeric": 928,
+      "rubric_judging": 931,
+      "multi_hop": 950,
+      "state_tracking": 966
+    },
+    "types": {
+      "choice": 2309,
+      "score": 1019,
+      "noul": 3304
+    },
+    "noul_labels": {
+      "false": 1652,
+      "true": 1652
+    }
+  },
+  "guarded": {
+    "rows": 6632,
+    "families": {
+      "guardrails": 960,
+      "support": 959,
+      "documents_policies": 938,
+      "temporal_numeric": 928,
+      "rubric_judging": 931,
+      "multi_hop": 950,
+      "state_tracking": 966
+    },
+    "types": {
+      "choice": 2309,
+      "score": 1019,
+      "noul": 3304
+    },
+    "noul_labels": {
+      "false": 1652,
+      "true": 1652
+    }
+  },
+  "schema_rejections": {
+    "unresolved factual slot": 257,
+    "truncated JSON": 74,
+    "pair labels must flip": 23,
+    "pair needs one decisive factual slot": 49,
+    "ambiguous or absent answer text": 3,
+    "pair must flip one concise fact": 2,
+    "missing substantive scenario, rubric or solution": 12
+  },
+  "guard_rejections": {
+    "unpaired_dropped": 0
+  },
+  "shape": {
+    "rows": 6632,
+    "state_words": {
+      "min": 80,
+      "median": 155.0,
+      "p90": 221,
+      "max": 1390
+    },
+    "unique_states": 6625,
+    "noul_labels": {
+      "false": 1652,
+      "true": 1652
+    }
+  },
+  "guards": {
+    "jevbench": {
+      "identity": {
+        "enabled": true,
+        "index_sha256": "0fe994c40dfc70fa3a0cd711fa88abb7f439cb8f2546ecffd53e5ca232d3934b",
+        "fingerprint_arrays_sha256": "211da3f1d3c68fbfc48fc3dbdd72cfd0c6dcf723f47e4628a7f6f5f506c2c55c",
+        "exact_segments_sha256": "f9b94122d36e8b730cc18dc122d4fe65ff789a42072ca86ecebee207fdb5049d",
+        "pin_sha256": "e317bbb6aa541f5b9c26e038359036dc9d3f7039b410060fafa3bfe1bf2db49f",
+        "source_commit": "b6b8fff7e345b98c060ad26c13308860ddc67004"
+      },
+      "draws": {
+        "/home/alp/ssdm/private/distill_v1/authored.jsonl.gz": {
+          "n_records": 6632,
+          "records_sha256": "c4db216f85f6cace666643e6a072f15ffc0c141e96003e03defa0e1cae0237e7",
+          "jevbench_doc_fail": 0,
+          "jevbench_doc_fails": [],
+          "jevbench_exact_segment_rows": 0,
+          "jevbench_training_gate_fail": 0,
+          "jevbench_training_gate_fail_ids": [],
+          "jevbench_exact_segment_ids": [],
+          "jevbench_fingerprint_rows_hit": 0,
+          "jevbench_fingerprint_hits_by_matcher": {},
+          "jevbench_fingerprint_examples": [],
+          "fingerprint_records_checked": 6632,
+          "n_boilerplate": 0,
+          "n_template_grams": 0
+        }
+      }
+    },
+    "attacks": {
+      "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+      "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+      "n_templates": 38,
+      "n_records": 6632,
+      "n_hit": 0
+    },
+    "decision_index_document_guard": {
+      "run": false,
+      "reason": "index unavailable on this workstation"
+    }
+  }
+}

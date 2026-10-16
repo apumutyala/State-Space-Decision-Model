@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import time
@@ -17,7 +18,7 @@ from keel.runtime.modal_app import HF_CACHE, hf_cache, results_vol
 APP = modal.App("keel-distill-v1-train")
 
 
-@APP.function(image=training_image, gpu="H100", timeout=7200, memory=65536, cpu=8,
+@APP.function(image=training_image, gpu="H100", timeout=14400, memory=65536, cpu=8,
               volumes={HF_CACHE: hf_cache, "/results": results_vol})
 def train_recipe(rows: list[dict], dev: list[dict], config: dict, run: str, export: bool):
     from keel.distill.train_student import train
@@ -61,10 +62,10 @@ def main():
             if spending(out) > a.cap - 4:
                 raise RuntimeError("insufficient reserved training/evaluation budget")
             start = time.time()
-            cost = {"date": "2026-10-15", "function": "train_recipe", "phase": a.phase,
-                    "config": config, "status": "failed"}
+            cost = {"date": datetime.now(timezone.utc).date().isoformat(), "function": "train_recipe",
+                    "phase": a.phase, "config": config, "status": "failed"}
             try:
-                timeout = min(7200, int((a.cap - spending(out) - 2) / RATE))
+                timeout = min(14400, int((a.cap - spending(out) - 2) / RATE))
                 if timeout < 60:
                     raise RuntimeError("insufficient budget for a bounded training call")
                 result = train_recipe.with_options(timeout=timeout).remote(

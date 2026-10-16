@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import time
@@ -130,7 +131,8 @@ def run_phase(args):
     else:
         jobs = [{"id": "smoke", "system": "Reason, then return JSON with answer_text and ambiguous.",
                  "user": "A cabinet has 17 blue binders. Eight are removed and three returned. How many remain?"}]
-    costs = {"date": "2026-10-15", "function": phase, "model": model, "status": "running"}
+    costs = {"date": datetime.now(timezone.utc).date().isoformat(), "function": phase,
+             "model": model, "status": "running"}
     start = time.time()
     results = {}
     authored, failures = list(existing), collections.Counter()
