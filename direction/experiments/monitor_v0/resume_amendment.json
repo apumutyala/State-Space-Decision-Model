@@ -1,0 +1,14 @@
+{
+  "approved_by": "chief of staff via Main",
+  "modal_cap_usd": 27,
+  "reason": "Modal heartbeat/connection failure stopped the student arm before clean scoring completed; original source and stock scores are retained.",
+  "priority": ["student clean, T1, T2", "stock and student T3/T3L", "4B thinking clean/T1", "optional 36-cluster stock/student adaptive extension", "optional 9B thinking clean/T1"],
+  "primary_adaptive_clusters": 12,
+  "primary_selection_unchanged": true,
+  "prompt_batch_size": 64,
+  "maximum_call_retries": 2,
+  "modal_function_timeout_seconds": 1800,
+  "local_client_timeout_seconds": 1800,
+  "thinking_adaptive_claim": false,
+  "per_item_data_committed": false
+}

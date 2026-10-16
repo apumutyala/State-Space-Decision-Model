@@ -1,0 +1,23 @@
+{
+  "seed": 20261015,
+  "data_sha256": "bdff0e9aec67ca848bdd763e3821d09799f34e1f3aeb94250a44428a6b5b6106",
+  "arms": [
+    "source",
+    "stock",
+    "student",
+    "think"
+  ],
+  "budgets": [
+    0.02,
+    0.05
+  ],
+  "search_units": 12,
+  "search_queries": 64,
+  "max_think": 3072,
+  "calibration_fraction": 0.4,
+  "question": "noul",
+  "calibration_problems": 130,
+  "evaluation_problems": 194,
+  "thinking_coverage": "clean, T1 and benign controls only (chief-approved budget priority)",
+  "spend_cap_usd": 27.0
+}

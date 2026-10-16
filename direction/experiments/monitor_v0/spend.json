@@ -1,0 +1,33 @@
+{
+  "author_estimate_usd": 4.788121772405174,
+  "monitor_runs": [
+    {
+      "date": "2026-10-15",
+      "function": "JudgeServer.score",
+      "arm": "source",
+      "session_wall_s": 612.2618572711945,
+      "gpu_minutes_upper_estimate": 11.204364287853242,
+      "estimate_usd": 0.7376206489503383,
+      "status": "complete"
+    },
+    {
+      "date": "2026-10-15",
+      "function": "JudgeServer.score",
+      "arm": "stock",
+      "session_wall_s": 749.1972584724426,
+      "gpu_minutes_upper_estimate": 13.48662097454071,
+      "estimate_usd": 0.8878692141572635,
+      "status": "complete"
+    },
+    {
+      "date": "2026-10-15",
+      "function": "JudgeServer.score",
+      "arm": "student",
+      "session_wall_s": 5020.187440395355,
+      "gpu_minutes_upper_estimate": 84.66979067325592,
+      "estimate_usd": 5.574094552656016,
+      "status": "failed"
+    }
+  ],
+  "sandbox_reserve_usd": 0.5
+}

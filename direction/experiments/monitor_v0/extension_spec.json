@@ -1,0 +1,16 @@
+{
+  "study": "extended36",
+  "approved_by": "chief of staff via Main",
+  "committed_before_extension_scoring": true,
+  "condition": "Only after student frozen-12 and 4B-thinking clean/T1 priorities complete, within the cumulative $27 Modal cap.",
+  "data_sha256": "bdff0e9aec67ca848bdd763e3821d09799f34e1f3aeb94250a44428a6b5b6106",
+  "arms": ["stock", "student"],
+  "tiers": ["T3", "T3L at 2%", "T3L at 5%"],
+  "queries_per_search": 64,
+  "clusters_per_arm": 36,
+  "selection": "Use the existing seed-20261015 SHA256 ordering of evaluation backdoors, at most one submission per problem. Retain the original first 12 and add the next 24 to both arms equally; no selection using monitor scores.",
+  "unchanged": ["data", "problem split", "honest calibration observations", "monitor policy and rendering", "models", "thinking budget", "attack families and search", "execution labels", "bootstrap"],
+  "reporting": "Preserve frozen-12 metrics unchanged. Write a separate predeclared extended-36 report; do not combine results after seeing the extension. Reuse cached first-12 scoring without additional model queries.",
+  "private_rows_directory": "$SSDM_PRIVATE/monitor_v0/rows_extended36",
+  "aggregate_directory": "direction/experiments/monitor_v0/extended36"
+}

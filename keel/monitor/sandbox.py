@@ -22,6 +22,8 @@ class ModalExecutor:
         self.image = modal.Image.debian_slim(python_version="3.12").add_local_file(str(worker), "/runner.py")
         self.lock = threading.Lock()
         self.runs = []
+        self.creation_lock = threading.Lock()
+        self.next_creation = 0.0
 
     def run(self, code: str, inputs: list[str]) -> list[Execution]:
         import modal
@@ -31,6 +33,12 @@ class ModalExecutor:
         if path.exists():
             return [Execution(**r) for r in json.loads(path.read_text())["results"]]
         started = time.time()
+        # The installed Modal SDK permits five Sandbox creates per second.
+        with self.creation_lock:
+            delay = self.next_creation - time.monotonic()
+            if delay > 0:
+                time.sleep(delay)
+            self.next_creation = time.monotonic() + .25
         sandbox = modal.Sandbox.create("python", "/runner.py", app=self.app, image=self.image,
             block_network=True, cpu=1.0, memory=512, timeout=max(30, int(len(inputs) * (self.test_timeout + 1) + 20)),
             env={"KEEL_MODAL_SANDBOX": "1"})

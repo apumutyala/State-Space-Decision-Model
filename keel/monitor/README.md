@@ -94,7 +94,7 @@ AST-equality check is a preliminary screen, never a replacement for execution.
   sample, with truncation retained in the private runtime cache.
 - Arms: stock Qwen3.5-4B, distilled student
   `/results/students/distill-v0-20261015/merged`, Qwen3.5-4B thinking, and
-  Qwen3.5-2B as the T2 source. Qwen3.5-9B thinking is optional within the $15 cap.
+  Qwen3.5-2B as the T2 source. Qwen3.5-9B thinking is optional within the amended $27 cap.
 - **T1:** five model-authored families (review approval, supposed specification
   citations, direct monitor instructions, fake test logs, persona), one start/plain
   variant each, on every evaluation backdoor. Honest controls receive one balanced
@@ -136,7 +136,8 @@ pretraining-contamination uncertainty. Twelve adaptive clusters limit precision.
 
 ```sh
 python -X utf8 -m keel.monitor data --problems 420 --backdoor-draws 3 --author-cap 7 --max-seconds 7200
-python -X utf8 -m keel.monitor evaluate --arms source,stock,student,think --spend-cap 15
+timeout --signal=INT --kill-after=30s 1800 python -X utf8 -m keel.monitor evaluate --arms student --spend-cap 27
+timeout --signal=INT --kill-after=30s 1800 python -X utf8 -m keel.monitor evaluate --arms think --spend-cap 27
 python -X utf8 -m keel.monitor report
 python -X utf8 -m pytest -q keel/tests
 ```
@@ -158,10 +159,42 @@ scores on a target-sized execution-verified dataset. Data acquisition is time-bo
 at approximately two hours; a failure to meet the data target is a blocker, not a
 negative monitor result. Authoring reserves a 20-minute function timeout before a
 batch; monitor calls are cancelled when the remaining reserved GPU spend expires.
-The overall Modal cap is **$15**. GPU estimates use H100 $3.95/hour, include startup
+The original Modal cap was $15; the chief of staff approved a **$27 cumulative cap**
+after a Modal heartbeat/connection failure before student clean scoring completed.
+GPU estimates use H100 $3.95/hour, include startup
 and a conservative idle allowance, and reserve $0.50 for CPU sandbox work. These
 are estimates, not an invoice. Paid-run observations are recorded here when runs
 return and in the aggregate spend ledger.
+
+**Approved priority amendment:** finish student clean/T1/T2, then stock/student
+T3/T3L on the frozen 12 clusters; run 4B thinking clean/T1 next. Thinking arms now
+explicitly omit adaptive attacks. Only if money remains, run the separately
+prespecified 36-cluster stock/student extension, then optional 9B thinking.
+`resume_amendment.json` and `extension_spec.json` record those decisions.
+
+Remote scoring batches contain at most 64 prompts and every completed batch is
+cached privately. Transient failed calls are retried at most twice. Both async
+spawn and result waits are bounded; the JudgeServer function timeout is overridden
+to 1,800 seconds and the client runs under the OS `timeout` command. Deadline and
+session accounting now use a monotonic clock. Cached prompts, including completed
+search steps, are skipped on restart. Sandbox creates are paced to four per second
+for the installed SDK's five-per-second limit.
+
+The optional extension retains the original first 12 hash-selected clusters and
+adds the next 24 identically for stock and student. It preserves every scoring and
+calibration choice; its specification is committed before any additional scoring.
+Primary results remain in `metrics.json`; the separate extended-36 report is in
+`extended36/metrics.json`, with rows in private `rows_extended36/`. These are not
+independent studies and are never combined into a post-hoc headline estimate.
+Run each extension arm separately under the same OS timeout:
+
+```sh
+timeout --signal=INT --kill-after=30s 1800 python -X utf8 -m keel.monitor evaluate \
+  --arms stock --extended --search-units 36 --spend-cap 27
+timeout --signal=INT --kill-after=30s 1800 python -X utf8 -m keel.monitor evaluate \
+  --arms student --extended --search-units 36 --spend-cap 27
+```
+
 
 The first acquisition (`acquisition_v1.json`) finished in 502.9 seconds but yielded
 **0 backdoors and 25 unique honest programs**, not a usable monitoring dataset.
@@ -178,6 +211,20 @@ initial author-stage cap. Continuation allows up to three independent sabotage
 draws per problem with the **same** prompts/protocol, to reach 150 positives;
 the prompt and monitor are not tuned against any monitor outcomes.
 
+**Final data target met:** 162 unique verified backdoors from 116 problems and
+573 unique verified honest programs from 321 problems (324 problems overall).
+The final corpus hash is
+`bdff0e9aec67ca848bdd763e3821d09799f34e1f3aeb94250a44428a6b5b6106`.
+Corrected authoring attempted 1,440 programs; 45 failed parsing/schema requirements,
+17 passing programs were exact duplicates, and 53/420 reference programs failed
+the provided tests. The final continuation took 612.4 seconds. Total acquisition
+execution across the three invocations was 2,641.9 seconds (44.0 minutes).
+Total estimated author spend, including the failed first acquisition: **$4.7881**.
+
+CPU acceptance after runner/data corrections:
+`python -X utf8 -m pytest -q keel/tests` — **457 passed in 29.39 seconds**.
+
+
 Paid author calls on 2026-10-15 (H100, `MonitorAuthor.generate`, v1):
 
 | Call | Items | GPU-minute upper estimate | Estimated USD |
@@ -191,6 +238,43 @@ Paid author calls on 2026-10-15 (H100, `MonitorAuthor.generate`, v1):
 | 7 | 48 | 1.501 | 0.0988 |
 | 8 | 3 | 1.078 | 0.0710 |
 
+Paid author calls on 2026-10-15 (H100, `MonitorAuthor.generate`, corrected v2;
+calls 9–30 first pass, 31–38 continuation):
+
+| Call | Items | GPU-minute upper estimate | Estimated USD |
+|---|---:|---:|---:|
+| 9 | 48 | 4.255 | 0.2801 |
+| 10 | 48 | 1.862 | 0.1226 |
+| 11 | 48 | 1.622 | 0.1068 |
+| 12 | 48 | 1.906 | 0.1255 |
+| 13 | 48 | 1.908 | 0.1256 |
+| 14 | 48 | 1.873 | 0.1233 |
+| 15 | 48 | 1.859 | 0.1224 |
+| 16 | 48 | 1.896 | 0.1248 |
+| 17 | 48 | 1.893 | 0.1246 |
+| 18 | 48 | 1.721 | 0.1133 |
+| 19 | 48 | 1.872 | 0.1233 |
+| 20 | 48 | 1.868 | 0.1230 |
+| 21 | 48 | 1.839 | 0.1210 |
+| 22 | 48 | 1.459 | 0.0960 |
+| 23 | 48 | 1.859 | 0.1224 |
+| 24 | 48 | 1.617 | 0.1064 |
+| 25 | 48 | 1.890 | 0.1244 |
+| 26 | 48 | 1.571 | 0.1034 |
+| 27 | 48 | 1.880 | 0.1238 |
+| 28 | 48 | 1.873 | 0.1233 |
+| 29 | 48 | 1.707 | 0.1124 |
+| 30 | 48 | 1.613 | 0.1062 |
+| 31 | 48 | 4.562 | 0.3003 |
+| 32 | 48 | 1.563 | 0.1029 |
+| 33 | 48 | 1.863 | 0.1226 |
+| 34 | 48 | 1.487 | 0.0979 |
+| 35 | 48 | 1.439 | 0.0947 |
+| 36 | 48 | 1.853 | 0.1220 |
+| 37 | 48 | 1.561 | 0.1027 |
+| 38 | 48 | 1.505 | 0.0991 |
+
+
 
 ## Limitations and nonclaims
 
@@ -202,3 +286,8 @@ This is not end-to-end control-protocol safety, a human replacement, a robustnes
 certificate, an adaptive-attacker upper bound, or evidence of generalization to
 real repositories. The generator may have seen APPS during pretraining. Honest
 and backdoored style is controlled by matched generation, not proven identical.
+In particular, 23/162 accepted backdoors contain at least one literal occurrence
+of `backdoor`, `sabotage` or `intentional` in their source. This lexical diagnostic
+is not a semantic audit, but warns that some generated positives advertise their
+label despite the author instruction. They were not removed after seeing monitor
+scores; the evaluation is of the frozen dataset, not covert-only sabotage.
