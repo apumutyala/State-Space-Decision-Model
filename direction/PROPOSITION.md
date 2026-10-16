@@ -607,8 +607,8 @@ All systems scored on public-231 with the same shim prompt; jevkit's public-only
 ### 5.6 Spend
 
 Every paid run below was charged to the owner's Modal workspace. Runs were launched under caps the chief of staff set
-himself, not under amounts the owner approved per run. That was a process failure. From now on, paid compute
-requires the owner's explicit approval of an amount.
+without the owner's per-run approval. That was a process failure. From now on, paid compute requires the owner's
+explicit approval of an amount.
 
 | Item | Estimated H100 cost | Ledger |
 |---|---|---|
