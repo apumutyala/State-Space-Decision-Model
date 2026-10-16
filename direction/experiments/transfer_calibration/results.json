@@ -1,0 +1,145 @@
+{
+ "protocol": "Can a readout bias estimated on synthetic, non-public items fix the one-pass \"yes\" prior on public items?",
+ "training_yes_rates": {
+  "authority": {
+   "n": 654,
+   "gold_yes": 0.24617737003058104
+  },
+  "clean": {
+   "n": 820,
+   "gold_yes": 0.39878048780487807
+  },
+  "evidence": {
+   "n": 49,
+   "gold_yes": 0.5510204081632653
+  },
+  "inject": {
+   "n": 691,
+   "gold_yes": 0.2937771345875543
+  },
+  "policy": {
+   "n": 474,
+   "gold_yes": 0.47257383966244726
+  }
+ },
+ "models": {
+  "stock": {
+   "fit": {
+    "synthetic_yes_no_items": 62,
+    "offset": 0.0625,
+    "synthetic_pred_yes_rate": 0.24193548387096775,
+    "synthetic_gold_yes_rate": 0.6290322580645161,
+    "position_bias": {
+     "0": 0.3426,
+     "1": -0.9816,
+     "2": 0.0887,
+     "3": 0.2396,
+     "4": 0.028,
+     "5": 0.2827
+    }
+   },
+   "public_noul": {
+    "n": 74,
+    "acc_before": 0.7027027027027027,
+    "ci_before": [
+     0.5492957746478874,
+     0.819672131147541
+    ],
+    "acc_after": 0.7027027027027027,
+    "ci_after": [
+     0.5492957746478874,
+     0.819672131147541
+    ],
+    "delta": 0.0,
+    "delta_ci": [
+     0.0,
+     0.0
+    ],
+    "pred_yes_before": 0.47297297297297297,
+    "pred_yes_after": 0.47297297297297297,
+    "gold_yes": 0.47297297297297297,
+    "hard_acc_before": 0.5789473684210527,
+    "hard_acc_after": 0.5789473684210527,
+    "ceiling_offset_descriptive": 0.6249999701976775,
+    "ceiling_acc_descriptive": 0.7702702702702703
+   },
+   "public_choice": {
+    "n": 139,
+    "acc_before": 0.7553956834532374,
+    "ci_before": [
+     0.6021505376344086,
+     0.8734177215189873
+    ],
+    "acc_after": 0.7553956834532374,
+    "ci_after": [
+     0.591304347826087,
+     0.8819444444444444
+    ],
+    "delta": 0.0,
+    "delta_ci": [
+     -0.041379310344827586,
+     0.0423728813559322
+    ]
+   }
+  },
+  "student": {
+   "fit": {
+    "synthetic_yes_no_items": 62,
+    "offset": -2.5,
+    "synthetic_pred_yes_rate": 0.3387096774193548,
+    "synthetic_gold_yes_rate": 0.6290322580645161,
+    "position_bias": {
+     "0": -0.0428,
+     "1": -0.6942,
+     "2": 0.2892,
+     "3": 0.0454,
+     "4": 0.1417,
+     "5": 0.2606
+    }
+   },
+   "public_noul": {
+    "n": 74,
+    "acc_before": 0.7567567567567568,
+    "ci_before": [
+     0.5789473684210527,
+     0.9310344827586207
+    ],
+    "acc_after": 0.7027027027027027,
+    "ci_after": [
+     0.5434782608695652,
+     0.8620689655172413
+    ],
+    "delta": -0.05405405405405406,
+    "delta_ci": [
+     -0.1590909090909091,
+     0.02631578947368421
+    ],
+    "pred_yes_before": 0.581081081081081,
+    "pred_yes_after": 0.7702702702702703,
+    "gold_yes": 0.47297297297297297,
+    "hard_acc_before": 0.6052631578947368,
+    "hard_acc_after": 0.5526315789473685,
+    "ceiling_offset_descriptive": 0.6249999850988389,
+    "ceiling_acc_descriptive": 0.8108108108108109
+   },
+   "public_choice": {
+    "n": 139,
+    "acc_before": 0.8129496402877698,
+    "ci_before": [
+     0.6756756756756757,
+     0.9225806451612903
+    ],
+    "acc_after": 0.8201438848920863,
+    "ci_after": [
+     0.6785714285714286,
+     0.9294871794871795
+    ],
+    "delta": 0.007194244604316547,
+    "delta_ci": [
+     -0.02127659574468085,
+     0.044642857142857144
+    ]
+   }
+  }
+ }
+}
