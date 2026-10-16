@@ -47,6 +47,8 @@ The interface rules between sub-packages are in [`CONTRACT.md`](CONTRACT.md).
 | 2026-10-15 | `d64e9698` | `python -X utf8 -m pytest -q keel/tests` | 414 passed |
 | 2026-10-15 | `d64e9698` | `python -X utf8 -m pytest -q keel/tests tests/guarantees jevkit/tests tests/test_nupi.py tests/test_consistency.py tests/test_order_views.py tests/test_order_consistency_loss.py tests/test_jev3_sym.py` | 717 passed, 4 skipped |
 | 2026-10-15 | `d64e9698` | `python -X utf8 -m keel.host.model_check` | 48 configurations, 632 states, 16,920 transitions, depth 4, 16,920 concrete refinement transitions |
+| 2026-10-16 | `b20059c0` | `python -X utf8 -m pytest -q keel/tests` | 480 passed |
+| 2026-10-16 | `b20059c0` | `python -X utf8 -m keel.host.model_check` (with argument clauses) | 48 configurations, 632 states, 25,380 transitions, depth 4, 25,380 concrete refinement transitions |
 
 Environment: Python 3.12, torch 2.14.1+cpu, transformers 5.14.1, CPU only. Results of paid GPU runs are recorded in
 each experiment's README under `direction/experiments/`.

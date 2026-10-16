@@ -7,10 +7,19 @@ approve human reviews, or implement downstream action semantics.
 
 ## API and integration
 
-- `Authority(policy, role_actions, principal_roles)` snapshots trusted configuration.
-  For principal `p`, its authorized set is **policy.authorized_actions ∩ the union
-  of grants for p's host-assigned roles**. Unknown roles/principals grant nothing.
-  Neither policy prose, model answers, citations nor segment text adds grants.
+- `Authority(policy, role_actions, principal_roles, argument_clauses=(), argument_defaults=None)` snapshots trusted
+  configuration. For principal `p`, its authorized set is **policy.authorized_actions ∩ the union of grants for p's
+  host-assigned roles**. Unknown roles/principals grant nothing. Neither policy prose, model answers, citations nor
+  segment text adds grants.
+- `ArgumentClause(action, fixed=, one_of=, at_most=)` limits the arguments an authorized action may run with.
+  - A call matches when every `fixed` argument equals its value, every `one_of` argument is in its set and every
+    `at_most` argument is a finite number within its bound. Omitted arguments are first filled from
+    `argument_defaults`.
+  - An action with clauses runs only if at least one clause matches; clauses are a disjunction and values from
+    different clauses never mix.
+  - An action with no clauses has unconstrained arguments.
+  - Values are JSON: int and float compare numerically; nothing else is coerced (no bool/number/string mixing).
+  - Violations are denied as `arguments_not_authorized`, and every receipt records the clauses in force.
 - `HostKernel(authority, principal=..., executor=..., receipt_log=...,
   review_capacity=..., model_id=..., model_revision=..., gate_version=...,
   calibration_id=...)` binds an authenticated principal. A proposal cannot select
@@ -92,8 +101,9 @@ See root [`PROTOCOL.md`](../../PROTOCOL.md) for a runnable replay example.
 ## Exact invariants and trusted computing base
 
 1. **I1:** every executor invocation's action belongs to the trusted authorized
-   set. Changing only untrusted content cannot change that set. It may change the
-   chosen authorized action or cause deferral.
+   set, and its arguments match the trusted argument clauses for that action (when it has any). Changing only
+   untrusted content cannot change the set or the clauses. It may change the chosen authorized action or arguments
+   within the clauses, or cause deferral.
 2. **I2:** a returned `deferred`, `denied` (also `held`) outcome invokes no executor.
 3. **I3:** an authorized proposal requiring review when the queue is full is
    `held`, never auto-approved; queued count never exceeds capacity.
@@ -118,29 +128,35 @@ reuses the frozen Keel segment/derive interface instead of creating a competing
 span representation.
 
 These guarantees assume correct host labeling and principal authentication. They
-do not guarantee semantic correctness, argument-level permissions, model
-robustness, evidence quality, exactly-once external effects, or safety after host
-compromise. Direct calls to the executor outside this kernel are outside scope.
+do not guarantee semantic correctness, model robustness, evidence quality, exactly-once external effects, or safety
+after host compromise. Argument clauses bound only the arguments they name; free arguments (such as a message body)
+are unconstrained, and choosing good clauses is the integrator's job. Direct calls to the executor outside this
+kernel are outside scope.
 
 ## Verification and measured bounds
 
 `python -X utf8 -m keel.host.model_check` reports:
 
 ```text
-CheckReport(configurations=48, states=632, transitions=16920, max_depth=4, concrete_transitions=16920)
+CheckReport(configurations=48, states=632, transitions=25380, max_depth=4, concrete_transitions=25380)
 ```
 
 The exhaustive abstract checker covers two actions `{a,b}`, two roles
 `reader->{a}` / `writer->{b}`, every subset of policy actions and assigned roles,
-queue capacities **0..2**, and sequences of length **0..4**. Forty events combine
-action, act/defer, five provenance patterns (untrusted, trusted, mixed, transitive
-untrusted derivation, foreign forged trusted segment), and benign/injection text.
-It visits **632 reachable quotient states** and **16,920 transitions** across
-48 configurations. Each concrete transition is compared against the independent
-abstract specification, with real host construction, in-memory JSONL receipts,
-and a side-effecting executor. The checker compares authorization before/after
-untrusted-content changes, provenance, calls, queue counts, outcomes and receipt
-counts. Every concrete state is rebuilt from a representative reaching history.
+queue capacities **0..2**, and sequences of length **0..4**.
+
+- **Events (60).** Each combines action, act/defer, five provenance patterns (untrusted, trusted, mixed, transitive
+  untrusted derivation, foreign forged trusted segment), benign/injection text and an argument value.
+- **Argument dimension.** Action `b` carries an argument clause (`amount` at most 10) and is tried with 5 and 50.
+  Action `a` has no clause, so its large amount stays free.
+- **Coverage.** It visits **632 reachable quotient states** and **25,380 transitions** across 48 configurations.
+- **Refinement.** Each concrete transition is compared against the independent abstract specification, with real
+  host construction, in-memory JSONL receipts and a side-effecting executor that records each call's action and
+  amount.
+- **What is compared.** Authorization before and after untrusted-content changes, provenance, calls (including
+  argument compliance), queue counts, outcomes and receipt counts. Every concrete state is rebuilt from a
+  representative reaching history.
+- **Mutants.** Six deliberately broken kernels are each caught, including one that ignores argument clauses.
 
 The quotient retains depth, queue occupancy, executor-call count and receipt
 count. Histories differing only in past payloads are equivalent for this kernel:

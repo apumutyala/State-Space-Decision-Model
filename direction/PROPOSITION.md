@@ -246,8 +246,10 @@ flowchart LR
 
 - **Authority.** A principal's grants are the policy's `authorized_actions` intersected with its host-assigned role
   grants. The authenticated principal is bound by the host, not by what the proposal claims. Answers, citations
-  and segment text add nothing. The kernel checks **action names only**: arguments (amounts, recipients, object
-  identity) need a separate argument policy.
+  and segment text add nothing.
+- **Argument clauses (added 2026-10-16).** An action may carry host `ArgumentClause`s: fixed values, finite sets
+  and numeric upper bounds, for example "recipient is the landlord's IBAN and amount ≤ 1200". The call then runs only
+  if some clause matches. Arguments a clause leaves free, such as a message body, stay unconstrained.
 - **`HostKernel.process(request, proposal, result)`** returns one of:
   - `executed`;
   - `deferred`: any defer reason vetoes acting;
@@ -257,8 +259,8 @@ flowchart LR
   A receipt is durably appended before any enqueue or dispatch. "No side effect" means the executor is not called;
   logs and the queue do change.
 - **Invariants:**
-  - **I1:** every executor invocation's action is in the trusted grant set, and changing only untrusted content
-    cannot change that set.
+  - **I1:** every executor invocation's action is in the trusted grant set and its arguments match that action's
+    clauses; changing only untrusted content cannot change either.
   - **I2:** admitted deferred, denied and held proposals never call the executor.
   - **I3:** a full queue holds review-required proposals and never auto-approves them.
   - **I4:** trust labels originate only in host constructors.
@@ -268,9 +270,10 @@ flowchart LR
   - An independent abstract specification is explored exhaustively: two actions, two roles, every policy/role
     subset, queue capacities 0–2, five provenance patterns (including forged trusted segments and transitive
     untrusted derivation), sequences up to length 4.
-  - That covers **48 configurations, 632 reachable quotient states and 16,920 transitions**, each replayed against
-    the concrete kernel.
-  - Hypothesis property tests run on top; five mutant kernels (one per invariant) are each caught.
+  - That covers **48 configurations, 632 reachable quotient states and 25,380 transitions**, including an
+    argument-clause dimension, each replayed against the concrete kernel.
+  - Hypothesis property tests run on top; six mutant kernels are each caught, one per invariant plus one that
+    ignores argument clauses.
   - This is bounded checking, not an unbounded proof. Concurrency, queue drains, malformed objects and I/O
     failures rely on separate tests.
 - **Trusted computing base:**
@@ -413,7 +416,7 @@ flowchart LR
 | Mechanism | Failure addressed | Guarantee type | Evidence | Residual risk |
 |---|---|---|---|---|
 | Host-minted trust labels; segment registry; `derive` | content granting itself authority; provenance laundering | structural | I4 tests; forged-segment cases in the model checker | adapter mislabels inputs; host compromise |
-| Grants = policy ∩ role grants, bound to the authenticated principal | injected action names outside the operator's set | structural (I1), action names only | bounded check (632 states, 16,920 transitions); mutant caught | wrong-but-authorized choices; arguments unconstrained without an argument policy |
+| Grants = policy ∩ role grants, bound to the authenticated principal; argument clauses | injected actions or argument values outside the operator's grants | structural (I1) | bounded check (632 states, 25,380 transitions); mutants caught | wrong-but-authorized choices; arguments a clause leaves free |
 | Defer/hold ⇒ executor not called; saturation ⇒ hold | fail-open under uncertainty or floods | structural (I2, I3) | bounded check; property tests; mutants | availability: floods raise review load (no service model yet) |
 | Write-ahead, hash-chained receipts; replay of supplied prompts | unaccountable decisions; silent log edits | structural (I5) + tamper evidence | tamper/deletion/reorder tests; thinking-prompt replay | not signatures; privacy of retained reasoning; disclosure relies on the adapter |
 | Escaped untrusted blocks; trusted material only in the system turn | delimiter closure; chat-turn injection | syntactic | rendering tests | semantic steering (Card) |
@@ -650,7 +653,8 @@ explicit approval of an amount.
 
 - **Put the safety case in structure.** Make the worst case of a steered judge a *wrong but authorized* choice:
   - action-name grants in the kernel;
-  - argument policies for amounts, recipients and destinations (still to be built);
+  - argument clauses for amounts, recipients and destinations (built; the trusted planner that writes per-task
+    clauses is not);
   - deferral;
   - review.
 - **Treat the adapter and executor as part of the TCB.** Labelling, principal authentication, prompt-manifest

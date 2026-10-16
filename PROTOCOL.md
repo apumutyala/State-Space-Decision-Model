@@ -28,8 +28,10 @@ reuse `keel.protocol.derive`: any untrusted parent (or no parents) implies
 untrusted output. Keep lineage parents in the request. The kernel rejects
 unregistered segment objects and modified contents; wire labels are not credentials.
 
-`Authority(policy, role_actions, principal_roles)` computes each principal's
-allowed set as policy actions intersected with its host-configured role grants.
+`Authority(policy, role_actions, principal_roles, argument_clauses=(), argument_defaults=None)` computes each
+principal's allowed set as policy actions intersected with its host-configured role grants. An action with
+`ArgumentClause`s runs only with arguments matching at least one clause (fixed values, finite sets, numeric upper
+bounds; omitted arguments filled from defaults). An action without clauses has unconstrained arguments.
 The kernel binds an authenticated principal independently of the proposal's
 `proposer`. `ActionProposal` contains `action`, JSON-object `args`, `proposer`,
 and `cited_segment_ids`. Citations are evidence references, not permission.
@@ -73,7 +75,7 @@ update fails closed, with no automatic repair or action retry.
 
 | Invariant | Guarantee |
 |---|---|
-| I1 | Every executor invocation's action is in the trusted authorized set. Changing only untrusted content cannot expand or otherwise change that set; it may change which permitted action is proposed or whether to defer. |
+| I1 | Every executor invocation's action is in the trusted authorized set, and its arguments match the action's trusted argument clauses when it has any. Changing only untrusted content cannot expand or otherwise change the set or the clauses; it may change which permitted action or in-clause arguments are proposed, or whether to defer. |
 | I2 | Returned defer/deny/hold outcomes never call the executor. |
 | I3 | A proposal requiring review at a full queue is held, never auto-approved; occupancy never exceeds capacity. Independently authorized acts need not enter that queue. |
 | I4 | Accepted labels originate in host constructors; untrusted kinds and untrusted derivation lineage cannot gain trust. |
@@ -86,12 +88,11 @@ pre-admission inputs or audit failures raise without a returned outcome; storage
 failures/crashes do not promise atomic persistence, but cannot bypass the
 receipt-before-dispatch ordering. Draining a review queue is not approval.
 
-**Not guaranteed:** semantic correctness of permitted actions, argument-level
-permissions, model robustness, model-output reproducibility, statistical validity
-of a named calibration, exactly-once external effects, or security after host
-compromise. The bounded checker covers 632 reachable abstract quotient states,
-16,920 concrete-refinement transitions and sequences up to length four; this is
-not an unbounded formal proof. Full bounds, trusted computing base and tests are
+**Not guaranteed:** semantic correctness of permitted actions, safety of arguments a clause leaves free, model
+robustness, model-output reproducibility, statistical validity of a named calibration, exactly-once external effects,
+or security after host compromise. The bounded checker covers 632 reachable abstract quotient states,
+25,380 concrete-refinement transitions (including an argument-clause dimension) and sequences up to length four;
+this is not an unbounded formal proof. Full bounds, trusted computing base and tests are
 in [`keel/host/README.md`](keel/host/README.md).
 
 ## Replay example (local, no model call)
