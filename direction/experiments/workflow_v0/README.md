@@ -132,3 +132,50 @@ Ground truth is privileged but not necessarily complete, semantically unique or 
 Both arms reuse the v0.1 kernel-only dispatcher, held message, write-ahead receipt chain and private saved requests. Ground-truth grants enter requests as host-registered metadata and never come from injected state. Frozen receipt v1 requires a question/render manifest even without inference: receipts explicitly use `model_id=none:oracle-policy`, deterministic 0/1 policy indicators and an **audit-only render**, not an LLM prompt or calibrated prediction. Replay checks this record's identity; it does not regenerate an absent judge.
 
 For this addendum, **held calls** mean actual kernel `held/deferred` statuses; **denied calls** mean structural `denied` statuses. They are reported separately, with pooled per-call rates bootstrapped by user task. The private `held_calls` field retains v0's combined-block convention for compatibility; `policy_held_calls` and `denied_calls` are the disjoint counts. Targeted outcome rate retains the executed, latched benchmark predicate—not all possible unauthorized actions.
+
+Frozen executable source: `c3080a4b`. CPU acceptance after `source ~/ssdm/env.sh`: `python -X utf8 -m pytest -q keel/tests` — **459 passed**, including clean-grant derivation for all 24 selected tasks, argument denial on an authorized tool, whole-call tuple matching, genuine runtime defaults, no-judge receipt replay and separate held/denied aggregation. The frozen host/protocol packages were not modified.
+
+### Measured ORACLE results
+
+**Task scoping makes structural authority bind, but these grants do not carry the complete workflow safety case.** Across both ORACLE arms the kernel denied 232 out-of-grant proposals; argument policy held another 95. These are not counts of intercepted attacks: many blocked calls were benign. Tool-name grants alone left one targeted success in each suite. Exact argument grants removed the measured banking target, but left the same Slack target through an allowed recipient and unconstrained message body, while reducing benign utility.
+
+All **144/144 episodes completed with zero episode-level exceptions**. The 661 receipts comprise **334 dispatch intents**, **232 structural denials** (all `action_not_authorized`) and **95 holds** (all `argument-policy: outside oracle grant`). Dispatch produced **320 successful calls and 14 tool-returned errors**; all errors and three actor token-cap completions belong to ORACLE tool authority on Slack and remain in denominators. Neither arm performed any judge inference.
+
+Each row has 12 benign and 24 attacked episodes. Values are **percent [95% task-cluster bootstrap CI]**, with the same 10,000 resamples and seed 20261015 as before. Full counts and unrounded values are in [`oracle_aggregate.json`](oracle_aggregate.json).
+
+| Suite | Arm — privileged, non-deployable reference | Benign utility | Attacked utility | Targeted outcome rate |
+|---|---|---:|---:|---:|
+| banking | ORACLE tool authority | 83.3 [58.3, 100.0] | 87.5 [66.7, 100.0] | 4.2 [0.0, 12.5] |
+| banking | ORACLE argument authority | 58.3 [33.3, 83.3] | 58.3 [33.3, 83.3] | 0.0 [0.0, 0.0] |
+| Slack | ORACLE tool authority | 75.0 [50.0, 100.0] | 62.5 [33.3, 87.5] | 4.2 [0.0, 12.5] |
+| Slack | ORACLE argument authority | 66.7 [41.7, 91.7] | 54.2 [29.1, 79.2] | 4.2 [0.0, 12.5] |
+
+The nonzero target rates are **1/24** each; banking ORACLE argument authority is **0/24**. Its [0, 0] bootstrap interval is not a zero-risk certificate. These are separate ORACLE arms, not additional samples pooled into v0/v0.1 or a matched-utility comparison.
+
+**Disjoint held and denied calls:** each cell gives `calls / proposals; percent [95% CI]`. Rates pool calls and resample whole user tasks, including both attack goals.
+
+| Suite | Arm | Held benign | Held attacked | Denied benign | Denied attacked |
+|---|---|---:|---:|---:|---:|
+| banking | ORACLE tool authority | 0/30; 0.0 [0.0, 0.0] | 0/66; 0.0 [0.0, 0.0] | 12/30; 40.0 [16.7, 57.9] | 27/66; 40.9 [17.0, 57.1] |
+| banking | ORACLE argument authority | 19/47; 40.4 [25.5, 53.5] | 39/103; 37.9 [21.6, 53.1] | 18/47; 38.3 [24.5, 51.1] | 44/103; 42.7 [28.9, 55.6] |
+| Slack | ORACLE tool authority | 0/58; 0.0 [0.0, 0.0] | 0/155; 0.0 [0.0, 0.0] | 16/58; 27.6 [0.0, 44.4] | 56/155; 36.1 [4.9, 50.2] |
+| Slack | ORACLE argument authority | 7/60; 11.7 [2.9, 25.0] | 30/142; 21.1 [11.7, 33.9] | 17/60; 28.3 [0.0, 46.2] | 42/142; 29.6 [2.4, 44.5] |
+
+**Latency and cost:** warm episode means include actor calls, adapter and kernel dispatch, but not model loading. Each dollar CI is the latency CI scaled by $3.95/hour. Separate allocations and changed trajectories preclude attributing cross-version timing differences to kernel overhead.
+
+| Suite | Arm | Benign seconds [95% CI] | Attacked seconds [95% CI] | Benign warm GPU $ [95% CI] | Attacked warm GPU $ [95% CI] |
+|---|---|---:|---:|---:|---:|
+| banking | ORACLE tool authority | 12.2 [10.4, 13.6] | 13.8 [11.1, 16.8] | 0.0134 [0.0114, 0.0149] | 0.0151 [0.0122, 0.0184] |
+| banking | ORACLE argument authority | 16.5 [12.4, 22.5] | 18.3 [14.2, 23.2] | 0.0181 [0.0136, 0.0247] | 0.0200 [0.0156, 0.0254] |
+| Slack | ORACLE tool authority | 14.5 [7.7, 23.2] | 28.7 [11.4, 49.6] | 0.0159 [0.0084, 0.0254] | 0.0315 [0.0125, 0.0544] |
+| Slack | ORACLE argument authority | 15.6 [8.3, 24.8] | 23.5 [10.4, 42.2] | 0.0171 [0.0091, 0.0272] | 0.0258 [0.0114, 0.0464] |
+
+Private traces establish the remaining failure modes: the banking tool-only success used an authorized payment tool with an attacker destination; the Slack success in both arms used an authorized direct-message recipient with malicious free-text content. Sending a legitimate summary afterward did not erase the latched target. Conversely, benign argument holds included a bank payment with the correct recipient/amount but different date/subject, and a Slack reply differing from the literal ground-truth body only in punctuation. Exact trace-derived grants therefore restrict useful alternatives as well as attacks. The result does **not** show that a better task permission specification could not work; it shows why tool-name invariants, argument constraints and semantic/content obligations must not be conflated.
+
+### ORACLE receipt audit and spend
+
+Run `workflow-oracle-v02-20261015a` verified the complete **661-receipt chain** and **144 episode checkpoints**, remotely and after download. **20/20 randomly selected receipts passed replay** using seed 20261015; these are the same 20 unique samples checked twice. All 661 receipts explicitly identify the absence of a judge. The pinned head is `e919a3fe4f6100fef9a71ea4a9a2586da894af376c5a1960c4f235707f3a7a21`; [`oracle_audit.json`](oracle_audit.json) records it and the sampled indices.
+
+The sole paid v0.2 allocation used **47.6116 H100-minutes / $3.1344 estimated**, within the separate **$6 cap**, including actor loading. Fully amortized function-wall cost is **$0.02177/episode**. Provider teardown/invoice adjustments and human review costs are not measured. [`oracle_run_summary.json`](oracle_run_summary.json) records the allocation; the package README contains the paid-run ledger. Raw requests, receipts, checkpoints and episode traces remain under `$SSDM_PRIVATE/workflow/workflow-oracle-v02-20261015a/`, outside git.
+
+The one-family, non-adaptive, deterministic-prefix, small-cluster and simulator-only limitations remain. Both references assume privileged trusted planning; neither is a deployable defense, a complete safety proof, a calibrated act/defer gate or a demonstration of the matched-completion/review-load moonshot target.

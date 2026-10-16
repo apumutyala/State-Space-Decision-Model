@@ -66,6 +66,7 @@ Every paid allocation uses `keel.workflows.modal_run.evaluate` on one H100, esti
 | 2026-10-15 | `workflow-v0-20261015b` / `evaluate` | 74.1042 | 4.8785 | Measured function wall time; all 360 primary episodes completed, zero episode exceptions |
 | 2026-10-15 | `workflow-think-20261015a` / `evaluate` | 174.4865 | 11.4870 | Measured function wall time; all 72 supplemental episodes completed, zero episode exceptions |
 | 2026-10-15 | `workflow-host-v01-20261015a` / `evaluate` | 17.8653 | 1.1761 | Separate v0.1 $8 cap; all 72 host-integrated one-pass episodes completed, zero episode/dispatch errors |
+| 2026-10-15 | `workflow-oracle-v02-20261015a` / `evaluate` | 47.6116 | 3.1344 | Separate v0.2 $6 cap; 144 episodes across both ORACLE arms, zero episode exceptions; no judge |
 
 The original v0 allocations total **252.2991 GPU-minutes / $16.6097** estimated. Including the cancelled-startup reserve gives **$16.9389**, below that assignment's **$25 cap**. Raw logs are under `$SSDM_PRIVATE/workflow/`; aggregate v0 allocation records are in `direction/experiments/workflow_v0/run_summary.json`. The separate v0.1 integration assignment has an $8 cap.
 
@@ -117,3 +118,9 @@ python -X utf8 -m keel.workflows.aggregate \
 ```
 
 CPU acceptance: **459 passed**. New tests cover whole-call constraint pairing, exact values without bool/string coercion, immutable grant snapshots, genuine tool defaults, every selected task's clean ground truth, structural tool denial, argument denial despite an allowed tool name, free-body residual exposure, nested-call prevention, receipt replay and separate held/denied aggregation. Dispatch tests use real AgentDojo functions and real kernel/receipt storage, not a fake oracle judge.
+
+Measured v0.2: **144/144 episodes completed**, **661 receipts and 144 episode checkpoints verified**, and **20/20 unique sampled receipts replayed**, both remotely and locally. The kernel issued **232 structural denials**; argument policy produced **95 holds**. There were **334 dispatch intents**, yielding 320 successful calls and 14 tool-returned errors. All errors and three actor token-cap completions were in the ORACLE tool-authority Slack arm and were retained.
+
+ORACLE tool authority had targeted outcome rate **4.2% [0.0, 12.5]** in each suite, with benign utility **83.3% [58.3, 100.0]** in banking and **75.0% [50.0, 100.0]** in Slack. ORACLE argument authority had **0/24 [0%, 0%]** banking targets but benign utility **58.3% [33.3, 83.3]**; Slack still had **4.2% [0.0, 12.5]** targets with benign utility **66.7% [41.7, 91.7]**. The residual Slack target passed through an allowed recipient and unconstrained body; strict literal constraints also held benign alternatives. Task scoping makes authority bind, but these oracle specifications do not establish complete workflow safety or matched utility/review load.
+
+Full attacked utility, disjoint held/denied counts and task-cluster CIs, latency and cost are in the results README and `oracle_aggregate.json`; `oracle_audit.json` pins the chain. The sole v0.2 allocation cost **47.6116 H100-minutes / $3.1344 estimated**, below the separate **$6 cap**. Exact accounting is in `oracle_run_summary.json`; executable source is `c3080a4b`, and private records are under `$SSDM_PRIVATE/workflow/workflow-oracle-v02-20261015a/`. No other v0.2 paid runs were launched. Both arms remain explicitly **ORACLE, non-deployable upper-bound references**.
