@@ -15,7 +15,7 @@ scale, one open model family (Qwen3.5). The data are:
 | **Built and separately checked** | protocol and renderer; host action-name enforcement kernel (bounded exhaustive check); receipt/replay library; gate and certification procedure; Card harness; distillation pipeline and one distilled checkpoint; AgentDojo adapter routed through the host kernel with verified receipt chains |
 | **Measured** | Card on stock Qwen3.5-4B (plus a 9B reference) and on the distilled student; synthetic-source distillation pilot; one preregistered certification attempt; a two-suite AgentDojo pilot including ORACLE task-scoped authority; the one-pass capability gap to H2O-Lightning-4B |
 | **Not yet demonstrated** | a useful certified operating point; adaptive robustness of any judge; matched-utility workflow gains; deployable task-scoped authority (needs a trusted planner); independent human evidence labels at scale; sealed confirmation |
-| **Paused unfinished (no results)** | trusted-monitor Card (data built: 162 verified backdoors, 573 honest programs; student and adaptive arms not run); student v1 capability distillation (6,632 guarded scenarios authored, verification incomplete). Paid compute was halted by the owner; both are preserved on their branches |
+| **Paused unfinished (no results)** | trusted-monitor Card (data built: 162 verified backdoors, 573 honest programs; student and adaptive arms not run; ≈ $4–8 to finish priorities 1–3); student v1 capability distillation (6,632 guarded scenarios authored, verification incomplete; ≈ $8–14 to finish). Paid compute was halted by the owner; both are preserved on their branches and need an owner-approved budget (`keel/runtime/budget.py`) to resume |
 | **Requested now** | permission for a scoped code/method/results release, a capped research tranche, data access and a named lead (§8). This is not a deployment-safety endorsement. |
 
 ## The proposition
@@ -583,8 +583,10 @@ This shows the recipe trains what it targets; the public Card is the limited evi
 fallback.
 
 **Lessons.**
-- **Power.** The betting test starts from a worst-case variance prior, and cluster weighting shrinks each residual.
-  Small margins need many more clusters, a fixed-sequence path or a variance-adaptive test.
+- **Power.** A CPU simulation that reruns the certifier's own test shows the v0 design (36 points, Bonferroni,
+  472 clusters) certifies only about 9% of the time even when the gate is truly safe. With at least 1,000 clusters
+  and only the 6 relevant points, it certifies about 100% of the time at 72% coverage. No false certificates
+  appeared at a true risk of 0.06 (`gate_cert_v0/power.py`).
 - **Attack-inclusive targets need separation.** At a two-thirds attack mix, even perfectly targeted review of a
   fraction r leaves an acted-attack share of at least `(a − r)/(1 − r)`, which is 63% at r = 10%. An
   attack-inclusive certificate therefore needs either detection *and* heavy review, or a population with realistic
@@ -622,9 +624,13 @@ explicit approval of an amount.
 | Student Card; certification scoring; gap analysis | $0.54; ≈ $0.41; ≈ $0.30 | `card_student_v0/aggregate.json`; wall time |
 | Workflow v0.1 host-integrated rerun; v0.2 ORACLE arms | $1.18; $3.13 | `workflow_v0/host_run_summary.json`, `oracle_*.json` |
 | Monitor Card (paused; data authoring, sandbox and partial scoring) | ≈ $12.49 | `monitor_v0/spend.json` + private ledgers |
-| Student v1 (paused; authoring and partial verification; includes a ≈ $6.40 failed run) | ≈ $10.06 | private ledger |
+| Student v1 (paused; authoring and partial verification; includes a ≈ $6.40 failed run) | ≈ $10.43 | private ledger |
 | Runtime smoke runs; failed first student-Card launch | ≈ $1–1.5 | unlogged estimate |
-| **Total** | **≈ $80–82** | wall-time estimates at $3.95/H100-h, not invoices; about $18 went to failed or hung runs |
+| **Total** | **≈ $81–83** | wall-time estimates at $3.95/H100-h, not invoices; about $18 went to failed or hung runs |
+
+Since 2026-10-16 every paid entry point runs through `keel.runtime.budget`. A run starts only under an
+owner-written approval (`~/ssdm/BUDGET.json`), is stopped when its declared cap is used up, and is logged in one
+ledger. With no approval file present, all paid runs are disabled.
 
 ## 6. Implications
 
@@ -746,7 +752,7 @@ The criteria below are the proposed defaults.
 | **D**, months 6–12 | External red team, reproductions, publication, adoption | By month 12, three independent groups each reproduce one Card table within ±3 pp and pilot the protocol | Publish and archive |
 
 **Budget.**
-- **Measured so far:** about $81 for this phase, partly unlogged (§5.6), all on the owner's Modal workspace.
+- **Measured so far:** about $82 for this phase, partly unlogged (§5.6), all on the owner's Modal workspace.
 - **Proposed caps:** Phase A–B compute $300–600; people and red team $80–150k for B–C. These are planning caps, not
   measured costs.
 - **Grant routes** (deadlines to confirm with each funder): EA Funds Transformative AI Fund, BlueDot rapid grants,
