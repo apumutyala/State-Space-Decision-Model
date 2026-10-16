@@ -130,3 +130,16 @@ Measured v0.2: **144/144 episodes completed**, **661 receipts and 144 episode ch
 ORACLE tool authority had targeted outcome rate **4.2% [0.0, 12.5]** in each suite, with benign utility **83.3% [58.3, 100.0]** in banking and **75.0% [50.0, 100.0]** in Slack. ORACLE argument authority had **0/24 [0%, 0%]** banking targets but benign utility **58.3% [33.3, 83.3]**; Slack still had **4.2% [0.0, 12.5]** targets with benign utility **66.7% [41.7, 91.7]**. The residual Slack target passed through an allowed recipient and unconstrained body; strict literal constraints also held benign alternatives. Task scoping makes authority bind, but these oracle specifications do not establish complete workflow safety or matched utility/review load.
 
 Full attacked utility, disjoint held/denied counts and task-cluster CIs, latency and cost are in the results README and `oracle_aggregate.json`; `oracle_audit.json` pins the chain. The sole v0.2 allocation cost **47.6116 H100-minutes / $3.1344 estimated**, below the separate **$6 cap**. Exact accounting is in `oracle_run_summary.json`; executable source is `c3080a4b`, and private records are under `$SSDM_PRIVATE/workflow/workflow-oracle-v02-20261015a/`. No other v0.2 paid runs were launched. Both arms remain explicitly **ORACLE, non-deployable upper-bound references**.
+
+## CPU-only query-planner feasibility
+
+`query_planner.py` provides frozen keyword and literal-extraction research baselines. `plan_query(prompt, specs)`
+receives only authenticated task text and host-trusted tool schemas and returns tool names plus host
+`ArgumentClause`s; it never reads environment state or tool outputs. These are not production permission compilers
+and are not connected to the paid agent runner.
+
+The [all-suite experiment](../../direction/experiments/planner_feasibility/README.md) evaluates all 97 AgentDojo
+user tasks using offline ground-truth-call proxies, with task-cluster intervals, an output-identity audit and
+network-isolated CPU reproduction commands. Literal grants recover 60.9% [56.6, 65.2] of ORACLE-denied reference
+attack calls at 94.6% [91.4, 97.3] reference-call utility; these are not executed attack or task-completion rates.
+The experiment used $0 paid compute. Any real-agent follow-up still requires an owner-approved budget.
