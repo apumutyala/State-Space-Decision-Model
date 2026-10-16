@@ -59,6 +59,15 @@ seed as the unit (n=8); paired differences use within-seed contrasts. Intervals 
 Time-series summaries use every post-shift update: violation fraction, mean positive excess, maximum excess
 (overshoot), last-quarter standard deviation/range, boundary crossings and multiplier total variation/saturation.
 
+## Pilot record
+
+Seed 0 completed all six arms. The model learned XOR (97.1% canary accuracy before the shift); the no-control
+shortcut produced a 10-step soft-to-hard warning. The controller's final held-out g was 0.0395 despite a 0.01
+training-sample target; fixed weight 8 reached 0.0221. This motivates reporting monitor/canary/test gaps rather
+than interpreting training feasibility as held-out safety. **No task, optimiser, controller, penalty, threshold
+or seed setting was changed after the pilot.** Four aggregate gap metrics were added before the main run, and
+an unnecessary tensor copy was removed. The pilot is excluded from all main uncertainty estimates.
+
 ## Reproduction
 
 `run.py` is CPU-only (one torch thread); all raw seed traces belong in `$SSDM_PRIVATE/research-devcontrol/`.

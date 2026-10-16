@@ -101,7 +101,7 @@ def run(seed: int, arm: str, cfg: Config) -> dict:
         active = t >= cfg.warmup
         if t == cfg.warmup:
             observe(0)
-        x, y = train_x[indices[t]].clone(), train_y[indices[t]]
+        x, y = train_x[indices[t]], train_y[indices[t]]
         correlation = cfg.correlation if active and arm != "no_shift" else 0.5
         x[:, -1] = (2 * y - 1) * torch.where(coins[t] < correlation, 1.0, -1.0)
         lam = (ctl.lam if arm == "nupi" else ARMS[arm]) if active else 0.0
@@ -135,6 +135,9 @@ def run(seed: int, arm: str, cfg: Config) -> dict:
     late = values[-cfg.steps // 4:]
     warning, harm = alarm(trace, "g", cfg.warning), alarm(trace, "flip", cfg.harm)
     metrics = {"accuracy": float(clean), "g": float(g), "flip": float(flip), "opposed_error": float(wrong),
+               "monitor_g": float(values[-1]), "canary_g": trace[-1]["g"],
+               "canary_violation_fraction": float(np.mean([p["g"] > cfg.target for p in trace[1:]])),
+               "canary_overshoot": max(0.0, max(p["g"] - cfg.target for p in trace[1:])),
                "violation_fraction": float(np.mean(residual > 0)), "mean_excess": float(np.maximum(residual, 0).mean()),
                "overshoot": float(max(0, residual.max())), "late_sd": float(late.std()),
                "late_range": float(np.ptp(late)), "crossings": int(np.count_nonzero(np.diff(residual > 0))),
