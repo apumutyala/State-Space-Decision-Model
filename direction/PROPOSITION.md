@@ -15,7 +15,7 @@ scale, one open model family (Qwen3.5). The data are:
 | **Built and separately checked** | protocol and renderer; host action-name enforcement kernel (bounded exhaustive check); receipt/replay library; gate and certification procedure; Card harness; distillation pipeline and one distilled checkpoint; AgentDojo adapter routed through the host kernel with verified receipt chains |
 | **Measured** | Card on stock Qwen3.5-4B (plus a 9B reference) and on the distilled student; synthetic-source distillation pilot; one preregistered certification attempt; a two-suite AgentDojo pilot including ORACLE task-scoped authority; the one-pass capability gap to H2O-Lightning-4B |
 | **Not yet demonstrated** | a useful certified operating point; adaptive robustness of any judge; matched-utility workflow gains; deployable task-scoped authority (needs a trusted planner); independent human evidence labels at scale; sealed confirmation |
-| **Paused unfinished (no results)** | trusted-monitor Card (data built: 162 verified backdoors, 573 honest programs; student and adaptive arms not run; ≈ $4–8 to finish priorities 1–3); student v1 capability distillation (6,632 guarded scenarios authored, verification incomplete; ≈ $8–14 to finish). Paid compute was halted by the owner; both are preserved on their branches and need an owner-approved budget (`keel/runtime/budget.py`) to resume |
+| **Paused unfinished (no results)** | trusted-monitor Card (data built: 162 verified backdoors, 573 honest programs; student and adaptive arms not run); student v1 capability distillation (6,632 guarded scenarios authored, verification incomplete; ≈ $8–14 to finish). Paid compute was halted by the owner; both are preserved on their branches and need an owner-approved budget (`keel/runtime/budget.py`) to resume. A static audit (`artifact_audit/`) found the monitor corpus leaks labels through presentation: style-only features reach AUROC 0.77 on unseen problems. The corpus must be repaired before the Monitor Card resumes (≈ $4–8 after repair) |
 | **Requested now** | permission for a scoped code/method/results release, a capped research tranche, data access and a named lead (§8). This is not a deployment-safety endorsement. |
 
 ## The proposition
@@ -757,8 +757,11 @@ The criteria below are the proposed defaults.
 - **Measured so far:** about $82 for this phase, partly unlogged (§5.6), all on the owner's Modal workspace.
 - **Proposed caps:** Phase A–B compute $300–600; people and red team $80–150k for B–C. These are planning caps, not
   measured costs.
-- **Grant routes** (deadlines to confirm with each funder): EA Funds Transformative AI Fund, BlueDot rapid grants,
-  Manifund, Foresight AI Nodes, SFF Speculation (`direction/research/ssdm-G1-funders.md`).
+- **Grant routes** (deadlines to confirm with each funder): EA Funds Transformative AI Fund (always open),
+  BlueDot rapid grants, Manifund, SFF Speculation (`direction/research/ssdm-G1-funders.md`).
+  - Foresight AI for Science & Safety Nodes, Coordination and accountability track: deadline verified
+    **2026-10-31, 23:59 PDT**; typical grants $30–100k; open-source outputs required; in-person Node participation
+    strongly prioritised.
 
 ## 8. Decisions and asks
 
