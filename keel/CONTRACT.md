@@ -55,7 +55,7 @@ Shared rules for every Keel subpackage. Owned by the chief of staff; propose cha
 - `vllm_judge.JudgeServer(model=...)` is a warm Modal class (`.score.remote(jobs, **same kwargs)`). Use it for
   adaptive search and other repeated calls; it stays up for 10 minutes after the last call.
 - `vllm_judge.judge(requests, model, mode=, think=, canonical=, n_samples=, server=None)`:
-  - call it inside `with vllm_judge.APP.run():`;
+  - call it inside `keel.runtime.budget.approved_run(vllm_judge.APP, label=..., cap_usd=...)`;
   - returns per request `{"probs", "samples", "option_ids", "think_tokens", "reasoning", "meta"}`;
   - it raises if a label log-prob is missing.
 - Smoke check: `python -X utf8 -m keel.runtime.smoke_judge --n 4 --max-usd 1` (paid; needs an owner-approved budget).
