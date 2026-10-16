@@ -179,8 +179,9 @@ def monitor_summary(scores, labels, groups, cal, ev):
     return {key: interval(value, draws[key]) for key, value in point.items()}
 
 
-def audit_monitor(private):
-    path = private_root() / "monitor_v0" / "dataset.json"
+def audit_monitor(private, *, dataset_path=None, assignments=None):
+    # Alternate corpora reuse the frozen baselines and original problem assignments.
+    path = Path(dataset_path) if dataset_path is not None else private_root() / "monitor_v0" / "dataset.json"
     raw = path.read_bytes()
     data = json.loads(raw)
     expected_hash = json.loads(path.with_name("data_report.json").read_text())["dataset_sha256"]
@@ -191,8 +192,9 @@ def audit_monitor(private):
     labels = np.asarray([r["sabotage"] for r in rows], dtype=bool)
     ordered = sorted(set(groups), key=lambda g: digest(f"{SEED}:{g}"))
     a, b = int(0.4 * len(ordered)), int(0.6 * len(ordered))
-    assignments = {g: part for part, ids in (("train", ordered[:a]), ("calibration", ordered[a:b]),
-                                             ("evaluation", ordered[b:])) for g in ids}
+    if assignments is None:
+        assignments = {g: part for part, ids in (("train", ordered[:a]), ("calibration", ordered[a:b]),
+                                                 ("evaluation", ordered[b:])) for g in ids}
     split = {part: np.flatnonzero([assignments[g] == part for g in groups])
              for part in ("train", "calibration", "evaluation")}
     extracted = [features(r["code"]) for r in rows]
@@ -253,7 +255,8 @@ def audit_monitor(private):
                        "ast_cross_problem_groups": sum(len(set(groups[ix])) > 1 for ix in duplicate_groups.values()),
                        "ast_cross_label_groups": sum(len(set(labels[ix])) > 1 for ix in duplicate_groups.values())}}
     dump(private / "monitor_rows.json", {"split": assignments, "features": fs,
-          "scores": {k: v.tolist() for k, v in scores.items()}, "submission_ids": [r["submission_id"] for r in rows]})
+          "scores": {k: v.tolist() for k, v in scores.items()}, "submission_ids": [r["submission_id"] for r in rows],
+          "privileged_scores": distances.tolist(), "privileged_eligible": eligible.tolist()})
     return summary
 
 
