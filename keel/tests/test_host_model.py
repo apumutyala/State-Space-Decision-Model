@@ -13,6 +13,14 @@ class UnauthorizedKernel(HostKernel):
         return status, reason
 
 
+class ArgumentBlindKernel(HostKernel):
+    def _decide(self, request, proposal, result):
+        status, reason = super()._decide(request, proposal, result)
+        if result.act and reason == "arguments_not_authorized":
+            return "executed", "broken_ignores_argument_clauses"
+        return status, reason
+
+
 class SideEffectOnDeferKernel(HostKernel):
     def process(self, request, proposal, decision_result, **kwargs):
         outcome = super().process(request, proposal, decision_result, **kwargs)
@@ -51,12 +59,12 @@ def test_exhaustive_abstract_model_and_concrete_refinement():
     assert report.configurations == 48
     assert report.max_depth == 4
     assert report.states == 632
-    assert report.transitions == report.concrete_transitions == 16920
+    assert report.transitions == report.concrete_transitions == 25380
 
 
-@pytest.mark.parametrize("broken,invariant", [(UnauthorizedKernel, "I1"), (SideEffectOnDeferKernel, "I2"),
-                                               (OverflowApprovalKernel, "I3"), (LaunderingKernel, "I4"),
-                                               (DuplicateReceiptKernel, "I5")])
+@pytest.mark.parametrize("broken,invariant", [(UnauthorizedKernel, "I1"), (ArgumentBlindKernel, "I1"),
+                                               (SideEffectOnDeferKernel, "I2"), (OverflowApprovalKernel, "I3"),
+                                               (LaunderingKernel, "I4"), (DuplicateReceiptKernel, "I5")])
 def test_checker_catches_each_deliberately_broken_invariant(broken, invariant):
     with pytest.raises(InvariantViolation) as failure:
         check_bounds(kernel_type=broken, max_depth=2)

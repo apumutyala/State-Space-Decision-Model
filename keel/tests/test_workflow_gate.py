@@ -157,7 +157,9 @@ def test_out_of_suite_action_denied_even_with_allow_judge(tmp_path, runtime):
     assert gate.outcomes[0].status == "denied" and gate.outcomes[0].reason == "action_not_authorized"
     receipt = gate.kernel.receipt_log.receipts()[0]
     assert receipt.outcome == "deny" and receipt.answers["q"]["decision"] == "allow"
-    assert receipt.authorization == {"principal": "agent", "authorized_actions": ["read_file"]}
+    assert receipt.authorization["principal"] == "agent"
+    assert receipt.authorization["authorized_actions"] == ["read_file"]
+    assert receipt.authorization["arguments"]["clauses"] == []  # suite-wide grants carry no argument clauses
     assert gate.kernel.receipt_log.verify().count == 1
     assert replay_check(receipt, gate.requests[0])
 

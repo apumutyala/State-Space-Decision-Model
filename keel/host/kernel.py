@@ -20,21 +20,86 @@ def _snapshot(value: Any) -> Any:
     return json.loads(json.dumps(value, ensure_ascii=False, allow_nan=False))
 
 
+def _is_number(value: Any) -> bool:
+    return type(value) in (int, float) and math.isfinite(value)
+
+
+def _same_json(actual: Any, expected: Any) -> bool:
+    """Exact JSON equality, int/float numerically equal, no bool or string coercion."""
+    if type(actual) in (int, float) and type(expected) in (int, float):
+        return actual == expected
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        return actual.keys() == expected.keys() and all(_same_json(actual[k], v) for k, v in expected.items())
+    if isinstance(expected, list):
+        return len(actual) == len(expected) and all(_same_json(a, b) for a, b in zip(actual, expected))
+    return actual == expected
+
+
+@dataclass(frozen=True)
+class ArgumentClause:
+    """One permitted shape of a call to ``action``, from authenticated host configuration only.
+
+    A call matches when every ``fixed`` argument equals its value, every ``one_of`` argument equals one of its values
+    and every ``at_most`` argument is a finite number no larger than its bound. Arguments the clause does not mention
+    are free. Values are JSON; int and float compare numerically and nothing else is coerced.
+    """
+
+    action: str
+    fixed: Mapping[str, Any] = MappingProxyType({})
+    one_of: Mapping[str, Sequence[Any]] = MappingProxyType({})
+    at_most: Mapping[str, float] = MappingProxyType({})
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.action, str) or not self.action:
+            raise ValueError("argument clause needs an action name")
+        if any(not _is_number(bound) for bound in self.at_most.values()):
+            raise ValueError("at_most bounds must be finite numbers")
+        if any(not isinstance(values, (list, tuple)) or not values for values in self.one_of.values()):
+            raise ValueError("one_of needs a non-empty list of values")
+        object.__setattr__(self, "fixed", MappingProxyType(_snapshot(dict(self.fixed))))
+        object.__setattr__(self, "one_of", MappingProxyType(
+            {k: tuple(_snapshot(list(v))) for k, v in self.one_of.items()}))
+        object.__setattr__(self, "at_most", MappingProxyType(dict(self.at_most)))
+
+    def allows(self, args: Mapping[str, Any]) -> bool:
+        return (all(k in args and _same_json(args[k], v) for k, v in self.fixed.items())
+                and all(k in args and any(_same_json(args[k], v) for v in vs) for k, vs in self.one_of.items())
+                and all(k in args and _is_number(args[k]) and args[k] <= bound for k, bound in self.at_most.items()))
+
+    def manifest(self) -> dict:
+        return {"action": self.action, "fixed": _snapshot(dict(self.fixed)),
+                "one_of": {k: _snapshot(list(v)) for k, v in sorted(self.one_of.items())},
+                "at_most": dict(sorted(self.at_most.items()))}
+
+
 class Authority:
-    """Immutable grants: policy actions INTERSECT host roles for a principal.
+    """Immutable grants: policy actions INTERSECT host roles for a principal, then argument clauses.
 
     Both the policy and mappings must come from authenticated host configuration.
     Neither policy text nor segment contents are interpreted as grants.
+    An action with argument clauses runs only with arguments that match at least one clause, after filling omitted
+    arguments from ``argument_defaults``; an action without clauses has unconstrained arguments.
     """
 
     def __init__(self, policy: OperatorPolicy, role_actions: Mapping[str, Sequence[str]],
-                 principal_roles: Mapping[str, Sequence[str]]):
+                 principal_roles: Mapping[str, Sequence[str]], *, argument_clauses: Sequence[ArgumentClause] = (),
+                 argument_defaults: Mapping[str, Mapping[str, Any]] | None = None):
         self._policy = OperatorPolicy(policy.policy_id, policy.text, policy.version, tuple(policy.authorized_actions))
         self._roles = MappingProxyType({role: frozenset(actions) for role, actions in role_actions.items()})
         self._principals = MappingProxyType({principal: frozenset(roles) for principal, roles in principal_roles.items()})
         self._allowed = MappingProxyType({principal: frozenset(self._policy.authorized_actions).intersection(
             frozenset().union(*(self._roles.get(role, frozenset()) for role in roles)))
             for principal, roles in self._principals.items()})
+        clauses: dict[str, list[ArgumentClause]] = {}
+        for clause in argument_clauses:
+            if not isinstance(clause, ArgumentClause):
+                raise TypeError("argument_clauses must be ArgumentClause objects")
+            clauses.setdefault(clause.action, []).append(clause)
+        self._clauses = MappingProxyType({action: tuple(cs) for action, cs in clauses.items()})
+        self._defaults = MappingProxyType({action: MappingProxyType(_snapshot(dict(values)))
+                                           for action, values in (argument_defaults or {}).items()})
 
     @property
     def policy(self) -> OperatorPolicy:
@@ -42,6 +107,18 @@ class Authority:
 
     def authorized_actions(self, principal: str) -> frozenset[str]:
         return self._allowed.get(principal, frozenset())
+
+    def arguments_allowed(self, action: str, args: Mapping[str, Any]) -> bool:
+        clauses = self._clauses.get(action)
+        if not clauses:
+            return True
+        effective = {**self._defaults.get(action, {}), **args}
+        return any(clause.allows(effective) for clause in clauses)
+
+    def argument_manifest(self) -> dict:
+        return {"clauses": [c.manifest() for action in sorted(self._clauses) for c in self._clauses[action]],
+                "defaults": {a: _snapshot(dict(v)) for a, v in sorted(self._defaults.items())},
+                "unlisted_actions": "unconstrained arguments", "omitted_arguments": "unconstrained"}
 
 
 class HostInputs:
@@ -198,6 +275,8 @@ class HostKernel:
             return "denied", "unknown_cited_segment"
         if proposal.action not in self.authority.authorized_actions(self.principal):
             return "denied", "action_not_authorized"
+        if not self.authority.arguments_allowed(proposal.action, proposal.args):
+            return "denied", "arguments_not_authorized"
         if result.request_id != request.request_id or set(result.answers) != {q.qid for q in request.questions}:
             return "denied", "decision_request_or_questions_mismatch"
         if type(result.act) is not bool:
@@ -228,7 +307,8 @@ class HostKernel:
             outcome={"executed": "act", "deferred": "defer", "held": "hold", "denied": "deny"}[status],
             reasons=(reason, *result.defer_reasons), prompts=prompts, attack_tag=attack_tag,
             proposal=asdict(proposal), authorization={"principal": self.principal,
-                "authorized_actions": sorted(self.authority.authorized_actions(self.principal))})
+                "authorized_actions": sorted(self.authority.authorized_actions(self.principal)),
+                "arguments": self.authority.argument_manifest()})
         return self.receipt_log.append(receipt)
 
     def process(self, request: DecisionRequest, proposal: ActionProposal, decision_result: DecisionResult, *,
