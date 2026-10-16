@@ -1,0 +1,11 @@
+{
+"seed":20261016,
+"bootstrap":2000,
+"python":"3.12.13",
+"numpy":"2.5.4",
+"scipy":"1.18.1",
+"elapsed_s":9.609579057985684,
+"paid_usd":0,
+"dataset_code_executed":false,
+"script_sha256":"24180adb143fa2f4b8e7f800ad4ff0fbee49bffd131b660e2e8910c9c8ab1e97"
+}
