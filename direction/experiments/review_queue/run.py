@@ -193,12 +193,37 @@ def summarize(destination: Path, output: Path) -> None:
         # Restore undefined waits for always-hold rather than presenting fake zeros.
         pooled[:, NAMES.index("always_hold"), METRICS.index("p95_wait")] = np.nan
         summaries[identity] = describe(pooled, weights)
+        # Pooled observations are cell means, not a new set of executed effects.
+        for policy in NAMES:
+            del summaries[identity][policy]["harmful_effects_sum"]
+    ranges = {}
+    for identity in IDENTITIES:
+        ranges[identity] = {}
+        for policy in POLICIES[1:]:
+            attacked = [r["policies"][policy] for r in rows
+                        if r["identity"] == identity and r["attack_requests_per_benign"] > 0]
+            clean = [r["policies"][policy] for r in rows
+                     if r["identity"] == identity and r["attack_requests_per_benign"] == 0]
+            interval = lambda values: [min(values), max(values)]
+            ranges[identity][policy] = {
+                "attacked_delta_range": interval([s["paired_completion_minus_fifo"][0] for s in attacked]),
+                "clean_delta_range": interval([s["paired_completion_minus_fifo"][0] for s in clean]),
+                "paired_sd_range": interval([s["paired_sd"] for s in attacked])}
+    development = json.loads((destination / "development-cv1.json").read_text())
+    development.pop("kernel_validation")
+    pilot = np.load(destination / "development-cv1.npz")["data"][2, 0, 0, :, 4, :, :, 0]
+    development["anchor_paired_sd"] = {
+        identity: {policy: finite(np.std(pilot[ii, :, pi] - pilot[ii, :, 0], ddof=1))
+                   for pi, policy in enumerate(POLICIES[1:], start=1)}
+        for ii, identity in enumerate(IDENTITIES)}
     result = {"label": "SIM", "method_commit": "72fc51a7", "seed": SEED,
               "cells": 600, "schedules_per_cell": 100, "benign_per_schedule": 1000,
               "bootstrap_resamples": B, "policies": NAMES,
               "resource_match": {"reviewers": 4, "queue_capacities": CAPACITIES},
               "interval_order": ["mean", "lo95", "hi95"],
               "family_interval": "98.333% paired, three comparisons within cell only",
+              "simulation_commit": "f02f12db", "development": development,
+              "descriptive_grid_ranges": ranges,
               "runs": [{k: v for k, v in m.items() if k != "kernel_validation"} for m in manifests],
               "kernel_validation": manifests[0]["kernel_validation"],
               "harmful_fail_closed_effects": int(data[..., :4, 1].sum()),
