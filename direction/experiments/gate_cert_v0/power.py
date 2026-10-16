@@ -29,7 +29,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[2]))
 
-from jevkit.guarantees import crr_betting_pvalue  # noqa: E402
+from jevkit.guarantees import CRR_BET_CAP, crr_betting_pvalue  # noqa: E402
 
 EPS, DELTA, SIZE = 0.05, 0.05, 3
 POINTS = {  # uncertainty threshold: (coverage, acted risk), v0 student calibration curve
@@ -48,9 +48,24 @@ def simulate(n: int, coverage: float, risk: float, rng: random.Random) -> list[t
     return out
 
 
-def pvalue(clusters: list[tuple[int, int]], level: float) -> float:
+def _betting_pvalue_var0(y: list[float], level: float, var0: float) -> float:
+    """``crr_betting_pvalue`` with a different initial variance. Sensitivity only; the certifier uses 1/4."""
+    n, bmax = len(y), CRR_BET_CAP / (1.0 - EPS)
+    c0 = 2.0 * math.log(1.0 / level) / n
+    s_mu, s_var, logk, best = 0.0, var0, 0.0, 0.0
+    for i, yi in enumerate(y, start=1):
+        mu = s_mu / (i - 1) if i > 1 else 0.0
+        logk += math.log1p(-min(bmax, math.sqrt(c0 * i / s_var)) * yi)
+        best = max(best, logk)
+        s_var += (yi - mu) ** 2
+        s_mu += yi
+    return min(1.0, math.exp(-best))
+
+
+def pvalue(clusters: list[tuple[int, int]], level: float, var0: float = 0.25) -> float:
     w = min(1.0, 1.0 / SIZE)
-    return crr_betting_pvalue([w * (losses - EPS * acts) for acts, losses in clusters], EPS, level)[0]
+    y = [w * (losses - EPS * acts) for acts, losses in clusters]
+    return crr_betting_pvalue(y, EPS, level)[0] if var0 == 0.25 else _betting_pvalue_var0(y, level, var0)
 
 
 def margin(clusters: list[tuple[int, int]]) -> float:
@@ -60,12 +75,12 @@ def margin(clusters: list[tuple[int, int]]) -> float:
     return (EPS * acts - losses) / len(clusters)
 
 
-def run_design(design: str, n: int, scenario: dict, rng: random.Random) -> tuple[bool, float]:
+def run_design(design: str, n: int, scenario: dict, rng: random.Random, var0: float = 0.25) -> tuple[bool, float]:
     """(certified?, coverage of the selected point) for one simulated calibration study."""
     data = {u: simulate(n, cov, risk, rng) for u, (cov, risk) in scenario.items()}
     if design in ("bonferroni36", "bonferroni6"):
         level = DELTA / (36 if design == "bonferroni36" else len(scenario))
-        passed = [u for u in scenario if pvalue(data[u], level) <= level]
+        passed = [u for u in scenario if pvalue(data[u], level, var0) <= level]
         return (bool(passed), max((scenario[u][0] for u in passed), default=0.0))
     fit = {u: simulate(FIT_CLUSTERS, cov, risk, rng) for u, (cov, risk) in scenario.items()}
     order = sorted(scenario, key=lambda u: -margin(fit[u]))
@@ -73,7 +88,7 @@ def run_design(design: str, n: int, scenario: dict, rng: random.Random) -> tuple
         order = order[:1]
     certified = []
     for u in order:  # fixed sequence at full δ; stop at the first non-rejection
-        if pvalue(data[u], DELTA) > DELTA:
+        if pvalue(data[u], DELTA, var0) > DELTA:
             break
         certified.append(u)
     return (bool(certified), max((scenario[u][0] for u in certified), default=0.0))
@@ -96,6 +111,12 @@ def main() -> None:
     for design in designs:
         runs = [run_design(design, 1000, unsafe, rng) for _ in range(SIMS)]
         results["false_certification"][f"{design}@1000"] = sum(ok for ok, _ in runs) / SIMS
+    # Does the 1/4 initial variance cost power? Same simulated data (same seed) with a near-oracle prior.
+    results["prior_sensitivity"] = {}
+    for var0 in (0.25, 0.01):
+        paired = random.Random(7)
+        runs = [run_design("bonferroni6", 472, POINTS, paired, var0) for _ in range(SIMS)]
+        results["prior_sensitivity"][f"bonferroni6@472 var0={var0}"] = sum(ok for ok, _ in runs) / SIMS
     (HERE / "power.json").write_text(json.dumps(results, indent=1) + "\n", encoding="utf-8")
     print(f"{'design':14s} {'n':>5s} {'P(certify)':>10s} {'coverage|cert':>13s}")
     for key, v in results["power"].items():
@@ -103,6 +124,7 @@ def main() -> None:
         cov = v["mean_coverage_when_certified"]
         print(f"{design:14s} {n:>5s} {v['certified_rate']:10.2f} {cov if cov is None else round(cov, 3)!s:>13s}")
     print("false certification at risk 0.06 (n=1000):", results["false_certification"])
+    print("initial-variance sensitivity:", results["prior_sensitivity"])
 
 
 if __name__ == "__main__":

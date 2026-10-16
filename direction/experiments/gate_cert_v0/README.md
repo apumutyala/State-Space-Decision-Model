@@ -95,9 +95,10 @@ barely change these rows, because the training-family attacks avoid lexicon trig
 - **The cluster-valid test is conservative at this sample size.**
   - The student's observed acted risk sits 1.5–3.5 pp under ε = 0.05 on about 470 calibration clusters, yet the
     best p-value is 0.053 against a Bonferroni level of 0.05/36.
-  - The CRR betting test (`jevkit.guarantees.crr_betting_pvalue`) starts from the worst-case variance prior (1/4)
-    for bounded residuals. Cluster weighting (cap 1, size 3) also shrinks every residual to ≤ 1/3 of its range.
-  - Both cost power when per-cluster effects are small.
+  - The CRR betting test (`jevkit.guarantees.crr_betting_pvalue`) starts from the worst-case variance (1/4), but
+    with the weight of a single observation. The simulation below shows it costs under 1 point of power.
+  - Small per-cluster effects, cluster weighting (cap 1, size 3) and the 36-way Bonferroni split are what cost
+    power.
   - Remedies for the next preregistration: fewer tested points, more calibration clusters, or a fit-ordered
     sequence. Each is a power choice, not a validity choice. See the power analysis below.
 - **Certifying against attack prevalence needs a working detector.** Under `wrong_or_attack`, acting on any
@@ -122,6 +123,8 @@ uncertainty threshold, manipulation off). 300 simulated studies per cell; result
   studies like it.
 - **Recommended v1:** at least 1,000 calibration clusters (about 3,000 decisions) and only the points that matter
   (6 here). The scoring cost of v1 would be about $1, with owner approval.
+- **The variance prior is not the problem.** On identical simulated data at 472 clusters, starting the betting test
+  from variance 0.01 instead of 1/4 moves the certification rate from 72.7% to 73.3%.
 - **Validity holds.** With every point's true risk raised to 0.06 > ε, no design issued a false certificate in 300
   studies at 1,000 clusters.
 - **Caveats.**
