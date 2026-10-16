@@ -46,6 +46,56 @@ The final numeric grid is `10^-12, 10^-8, 10^-4, 10^-2, 1/2, 1, 2`; the same pos
 
 The runner verifies exact library pins plus source hashes, logs every exception, enforces 2 GiB address space/3,500 CPU seconds, and creates an exclusive held-out-start marker before scoring. Bootstrap CIs concern full-credit errors. Fractional reward on a correct string is a false rejection at this operating point, **not necessarily zero reward**; positive reward on a wrong string is reported separately. Canonical controls are excluded from mutation rates. The base fixtures are shared across splits to isolate family shift; this is not held-out task generalization. Labels are exact within our authored grammar, but rendering/reference code was written by one AI researcher and has not had independent human review.
 
+## Held-out results (`held01`, executable freeze `6bfc494b`)
+
+- **Run:** 9,392 scored rows over 10 endpoints, which share 7 distinct implementations.
+- **Controls:** every canonical control was accepted (64/64 per endpoint).
+- **Cost:** 2.1 s on CPU.
+- **Determinism:** a second run into a scratch directory reproduced the aggregate exactly, timing aside.
+- **Data:** aggregates are in [`results.json`](results.json); per-row records stay private.
+
+**False acceptance** means an independently wrong answer received full credit. Nonzero cells only; every other
+applicable endpoint × family cell was 0/n.
+
+| Endpoint | Held-out family | Wrong answers with full credit | Minimal example | Cause (source read after the freeze) |
+|---|---|---|---|---|
+| Reasoning Gym `number_sorting` | numeric tolerance | 382/448. By shift: every level up to 1/2 64/64, 1 62/64, 2 0/64 | gold `["-92.49", "8.45", …]`; every element shifted by up to 1 still scores 1.0 | an absolute tolerance of 1 per element ("Increased tolerance to handle decimal differences") on values with two decimals |
+| Reasoning Gym `decimal_arithmetic` | numeric tolerance | 129/385, shifts ≤ 10⁻⁴ only | `14.4331` for `14.433` | documented tolerance of one unit in the last decimal place |
+| Reasoning Gym `polynomial_equations` | contradictory trailing text | 8/64, exactly the no-real-root fixtures | `; also 0 = 1` for the empty root set | text without numbers parses as "no roots" |
+| `math-verify` 0.9.0 | units / percentages | 64/64 | `485%` for `485` | percentage normalisation (documented) |
+| GSM8K original extractor | units / percentages | 64/64 | `#### 485%` for `#### 485` | the regex keeps digits only |
+| GSM8K original extractor | contradictory trailing text | 64/64 | `#### 485; also 0 = 1` | extraction ignores everything after the number (documented) |
+
+**Partial credit.** Reasoning Gym's default `ProceduralDataset.score_answer`, shared by `basic_arithmetic`, `gcd`,
+`lcm` and `syllogism`, pays `len(gold)/len(answer)` to any answer that *contains* the gold string. Of the wrong
+strings on those endpoints, 80% received positive reward, which in RL pays the policy for hedging with several
+candidates.
+
+**False rejection** means a valid variant was denied full credit. It is pervasive but mostly by contract:
+- The shared Reasoning Gym scorer requires an exact string. It rejected 100% of valid alternative delimiters, LaTeX,
+  scientific notation, neutral suffixes and units.
+- `math-verify` rejected alternative delimiters (64/64) and half of the scientific-notation controls (64/128).
+- The GSM8K extractor rejected LaTeX, units and delimiters.
+
+These cases add reward noise for valid answers but cannot be exploited.
+
+## Verdict
+
+- **Useful as a free pre-RL gate.** It found, in seconds, one high-severity acceptance:
+  - Reasoning Gym `number_sorting` gives full credit to sorted lists whose values are all wrong by up to 1.
+  - Partial credit also rewards hedging.
+  - Several documented normalisations accept value-changing answers.
+  - Anyone training on these endpoints should harden or replace these scorers first.
+- **Weak as standalone research.** The general thesis, that rule-based verifiers have false negatives and
+  exploitable acceptances, is already published (Huang et al. 2025/2026; Helff et al. 2026). A publishable result
+  would need the paid step: showing a small policy actually learns to exploit the tolerance or the partial credit,
+  and that hardening removes the exploit at equal updates.
+- **Disclosure.** The `number_sorting` tolerance appears deliberate (code comment), so it is a correctness issue,
+  not a security vulnerability. A private note is in `$SSDM_PRIVATE/research-verifier-adequacy/`. No public issue
+  was filed; whether to report upstream is the owner's decision.
+- **Provenance.** The experiment, freeze and held-out run were done by the slice agent. The agent then stopped on a
+  provider error, so this results section was written by the integrator from the frozen run's aggregate and
+  records.
 
 ## Next step and cost
 
