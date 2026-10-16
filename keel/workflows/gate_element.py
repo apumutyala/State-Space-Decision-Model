@@ -12,7 +12,7 @@ from agentdojo.agent_pipeline.tool_execution import ToolsExecutor
 from agentdojo.functions_runtime import EmptyEnv, FunctionCall
 from agentdojo.types import get_text_content_as_str, text_content_block_from_string
 
-from keel.host import ActionProposal, Authority, HostKernel
+from keel.host import ActionProposal, ArgumentClause, Authority, HostKernel
 from keel.protocol import Answer, DecisionRequest, DecisionResult, OperatorPolicy, Question, render
 from keel.protocol.receipts import PromptUse, ReceiptLog
 from keel.protocol.render import Rendered
@@ -83,7 +83,9 @@ class KeelGateElement(BasePipelineElement):
                  episode_id: str, *, authorized_actions: Sequence[str], model_id: str, model_revision: str,
                  executor=None, think: bool = False, policy: OperatorPolicy = POLICY,
                  gate_version: str = "keel-workflow-gate/0.1",
-                 calibration_id: str = "uncertified-label-argmax-tie-holds"):
+                 calibration_id: str = "uncertified-label-argmax-tie-holds",
+                 argument_clauses: Sequence[ArgumentClause] = (),
+                 argument_defaults: Mapping[str, Mapping] | None = None):
         if receipt_log.path is None:
             raise ValueError("workflow receipts require a disk-backed ReceiptLog")
         self.user_task = user_task
@@ -99,7 +101,8 @@ class KeelGateElement(BasePipelineElement):
         actions = tuple(sorted(authorized_actions))
         self.kernel = HostKernel(
             Authority(replace(policy, authorized_actions=actions), {"suite-agent": actions},
-                      {"agent": ("suite-agent",)}),
+                      {"agent": ("suite-agent",)}, argument_clauses=argument_clauses,
+                      argument_defaults=argument_defaults),
             principal="agent", executor=self._dispatch, receipt_log=receipt_log, review_capacity=0,
             model_id=model_id, model_revision=model_revision, gate_version=gate_version,
             calibration_id=calibration_id,

@@ -100,6 +100,12 @@ This follow-up's sole paid allocation used **17.8653 H100-minutes / $1.1761 esti
 
 `oracle.py` adds **ORACLE tool authority** and **ORACLE argument authority**: privileged upper-bound references assuming a perfect trusted planner, **not deployable defenses**. Both derive host grants from the user task's `ground_truth()` on isolated clean state before any attack injection, never from model output or attacked environment. Only the pinned 9B actor is loaded; there is no judge. The actor's prompt, generation parameters, available tool schemas and held response remain unchanged.
 
+**2026-10-16 cutover (code only, no paid re-run).** The measured v0.2 run (source `c3080a4b`) enforced argument
+grants in this adapter: violations became kernel *holds* with the reason `argument-policy: outside oracle grant`.
+Argument grants are now host `ArgumentClause` objects enforced by `HostKernel` itself. Violations are *denials*
+(`arguments_not_authorized`) and the clauses are recorded in every receipt. The matching semantics are unchanged, so
+which calls run is unchanged; only the status label moves from hold to denial. The CPU tests cover the new path.
+
 The tool arm structurally denies names outside ground truth and passes every in-grant proposal through the existing kernel-only dispatcher. The argument arm additionally uses versioned `ArgumentPolicy` (`oracle-ground-truth-arguments/1`) to match all fixed values from one complete ground-truth call. Mismatches submit `act=False` with `argument-policy: outside oracle grant`; kernel receipts and hold/no-dispatch apply normally. Missing proposal fields use trusted tool defaults; explicit values are never type-coerced. Omitted ground-truth fields and Slack message-body placeholders `<summary>`/`...` remain free. Order and multiplicity are unconstrained. The full per-suite argument inventory and ground-truth-quality caveats are in the results README.
 
 Host/protocol code is unchanged. Receipt v1's required render manifest is an **audit-only serialization**, explicitly identified by `model_id=none:oracle-policy`; its one-hot fields encode a deterministic policy result, not judge predictions. Trusted grant metadata binds the constraints to the saved request. `audit.py` verifies chains and replay inputs without a `--reference` argument; the optional reference comparison remains available for the historical v0.1 experiment.

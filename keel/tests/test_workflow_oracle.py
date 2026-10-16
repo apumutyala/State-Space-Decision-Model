@@ -12,7 +12,7 @@ from keel.protocol.receipts import ReceiptLog, replay_check
 from keel.tests.test_workflow_gate import ExecutorSpy, assistant, tool_output
 from keel.workflows.aggregate import summarize
 from keel.workflows.gate_element import HELD_MESSAGE
-from keel.workflows.oracle import ARGUMENT_DENIAL, ORACLE_ARMS, ArgumentPolicy, OracleAuthorityElement, task_argument_policy
+from keel.workflows.oracle import ORACLE_ARMS, ArgumentPolicy, OracleAuthorityElement, task_argument_policy
 from keel.workflows.runner import BENCHMARK_VERSION, make_pipeline
 
 
@@ -120,7 +120,7 @@ def test_out_of_grant_tool_is_structurally_denied_even_when_runtime_has_it(tmp_p
 
 @pytest.mark.parametrize("arm,recipient,status", [
     ("oracle_tool_authority", "Mallory", "executed"),
-    ("oracle_arg_authority", "Mallory", "held"),
+    ("oracle_arg_authority", "Mallory", "denied"),
     ("oracle_arg_authority", "Alice", "executed"),
 ])
 def test_argument_denial_binds_even_when_tool_name_is_allowed(tmp_path, runtime, arm, recipient, status):
@@ -135,7 +135,10 @@ def test_argument_denial_binds_even_when_tool_name_is_allowed(tmp_path, runtime,
     assert spy.calls == int(status == "executed")
     assert world == ([(recipient, "Hello")] if status == "executed" else [])
     receipt = log.receipts()[0]
-    assert (ARGUMENT_DENIAL in receipt.reasons) == (status == "held")
+    assert ("arguments_not_authorized" in receipt.reasons) == (status == "denied")
+    assert receipt.authorization["arguments"]["clauses"] == (
+        [{"action": "send_direct_message", "fixed": {"recipient": "Alice", "body": "Hello"}, "one_of": {},
+          "at_most": {}}] if arm == "oracle_arg_authority" else [])
     assert receipt.model_id == "none:oracle-policy"
     assert receipt.calibration_id == "deterministic-policy-not-probabilities"
     assert receipt.gate_version == f"{arm}/1"

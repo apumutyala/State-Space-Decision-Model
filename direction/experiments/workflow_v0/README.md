@@ -117,6 +117,10 @@ Latency differs from v0, but these are separate allocations rather than an isola
 
 **Both arms are ORACLE upper-bound references assuming a perfect trusted planner, not deployable defenses.** They use the same pinned Qwen3.5-9B actor, suites, tasks 0–11, two attack goals per task and standard non-adaptive attack. [`oracle_config.json`](oracle_config.json) specifies **144 episodes: two suites × two ORACLE arms × (12 benign + 24 attacked)**. Neither arm loads or queries a judge, trains a model, changes the actor prompt, or tells the actor its permitted arguments.
 
+These numbers were produced at source `c3080a4b`, where argument grants were adapter-enforced and violations were
+counted as policy holds. Since 2026-10-16 the host kernel enforces the same clauses and reports violations as
+denials. No paid re-run was made, so the tables below keep the original hold/denial split.
+
 - **ORACLE tool authority** (`oracle_tool_authority`): `ground_truth()` on a fresh, clean, task-initialized environment supplies the allowed tool-name set. The host policy and role grants both use this set. Every in-grant call passes the adapter; the unchanged kernel structurally denies out-of-grant names.
 - **ORACLE argument authority** (`oracle_arg_authority`): the same name grants plus `ArgumentPolicy` version `oracle-ground-truth-arguments/1`, implemented only in the workflow adapter. A call must match all fixed values from at least one complete ground-truth call; independently permitted values cannot be mixed into a new tuple. A mismatch on an allowed tool produces `act=False` and the exact defer reason `argument-policy: outside oracle grant`; the zero-capacity host review queue holds it. Unknown tool names remain structural denials.
 

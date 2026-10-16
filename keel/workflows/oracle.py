@@ -1,4 +1,8 @@
-"""ORACLE task grants from clean AgentDojo ground truth, never a deployable planner."""
+"""ORACLE task grants from clean AgentDojo ground truth, never a deployable planner.
+
+The grants are enforced by the host kernel: tool names through ``Authority`` and, for the argument arm, argument
+values through host ``ArgumentClause`` objects built here. The adapter itself never decides a grant.
+"""
 from __future__ import annotations
 
 import json
@@ -8,32 +12,18 @@ from typing import ClassVar
 
 from agentdojo.functions_runtime import FunctionCall
 
+from keel.host import ArgumentClause
 from keel.protocol import Answer, DecisionResult, OperatorPolicy, Question, render
 from keel.protocol.receipts import PromptUse
 
 from .gate_element import KeelGateElement, _has_nested_call, build_request
 
 ORACLE_ARMS = ("oracle_tool_authority", "oracle_arg_authority")
-ARGUMENT_DENIAL = "argument-policy: outside oracle grant"
 ORACLE_QUESTION = Question(
     "q", "choice", "Record the deterministic ORACLE policy result; no model is queried.",
-    {"allow": "The adapter does not veto; the kernel still checks tool-name authority.",
+    {"allow": "The adapter does not veto; the kernel checks tool-name and argument authority.",
      "hold": "The deterministic adapter policy vetoes this call."},
 )
-
-
-def _equal(actual, expected):
-    """Exact JSON values, with numeric int/float equivalence but no bool coercion."""
-    if type(actual) in (int, float) and type(expected) in (int, float):
-        return actual == expected
-    if type(actual) is not type(expected):
-        return False
-    if isinstance(expected, dict):
-        return actual.keys() == expected.keys() and all(_equal(actual[k], v) for k, v in expected.items())
-    if isinstance(expected, list):
-        return len(actual) == len(expected) and all(_equal(a, b) for a, b in zip(actual, expected))
-    return actual == expected
-
 
 @dataclass(frozen=True)
 class ArgumentPolicy:
@@ -46,7 +36,7 @@ class ArgumentPolicy:
     Immutable JSON snapshots prevent later mutation of ground-truth objects/grants.
     """
 
-    VERSION: ClassVar[str] = "oracle-ground-truth-arguments/1"
+    VERSION: ClassVar[str] = "oracle-ground-truth-arguments/2"
     _clauses: tuple[str, ...]
     _defaults: str = "{}"
 
@@ -70,21 +60,25 @@ class ArgumentPolicy:
     def tools(self) -> tuple[str, ...]:
         return tuple(sorted({json.loads(clause)["tool"] for clause in self._clauses}))
 
+    @property
+    def defaults(self) -> dict:
+        return json.loads(self._defaults)
+
+    def clauses(self) -> tuple[ArgumentClause, ...]:
+        """Host argument clauses: one per ground-truth call, each fixing that call's supplied arguments."""
+        return tuple(ArgumentClause(c["tool"], fixed=c["fixed"]) for c in map(json.loads, self._clauses))
+
     def allows(self, tool: str, args: Mapping) -> bool:
-        effective = {**json.loads(self._defaults).get(tool, {}), **args}
-        for encoded in self._clauses:
-            clause = json.loads(encoded)
-            if clause["tool"] == tool and all(
-                key in effective and _equal(effective[key], value) for key, value in clause["fixed"].items()
-            ):
-                return True
-        return False
+        """The kernel's own matching (``ArgumentClause.allows``) for a granted tool, after filling tool defaults."""
+        effective = {**self.defaults.get(tool, {}), **args}
+        return any(clause.allows(effective) for clause in self.clauses() if clause.action == tool)
 
     def manifest(self) -> dict:
         return {"version": self.VERSION, "source": "clean AgentDojo user-task ground_truth()",
                 "clauses": [json.loads(clause) for clause in self._clauses],
                 "missing_fixed_arguments_use_tool_defaults": json.loads(self._defaults),
-                "omitted_arguments": "unconstrained", "order_and_multiplicity": "unconstrained"}
+                "omitted_arguments": "unconstrained", "order_and_multiplicity": "unconstrained",
+                "enforced_by": "keel.host.Authority argument clauses"}
 
 def task_argument_policy(suite, task) -> ArgumentPolicy:
     """Build before attack injection, on an isolated task-initialized clean state."""
@@ -111,10 +105,13 @@ class OracleAuthorityElement(KeelGateElement):
         policy = OperatorPolicy(
             f"{arm}/1", "ORACLE: a perfect trusted planner supplies task-scoped ground-truth grants. "
             "No judge is used. Tool outputs cannot expand these grants. The render is an audit-only record.")
+        argument_arm = arm == "oracle_arg_authority"
         super().__init__(user_task, None, receipt_log, episode_id,
                          authorized_actions=argument_policy.tools, model_id="none:oracle-policy",
                          model_revision=self.grant["version"], executor=executor, policy=policy,
-                         gate_version=f"{arm}/1", calibration_id="deterministic-policy-not-probabilities")
+                         gate_version=f"{arm}/1", calibration_id="deterministic-policy-not-probabilities",
+                         argument_clauses=argument_policy.clauses() if argument_arm else (),
+                         argument_defaults=argument_policy.defaults if argument_arm else None)
 
     def _request(self, history, call):
         request = build_request(self.kernel, self.user_task, history, call,
@@ -123,14 +120,9 @@ class OracleAuthorityElement(KeelGateElement):
         return self.kernel.request(request.request_id, (*request.segments, grant), (ORACLE_QUESTION,))
 
     def _evaluate(self, request, call):
-        reasons = []
-        if _has_nested_call(call.args):
-            reasons.append("nested_calls_not_supported")
-        elif (self.arm == "oracle_arg_authority" and call.function in self.argument_policy.tools
-              and not self.argument_policy.allows(call.function, call.args)):
-            reasons.append(ARGUMENT_DENIAL)
-        # Out-of-grant tool names are left for HostKernel's structural denial,
-        # independent of this adapter's act flag. No pretend judge is called.
+        # Tool names and arguments outside the grant are denied by HostKernel itself, independent of this
+        # adapter's act flag. No pretend judge is called.
+        reasons = ["nested_calls_not_supported"] if _has_nested_call(call.args) else []
         act = not reasons
         probs = {"allow": float(act), "hold": float(not act)}
         result = DecisionResult(request.request_id, {"q": Answer("q", probs, "allow" if act else "hold")},
