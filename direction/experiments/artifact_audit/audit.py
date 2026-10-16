@@ -297,14 +297,23 @@ def audit_jevbench(private):
         if it.type == "noul":
             predictions["always_yes"][it.id], predictions["always_no"][it.id] = "yes", "no"
     distributions = {kind: defaultdict(Counter) for kind in ("type", "family")}
+    positions = {kind: defaultdict(Counter) for kind in distributions}
     for it in items:
         for kind in distributions:
-            distributions[kind][getattr(it, kind)][str(it.expected)] += 1
-    # In-sample descriptive modal agreement, NOT a trained or held-out predictive baseline.
+            key = getattr(it, kind)
+            distributions[kind][key][str(it.expected)] += 1
+            positions[kind][key][it.labels.index(str(it.expected))] += 1
+    # One literal mode per group, even if absent from another item's label vocabulary.
+    # Never restrict to eligible labels: that would memorize singleton answer strings.
     for kind, groups in distributions.items():
+        modes = {key: min(counts, key=lambda label: (-counts[label], label)) for key, counts in groups.items()}
+        mode_positions = {key: min(counts, key=lambda pos: (-counts[pos], pos))
+                          for key, counts in positions[kind].items()}
         for it in items:
-            counts = groups[getattr(it, kind)]
-            predictions[f"oracle_majority_{kind}"][it.id] = max(it.labels, key=lambda label: counts[label])
+            key = getattr(it, kind)
+            predictions[f"oracle_majority_{kind}"][it.id] = modes[key]
+            pos = mode_positions[key]
+            predictions[f"oracle_position_{kind}"][it.id] = it.labels[pos] if pos < it.k else None
     result = {}
     for name, pred in predictions.items():
         eligible = np.asarray([i for i, it in enumerate(items) if it.id in pred], dtype=int)
@@ -318,10 +327,11 @@ def audit_jevbench(private):
         stats = {cell: accuracy_summary(correct, chance, family, ix) for cell, ix in cells.items()}
         selected = [items[i] for i in eligible]
         answers = {it.id: answer_from_probs(it, {label: float(label == pred[it.id]) for label in it.labels})
-                   for it in selected}
+                   for it in selected if pred[it.id] in it.labels}
         table = build_table(selected, answers)
-        if not table.valid.all():
-            raise ValueError("invalid audit prediction")
+        if not name.startswith("oracle_") and not table.valid.all():
+            raise ValueError("invalid fixed audit prediction")
+        stats["valid_label_coverage"] = float(table.valid.mean())
         intelligence = aggregate(table)["intelligence"]
         draws = clustered_draws(family[eligible], np.arange(len(eligible)), np.random.default_rng(SEED))
         stats["intelligence"] = {**interval(intelligence["I"],
@@ -331,8 +341,11 @@ def audit_jevbench(private):
     dump(private / "jevbench_predictions.json", predictions)
     return {"n": len(items), "families": len(set(family)), "groups": len({it.group for it in items}),
             "pin": read_pin(), "verified_sha256": verify_public(), "baselines": result,
-            "label_counts": {kind: dict(groups) for kind, groups in distributions.items()},
-            "majority_note": "In-sample oracle descriptive only; highest-frequency eligible label, ties by source order."}
+            "label_concentration": {kind: {key: {"n": sum(counts.values()), "distinct_labels": len(counts),
+                        "mode_count": max(counts.values()), "frequency_histogram": dict(Counter(counts.values()))}
+                        for key, counts in groups.items()} for kind, groups in distributions.items()},
+            "position_counts": {kind: dict(groups) for kind, groups in positions.items()},
+            "majority_note": "In-sample descriptive only; one mode per group. Unavailable labels count wrong; ties lexical/first position."}
 
 
 def main():
