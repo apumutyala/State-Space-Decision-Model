@@ -4,7 +4,76 @@
 
 Two owning agents work the repo: **Claude = Track D** (decision model, `claude/*` branches) and **Codex = Track L** (language growth, `codex/*`). Human teammates and their coding agents work on `collab/<github-user>/<topic>` branches; see `HANDOFF.md` (humans) and `AGENT_HANDOFF.md` (agents).
 
-## Status (2026-10-06, `agent-main` @ `3b4169a`)
+## Results so far (benchmark card, 2026-10-15)
+
+We have three trained decision models, each named for the guarantee it carries, plus Keel, a host-side safety layer around a small judge. None beats Clef on raw capability yet. The best Decision Index score is 80% of Clef 27B and 86% of Clef-flash. The guarantees are where the models stand out: zero answer flips from reordering or relabelling options (proven, not just measured), and far fewer successful injection attacks than Clef-flash on templates never seen in training. Blue bars are ours; grey bars are other systems run on the same harness. Every number traces to a receipt listed on the [benchmark card](https://github.com/apumutyala/State-Space-Decision-Model/blob/claude/benchmark-card/docs/benchmark_card/ssdm-benchmark-card.html). The charts are rebuilt by `docs/results/make_charts.py`.
+
+| Model | Code name | What it is |
+|---|---|---|
+| Order-Locked RWKV 13B | D19 | RWKV-7, fully attention-free (constant-size memory, no KV cache), joint decision head. Best Decision Index score |
+| Injection-Hardened RWKV 13B | D13 | RWKV-7, trained to ignore instructions planted in the content it reads |
+| Symmetry-Locked 4B | JEV3-LM-S | Qwen3.5-4B hybrid (75% Gated DeltaNet) with a symmetric fork readout. Best JevBench Composite |
+| Trust-Distilled 4B (Keel) | Keel student | One-token judge whose authority is enforced by the host, not the model |
+
+### Capability
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/results/decision_index-dark.svg">
+  <img alt="Decision Index full dev scores: Clef 27B 61.9, Clef-flash 57.3, Order-Locked RWKV 13B 49.5, Injection-Hardened RWKV 13B 43.2" src="docs/results/decision_index-light.svg" width="820">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/results/jevbench-dark.svg">
+  <img alt="JevBench Composite: H2O-Lightning-4B 76.6, torchcast 73.1, decider-12b-v1 72.4, decider-12b v2 71.0, Symmetry-Locked 4B 67.0, Order-Locked RWKV 13B 62.3" src="docs/results/jevbench-light.svg" width="820">
+</picture>
+
+### Safety and robustness
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/results/injection_attacks-dark.svg">
+  <img alt="Unseen injection attacks. Hijack: ours 2.5%, Clef 27B 1.3%, Clef-flash 11.5%. Steer: ours 0.3%, Clef 27B 1.8%, Clef-flash 8.9%" src="docs/results/injection_attacks-light.svg" width="820">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/results/answer_flips-dark.svg">
+  <img alt="Average answer flip rate under 8 harmless edits: MD1 1.30% self-reported, H2O 2.44%, Symmetry-Locked 4B 3.64%, stock Qwen3.5-4B 7.55%" src="docs/results/answer_flips-light.svg" width="820">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/results/keel_steering-dark.svg">
+  <img alt="Keel targeted steering rate: stock 4B one pass 25.0%, stock 4B thinking 13.8%, Trust-Distilled 4B 9.8%" src="docs/results/keel_steering-light.svg" width="820">
+</picture>
+
+| Property | Symmetry-Locked 4B | Order-Locked RWKV 13B | Injection-Hardened RWKV 13B | Clef 27B | Clef-flash | H2O-4B |
+|---|---|---|---|---|---|---|
+| Option reorder cannot change the answer | Proven | Proven | Proven | not claimed | not claimed | Fails 6/139 |
+| Option relabel cannot change the answer | Proven | 8.6% flips | untested | not claimed | not claimed | Fails 5/139 |
+| Unseen-attack hijack rate | untested | untested | 2.5% | 1.3% | 11.5% | untested |
+| Unseen-attack steer rate | untested | untested | 0.3% | 1.8% | 8.9% | untested |
+| Calibration, 10-bin ECE on Index dev | — | 0.041 | — | 0.014 | 0.031 | — |
+| Conformal prediction sets hold their stated rate | Holds (0.92 at 90%) | Holds | Holds | Holds | Holds | — |
+| Certified "safe to act" at ≤5% error (test valid for correlated items) | None | None | None | None | None | — |
+
+Keel's host-side layer passed a bounded exhaustive check: no unauthorized action can run, deferred or held actions never execute, the full review queue never auto-approves, and receipts are tamper-evident and replayable. It caught all 5 deliberately broken kernels.
+
+### Cost
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/results/serving_cost-dark.svg">
+  <img alt="Projected serving cost per 1,000 Index decisions: Clef-flash $0.061, Clef 27B $0.167, Order-Locked RWKV 13B $0.183" src="docs/results/serving_cost-light.svg" width="820">
+</picture>
+
+### What these results do not show
+
+- Each trained model has one seed, and everything is measured on development sets. Local JevBench uses the 231 open items, not the leaderboard's sealed set. Nothing has been confirmed on a sealed set yet.
+- Adaptive (searched) attacks still steer 90–100% of every 4B judge, ours included. That is why Keel enforces authority outside the model.
+- No model, ours or Clef's, earns a "safe to act" certificate once the test accounts for related questions. An earlier per-decision test said our 13B model was more actionable than Clef-flash; we withdrew it because that test was too lenient.
+- The serving cost for our model is a projection, not a measured invoice.
+- None of our models has been submitted to the public JevBench or Decision Index leaderboards, whose scales differ from our local runs.
+
+## Build status (snapshot of 2026-10-06, `agent-main` @ `3b4169a`)
+
+_This table records infrastructure progress as of 6 October. Model results since then are in the section above._
 
 Takeaway: all CPU-side machinery is built and merged; the first H100 jobs have run; **no model capability number exists yet**. Nothing in `SAFETY_SPEC.md` is claimed as achieved.
 
